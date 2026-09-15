@@ -9,7 +9,7 @@ import type {
   StepContentBlock,
   WorkInstructionOperation,
   WorkInstructionWithSteps,
-} from '@/lib/items/types/work-instruction'
+} from '@cascadia/commons/lib/items/types/work-instruction'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import {

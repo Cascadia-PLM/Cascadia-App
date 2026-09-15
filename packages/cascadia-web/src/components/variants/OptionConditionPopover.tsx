@@ -3,8 +3,12 @@
 
 import { useState } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
+import { OPTION_CODE_PATTERN } from '@cascadia/commons/lib/types/variants'
 import { ConditionPicker } from './ConditionPicker'
-import type { OptionCondition, OptionModel } from '@/lib/types/variants'
+import type {
+  OptionCondition,
+  OptionModel,
+} from '@cascadia/commons/lib/types/variants'
 import {
   Button,
   Input,
@@ -16,7 +20,6 @@ import {
 import { apiFetch } from '@/lib/api/client'
 import { useResourceMutation } from '@/lib/query'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { OPTION_CODE_PATTERN } from '@/lib/types/variants'
 
 /**
  * The one place a design with no variants ever sees variant UI: an icon on a

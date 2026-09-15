@@ -4,8 +4,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
 import type { BOMTreeNode } from './ChangeOrderTreeTable'
-import type { ChangeAction } from '@/lib/types/lifecycle'
+import type { ChangeAction } from '@cascadia/commons/lib/types/lifecycle'
 import { changeActionOptionsQuery } from '@/lib/query'
 import {
   Badge,
@@ -27,7 +28,6 @@ import {
 import { apiFetch } from '@/lib/api/client'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { formatRevision } from '@/lib/types/lifecycle'
 
 interface AddToChangeOrderDialogProps {
   open: boolean

@@ -16,8 +16,8 @@ import {
   X,
 } from 'lucide-react'
 import { RequirementVerificationPanel } from './RequirementVerificationPanel'
-import type { Requirement } from '@/lib/items/types/requirement'
-import type { Design } from '@/lib/types/design'
+import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { RelationshipSection } from '@/components/items/RelationshipSection'

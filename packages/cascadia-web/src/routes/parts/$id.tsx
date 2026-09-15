@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import type { PartDetailTab } from '@/components/parts/PartDetail'
 import { PART_DETAIL_TABS, PartDetail } from '@/components/parts/PartDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'

@@ -4,7 +4,11 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { KnownToolSubtype, Tool } from '@/lib/items/types/tool'
+import { TOOL_SUBTYPES } from '@cascadia/commons/lib/items/types/tool'
+import type {
+  KnownToolSubtype,
+  Tool,
+} from '@cascadia/commons/lib/items/types/tool'
 import type {
   ColumnFiltersState,
   DataGridColumn,
@@ -13,7 +17,6 @@ import type {
   SortingState,
 } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
-import { TOOL_SUBTYPES } from '@/lib/items/types/tool'
 import {
   DropdownMenu,
   DropdownMenuContent,

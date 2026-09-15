@@ -3,10 +3,10 @@
 
 import { useState } from 'react'
 import { Upload } from 'lucide-react'
+import { getImportConfig } from '@cascadia/commons/lib/import'
 import { ImportDialog } from './ImportDialog'
-import type { ImportItemType } from '@/lib/import'
+import type { ImportItemType } from '@cascadia/commons/lib/import'
 import { Button } from '@/components/ui'
-import { getImportConfig } from '@/lib/import'
 
 interface ImportButtonProps {
   /** Item type to import */

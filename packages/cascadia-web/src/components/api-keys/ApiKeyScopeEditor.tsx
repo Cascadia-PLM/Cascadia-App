@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { PermissionAction, ResourceType } from '@/lib/auth/permissions'
+import {
+  PERMISSION_ACTIONS,
+  RESOURCE_TYPES,
+} from '@cascadia/commons/lib/auth/permissions'
+import type {
+  PermissionAction,
+  ResourceType,
+} from '@cascadia/commons/lib/auth/permissions'
 import { Checkbox, Label, Switch } from '@/components/ui'
-import { PERMISSION_ACTIONS, RESOURCE_TYPES } from '@/lib/auth/permissions'
 
 export interface ScopeState {
   restrictPermissions: boolean

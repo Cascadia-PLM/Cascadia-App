@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { entitySubQuery } from './entities'
-import type { UpstreamChangeItem } from '@/lib/db/schema/thread'
+import type { UpstreamChangeItem } from '@cascadia/commons/lib/thread/upstream'
 
 /**
  * One upstream-change notification raised against an MBOM: an ECO released on

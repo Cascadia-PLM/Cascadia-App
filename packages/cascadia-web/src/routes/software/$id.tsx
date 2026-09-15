@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { Software } from '@/lib/items/types/software'
+import type { Software } from '@cascadia/commons/lib/items/types/software'
 import type { SoftwareDetailTab } from '@/components/software/SoftwareDetail'
 import {
   SOFTWARE_DETAIL_TABS,

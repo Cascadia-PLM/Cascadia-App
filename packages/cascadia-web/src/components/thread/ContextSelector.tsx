@@ -10,10 +10,10 @@ import {
   Lock,
   Tag,
 } from 'lucide-react'
-import type { VersionContext } from '@/lib/services/VersionResolver'
-import type { ComparisonTargets } from '@/lib/services/ThreadComparisonService'
+import { TAG_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import type { VersionContext } from '@cascadia/commons/lib/versioning/version-context'
+import type { ComparisonTargets } from '@cascadia/commons/lib/thread/types'
 import { cn } from '@/lib/utils'
-import { TAG_TYPES } from '@/lib/versioning/branch-types'
 
 interface ContextSelectorProps {
   targets: ComparisonTargets

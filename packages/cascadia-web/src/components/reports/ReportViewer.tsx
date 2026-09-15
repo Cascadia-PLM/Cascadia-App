@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Rows3,
 } from 'lucide-react'
-import type { Report, ReportColumn } from '@/lib/reports/types'
+import type { Report, ReportColumn } from '@cascadia/commons/lib/reports/types'
 import {
   Badge,
   Button,

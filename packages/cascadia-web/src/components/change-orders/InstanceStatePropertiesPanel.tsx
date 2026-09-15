@@ -4,7 +4,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2, Plus, Trash2, User, Users, X } from 'lucide-react'
-import type { InstanceApprover, InstanceState } from '@/lib/lifecycles/types'
+import type {
+  InstanceApprover,
+  InstanceState,
+} from '@cascadia/commons/lib/lifecycles/types'
 import {
   Badge,
   Button,

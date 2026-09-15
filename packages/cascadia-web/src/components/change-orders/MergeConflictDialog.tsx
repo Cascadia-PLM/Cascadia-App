@@ -10,8 +10,10 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react'
-import type { MergeConflict } from '@/lib/services/ChangeOrderMergeService'
-import type { FieldConflict } from '@/lib/services/ConflictDetectionService'
+import type {
+  FieldConflict,
+  MergeConflict,
+} from '@cascadia/commons/lib/services/types/conflicts'
 import {
   Badge,
   Button,

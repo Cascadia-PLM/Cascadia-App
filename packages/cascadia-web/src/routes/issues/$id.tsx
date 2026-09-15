@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { Issue } from '@/lib/items/types/issue'
+import type { Issue } from '@cascadia/commons/lib/items/types/issue'
 import type { IssueDetailTab } from '@/components/issues/IssueDetail'
 import { ISSUE_DETAIL_TABS, IssueDetail } from '@/components/issues/IssueDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'

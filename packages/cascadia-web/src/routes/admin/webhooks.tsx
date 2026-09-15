@@ -5,6 +5,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Plus, RefreshCw, Webhook } from 'lucide-react'
+import { WEBHOOK_DISPATCHER_CONSUMER_ID } from '@cascadia/commons/lib/webhooks/config'
 import type { WebhookSubscription } from '@/lib/query'
 import type { WebhookFormValues } from '@/components/webhooks/WebhookFormDialog'
 import { Button } from '@/components/ui'
@@ -18,7 +19,6 @@ import {
   useResourceMutation,
   webhookSubscriptionsQuery,
 } from '@/lib/query'
-import { WEBHOOK_DISPATCHER_CONSUMER_ID } from '@/lib/webhooks/config'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'

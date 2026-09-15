@@ -3,7 +3,20 @@
 
 import { useCallback, useMemo } from 'react'
 import { AlertTriangle, ArrowRight, Check, Info, Sparkles } from 'lucide-react'
-import type { ColumnMapping, ImportItemType, ParsedFile } from '@/lib/import'
+import {
+  BOM_FIELDS,
+  checkRequiredFieldsMapped,
+  getAllFieldsForItemType,
+  getFieldsForType,
+  getImportConfig,
+  getUnmappedColumns,
+  updateMapping,
+} from '@cascadia/commons/lib/import'
+import type {
+  ColumnMapping,
+  ImportItemType,
+  ParsedFile,
+} from '@cascadia/commons/lib/import'
 import {
   Select,
   SelectContent,
@@ -15,15 +28,6 @@ import {
 } from '@/components/ui/Select'
 import { Badge } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import {
-  BOM_FIELDS,
-  checkRequiredFieldsMapped,
-  getAllFieldsForItemType,
-  getFieldsForType,
-  getImportConfig,
-  getUnmappedColumns,
-  updateMapping,
-} from '@/lib/import'
 
 interface ColumnMappingStepProps {
   itemType?: ImportItemType

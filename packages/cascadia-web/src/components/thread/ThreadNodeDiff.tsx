@@ -25,7 +25,7 @@ import {
 } from './swimLaneLayout'
 import type { NodeProps } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'
-import type { ThreadNodeDiff as ThreadNodeDiffData } from '@/lib/services/ThreadComparisonService'
+import type { ThreadNodeDiff as ThreadNodeDiffData } from '@cascadia/commons/lib/thread/types'
 import { cn } from '@/lib/utils'
 import { useLifecycleState } from '@/components/items/StateBadge'
 import { getItemDetailRoutePattern } from '@/lib/items/item-type-ui'

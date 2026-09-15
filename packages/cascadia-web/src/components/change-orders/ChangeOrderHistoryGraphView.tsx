@@ -16,7 +16,7 @@ import type { Node } from '@xyflow/react'
 import type {
   CommitGraphData,
   CommitGraphNode,
-} from '@/lib/versioning/graph-types'
+} from '@cascadia/commons/lib/versioning/graph-types'
 import { CommitNode } from '@/components/versioning/CommitNode'
 import {
   BRANCH_COLUMN_WIDTH,

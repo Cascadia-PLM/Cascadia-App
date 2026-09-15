@@ -6,7 +6,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { z } from 'zod'
-import type { CreateDesignInput, Design } from '@/lib/types/design'
+import type {
+  CreateDesignInput,
+  Design,
+} from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { DesignForm } from '@/components/designs/DesignForm'
 import {

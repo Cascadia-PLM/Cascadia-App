@@ -3,7 +3,7 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import type { Task } from '@/lib/items/types/task'
+import type { Task } from '@cascadia/commons/lib/items/types/task'
 import { TaskDetail } from '@/components/tasks/TaskDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'

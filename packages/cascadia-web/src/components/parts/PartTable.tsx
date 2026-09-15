@@ -5,7 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
 import { PartThumbnail } from './PartThumbnail'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import type {
   ColumnFiltersState,
   DataGridColumn,

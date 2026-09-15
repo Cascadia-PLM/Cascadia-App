@@ -7,7 +7,7 @@ import { entityQuery, entitySubQuery } from './entities'
 import type {
   WorkInstructionOperation,
   WorkInstructionWithSteps,
-} from '@/lib/items/types/work-instruction'
+} from '@cascadia/commons/lib/items/types/work-instruction'
 import { apiFetch } from '@/lib/api/client'
 
 /**

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Trash2, X } from 'lucide-react'
-import type { InstanceTransition } from '@/lib/lifecycles/types'
+import type { InstanceTransition } from '@cascadia/commons/lib/lifecycles/types'
 import {
   Button,
   Card,

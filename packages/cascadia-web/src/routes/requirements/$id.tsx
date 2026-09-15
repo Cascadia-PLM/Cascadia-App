@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { Requirement } from '@/lib/items/types/requirement'
+import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
 import type { RequirementDetailTab } from '@/components/requirements/RequirementDetail'
 import {
   REQUIREMENT_DETAIL_TABS,

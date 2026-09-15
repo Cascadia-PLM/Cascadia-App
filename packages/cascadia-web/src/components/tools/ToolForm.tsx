@@ -3,13 +3,13 @@
 
 import { useForm, useStore } from '@tanstack/react-form'
 import { useState } from 'react'
-import { CapabilitiesEditor } from './CapabilitiesEditor'
-import type { Tool } from '@/lib/items/types/tool'
 import {
   TOOL_SUBTYPES,
   getSubtypeGroup,
   toolSchema,
-} from '@/lib/items/types/tool'
+} from '@cascadia/commons/lib/items/types/tool'
+import { CapabilitiesEditor } from './CapabilitiesEditor'
+import type { Tool } from '@cascadia/commons/lib/items/types/tool'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { zodValidator } from '@/lib/form-validation'
 import {

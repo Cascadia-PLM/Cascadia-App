@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { Calendar, Clock, Edit, Trash2, User } from 'lucide-react'
-import type { Task } from '@/lib/items/types/task'
+import type { Task } from '@cascadia/commons/lib/items/types/task'
 import { Badge, Button, Card, CardContent, CardHeader } from '@/components/ui'
 import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 

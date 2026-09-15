@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { WorkOrderStatus } from '@/lib/items/types/work-order'
+import type { WorkOrderStatus } from '@cascadia/commons/lib/items/types/work-order'
 import { Badge } from '@/components/ui'
 import { cn } from '@/lib/utils'
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { Design } from '@/lib/types/design'
-import type { Program } from '@/lib/types/program'
+import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Program } from '@cascadia/commons/lib/types/program'
 
 export interface BreadcrumbData {
   program?: { id: string; name: string; code: string }

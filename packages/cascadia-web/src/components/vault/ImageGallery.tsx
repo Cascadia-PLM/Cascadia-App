@@ -9,6 +9,7 @@ import {
   Download,
   Image as ImageIcon,
 } from 'lucide-react'
+import { isDisplayableImage } from '@cascadia/commons/lib/vault/image-files'
 import type { KeyboardEvent } from 'react'
 import {
   Badge,
@@ -20,7 +21,6 @@ import {
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { itemFilesQuery } from '@/lib/query/options/item-files'
-import { isDisplayableImage } from '@/lib/vault/image-files'
 
 /** The subset of a vault file record the gallery needs. */
 export interface GalleryImage {

@@ -5,8 +5,8 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
-import type { Issue } from '@/lib/items/types/issue'
-import type { Design } from '@/lib/types/design'
+import type { Issue } from '@cascadia/commons/lib/items/types/issue'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,

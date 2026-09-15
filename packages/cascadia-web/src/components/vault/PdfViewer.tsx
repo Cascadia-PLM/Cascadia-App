@@ -19,14 +19,14 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
+import { ANNOTATION_COLORS } from '@cascadia/commons/lib/vault/annotations'
 import type {
   AnnotationGeometry,
   FileAnnotation,
-} from '@/lib/vault/annotations'
+} from '@cascadia/commons/lib/vault/annotations'
 import type { AnnotationTool } from '@/components/vault/PdfAnnotationLayer'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import { ANNOTATION_COLORS } from '@/lib/vault/annotations'
 import { PdfAnnotationLayer } from '@/components/vault/PdfAnnotationLayer'
 import {
   useFullscreen,

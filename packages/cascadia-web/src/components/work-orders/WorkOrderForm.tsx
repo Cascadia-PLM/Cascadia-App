@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { Loader2, Search } from 'lucide-react'
 import { z } from 'zod'
-import type { WorkOrderCreateInput } from '@/lib/items/types/work-order'
+import type { WorkOrderCreateInput } from '@cascadia/commons/lib/items/types/work-order'
 import {
   Button,
   FormField,

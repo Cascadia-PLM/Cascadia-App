@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import type { ChangeEvent, DragEvent } from 'react'
 import type { CatalogCategory } from '@/lib/query'
-import type { CatalogEntryWithCategory } from '@/lib/services/CatalogService'
+import type { CatalogEntryWithCategory } from '@cascadia/commons/lib/services/types/catalog'
 import { PageContainer } from '@/components/layout'
 import { Badge, Button, Input, Label, Textarea } from '@/components/ui'
 import {

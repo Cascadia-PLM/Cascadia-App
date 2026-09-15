@@ -26,7 +26,7 @@ import {
   TestTube2,
   Wrench,
 } from 'lucide-react'
-import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
 import type { LucideIcon } from 'lucide-react'
 
 /**

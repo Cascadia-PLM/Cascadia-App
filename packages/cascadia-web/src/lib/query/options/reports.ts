@@ -4,7 +4,10 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { collectionQuery, entityQuery } from './entities'
-import type { Report, ReportExecutionResult } from '@/lib/reports/types'
+import type {
+  Report,
+  ReportExecutionResult,
+} from '@cascadia/commons/lib/reports/types'
 import { apiFetch } from '@/lib/api/client'
 
 /** Every report visible to the caller, grouped by item type in the UI. */

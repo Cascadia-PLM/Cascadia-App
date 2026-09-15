@@ -3,7 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Check, Loader2, X } from 'lucide-react'
-import type { LifecycleDefinition } from '@/lib/lifecycles/types'
+import type { LifecycleDefinition } from '@cascadia/commons/lib/lifecycles/types'
 import { Badge } from '@/components/ui/Badge'
 import { lifecycleListQuery } from '@/lib/query/options/lifecycles'
 

@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Download, Package, Trash2, Upload } from 'lucide-react'
-import type { Software } from '@/lib/items/types/software'
+import type { Software } from '@cascadia/commons/lib/items/types/software'
 import type { FileMetadata } from '@/lib/query'
 import {
   Button,

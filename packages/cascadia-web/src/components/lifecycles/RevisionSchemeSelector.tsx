@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { RevisionScheme } from '@/lib/types/lifecycle'
-import { NO_REVISION_MARKER } from '@/lib/types/lifecycle'
+import { NO_REVISION_MARKER } from '@cascadia/commons/lib/types/lifecycle'
+import type { RevisionScheme } from '@cascadia/commons/lib/types/lifecycle'
 import {
   Input,
   Label,

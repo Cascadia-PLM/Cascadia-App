@@ -5,7 +5,7 @@ import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { Circle, Edit2, Flag, Play, Trash2 } from 'lucide-react'
 import type { Node, NodeProps } from '@xyflow/react'
-import type { LifecycleState } from '@/lib/lifecycles/types'
+import type { LifecycleState } from '@cascadia/commons/lib/lifecycles/types'
 import { Badge } from '@/components/ui/Badge'
 
 interface StateNodeData extends Record<string, unknown> {

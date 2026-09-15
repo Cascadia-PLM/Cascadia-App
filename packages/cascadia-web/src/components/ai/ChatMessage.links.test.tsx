@@ -16,7 +16,7 @@
  * other than this app, and an in-app link still routes in-app rather than
  * leaving the SPA.
  *
- * Run: npx vitest run packages/core/src/components/ai/ChatMessage.links.test.tsx
+ * Run: npx vitest run packages/cascadia-web/src/components/ai/ChatMessage.links.test.tsx
  */
 
 import { fireEvent, render, screen } from '@testing-library/react'

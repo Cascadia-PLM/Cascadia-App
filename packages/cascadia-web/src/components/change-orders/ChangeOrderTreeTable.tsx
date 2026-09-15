@@ -3,6 +3,7 @@
 
 import { Check, ExternalLink, Minus, Plus } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
 import type { BOMTreeNode } from '@/components/bom/types'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import { Badge } from '@/components/ui'
@@ -14,7 +15,6 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
 import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
-import { formatRevision } from '@/lib/types/lifecycle'
 
 export type { BOMTreeNode }
 

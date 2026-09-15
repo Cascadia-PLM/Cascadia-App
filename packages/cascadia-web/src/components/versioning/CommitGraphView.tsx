@@ -23,7 +23,7 @@ import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import type {
   CommitGraphData,
   CommitGraphNode,
-} from '@/lib/versioning/graph-types'
+} from '@cascadia/commons/lib/versioning/graph-types'
 import { FullscreenGraphWrapper } from '@/components/ui'
 import { designHistoryGraphQuery } from '@/lib/query'
 import { useTheme } from '@/lib/theme'

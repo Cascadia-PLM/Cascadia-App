@@ -8,13 +8,13 @@ import type {
   AffectedItem,
   ChangeActionOptions,
   ChangeOrder,
-} from '@/lib/items/types/change-order'
-import type { BaseItem } from '@/lib/items/types/base'
+} from '@cascadia/commons/lib/items/types/change-order'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import type {
   ApprovalsByState,
   CanApproveResult,
   EffectiveLifecycleStructure,
-} from '@/lib/lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import { apiFetch } from '@/lib/api/client'
 
 /**

@@ -12,8 +12,14 @@
  * Everything here is side-effect free: it renders *example* numbers without
  * touching the sequence counters, so it is safe to call anywhere.
  */
-import { familyNumberingConfig, numberingSchemes } from './schemes'
-import type { NumberSegment, SequenceScope } from './types'
+import {
+  familyNumberingConfig,
+  numberingSchemes,
+} from '@cascadia/commons/lib/items/numbering/schemes'
+import type {
+  NumberSegment,
+  SequenceScope,
+} from '@cascadia/commons/lib/items/numbering/types'
 
 /** Placeholder shown in every item-number input when the field is left blank. */
 export const ITEM_NUMBER_PLACEHOLDER = 'Auto-generated if blank'

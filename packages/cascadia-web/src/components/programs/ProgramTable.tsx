@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { Program } from '@/lib/types/program'
+import type { Program } from '@cascadia/commons/lib/types/program'
 import type {
   ColumnFiltersState,
   DataGridColumn,

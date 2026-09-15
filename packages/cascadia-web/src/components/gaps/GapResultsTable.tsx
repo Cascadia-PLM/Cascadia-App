@@ -15,8 +15,8 @@ import type {
   Gap,
   GapSeverity,
   GapType,
-} from '@/lib/services/GapAnalysisService'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
+} from '@cascadia/commons/lib/services/types/gap-analysis'
+import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { Badge, Checkbox } from '@/components/ui'
 import { cn } from '@/lib/utils'

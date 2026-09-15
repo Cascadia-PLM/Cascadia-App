@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useMemo, useState } from 'react'
-import type { Design } from '@/lib/types/design'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import { DesignModelViewer } from '@/components/designs/DesignModelViewer'
 import {

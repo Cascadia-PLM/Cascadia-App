@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { Task } from '@/lib/items/types/task'
+import type { Task } from '@cascadia/commons/lib/items/types/task'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {

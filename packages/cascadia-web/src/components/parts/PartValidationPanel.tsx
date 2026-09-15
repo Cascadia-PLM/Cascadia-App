@@ -12,7 +12,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react'
-import type { TestCase } from '@/lib/items/types/testcase'
+import type { TestCase } from '@cascadia/commons/lib/items/types/testcase'
 import { apiFetch } from '@/lib/api/client'
 import {
   entitySubQuery,

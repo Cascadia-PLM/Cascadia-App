@@ -4,7 +4,8 @@
 import { useMemo, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { AlertTriangle, GitBranch, Loader2, Lock, Plus } from 'lucide-react'
-import type { CheckoutStatus } from '@/lib/services/CheckoutService'
+import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import type { CheckoutStatus } from '@cascadia/commons/lib/services/types/checkout'
 import {
   Badge,
   Button,
@@ -30,7 +31,6 @@ import { CreateWorkspaceDialog } from '@/components/workspaces/CreateWorkspaceDi
 import { useInvalidateResources } from '@/lib/query'
 import { designBranchesQuery } from '@/lib/query/options/designs'
 import { itemCheckoutQuery } from '@/lib/query/options/checkout'
-import { BRANCH_TYPES } from '@/lib/versioning/branch-types'
 
 interface Branch {
   id: string

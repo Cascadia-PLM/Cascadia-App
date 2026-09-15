@@ -26,8 +26,8 @@ import type {
 import type {
   ConflictDetectionResult,
   FieldConflict,
-} from '@/lib/services/ConflictDetectionService'
-import type { EnrichedItemConflict } from '@/lib/services/types/conflict-review'
+} from '@cascadia/commons/lib/services/types/conflicts'
+import type { EnrichedItemConflict } from '@cascadia/commons/lib/services/types/conflict-review'
 import {
   Badge,
   Button,

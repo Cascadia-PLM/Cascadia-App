@@ -25,7 +25,7 @@ import type {
   InstanceState,
   InstanceTransition,
   LifecycleState,
-} from '@/lib/lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import { StateNode } from '@/components/lifecycles/StateNode'
 import { TransitionEdge } from '@/components/lifecycles/TransitionEdge'
 import { Button } from '@/components/ui/Button'

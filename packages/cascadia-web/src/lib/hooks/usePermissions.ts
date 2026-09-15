@@ -2,12 +2,15 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useQuery } from '@tanstack/react-query'
-import type { PermissionAction, ResourceType } from '@/lib/auth/permissions'
 import {
   canAccessSystem,
   canManageSystem,
   hasPermission,
-} from '@/lib/auth/permissions'
+} from '@cascadia/commons/lib/auth/permissions'
+import type {
+  PermissionAction,
+  ResourceType,
+} from '@cascadia/commons/lib/auth/permissions'
 import { currentUserPermissionsQuery } from '@/lib/query'
 
 /**

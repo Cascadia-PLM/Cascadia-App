@@ -4,7 +4,7 @@
 import dagre from 'dagre'
 import { Position } from '@xyflow/react'
 import type { Edge, Node } from '@xyflow/react'
-import type { ThreadEdge, ThreadNode } from '@/lib/services/ThreadService'
+import type { ThreadEdge, ThreadNode } from '@cascadia/commons/lib/thread/types'
 import { directionalMarker } from '@/components/graph/edgeStyles'
 
 type NodeData = Record<string, unknown>

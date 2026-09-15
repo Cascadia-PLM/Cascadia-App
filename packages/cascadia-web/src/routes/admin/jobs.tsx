@@ -14,7 +14,10 @@ import {
 } from 'lucide-react'
 import type { DataGridColumn, Row } from '@/components/ui'
 import type { Job } from '@/lib/query'
-import type { JobPriority, JobStatus } from '@/lib/db/schema/jobs'
+import type {
+  JobPriority,
+  JobStatus,
+} from '@cascadia/commons/lib/jobs/types-wire'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
   Dialog,

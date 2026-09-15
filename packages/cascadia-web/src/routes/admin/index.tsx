@@ -20,6 +20,8 @@ import {
   Users,
 } from 'lucide-react'
 import { useState } from 'react'
+import { SettingKeys } from '@cascadia/commons/lib/config/SettingKeys'
+import { APP_VERSION } from '@cascadia/commons/lib/version'
 import { PageContainer } from '@/components/layout'
 import { PackagesCard } from '@/components/admin/PackagesCard'
 import { Slot } from '@/lib/ui/slot-registry'
@@ -34,8 +36,6 @@ import {
   Input,
   Label,
 } from '@/components/ui'
-import { SettingKeys } from '@/lib/config/SettingKeys'
-import { APP_VERSION } from '@/lib/version'
 import {
   packageListQuery,
   useInvalidateResources,

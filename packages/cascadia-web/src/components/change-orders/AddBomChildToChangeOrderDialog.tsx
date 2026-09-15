@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Info, Link2, Search } from 'lucide-react'
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,6 @@ import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
 import { itemTextSearchQuery } from '@/lib/query/options/item-search'
 import { cn } from '@/lib/utils'
 import { StateBadge } from '@/components/items/StateBadge'
-import { formatRevision } from '@/lib/types/lifecycle'
 
 type DesignScope = 'current' | 'library'
 

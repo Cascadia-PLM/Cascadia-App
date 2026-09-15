@@ -3,10 +3,11 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { DEFAULT_ANNOTATION_COLOR } from '@cascadia/commons/lib/vault/annotations'
 import type {
   AnnotationGeometry,
   FileAnnotation,
-} from '@/lib/vault/annotations'
+} from '@cascadia/commons/lib/vault/annotations'
 import type { AnnotationTool } from '@/components/vault/PdfAnnotationLayer'
 import type { PdfMarkupBinding } from '@/components/vault/PdfViewer'
 import {
@@ -19,7 +20,6 @@ import {
   DialogTitle,
   Textarea,
 } from '@/components/ui'
-import { DEFAULT_ANNOTATION_COLOR } from '@/lib/vault/annotations'
 import { fileAnnotationsQuery } from '@/lib/query/options/file-annotations'
 import { useInvalidateResources } from '@/lib/query'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'

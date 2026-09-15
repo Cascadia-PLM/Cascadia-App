@@ -3,7 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { VaultConfigInfo } from '@/lib/vault/storage/storage-factory'
+import type { VaultConfigInfo } from '@cascadia/commons/lib/vault/types'
 import { apiFetch } from '@/lib/api/client'
 
 export interface AiProviderSettings {

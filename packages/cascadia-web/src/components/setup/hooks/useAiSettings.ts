@@ -9,7 +9,7 @@
  */
 
 import { useState } from 'react'
-import type { AiProviderType } from '@/lib/ai/model-catalog'
+import type { AiProviderType } from '@cascadia/commons/lib/ai/model-catalog'
 
 export type { AiProviderType }
 

@@ -20,7 +20,7 @@ import type {
   ProgramCommitGraphNode,
   ProgramCommitNodeData,
   ProgramGraphData,
-} from '@/lib/versioning/graph-types'
+} from '@cascadia/commons/lib/versioning/graph-types'
 import type { MainHeadNodeType } from '@/components/versioning/MainHeadNode'
 import { FullscreenGraphWrapper } from '@/components/ui'
 import { useTheme } from '@/lib/theme'

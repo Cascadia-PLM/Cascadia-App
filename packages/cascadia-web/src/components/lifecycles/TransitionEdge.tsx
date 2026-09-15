@@ -11,7 +11,7 @@ import {
 } from '@xyflow/react'
 import { Edit2, GripVertical, ShieldCheck, Zap } from 'lucide-react'
 import type { Edge, EdgeProps } from '@xyflow/react'
-import type { LifecycleTransition } from '@/lib/lifecycles/types'
+import type { LifecycleTransition } from '@cascadia/commons/lib/lifecycles/types'
 
 interface TransitionEdgeData extends Record<string, unknown> {
   transition: LifecycleTransition

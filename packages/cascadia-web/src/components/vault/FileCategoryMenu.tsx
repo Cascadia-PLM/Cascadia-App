@@ -2,7 +2,11 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { RotateCcw, Tag } from 'lucide-react'
-import type { FileCategory } from '@/lib/vault/file-categories'
+import {
+  FILE_CATEGORY_OPTIONS,
+  isFileCategory,
+} from '@cascadia/commons/lib/vault/file-categories'
+import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { Button } from '@/components/ui/Button'
-import {
-  FILE_CATEGORY_OPTIONS,
-  isFileCategory,
-} from '@/lib/vault/file-categories'
 
 export interface FileCategoryMenuProps {
   /** The file's current category, as stored */

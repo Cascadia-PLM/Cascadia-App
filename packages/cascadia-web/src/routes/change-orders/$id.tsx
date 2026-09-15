@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { ChangeOrder } from '@/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import type { ChangeOrderDetailTab } from '@/components/change-orders/ChangeOrderDetail'
 import {
   CHANGE_ORDER_DETAIL_TABS,

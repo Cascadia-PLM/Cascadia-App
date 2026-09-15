@@ -11,10 +11,16 @@ import {
   Sparkles,
   TestTube,
 } from 'lucide-react'
+import {
+  AI_PROVIDERS,
+  DEFAULT_MODEL,
+  DEFAULT_OLLAMA_BASE_URL,
+  PROVIDER_LABELS,
+} from '@cascadia/commons/lib/ai/model-catalog'
 import { useAiSettings } from '../hooks/useAiSettings'
 import { strings } from '../strings'
 import type { AiSettingsForm } from '../hooks/useAiSettings'
-import type { AiProviderType } from '@/lib/ai/model-catalog'
+import type { AiProviderType } from '@cascadia/commons/lib/ai/model-catalog'
 import {
   Button,
   Card,
@@ -28,12 +34,6 @@ import {
   SelectValue,
   Switch,
 } from '@/components/ui'
-import {
-  AI_PROVIDERS,
-  DEFAULT_MODEL,
-  DEFAULT_OLLAMA_BASE_URL,
-  PROVIDER_LABELS,
-} from '@/lib/ai/model-catalog'
 import { useAiModels, withSelectedModel } from '@/lib/hooks/useAiModels'
 
 interface AiKeysStepProps {

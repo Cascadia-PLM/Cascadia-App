@@ -4,7 +4,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { BarChart3, Plus } from 'lucide-react'
-import type { Report } from '@/lib/reports/types'
+import type { Report } from '@cascadia/commons/lib/reports/types'
 import { PageContainer } from '@/components/layout'
 import {
   Button,

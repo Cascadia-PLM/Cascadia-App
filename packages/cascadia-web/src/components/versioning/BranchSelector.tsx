@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { GitBranch, Lock, Plus, Unlock } from 'lucide-react'
+import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
 import {
   Select,
   SelectContent,
@@ -27,7 +28,6 @@ import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
 import { designBranchesQuery } from '@/lib/query/options/designs'
 import { designStatusQuery } from '@/lib/query/options/branches'
-import { BRANCH_TYPES } from '@/lib/versioning/branch-types'
 
 interface Branch {
   id: string

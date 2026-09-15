@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Factory, Loader2, XCircle } from 'lucide-react'
-import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
+import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
 import {
   Dialog,
   DialogContent,

@@ -2,12 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useForm } from '@tanstack/react-form'
-import { OutputPartField } from './OutputPartField'
-import type { WorkInstruction } from '@/lib/items/types/work-instruction'
 import {
   workInstructionEditSchema,
   workInstructionSchema,
-} from '@/lib/items/types/work-instruction'
+} from '@cascadia/commons/lib/items/types/work-instruction'
+import { OutputPartField } from './OutputPartField'
+import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
 import {
   Button,
   FormField,

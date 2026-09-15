@@ -2,12 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback } from 'react'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { getErrorStrategy } from '@cascadia/commons/lib/errors/severity'
 import { useToast } from './useToast'
 import { useAlertDialog } from './useAlertDialog'
-import type { ErrorPresentation } from '@/lib/errors/severity'
+import type { ErrorPresentation } from '@cascadia/commons/lib/errors/severity'
 import { ApiError } from '@/lib/api/client'
-import { ErrorCode } from '@/lib/errors/codes'
-import { getErrorStrategy } from '@/lib/errors/severity'
 
 /**
  * The text to show for an error. A validation failure's `message` is the bare

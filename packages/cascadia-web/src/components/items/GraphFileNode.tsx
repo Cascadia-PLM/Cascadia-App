@@ -14,11 +14,11 @@ import {
   Music,
   Video,
 } from 'lucide-react'
-import { formatFileSize } from '@/lib/vault/utils/file-utils'
+import { formatFileSize } from '@cascadia/commons/lib/vault/format-file-size'
 import {
   FILE_CATEGORY_DEFINITIONS,
   isFileCategory,
-} from '@/lib/vault/file-categories'
+} from '@cascadia/commons/lib/vault/file-categories'
 
 interface GraphFileNodeProps {
   data: {

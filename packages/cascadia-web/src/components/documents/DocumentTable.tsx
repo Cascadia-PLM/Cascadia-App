@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { Document } from '@/lib/items/types/document'
+import type { Document } from '@cascadia/commons/lib/items/types/document'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import { PhaseBadge } from '@/components/items/PhaseBadge'

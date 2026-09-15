@@ -7,7 +7,7 @@ import { StepEditor } from './StepEditor'
 import type {
   WorkInstructionOperation,
   WorkInstructionStep,
-} from '@/lib/items/types/work-instruction'
+} from '@cascadia/commons/lib/items/types/work-instruction'
 import {
   Badge,
   Button,

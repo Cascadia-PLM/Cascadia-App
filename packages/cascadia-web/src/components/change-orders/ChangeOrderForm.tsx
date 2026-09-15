@@ -3,8 +3,8 @@
 
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
-import type { ChangeOrder } from '@/lib/items/types/change-order'
-import { changeOrderSchema } from '@/lib/items/types/change-order'
+import { changeOrderSchema } from '@cascadia/commons/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { getItemNumberHelpText } from '@/lib/items/numbering/format'
 import { zodValidator } from '@/lib/form-validation'

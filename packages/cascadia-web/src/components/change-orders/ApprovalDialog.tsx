@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { Check, Loader2, X } from 'lucide-react'
-import type { CanApproveResult } from '@/lib/lifecycles/types'
+import type { CanApproveResult } from '@cascadia/commons/lib/lifecycles/types'
 import {
   Button,
   Dialog,

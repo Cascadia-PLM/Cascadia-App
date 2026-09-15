@@ -39,8 +39,8 @@ import type {
   LifecycleDefinition,
   LifecycleState,
   LifecycleTransition,
-} from '@/lib/lifecycles/types'
-import type { LifecyclePhaseConfig } from '@/lib/types/lifecycle'
+} from '@cascadia/commons/lib/lifecycles/types'
+import type { LifecyclePhaseConfig } from '@cascadia/commons/lib/types/lifecycle'
 import { useTheme } from '@/lib/theme'
 import { Button } from '@/components/ui/Button'
 

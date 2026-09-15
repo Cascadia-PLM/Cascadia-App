@@ -15,8 +15,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { Part } from '@/lib/items/types/part'
-import type { Design } from '@/lib/types/design'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
 import type { EnrichmentSources } from '@/components/items/enrichment-sources'
 import { PageContainer } from '@/components/layout'

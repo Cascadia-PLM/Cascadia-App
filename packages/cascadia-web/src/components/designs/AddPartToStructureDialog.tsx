@@ -7,7 +7,7 @@ import { ArrowLeft, ExternalLink, Search } from 'lucide-react'
 import { AddPartChoice } from './AddPartChoice'
 import { CreatePartInDesignForm } from './CreatePartInDesignForm'
 import type { AddPartStep } from './AddPartChoice'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import {
   Dialog,
   DialogContent,

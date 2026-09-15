@@ -3,7 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { FileAnnotation } from '@/lib/vault/annotations'
+import type { FileAnnotation } from '@cascadia/commons/lib/vault/annotations'
 import { apiFetch } from '@/lib/api/client'
 
 /**

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { collectionQuery, entityQuery } from './entities'
-import type { Role, UserWithRoles } from '@/lib/auth/types'
+import type { Role, UserWithRoles } from '@cascadia/commons/lib/auth/types'
 
 /**
  * Every user, with the roles assigned to each.

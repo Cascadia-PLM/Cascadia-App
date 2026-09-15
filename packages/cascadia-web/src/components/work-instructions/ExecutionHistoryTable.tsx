@@ -3,7 +3,7 @@
 
 import { Link } from '@tanstack/react-router'
 import type { DataGridColumn } from '@/components/ui'
-import type { InstructionExecution } from '@/lib/items/types/work-order'
+import type { InstructionExecution } from '@cascadia/commons/lib/items/types/work-order'
 import { Badge, DataGrid } from '@/components/ui'
 import { cn } from '@/lib/utils'
 

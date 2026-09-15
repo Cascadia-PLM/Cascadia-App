@@ -9,4 +9,4 @@
  * already point here do not all have to move.
  */
 
-export type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
+export type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'

@@ -21,7 +21,7 @@ import type {
   StepContentBlock,
   WorkInstructionOperation,
   WorkInstructionStep,
-} from '@/lib/items/types/work-instruction'
+} from '@cascadia/commons/lib/items/types/work-instruction'
 import {
   Button,
   Card,

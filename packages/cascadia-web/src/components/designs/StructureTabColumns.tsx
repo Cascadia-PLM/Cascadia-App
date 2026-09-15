@@ -3,12 +3,12 @@
 
 import { useMemo } from 'react'
 import { Link2 } from 'lucide-react'
+import { formatPartDesignation } from '@cascadia/commons/lib/types/variants'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import type { BOMTreeNode } from '@/components/bom/types'
 import { Badge } from '@/components/ui'
 import { getStateBadgeVariant } from '@/components/bom/helpers'
 import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
-import { formatPartDesignation } from '@/lib/types/variants'
 
 /**
  * The design structure grid's columns. Extracted from `StructureTab` — the

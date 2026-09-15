@@ -4,7 +4,10 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import type { CreateProgramInput, Program } from '@/lib/types/program'
+import type {
+  CreateProgramInput,
+  Program,
+} from '@cascadia/commons/lib/types/program'
 import { PageContainer } from '@/components/layout'
 import { ProgramForm } from '@/components/programs/ProgramForm'
 import {

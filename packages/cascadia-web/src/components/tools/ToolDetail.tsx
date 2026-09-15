@@ -4,12 +4,18 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
+import {
+  TOOL_SUBTYPES,
+  getSubtypeGroup,
+} from '@cascadia/commons/lib/items/types/tool'
 import { CapabilitiesEditor, CapabilitiesView } from './CapabilitiesEditor'
-import type { KnownToolSubtype, Tool } from '@/lib/items/types/tool'
+import type {
+  KnownToolSubtype,
+  Tool,
+} from '@cascadia/commons/lib/items/types/tool'
 import type { SearchableSelectOption } from '@/components/ui/SearchableSelect'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
 import type { EnrichmentSources } from '@/components/items/enrichment-sources'
-import { TOOL_SUBTYPES, getSubtypeGroup } from '@/lib/items/types/tool'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,

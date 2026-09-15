@@ -2,7 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useQuery } from '@tanstack/react-query'
-import type { PackageId, PackageStatus } from '@/lib/packages/types'
+import type {
+  PackageId,
+  PackageStatus,
+} from '@cascadia/commons/lib/packages/types'
 import { packageListQuery } from '@/lib/query'
 
 /**

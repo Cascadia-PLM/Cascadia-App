@@ -8,7 +8,7 @@ import type {
   Program,
   ProgramMember,
   ProgramMemberRole,
-} from '@/lib/types/program'
+} from '@cascadia/commons/lib/types/program'
 import {
   Badge,
   Button,

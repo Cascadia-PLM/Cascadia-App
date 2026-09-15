@@ -20,8 +20,11 @@
  */
 
 import { redirect } from '@tanstack/react-router'
+import {
+  canAccessSystem,
+  canManageSystem,
+} from '@cascadia/commons/lib/auth/permissions'
 import type { QueryClient } from '@tanstack/react-query'
-import { canAccessSystem, canManageSystem } from '@/lib/auth/permissions'
 import { currentUserPermissionsQuery } from '@/lib/query'
 
 /**

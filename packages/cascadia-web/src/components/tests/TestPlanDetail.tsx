@@ -15,8 +15,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { TestPlan } from '@/lib/items/types/testplan'
-import type { Design } from '@/lib/types/design'
+import type { TestPlan } from '@cascadia/commons/lib/items/types/testplan'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { RelationshipSection } from '@/components/items/RelationshipSection'

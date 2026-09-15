@@ -14,7 +14,10 @@ import {
   X,
 } from 'lucide-react'
 import { ApprovalDialog } from './ApprovalDialog'
-import type { ApprovalStatus, CanApproveResult } from '@/lib/lifecycles/types'
+import type {
+  ApprovalStatus,
+  CanApproveResult,
+} from '@cascadia/commons/lib/lifecycles/types'
 import {
   Badge,
   Button,

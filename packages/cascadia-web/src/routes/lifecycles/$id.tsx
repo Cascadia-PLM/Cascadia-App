@@ -5,11 +5,12 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, ArrowLeft, Loader2, Save } from 'lucide-react'
+import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
 import type {
   LifecycleDefinition,
   LifecycleType,
   WorkflowType,
-} from '@/lib/lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import { LifecycleTypeSelector } from '@/components/lifecycles/LifecycleTypeSelector'
 import { DriverSelector } from '@/components/lifecycles/DriverSelector'
 import { LifecycleBuilder } from '@/components/lifecycles/LifecycleBuilder'
@@ -31,7 +32,6 @@ import {
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 import { lifecycleDefinitionQuery } from '@/lib/query'
-import { resolveLifecycleType } from '@/lib/lifecycles/normalize'
 
 export const Route = createFileRoute('/lifecycles/$id')({
   component: EditLifecyclePage,

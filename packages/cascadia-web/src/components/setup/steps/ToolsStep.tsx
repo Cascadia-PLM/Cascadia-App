@@ -4,10 +4,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle, Plus, Wrench, X } from 'lucide-react'
+import { TOOL_SUBTYPES } from '@cascadia/commons/lib/items/types/tool'
 import { strings } from '../strings'
-import type { KnownToolSubtype, Tool } from '@/lib/items/types/tool'
+import type {
+  KnownToolSubtype,
+  Tool,
+} from '@cascadia/commons/lib/items/types/tool'
 import { itemCollectionQuery, useInvalidateResources } from '@/lib/query'
-import { TOOL_SUBTYPES } from '@/lib/items/types/tool'
 import { ToolForm } from '@/components/tools/ToolForm'
 import {
   Badge,

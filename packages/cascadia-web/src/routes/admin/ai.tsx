@@ -16,15 +16,15 @@ import {
   TestTube,
 } from 'lucide-react'
 import { useState } from 'react'
-import type { AiProviderSettings, AiSettingsEnvVars } from '@/lib/query'
-import type { AiProviderType } from '@/lib/ai/model-catalog'
 import {
   AI_PROVIDERS,
   DEFAULT_MODEL,
   DEFAULT_OLLAMA_BASE_URL,
   PROVIDER_LABELS,
   isAiProviderType,
-} from '@/lib/ai/model-catalog'
+} from '@cascadia/commons/lib/ai/model-catalog'
+import type { AiProviderSettings, AiSettingsEnvVars } from '@/lib/query'
+import type { AiProviderType } from '@cascadia/commons/lib/ai/model-catalog'
 import { useAiModels, withSelectedModel } from '@/lib/hooks/useAiModels'
 import { PageContainer } from '@/components/layout'
 import { Slot } from '@/lib/ui/slot-registry'

@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Check, Link2, X } from 'lucide-react'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import {
   Dialog,
   DialogContent,

@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
-import type { Design } from '@/lib/types/design'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { cn } from '@/lib/utils'
 import {
   Badge,

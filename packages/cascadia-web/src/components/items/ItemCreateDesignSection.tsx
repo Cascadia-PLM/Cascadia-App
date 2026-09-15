@@ -3,7 +3,7 @@
 
 import { Info } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import type { Design } from '@/lib/types/design'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { ViewEditSelect } from '@/components/ui'

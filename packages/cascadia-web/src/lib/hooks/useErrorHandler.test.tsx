@@ -12,18 +12,18 @@
  * why was the network tab. The first test is the ratchet that keeps any code
  * from going quiet again; the rest pin the behaviour that replaced it.
  *
- * Run: npx vitest run packages/core/src/lib/hooks/useErrorHandler.test.tsx
+ * Run: npx vitest run packages/cascadia-web/src/lib/hooks/useErrorHandler.test.tsx
  */
 
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { getErrorStrategy } from '@cascadia/commons/lib/errors/severity'
 import { useErrorHandler } from './useErrorHandler'
 import { ToastProvider, useToast } from './useToast'
 import { AlertDialogProvider } from './useAlertDialog'
 import type { ReactNode } from 'react'
 import { ApiError } from '@/lib/api/client'
-import { ErrorCode } from '@/lib/errors/codes'
-import { getErrorStrategy } from '@/lib/errors/severity'
 
 /** `useErrorHandler` reaches for both surfaces; nothing here needs a router. */
 function wrapper({ children }: { children: ReactNode }) {

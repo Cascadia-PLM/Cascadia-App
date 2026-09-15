@@ -30,7 +30,7 @@ import type { Edge, Node } from '@xyflow/react'
 import type {
   CommitGraphEdge,
   CommitNodeData,
-} from '@/lib/versioning/graph-types'
+} from '@cascadia/commons/lib/versioning/graph-types'
 
 // Layout constants
 export const NODE_WIDTH = 220

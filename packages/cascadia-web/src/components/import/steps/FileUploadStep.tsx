@@ -3,10 +3,6 @@
 
 import { useRef, useState } from 'react'
 import { AlertCircle, Download, FileSpreadsheet, Upload, X } from 'lucide-react'
-import type { ChangeEvent, DragEvent } from 'react'
-import type { ColumnMapping, ImportItemType, ParsedFile } from '@/lib/import'
-import { Badge, Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE,
@@ -15,7 +11,15 @@ import {
   autoDetectMappings,
   getImportConfig,
   parseFile,
-} from '@/lib/import'
+} from '@cascadia/commons/lib/import'
+import type { ChangeEvent, DragEvent } from 'react'
+import type {
+  ColumnMapping,
+  ImportItemType,
+  ParsedFile,
+} from '@cascadia/commons/lib/import'
+import { Badge, Button } from '@/components/ui'
+import { cn } from '@/lib/utils'
 
 interface FileUploadStepProps {
   itemType?: ImportItemType

@@ -13,8 +13,8 @@ import {
 import type {
   GapAnalysisResult,
   GapSeverity,
-} from '@/lib/services/GapAnalysisService'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
+} from '@cascadia/commons/lib/services/types/gap-analysis'
+import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { cn } from '@/lib/utils'
 

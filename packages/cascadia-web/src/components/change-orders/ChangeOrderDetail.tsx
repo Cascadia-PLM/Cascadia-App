@@ -5,8 +5,8 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Box, Check, Edit, Save, Trash2, X } from 'lucide-react'
-import type { ChangeOrder } from '@/lib/items/types/change-order'
-import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
+import { changeOrderTypeSchema } from '@cascadia/commons/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,

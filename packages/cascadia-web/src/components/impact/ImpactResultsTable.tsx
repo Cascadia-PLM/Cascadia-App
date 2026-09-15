@@ -14,8 +14,8 @@ import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type {
   ImpactSeverity,
   ImpactedItem,
-} from '@/lib/services/ImpactAnalysisService'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
+} from '@cascadia/commons/lib/services/types/impact-analysis'
+import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { Badge, Checkbox } from '@/components/ui'
 import { cn } from '@/lib/utils'

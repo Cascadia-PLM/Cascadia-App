@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, Key, MoreVertical, Shield, Trash2 } from 'lucide-react'
-import type { UserWithRoles } from '@/lib/auth/types'
+import type { UserWithRoles } from '@cascadia/commons/lib/auth/types'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {

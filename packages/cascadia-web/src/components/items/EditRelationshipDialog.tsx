@@ -2,7 +2,11 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useState } from 'react'
-import type { Make, OptionCondition, OptionModel } from '@/lib/types/variants'
+import type {
+  Make,
+  OptionCondition,
+  OptionModel,
+} from '@cascadia/commons/lib/types/variants'
 import {
   Dialog,
   DialogContent,

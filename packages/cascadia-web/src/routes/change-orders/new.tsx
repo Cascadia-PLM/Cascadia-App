@@ -3,7 +3,7 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import type { ChangeOrder } from '@/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import { ChangeOrderDetail } from '@/components/change-orders/ChangeOrderDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'

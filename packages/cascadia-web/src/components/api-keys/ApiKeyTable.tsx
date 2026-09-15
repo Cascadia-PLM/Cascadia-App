@@ -11,7 +11,7 @@ import {
   ShieldAlert,
 } from 'lucide-react'
 import type { AdminApiKeyRecord, ApiKeyRecord } from '@/lib/query'
-import type { ApiKeyStatus } from '@/lib/auth/ApiKeyService'
+import type { ApiKeyStatus } from '@cascadia/commons/lib/auth/api-key-types'
 import { Badge, Button } from '@/components/ui'
 import {
   DropdownMenu,

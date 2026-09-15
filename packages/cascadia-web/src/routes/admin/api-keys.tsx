@@ -5,7 +5,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { KeyRound, Search, ShieldAlert } from 'lucide-react'
-import type { ApiKeyStatus } from '@/lib/auth/ApiKeyService'
+import type { ApiKeyStatus } from '@cascadia/commons/lib/auth/api-key-types'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,

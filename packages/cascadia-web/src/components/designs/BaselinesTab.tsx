@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from 'react'
 import { Download, Eye, GitCompare, Plus, Tag } from 'lucide-react'
+import { TAG_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
 import type { VersionContext } from '@/lib/hooks/useVersionContext'
 import {
   Badge,
@@ -20,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { TAG_TYPES } from '@/lib/versioning/branch-types'
 
 interface TagItem {
   id: string

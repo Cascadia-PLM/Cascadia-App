@@ -19,8 +19,9 @@ import {
   Plus,
   Users,
 } from 'lucide-react'
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
 import type { LucideIcon } from 'lucide-react'
-import type { Risk } from '@/lib/items/types/change-order'
+import type { Risk } from '@cascadia/commons/lib/items/types/change-order'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query/hooks'
 import { changeOrderImpactReportQuery } from '@/lib/query/options/change-orders'
@@ -32,7 +33,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { formatRevision } from '@/lib/types/lifecycle'
 
 interface WhereUsedNode {
   itemId: string

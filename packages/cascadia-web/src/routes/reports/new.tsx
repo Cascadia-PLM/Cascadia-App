@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import type { ReportCreateInput } from '@/lib/reports/types'
+import type { ReportCreateInput } from '@cascadia/commons/lib/reports/types'
 import { PageContainer } from '@/components/layout'
 import { ReportBuilder } from '@/components/reports/ReportBuilder'
 import { Button } from '@/components/ui'

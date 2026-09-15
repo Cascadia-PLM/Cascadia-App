@@ -3,7 +3,10 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { CadModelNode, CadModelNodeCandidate } from '@/lib/vault/cad-nodes'
+import type {
+  CadModelNode,
+  CadModelNodeCandidate,
+} from '@cascadia/commons/lib/vault/cad-nodes'
 import { apiFetch } from '@/lib/api/client'
 
 export type { CadModelNode, CadModelNodeCandidate }

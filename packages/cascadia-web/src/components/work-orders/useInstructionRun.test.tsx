@@ -16,16 +16,16 @@
  *
  * The invariants are about the requests and what follows them, not the markup.
  *
- * Run: npx vitest run packages/core/src/components/work-orders/useInstructionRun.test.tsx
+ * Run: npx vitest run packages/cascadia-web/src/components/work-orders/useInstructionRun.test.tsx
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import { useInstructionRun } from './useInstructionRun'
 import type { ReactNode } from 'react'
 import type * as ApiClient from '@/lib/api/client'
 import { ApiError } from '@/lib/api/client'
-import { ErrorCode } from '@/lib/errors/codes'
 import { ToastProvider } from '@/lib/hooks/useToast'
 import { AlertDialogProvider } from '@/lib/hooks/useAlertDialog'
 

@@ -26,7 +26,7 @@ import {
 } from './swimLaneLayout'
 import type { Node, NodeProps } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'
-import type { ThreadNode as ThreadNodeData } from '@/lib/services/ThreadService'
+import type { ThreadNode as ThreadNodeData } from '@cascadia/commons/lib/thread/types'
 import { useLifecycleState } from '@/components/items/StateBadge'
 import { getItemDetailRoutePattern } from '@/lib/items/item-type-ui'
 

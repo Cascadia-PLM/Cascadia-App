@@ -4,9 +4,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
+import { fileCategoryLabel } from '@cascadia/commons/lib/vault/file-categories'
 import type { ColumnFiltersState, SortingState } from '@tanstack/react-table'
-import type { FileRecordWithItem } from '@/lib/vault/services/FileService'
-import type { FileCategory } from '@/lib/vault/file-categories'
+import type { FileRecordWithItem } from '@cascadia/commons/lib/vault/types'
+import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
 import { PageContainer } from '@/components/layout'
 import { FileTable } from '@/components/files/FileTable'
 import {
@@ -20,7 +21,6 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { fileListQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
-import { fileCategoryLabel } from '@/lib/vault/file-categories'
 
 // Search schema for URL validation
 const filesSearchSchema = z.object({

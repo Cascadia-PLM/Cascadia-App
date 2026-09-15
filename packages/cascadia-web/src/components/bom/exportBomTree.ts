@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import {
+  formatOptionText,
+  formatPartDesignation,
+} from '@cascadia/commons/lib/types/variants'
 import type { BOMTreeNode } from './types'
-import { formatOptionText, formatPartDesignation } from '@/lib/types/variants'
 
 interface ExportOptions {
   filename?: string

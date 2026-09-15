@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { TestPlan } from '@/lib/items/types/testplan'
+import type { TestPlan } from '@cascadia/commons/lib/items/types/testplan'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Button, DataGrid } from '@/components/ui'
 import {

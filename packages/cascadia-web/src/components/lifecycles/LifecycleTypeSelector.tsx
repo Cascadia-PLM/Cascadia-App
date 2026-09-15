@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Info } from 'lucide-react'
-import type { LifecycleType } from '@/lib/lifecycles/types'
+import type { LifecycleType } from '@cascadia/commons/lib/lifecycles/types'
 
 interface LifecycleTypeSelectorProps {
   value: LifecycleType

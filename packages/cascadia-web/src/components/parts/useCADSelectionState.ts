@@ -3,7 +3,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { CadModelNode, CadModelNodeCandidate } from '@/lib/vault/cad-nodes'
+import type {
+  CadModelNode,
+  CadModelNodeCandidate,
+} from '@cascadia/commons/lib/vault/cad-nodes'
 import { NO_STRUCTURE, cadModelNodesQuery } from '@/lib/query/options/cad-nodes'
 import { useResourceMutation } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'

@@ -4,7 +4,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
-import type { ChangeOrder } from '@/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import type { ItemFilters } from '@/lib/query'
 import { PageContainer } from '@/components/layout'
 import { ChangeOrderTable } from '@/components/change-orders/ChangeOrderTable'

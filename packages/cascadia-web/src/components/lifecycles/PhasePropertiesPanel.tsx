@@ -6,7 +6,7 @@ import { RevisionSchemeSelector } from './RevisionSchemeSelector'
 import type {
   LifecyclePhaseConfig,
   RevisionScheme,
-} from '@/lib/types/lifecycle'
+} from '@cascadia/commons/lib/types/lifecycle'
 import {
   Button,
   Card,

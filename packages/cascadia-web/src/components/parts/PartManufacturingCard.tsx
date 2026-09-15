@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import {
   Card,
   CardContent,

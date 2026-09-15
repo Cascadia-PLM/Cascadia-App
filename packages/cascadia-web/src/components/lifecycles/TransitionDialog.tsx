@@ -7,7 +7,7 @@ import { ArrowRight, Check, Loader2 } from 'lucide-react'
 import type {
   AvailableTransition,
   LifecycleState,
-} from '@/lib/lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import {
   Badge,
   Button,

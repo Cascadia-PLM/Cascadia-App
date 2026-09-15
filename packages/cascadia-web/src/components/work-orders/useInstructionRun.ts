@@ -15,9 +15,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { InstructionExecution } from '@/lib/items/types/work-order'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import type { InstructionExecution } from '@cascadia/commons/lib/items/types/work-order'
 import { ApiError, apiFetch } from '@/lib/api/client'
-import { ErrorCode } from '@/lib/errors/codes'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 
 /** A parametric block's value resolved against current part data. */

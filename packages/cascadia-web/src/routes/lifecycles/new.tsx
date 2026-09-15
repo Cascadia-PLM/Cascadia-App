@@ -8,7 +8,7 @@ import type {
   LifecycleDefinition,
   LifecycleType,
   WorkflowType,
-} from '@/lib/lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import { LifecycleTypeSelector } from '@/components/lifecycles/LifecycleTypeSelector'
 import { DriverSelector } from '@/components/lifecycles/DriverSelector'
 import { LifecycleBuilder } from '@/components/lifecycles/LifecycleBuilder'

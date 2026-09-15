@@ -34,7 +34,7 @@ import {
 
 import type { Edge, Node } from '@xyflow/react'
 import type { ThreadExpandState } from './ThreadNode'
-import type { ThreadResponse } from '@/lib/services/ThreadService'
+import type { ThreadResponse } from '@cascadia/commons/lib/thread/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { FullscreenGraphWrapper } from '@/components/ui/FullscreenGraphWrapper'

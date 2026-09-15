@@ -3,11 +3,11 @@
 
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import { useLifecycleState } from '@/components/items/StateBadge'
 import { ItemLink } from '@/components/items/ItemLink'
-import { formatRevision } from '@/lib/types/lifecycle'
 
 interface ChangeOrderGraphItemNodeProps {
   data: {

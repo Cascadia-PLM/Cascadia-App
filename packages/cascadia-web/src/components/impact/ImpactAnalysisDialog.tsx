@@ -21,8 +21,8 @@ import type {
   ChangeType,
   ImpactAnalysisResult,
   ImpactDirection,
-} from '@/lib/services/ImpactAnalysisService'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
+} from '@cascadia/commons/lib/services/types/impact-analysis'
+import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
 import { apiFetch } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 import {

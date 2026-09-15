@@ -10,7 +10,7 @@ import {
   MousePointerClick,
 } from 'lucide-react'
 import type { CADSelectionState } from './useCADSelectionState'
-import type { CadModelNode } from '@/lib/vault/cad-nodes'
+import type { CadModelNode } from '@cascadia/commons/lib/vault/cad-nodes'
 import {
   ContextMenuContent,
   ContextMenuItem,

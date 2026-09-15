@@ -15,7 +15,7 @@ import type {
   TransitionAction,
   TransitionGuard,
   UpdateFieldConfig,
-} from '@/lib/lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import {
   Button,
   Card,

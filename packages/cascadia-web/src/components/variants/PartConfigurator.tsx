@@ -4,12 +4,12 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Factory, Save } from 'lucide-react'
+import { makeCodeSchema } from '@cascadia/commons/lib/types/variants'
 import { OptionConditionChips } from './OptionConditionChips'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import type { BOMTreeNode } from '@/components/bom/types'
-import type { Make, OptionModel } from '@/lib/types/variants'
+import type { Make, OptionModel } from '@cascadia/commons/lib/types/variants'
 import type { ResolvedBomNode } from '@/lib/query'
-import { makeCodeSchema } from '@/lib/types/variants'
 import {
   Badge,
   Button,

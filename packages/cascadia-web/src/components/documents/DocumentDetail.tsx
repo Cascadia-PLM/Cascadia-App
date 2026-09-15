@@ -14,8 +14,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { Document } from '@/lib/items/types/document'
-import type { Design } from '@/lib/types/design'
+import type { Document } from '@cascadia/commons/lib/items/types/document'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { RelationshipSection } from '@/components/items/RelationshipSection'

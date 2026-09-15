@@ -2,7 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useForm } from '@tanstack/react-form'
-import { userCreateSchema, userUpdateSchema } from '@/lib/auth/types'
+import {
+  userCreateSchema,
+  userUpdateSchema,
+} from '@cascadia/commons/lib/auth/types'
 import { zodValidator } from '@/lib/form-validation'
 import {
   Button,

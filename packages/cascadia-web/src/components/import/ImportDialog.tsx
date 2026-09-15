@@ -11,6 +11,15 @@ import {
 } from 'lucide-react'
 
 // Import step components
+import {
+  applyMappings,
+  checkRequiredFieldsMapped,
+  detectBomFormat,
+  extractBomRelationships,
+  getImportConfig,
+  getValidRows,
+  validateRows,
+} from '@cascadia/commons/lib/import'
 import { ContextSelectStep } from './steps/ContextSelectStep'
 import { FileUploadStep } from './steps/FileUploadStep'
 import { ColumnMappingStep } from './steps/ColumnMappingStep'
@@ -25,16 +34,7 @@ import type {
   ImportItemType,
   ParsedFile,
   ValidatedRow,
-} from '@/lib/import'
-import {
-  applyMappings,
-  checkRequiredFieldsMapped,
-  detectBomFormat,
-  extractBomRelationships,
-  getImportConfig,
-  getValidRows,
-  validateRows,
-} from '@/lib/import'
+} from '@cascadia/commons/lib/import'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 import {

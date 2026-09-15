@@ -10,12 +10,12 @@ import type {
   LifecycleState,
   LifecycleTransition,
   StateApprover,
-} from '@/lib/lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import type {
   ChangeActionMappings,
   LifecyclePhaseConfig,
   RevisionScheme,
-} from '@/lib/types/lifecycle'
+} from '@cascadia/commons/lib/types/lifecycle'
 import { apiFetch } from '@/lib/api/client'
 
 /**

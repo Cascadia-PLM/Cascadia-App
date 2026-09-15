@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Save,
 } from 'lucide-react'
+import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
 import type { LifecyclesByChangeType } from '@/lib/query'
 import { PageContainer } from '@/components/layout'
 import {
@@ -29,7 +30,6 @@ import {
   SelectValue,
 } from '@/components/ui'
 import { getNumberingInfo } from '@/lib/items/numbering/format'
-import { resolveLifecycleType } from '@/lib/lifecycles/normalize'
 import {
   itemTypeConfigQuery,
   lifecycleListQuery,

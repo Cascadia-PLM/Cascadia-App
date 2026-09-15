@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { TestCase } from '@/lib/items/types/testcase'
+import type { TestCase } from '@cascadia/commons/lib/items/types/testcase'
 import type { TestCaseDetailTab } from '@/components/tests/TestCaseDetail'
 import { TestCaseDetail } from '@/components/tests'
 import { TEST_CASE_DETAIL_TABS } from '@/components/tests/TestCaseDetail'

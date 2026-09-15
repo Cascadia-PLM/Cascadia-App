@@ -4,7 +4,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Wrench } from 'lucide-react'
-import type { WorkOrder } from '@/lib/items/types/work-order'
+import type { WorkOrder } from '@cascadia/commons/lib/items/types/work-order'
 import { PageContainer } from '@/components/layout'
 import { WorkOrderTable } from '@/components/work-orders/WorkOrderTable'
 import {

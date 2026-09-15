@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Info } from 'lucide-react'
 import type { FormEvent } from 'react'
-import type { PartType } from '@/lib/items/types/part'
+import type { PartType } from '@cascadia/commons/lib/items/types/part'
 import {
   Button,
   ViewEditNumber,

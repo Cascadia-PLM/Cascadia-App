@@ -3,7 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { CatalogEntryWithCategory } from '@/lib/services/CatalogService'
+import type { CatalogEntryWithCategory } from '@cascadia/commons/lib/services/types/catalog'
 import { apiFetch } from '@/lib/api/client'
 
 export interface CatalogCategory {

@@ -19,9 +19,12 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import type { TestCase, TestStep } from '@/lib/items/types/testcase'
-import type { TestPlan } from '@/lib/items/types/testplan'
-import type { Design } from '@/lib/types/design'
+import type {
+  TestCase,
+  TestStep,
+} from '@cascadia/commons/lib/items/types/testcase'
+import type { TestPlan } from '@cascadia/commons/lib/items/types/testplan'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { RelationshipSection } from '@/components/items/RelationshipSection'

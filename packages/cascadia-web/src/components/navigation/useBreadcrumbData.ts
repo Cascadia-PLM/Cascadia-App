@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useQuery } from '@tanstack/react-query'
-import type { Design } from '@/lib/types/design'
-import type { Program } from '@/lib/types/program'
+import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Program } from '@cascadia/commons/lib/types/program'
 import type {
   BreadcrumbData,
   BreadcrumbRouteInfo,

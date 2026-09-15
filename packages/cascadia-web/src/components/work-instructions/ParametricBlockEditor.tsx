@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link2, Loader2, Search, Trash2, Variable } from 'lucide-react'
-import type { StepContentBlock } from '@/lib/items/types/work-instruction'
+import type { StepContentBlock } from '@cascadia/commons/lib/items/types/work-instruction'
 import { Button, Input } from '@/components/ui'
 import { entityQuery, entitySubQuery, itemTextSearchQuery } from '@/lib/query'
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'

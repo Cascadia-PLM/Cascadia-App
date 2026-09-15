@@ -18,7 +18,7 @@ import {
 import type {
   WorkOrderInstruction,
   WorkOrderInstructionStatus,
-} from '@/lib/items/types/work-order'
+} from '@cascadia/commons/lib/items/types/work-order'
 import {
   Badge,
   Button,

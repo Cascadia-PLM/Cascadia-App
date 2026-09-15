@@ -4,7 +4,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { ClipboardCheck, Plus } from 'lucide-react'
-import type { WorkInstruction } from '@/lib/items/types/work-instruction'
+import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
 import type { GridParams, ItemFilters } from '@/lib/query'
 import { PageContainer } from '@/components/layout'
 import { WorkInstructionTable } from '@/components/work-instructions/WorkInstructionTable'

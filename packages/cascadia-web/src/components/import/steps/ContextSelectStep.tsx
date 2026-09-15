@@ -4,8 +4,12 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, Building2, FolderKanban, GitBranch } from 'lucide-react'
-import type { ImportContext, ImportItemType } from '@/lib/import'
-import { getImportConfig } from '@/lib/import'
+import { getImportConfig } from '@cascadia/commons/lib/import'
+import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import type {
+  ImportContext,
+  ImportItemType,
+} from '@cascadia/commons/lib/import'
 import {
   Select,
   SelectContent,
@@ -21,7 +25,6 @@ import {
   designStatusQuery,
   programListQuery,
 } from '@/lib/query'
-import { BRANCH_TYPES } from '@/lib/versioning/branch-types'
 
 interface Design {
   id: string

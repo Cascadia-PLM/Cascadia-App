@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft, ClipboardCheck } from 'lucide-react'
-import type { WorkInstruction } from '@/lib/items/types/work-instruction'
+import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
 import { PageContainer } from '@/components/layout'
 import { WorkInstructionForm } from '@/components/work-instructions/WorkInstructionForm'
 import {

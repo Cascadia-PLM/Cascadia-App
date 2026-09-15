@@ -3,7 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { CheckoutStatus } from '@/lib/services/CheckoutService'
+import type { CheckoutStatus } from '@cascadia/commons/lib/services/types/checkout'
 import { apiFetch } from '@/lib/api/client'
 
 /**

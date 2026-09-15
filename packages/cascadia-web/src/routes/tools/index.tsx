@@ -4,7 +4,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
-import type { Tool } from '@/lib/items/types/tool'
+import type { Tool } from '@cascadia/commons/lib/items/types/tool'
 import type { ItemFilters } from '@/lib/query'
 import { PageContainer } from '@/components/layout'
 import { ToolTable } from '@/components/tools/ToolTable'

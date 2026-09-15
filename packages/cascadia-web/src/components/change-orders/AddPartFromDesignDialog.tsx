@@ -4,7 +4,8 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Info, Loader2, Search } from 'lucide-react'
-import type { ChangeAction } from '@/lib/types/lifecycle'
+import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import type { ChangeAction } from '@cascadia/commons/lib/types/lifecycle'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type { Row } from '@tanstack/react-table'
 import { changeActionOptionsQuery } from '@/lib/query'
@@ -37,7 +38,6 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { cn } from '@/lib/utils'
 import { StateBadge } from '@/components/items/StateBadge'
-import { formatRevision } from '@/lib/types/lifecycle'
 
 interface DesignItem {
   id: string

@@ -7,13 +7,13 @@
  *
  * Tailwind v4 detects sources automatically, rooted at the Vite root — which
  * the Phase 2 split moved to `apps/<app>/`. Every component lives in
- * `packages/core/src`, outside that root, so detection found a handful of entry
+ * `packages/cascadia-web/src`, outside that root, so detection found a handful of entry
  * files, no utility classes, and emitted preflight alone: ~19 KB of resets and
  * theme variables and not one `.bg-*` rule. The application rendered correctly
  * and looked like unstyled HTML, in **both** editions.
  *
  * Paths are relative to this file, and neither names an edition: `packages`
- * covers core plus whatever module packages this tree has, `apps` covers
+ * covers this package plus whatever module packages this tree has, `apps` covers
  * whichever composition root is building. Declaring them explicitly is also
  * what stops this recurring the next time a root moves.
  */

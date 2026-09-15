@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { OptionCondition, OptionModel } from '@/lib/types/variants'
+import type {
+  OptionCondition,
+  OptionModel,
+} from '@cascadia/commons/lib/types/variants'
 import { Checkbox } from '@/components/ui'
 
 /**

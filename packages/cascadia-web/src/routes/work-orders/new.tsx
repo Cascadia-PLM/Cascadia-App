@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft, Wrench } from 'lucide-react'
-import type { WorkOrderCreateInput } from '@/lib/items/types/work-order'
+import type { WorkOrderCreateInput } from '@cascadia/commons/lib/items/types/work-order'
 import { PageContainer } from '@/components/layout'
 import { WorkOrderForm } from '@/components/work-orders/WorkOrderForm'
 import {

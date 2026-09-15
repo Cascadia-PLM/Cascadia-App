@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Check, CheckCheck, Clock, X } from 'lucide-react'
-import type { WorkInstructionChangeAlert } from '@/lib/items/types/work-instruction'
+import type { WorkInstructionChangeAlert } from '@cascadia/commons/lib/items/types/work-instruction'
 import {
   Badge,
   Button,

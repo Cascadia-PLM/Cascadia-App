@@ -10,16 +10,16 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
+import { getImportConfig, getValidRows } from '@cascadia/commons/lib/import'
 import type {
   BomImportResult,
   BomRelationship,
   ImportContext,
   ImportItemType,
   ValidatedRow,
-} from '@/lib/import'
+} from '@cascadia/commons/lib/import'
 import { Badge, Progress } from '@/components/ui'
 import { apiFetch } from '@/lib/api/client'
-import { getImportConfig, getValidRows } from '@/lib/import'
 
 interface ImportProgressStepProps {
   itemType?: ImportItemType

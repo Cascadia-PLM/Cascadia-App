@@ -3,8 +3,8 @@
 
 import { X } from 'lucide-react'
 import { StateApproversPanel } from './StateApproversPanel'
-import type { LifecycleState } from '@/lib/lifecycles/types'
-import type { LifecyclePhaseConfig } from '@/lib/types/lifecycle'
+import type { LifecycleState } from '@cascadia/commons/lib/lifecycles/types'
+import type { LifecyclePhaseConfig } from '@cascadia/commons/lib/types/lifecycle'
 import {
   Button,
   Card,

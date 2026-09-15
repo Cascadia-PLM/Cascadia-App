@@ -6,7 +6,7 @@ import { qk } from '../keys'
 import { gridParamsToSearchParams } from '../grid-params'
 import { entityQuery } from './entities'
 import type { GridParams, GridQuery } from '../grid-params'
-import type { Design } from '@/lib/types/design'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { apiFetch } from '@/lib/api/client'
 
 /**

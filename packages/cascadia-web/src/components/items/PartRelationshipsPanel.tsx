@@ -25,7 +25,7 @@ import type {
   ViewMode,
   WhereUsedNode,
 } from './part-relationships/types'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import {
   Badge,
   Button,

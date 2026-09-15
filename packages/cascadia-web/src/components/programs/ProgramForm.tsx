@@ -4,7 +4,10 @@
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import type { CreateProgramInput, Program } from '@/lib/types/program'
+import type {
+  CreateProgramInput,
+  Program,
+} from '@cascadia/commons/lib/types/program'
 import { zodValidator } from '@/lib/form-validation'
 import {
   Button,

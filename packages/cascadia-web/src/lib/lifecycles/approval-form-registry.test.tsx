@@ -18,7 +18,7 @@
  * - Every contribution's fields reach the request body.
  * - A contribution that unmounts stops blocking and stops contributing.
  *
- * Run: npm run test -- packages/core/src/lib/lifecycles/approval-form-registry.test.tsx
+ * Run: npm run test -- packages/cascadia-web/src/lib/lifecycles/approval-form-registry.test.tsx
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'

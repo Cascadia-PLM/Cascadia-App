@@ -5,7 +5,7 @@ import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { GitCommit, GitMerge, Layers, Tag } from 'lucide-react'
 import type { NodeProps } from '@xyflow/react'
-import type { CommitGraphNode } from '@/lib/versioning/graph-types'
+import type { CommitGraphNode } from '@cascadia/commons/lib/versioning/graph-types'
 import { Badge } from '@/components/ui/Badge'
 
 // Color schemes for different branch types

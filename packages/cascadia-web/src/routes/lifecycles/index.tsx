@@ -4,7 +4,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { GitBranch, Loader2, Plus, RotateCcw, Workflow } from 'lucide-react'
-import type { LifecycleDefinition, LifecycleType } from '@/lib/lifecycles/types'
+import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
+import type {
+  LifecycleDefinition,
+  LifecycleType,
+} from '@cascadia/commons/lib/lifecycles/types'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,
@@ -18,7 +22,6 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { LifecycleTable } from '@/components/lifecycles/LifecycleTable'
-import { resolveLifecycleType } from '@/lib/lifecycles/normalize'
 import { lifecycleListQuery, useInvalidateResources } from '@/lib/query'
 import { apiFetch } from '@/lib/api/client'
 

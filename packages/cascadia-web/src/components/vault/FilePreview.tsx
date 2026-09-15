@@ -3,11 +3,11 @@
 
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
-import type { PreviewKind } from '@/lib/vault/preview'
+import { previewKindFor } from '@cascadia/commons/lib/vault/preview'
+import type { PreviewKind } from '@cascadia/commons/lib/vault/preview'
 import type { PdfMarkupBinding } from '@/components/vault/PdfViewer'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
-import { previewKindFor } from '@/lib/vault/preview'
 import { SvgViewer } from '@/components/vault/SvgViewer'
 
 // pdf.js and its worker are around a megabyte; most sessions never open a PDF,

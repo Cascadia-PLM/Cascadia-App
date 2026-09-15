@@ -28,12 +28,12 @@ import { ThreadNodeDiff } from './ThreadNodeDiff'
 import { swimLaneLayout } from './swimLaneLayout'
 
 import type { Edge, Node } from '@xyflow/react'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
 import type {
   ComparisonTargets,
   ThreadComparison,
-} from '@/lib/services/ThreadComparisonService'
-import type { VersionContext } from '@/lib/services/VersionResolver'
+  ThreadDomain,
+} from '@cascadia/commons/lib/thread/types'
+import type { VersionContext } from '@cascadia/commons/lib/versioning/version-context'
 import { apiFetch } from '@/lib/api/client'
 import { threadComparisonTargetsQuery } from '@/lib/query'
 import { cn } from '@/lib/utils'

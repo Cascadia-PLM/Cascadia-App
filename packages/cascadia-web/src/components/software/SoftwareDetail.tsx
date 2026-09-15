@@ -17,8 +17,8 @@ import {
 } from 'lucide-react'
 import { BuildArtifactCard } from './BuildArtifactCard'
 import { SourceViewer } from './SourceViewer'
-import type { Software } from '@/lib/items/types/software'
-import type { Design } from '@/lib/types/design'
+import type { Software } from '@cascadia/commons/lib/items/types/software'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,

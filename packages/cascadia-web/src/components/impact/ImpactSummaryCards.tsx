@@ -13,8 +13,8 @@ import {
 import type {
   ImpactAnalysisResult,
   ImpactSeverity,
-} from '@/lib/services/ImpactAnalysisService'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
+} from '@cascadia/commons/lib/services/types/impact-analysis'
+import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
 import { cn } from '@/lib/utils'
 

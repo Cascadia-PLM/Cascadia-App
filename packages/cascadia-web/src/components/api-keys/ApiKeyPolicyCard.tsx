@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, CheckCircle, Clock, RotateCcw, Save } from 'lucide-react'
-import type { ApiKeyPolicy } from '@/lib/auth/api-key-policy-types'
+import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
 import {
   Button,
   Card,

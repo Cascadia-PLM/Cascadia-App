@@ -5,8 +5,11 @@ import { useEffect } from 'react'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { CreateDesignInput, Design } from '@/lib/types/design'
-import type { Program } from '@/lib/types/program'
+import type {
+  CreateDesignInput,
+  Design,
+} from '@cascadia/commons/lib/types/design'
+import type { Program } from '@cascadia/commons/lib/types/program'
 import { zodValidator } from '@/lib/form-validation'
 import { designFamiliesQuery } from '@/lib/query'
 import {

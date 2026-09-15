@@ -5,7 +5,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import type { CreateDesignInput } from '@/lib/types/design'
+import type { CreateDesignInput } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { DesignForm } from '@/components/designs/DesignForm'
 import {

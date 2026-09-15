@@ -16,8 +16,8 @@ import {
 import type {
   InstructionSnapshot,
   WorkOrderInstruction,
-} from '@/lib/items/types/work-order'
-import type { StepContentBlock } from '@/lib/items/types/work-instruction'
+} from '@cascadia/commons/lib/items/types/work-order'
+import type { StepContentBlock } from '@cascadia/commons/lib/items/types/work-instruction'
 import type { ResolvedParametricValue } from '@/components/work-orders/useInstructionRun'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'

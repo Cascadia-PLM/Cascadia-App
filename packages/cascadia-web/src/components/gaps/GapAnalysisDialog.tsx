@@ -19,8 +19,8 @@ import type {
   GapAnalysisResult,
   GapSeverity,
   GapType,
-} from '@/lib/services/GapAnalysisService'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
+} from '@cascadia/commons/lib/services/types/gap-analysis'
+import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
 import { apiFetch } from '@/lib/api/client'
 import { cn } from '@/lib/utils'
 import {

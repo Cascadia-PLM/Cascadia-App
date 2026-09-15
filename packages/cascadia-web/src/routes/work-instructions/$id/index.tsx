@@ -25,9 +25,9 @@ import type {
   WorkInstructionOperation,
   WorkInstructionStep,
   WorkInstructionWithSteps,
-} from '@/lib/items/types/work-instruction'
-import type { WorkOrderInstructionStatus } from '@/lib/items/types/work-order'
-import type { StepContentBlock } from '@/lib/db/schema/items'
+} from '@cascadia/commons/lib/items/types/work-instruction'
+import type { WorkOrderInstructionStatus } from '@cascadia/commons/lib/items/types/work-order'
+import type { StepContentBlock } from '@cascadia/commons/lib/items/types/work-instruction-content'
 import { PageContainer } from '@/components/layout'
 import { PartAttachmentPanel } from '@/components/work-instructions/PartAttachmentPanel'
 import { OperationEditor } from '@/components/work-instructions/OperationEditor'

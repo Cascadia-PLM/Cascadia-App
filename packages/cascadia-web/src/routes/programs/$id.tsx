@@ -14,8 +14,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { CreateProgramInput, Program } from '@/lib/types/program'
-import type { Design } from '@/lib/types/design'
+import type {
+  CreateProgramInput,
+  Program,
+} from '@cascadia/commons/lib/types/program'
+import type { Design } from '@cascadia/commons/lib/types/design'
 import { PageContainer } from '@/components/layout'
 import { ProgramHistoryGraphView } from '@/components/programs/ProgramHistoryGraphView'
 import { ProgramModelViewer } from '@/components/programs/ProgramModelViewer'

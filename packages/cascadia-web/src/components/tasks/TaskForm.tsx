@@ -3,8 +3,8 @@
 
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
-import type { Task } from '@/lib/items/types/task'
-import { taskSchema } from '@/lib/items/types/task'
+import { taskSchema } from '@cascadia/commons/lib/items/types/task'
+import type { Task } from '@cascadia/commons/lib/items/types/task'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { ItemNumberField } from '@/components/items/ItemNumberField'
 import { zodValidator } from '@/lib/form-validation'

@@ -12,7 +12,7 @@ import {
   Package,
   Plus,
 } from 'lucide-react'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import { useTour } from '@/lib/tour'
 import { PageContainer } from '@/components/layout'
 import {

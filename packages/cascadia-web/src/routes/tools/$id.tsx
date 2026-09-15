@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { Tool } from '@/lib/items/types/tool'
+import type { Tool } from '@cascadia/commons/lib/items/types/tool'
 import type { ToolDetailTab } from '@/components/tools/ToolDetail'
 import { TOOL_DETAIL_TABS, ToolDetail } from '@/components/tools/ToolDetail'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'

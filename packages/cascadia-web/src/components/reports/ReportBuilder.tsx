@@ -4,14 +4,18 @@
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react'
+import {
+  filterOperators,
+  formatTypes,
+  reportSchema,
+} from '@cascadia/commons/lib/reports/types'
 import type {
   FieldDefinition,
   ReportColumn,
   ReportCreateInput,
   ReportFilter,
   ReportSort,
-} from '@/lib/reports/types'
-import { filterOperators, formatTypes, reportSchema } from '@/lib/reports/types'
+} from '@cascadia/commons/lib/reports/types'
 import {
   Button,
   Card,

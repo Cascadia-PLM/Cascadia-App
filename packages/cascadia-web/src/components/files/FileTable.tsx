@@ -19,14 +19,20 @@ import {
   Unlock,
   Video,
 } from 'lucide-react'
+import { formatFileSize } from '@cascadia/commons/lib/vault/format-file-size'
+import {
+  FILE_CATEGORY_DEFINITIONS,
+  FILE_CATEGORY_OPTIONS,
+  isFileCategory,
+} from '@cascadia/commons/lib/vault/file-categories'
 import type {
   ColumnFiltersState,
   Row,
   SortingState,
 } from '@tanstack/react-table'
 import type { DataGridColumn } from '@/components/ui'
-import type { FileRecordWithItem } from '@/lib/vault/services/FileService'
-import type { FileCategory } from '@/lib/vault/file-categories'
+import type { FileRecordWithItem } from '@cascadia/commons/lib/vault/types'
+import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
 import { Badge, DataGrid } from '@/components/ui'
 import {
   DropdownMenu,
@@ -50,13 +56,7 @@ import {
   ContextMenuSubTrigger,
 } from '@/components/ui/ContextMenu'
 import { Button } from '@/components/ui/Button'
-import { formatFileSize } from '@/lib/vault/utils/file-utils'
 import { ItemLink } from '@/components/items/ItemLink'
-import {
-  FILE_CATEGORY_DEFINITIONS,
-  FILE_CATEGORY_OPTIONS,
-  isFileCategory,
-} from '@/lib/vault/file-categories'
 
 // Re-export for backwards compatibility
 export type VaultFileRecord = FileRecordWithItem

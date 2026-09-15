@@ -13,7 +13,7 @@ import type {
   Gap,
   GapAnalysisResult,
   GapSeverity,
-} from '@/lib/services/GapAnalysisService'
+} from '@cascadia/commons/lib/services/types/gap-analysis'
 import {
   Badge,
   Button,

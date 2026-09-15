@@ -3,8 +3,8 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { ApiKeyPolicy } from '@/lib/auth/api-key-policy-types'
-import type { ApiKeyStatus } from '@/lib/auth/ApiKeyService'
+import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
+import type { ApiKeyStatus } from '@cascadia/commons/lib/auth/api-key-types'
 import { apiFetch } from '@/lib/api/client'
 
 /**

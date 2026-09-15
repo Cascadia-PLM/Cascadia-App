@@ -11,8 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import type { AiModelOption, AiProviderType } from '@/lib/ai/model-catalog'
-import { fallbackModelOptions } from '@/lib/ai/model-catalog'
+import { fallbackModelOptions } from '@cascadia/commons/lib/ai/model-catalog'
+import type {
+  AiModelOption,
+  AiProviderType,
+} from '@cascadia/commons/lib/ai/model-catalog'
 import { qk } from '@/lib/query/keys'
 import { apiFetch } from '@/lib/api/client'
 

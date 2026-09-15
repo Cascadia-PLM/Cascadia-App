@@ -31,7 +31,7 @@ WorkInstruction is registered as a standard Cascadia item type via `ItemTypeRegi
 
 Because work instructions use the Free lifecycle, they are not subject to branch protection. Authors can edit them directly on `main` without creating an ECO. This is intentional -- manufacturing procedures change more frequently and informally than engineering designs, and the frozen manufacturing record comes from the work order traveler snapshot rather than from ECO control of the template.
 
-The exemption is declared in `packages/core/src/lib/items/branch-protection.ts`, alongside `ChangeOrder`, and covers **branch protection only** -- a work instruction another user holds checked out is still locked against you.
+The exemption is declared in `packages/cascadia-api/src/lib/items/branch-protection.ts`, alongside `ChangeOrder`, and covers **branch protection only** -- a work instruction another user holds checked out is still locked against you.
 
 ### The Output Part
 
@@ -510,22 +510,22 @@ Note: running executions requires only `work_instructions:read`, since manufactu
 
 ## Key Source Files
 
-| Area                        | Path                                                                       |
-| --------------------------- | -------------------------------------------------------------------------- |
-| Database schema             | `packages/core/src/lib/db/schema/items.ts` (search for `workInstructions`) |
-| Type definitions            | `packages/core/src/lib/items/types/work-instruction.ts`                    |
-| Branch-protection exemption | `packages/core/src/lib/items/branch-protection.ts`                         |
-| Output part picker (UI)     | `packages/core/src/components/work-instructions/OutputPartField.tsx`       |
-| Output part invariants      | `packages/core/src/server/routes/work-instructions.output-part.test.ts`    |
-| Item type registration      | `packages/core/src/lib/items/registerItemTypes.server.ts`                  |
-| Numbering scheme            | `packages/core/src/lib/items/numbering/schemes.ts`                         |
-| Inheritance service         | `packages/core/src/lib/services/WorkInstructionInheritanceService.ts`      |
-| Change alert service        | `packages/core/src/lib/services/WorkInstructionChangeAlertService.ts`      |
-| Traveler service            | `packages/core/src/lib/services/WorkOrderInstructionService.ts`            |
-| Execution service           | `packages/core/src/lib/services/InstructionExecutionService.ts`            |
-| Traveler/execution schema   | `packages/core/src/lib/db/schema/work-orders.ts`                           |
-| Parametric resolution       | `packages/core/src/lib/services/ParametricResolutionService.ts`            |
-| Background job definitions  | `packages/core/src/lib/jobs/definitions/workinstruction/`                  |
-| API routes                  | `packages/core/src/server/routes/work-instructions.ts`                     |
-| Parts reverse-lookup        | `packages/core/src/server/routes/parts.ts`                                 |
-| UI components               | `packages/core/src/components/work-instructions/`                          |
+| Area                        | Path                                                                               |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| Database schema             | `packages/cascadia-api/src/lib/db/schema/items.ts` (search for `workInstructions`) |
+| Type definitions            | `packages/cascadia-commons/src/lib/items/types/work-instruction.ts`                |
+| Branch-protection exemption | `packages/cascadia-api/src/lib/items/branch-protection.ts`                         |
+| Output part picker (UI)     | `packages/cascadia-web/src/components/work-instructions/OutputPartField.tsx`       |
+| Output part invariants      | `packages/cascadia-api/src/server/routes/work-instructions.output-part.test.ts`    |
+| Item type registration      | `packages/cascadia-api/src/lib/items/registerItemTypes.server.ts`                  |
+| Numbering scheme            | `packages/cascadia-commons/src/lib/items/numbering/schemes.ts`                     |
+| Inheritance service         | `packages/cascadia-api/src/lib/services/WorkInstructionInheritanceService.ts`      |
+| Change alert service        | `packages/cascadia-api/src/lib/services/WorkInstructionChangeAlertService.ts`      |
+| Traveler service            | `packages/cascadia-api/src/lib/services/WorkOrderInstructionService.ts`            |
+| Execution service           | `packages/cascadia-api/src/lib/services/InstructionExecutionService.ts`            |
+| Traveler/execution schema   | `packages/cascadia-api/src/lib/db/schema/work-orders.ts`                           |
+| Parametric resolution       | `packages/cascadia-api/src/lib/services/ParametricResolutionService.ts`            |
+| Background job definitions  | `packages/cascadia-api/src/lib/jobs/definitions/workinstruction/`                  |
+| API routes                  | `packages/cascadia-api/src/server/routes/work-instructions.ts`                     |
+| Parts reverse-lookup        | `packages/cascadia-api/src/server/routes/parts.ts`                                 |
+| UI components               | `packages/cascadia-web/src/components/work-instructions/`                          |

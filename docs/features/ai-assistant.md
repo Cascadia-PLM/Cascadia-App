@@ -28,8 +28,8 @@ The AI assistant appears as a slide-out panel on the right side of the screen.
 
 A tab-shaped button sits on the right edge of the viewport, vertically centered. Clicking it slides the chat panel into view. The button disappears while the panel is open.
 
-- **Component**: `ChatPanelButton` (`packages/core/src/components/ai/ChatPanelButton.tsx`)
-- **State management**: `ChatPanelProvider` context (`packages/core/src/lib/ai/chat-context.tsx`)
+- **Component**: `ChatPanelButton` (`packages/cascadia-web/src/components/ai/ChatPanelButton.tsx`)
+- **State management**: `ChatPanelProvider` context (`packages/cascadia-web/src/lib/ai/chat-context.tsx`)
 - **Keyboard shortcut**: None by default (toggle via the button)
 
 ### Panel Layout
@@ -78,7 +78,7 @@ Chat conversations are saved to the database so users can resume them later.
 
 ### Database Schema
 
-Three tables support AI chat persistence (defined in `packages/core/src/lib/db/schema/ai.ts`):
+Three tables support AI chat persistence (defined in `packages/cascadia-api/src/lib/db/schema/ai.ts`):
 
 **`ai_chat_sessions`** -- One row per conversation.
 
@@ -295,7 +295,7 @@ User clicks "Confirm"
 
 ### ConfirmationCard Component
 
-The `ConfirmationCard` (`packages/core/src/components/ai/ConfirmationCard.tsx`) displays:
+The `ConfirmationCard` (`packages/cascadia-web/src/components/ai/ConfirmationCard.tsx`) displays:
 
 - An alert icon color-coded by action type (cyan for create/update, amber for transition, red for delete)
 - The confirmation message explaining what will happen
@@ -340,11 +340,11 @@ The AI assistant supports multiple LLM providers through TanStack AI adapters.
 | **Google** (Gemini)    | Supported | `gemini-3.6-flash` | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
 | **Ollama** (local)     | Supported | `llama3.3`         | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
 
-Defaults live in `DEFAULT_MODEL` in `packages/core/src/lib/ai/model-catalog.ts` and are re-exported as `DEFAULT_MODELS` from `adapters.ts`, so there is one place to change them.
+Defaults live in `DEFAULT_MODEL` in `packages/cascadia-commons/src/lib/ai/model-catalog.ts` and are re-exported as `DEFAULT_MODELS` from `adapters.ts`, so there is one place to change them.
 
 ### Model Discovery
 
-The admin model picker is populated at runtime rather than from a hardcoded list. `listProviderModels()` in `packages/core/src/lib/ai/model-discovery.ts` queries each provider's own list-models endpoint, and `POST /api/v1/admin/ai-settings/models` exposes it to the UI:
+The admin model picker is populated at runtime rather than from a hardcoded list. `listProviderModels()` in `packages/cascadia-api/src/lib/ai/model-discovery.ts` queries each provider's own list-models endpoint, and `POST /api/v1/admin/ai-settings/models` exposes it to the UI:
 
 | Provider  | Endpoint             | Notes                                                                                   |
 | --------- | -------------------- | --------------------------------------------------------------------------------------- |
@@ -359,7 +359,7 @@ Gemini keys are sent in the `x-goog-api-key` header rather than the documented `
 
 ### Provider Selection
 
-The `getAdapter()` function in `packages/core/src/lib/ai/adapters.ts` creates the appropriate TanStack AI adapter based on the provider configuration. It accepts a provider type, model name, API key, and optional base URL.
+The `getAdapter()` function in `packages/cascadia-api/src/lib/ai/adapters.ts` creates the appropriate TanStack AI adapter based on the provider configuration. It accepts a provider type, model name, API key, and optional base URL.
 
 OpenAI's adapter supports a custom `baseURL` parameter, which enables use with OpenAI-compatible APIs (Azure OpenAI, local proxies, etc.).
 
@@ -422,7 +422,7 @@ Each tool definition includes:
 
 ### Tool Registration
 
-Tools are assembled in `packages/core/src/lib/ai/tools/index.ts`:
+Tools are assembled in `packages/cascadia-api/src/lib/ai/tools/index.ts`:
 
 - **`createServerTools(context)`** -- Returns all 14 tools (8 read + 5 write + 1 design engine) bound to a user context
 - **`createSearchTools(context)`** -- Returns 5 lightweight tools (search_items, get_item_details, offer_navigation, search_programs, search_designs) for search mode
@@ -525,7 +525,7 @@ Database
 
 ### KnowledgeService
 
-The `KnowledgeService` (`packages/core/src/lib/ai/KnowledgeService.ts`) makes the AI schema-aware by:
+The `KnowledgeService` (`packages/cascadia-api/src/lib/ai/KnowledgeService.ts`) makes the AI schema-aware by:
 
 1. **Reflecting on ItemTypeRegistry** -- Enumerates all registered item types (Part, Document, ChangeOrder, etc.) with their fields, states, relationships, and permissions
 2. **Extracting field definitions** -- Converts Zod schemas to JSON Schema format, then extracts field names, types, descriptions, and required flags
@@ -536,7 +536,7 @@ The system prompt includes the current program and design context, so the AI und
 
 ### Permission Enforcement
 
-Every tool handler is wrapped with `withPermissionAndAudit()` (for read tools) or `withWritePermissionAndAudit()` (for write tools) from `packages/core/src/lib/ai/tools/permission-wrapper.ts`. These wrappers:
+Every tool handler is wrapped with `withPermissionAndAudit()` (for read tools) or `withWritePermissionAndAudit()` (for write tools) from `packages/cascadia-api/src/lib/ai/tools/permission-wrapper.ts`. These wrappers:
 
 1. **Check permissions** via `permissionService.canUser()` before executing the handler
 2. **Throw on denial** with a descriptive error message the AI can relay to the user
@@ -594,7 +594,7 @@ Anything else dropped (a PDF, a STEP file) is declined with a toast; files can b
 Suggestions land only in fields that are still empty or at their create-form default — nothing the user has typed is overwritten. Beyond the base fields, the model's other findings (part numbers, dimensions, ratings, …) become custom attributes, at most 20 per drop.
 
 - **Parts**: name, description, part type, material, weight and unit, cost and currency, lead time. Dropped images are held on the form and attached as the part's files when it is saved, the first as its thumbnail.
-- **Tools**: name, subtype, manufacturer, model, location, notes. The suggested subtype is held to the catalog (`TOOL_SUBTYPES` in `packages/core/src/lib/items/types/tool.ts`), and the catalog — not the model — decides the tool's group. For subtypes with a capabilities schema (`CAPABILITY_SCHEMAS`: FDM and SLA printers, CNC and manual mills and lathes, laser cutters, press brakes, saws, drill presses, surface grinders) the model is shown the schema's keys and value shapes, and its answer is validated key by key against that same schema, so nothing suggested can fail validation on save.
+- **Tools**: name, subtype, manufacturer, model, location, notes. The suggested subtype is held to the catalog (`TOOL_SUBTYPES` in `packages/cascadia-commons/src/lib/items/types/tool.ts`), and the catalog — not the model — decides the tool's group. For subtypes with a capabilities schema (`CAPABILITY_SCHEMAS`: FDM and SLA printers, CNC and manual mills and lathes, laser cutters, press brakes, saws, drill presses, surface grinders) the model is shown the schema's keys and value shapes, and its answer is validated key by key against that same schema, so nothing suggested can fail validation on save.
 
 ### When AI is not connected
 
@@ -604,7 +604,7 @@ The drop still works: a link is saved as the `link` attribute and images are sti
 
 Links pass `assertSafeUrl` (http/https only; no loopback, private or link-local hosts) before the first request and again at every redirect hop, which the fetcher follows by hand. Pages are read up to 1 MB and reduced to 8,000 characters of text; images up to 4 MB each. Every extraction writes an `ai_usage_logs` row against the user who dropped the source, with a null program — the item does not exist yet — so it counts toward the global budget.
 
-Server code lives in `packages/core/src/lib/items/enrichment/` (`enrich-item.ts`, `fetch-source.ts`, `html-to-text.ts`, `limits.ts`); the client side in `packages/core/src/components/items/` (`useDropEnrichment.ts`, `enrichment-sources.ts`, `image-payload.ts`, `apply-enrichment.ts`, `DropOverlay.tsx`, `PendingImageStrip.tsx`).
+Server code lives in `packages/cascadia-api/src/lib/items/enrichment/` (`enrich-item.ts`, `fetch-source.ts`, `html-to-text.ts`, `limits.ts`); the client side in `packages/cascadia-web/src/components/items/` (`useDropEnrichment.ts`, `enrichment-sources.ts`, `image-payload.ts`, `apply-enrichment.ts`, `DropOverlay.tsx`, `PendingImageStrip.tsx`).
 
 ---
 
@@ -628,22 +628,22 @@ Server code lives in `packages/core/src/lib/items/enrichment/` (`enrich-item.ts`
 
 ## Key Source Files
 
-| File                                                   | Purpose                                                      |
-| ------------------------------------------------------ | ------------------------------------------------------------ |
-| `packages/core/src/lib/ai/adapters.ts`                 | Provider adapter factory and config loading                  |
-| `packages/core/src/lib/ai/SessionService.ts`           | Session and message persistence                              |
-| `packages/core/src/lib/ai/KnowledgeService.ts`         | Schema introspection and system prompt generation            |
-| `packages/core/src/lib/ai/chat-context.tsx`            | React context for panel state management                     |
-| `packages/core/src/lib/ai/tools/definitions.ts`        | Read-only tool definitions (Zod schemas)                     |
-| `packages/core/src/lib/ai/tools/write-definitions.ts`  | Write tool definitions with confirmation schemas             |
-| `packages/core/src/lib/ai/tools/handlers.ts`           | Read-only tool handler implementations                       |
-| `packages/core/src/lib/ai/tools/write-handlers.ts`     | Write tool handler implementations                           |
-| `packages/core/src/lib/ai/tools/permission-wrapper.ts` | Permission checking and audit logging wrapper                |
-| `packages/core/src/lib/ai/tools/index.ts`              | Tool assembly and exports                                    |
-| `packages/core/src/lib/db/schema/ai.ts`                | Database schema for sessions, messages, settings, usage logs |
-| `packages/core/src/components/ai/ChatPanel.tsx`        | Main chat sidebar component                                  |
-| `packages/core/src/components/ai/ChatMessage.tsx`      | Message rendering with Markdown and tool results             |
-| `packages/core/src/components/ai/ChatInput.tsx`        | Input component with Send/Search modes                       |
-| `packages/core/src/components/ai/ChatPanelButton.tsx`  | Edge button to open the panel                                |
-| `packages/core/src/components/ai/ConfirmationCard.tsx` | Confirmation UI for write operations                         |
-| `packages/core/src/server/routes/ai.ts`                | Chat, session, message history, and settings endpoints       |
+| File                                                           | Purpose                                                      |
+| -------------------------------------------------------------- | ------------------------------------------------------------ |
+| `packages/cascadia-api/src/lib/ai/adapters.ts`                 | Provider adapter factory and config loading                  |
+| `packages/cascadia-api/src/lib/ai/SessionService.ts`           | Session and message persistence                              |
+| `packages/cascadia-api/src/lib/ai/KnowledgeService.ts`         | Schema introspection and system prompt generation            |
+| `packages/cascadia-web/src/lib/ai/chat-context.tsx`            | React context for panel state management                     |
+| `packages/cascadia-api/src/lib/ai/tools/definitions.ts`        | Read-only tool definitions (Zod schemas)                     |
+| `packages/cascadia-api/src/lib/ai/tools/write-definitions.ts`  | Write tool definitions with confirmation schemas             |
+| `packages/cascadia-api/src/lib/ai/tools/handlers.ts`           | Read-only tool handler implementations                       |
+| `packages/cascadia-api/src/lib/ai/tools/write-handlers.ts`     | Write tool handler implementations                           |
+| `packages/cascadia-api/src/lib/ai/tools/permission-wrapper.ts` | Permission checking and audit logging wrapper                |
+| `packages/cascadia-api/src/lib/ai/tools/index.ts`              | Tool assembly and exports                                    |
+| `packages/cascadia-api/src/lib/db/schema/ai.ts`                | Database schema for sessions, messages, settings, usage logs |
+| `packages/cascadia-web/src/components/ai/ChatPanel.tsx`        | Main chat sidebar component                                  |
+| `packages/cascadia-web/src/components/ai/ChatMessage.tsx`      | Message rendering with Markdown and tool results             |
+| `packages/cascadia-web/src/components/ai/ChatInput.tsx`        | Input component with Send/Search modes                       |
+| `packages/cascadia-web/src/components/ai/ChatPanelButton.tsx`  | Edge button to open the panel                                |
+| `packages/cascadia-web/src/components/ai/ConfirmationCard.tsx` | Confirmation UI for write operations                         |
+| `packages/cascadia-api/src/server/routes/ai.ts`                | Chat, session, message history, and settings endpoints       |

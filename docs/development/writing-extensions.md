@@ -41,12 +41,13 @@ fail the user's operation when your handler fails.
 ```typescript
 // packages/your-module/src/lib/your-module/run-alerts.ts
 // The published extension surface, which is what a module relies on — not
-// core's internal `@/lib/extensions` barrel.
-import { defineExtension } from '@cascadia/core/extensions'
-import type { ConsumedExtension } from '@cascadia/core/extensions'
-import type { WorkOrderRunCompletedPayload } from '@/lib/events'
-import { WORK_ORDER_RUN_COMPLETED } from '@/lib/events'
-import { PackageRegistry } from '@/lib/packages'
+// the api's internal `lib/extensions` barrel. A module names the application
+// packages it reaches; `@/` inside a module is the module itself.
+import { defineExtension } from '@cascadia/api/extensions'
+import type { ConsumedExtension } from '@cascadia/api/extensions'
+import type { WorkOrderRunCompletedPayload } from '@cascadia/api/lib/events'
+import { WORK_ORDER_RUN_COMPLETED } from '@cascadia/api/lib/events'
+import { PackageRegistry } from '@cascadia/api/lib/packages'
 
 export function createRunAlertsConsumer(): ConsumedExtension<WorkOrderRunCompletedPayload> {
   return {
@@ -269,7 +270,7 @@ The boundary checker fails on alias-root collisions, so a module file under
 Use `ConcurrentTestDatabase` for anything that reasons about committed `seq`
 values — the sequencing trigger assigns `seq` at COMMIT, and the gate harness
 rolls back, so a consumer there sees an empty log. See
-[the harness rule](../../packages/core/src/__tests__/README.md#choosing-a-harness).
+[the harness rule](../../packages/cascadia-api/src/__tests__/README.md#choosing-a-harness).
 
 Build the extension **through its options** so external effects are recorded
 stubs, and assert on durable rows plus recorded calls — never on a spy's call

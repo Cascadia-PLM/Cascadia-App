@@ -214,7 +214,7 @@ This creates:
 Do not run this before Step 4 has completed. The readiness probe will **not**
 protect you if you do: it requests `/api/v1/health`, which reports the process
 is up and its version and nothing else — it opens no database connection (see
-`packages/core/src/server/routes/health.ts`). A pod pointed at an unmigrated
+`packages/cascadia-api/src/server/routes/health.ts`). A pod pointed at an unmigrated
 database therefore passes both probes, joins the Service endpoints, and serves
 500s to real traffic until the migration lands. There is no crash and no
 restart loop to alert on; the only symptom is failing requests.

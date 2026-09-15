@@ -48,7 +48,7 @@ admin mutation for it.
 
 ## The registry
 
-Everything lives in `packages/core/src/lib/packages/`:
+Everything lives in `packages/cascadia-api/src/lib/packages/`:
 
 | File          | Role                                                                     |
 | ------------- | ------------------------------------------------------------------------ |
@@ -58,7 +58,7 @@ Everything lives in `packages/core/src/lib/packages/`:
 | `guard.ts`    | `requirePackage(id)` — throws `PackageNotLicensedError` (HTTP 403)       |
 
 ```typescript
-import { PackageRegistry, requirePackage } from '@/lib/packages'
+import { PackageRegistry, requirePackage } from '@cascadia/api/lib/packages'
 
 PackageRegistry.isEnabled('advanced-auditing') // boolean, no throw
 PackageRegistry.enabled() // Array<PackageId>
@@ -73,13 +73,13 @@ requirePackage('advanced-auditing') // throws unless licensed
 
 ## Adding a package
 
-**1. Add the id to the union** in `packages/core/src/lib/packages/types.ts`:
+**1. Add the id to the union** in `packages/cascadia-commons/src/lib/packages/types.ts`:
 
 ```typescript
 export type PackageId = 'advanced-auditing' | 'your-package'
 ```
 
-**2. Describe it** in `packages/core/src/lib/packages/catalog.ts`. The description and feature
+**2. Describe it** in `packages/cascadia-api/src/lib/packages/catalog.ts`. The description and feature
 list are what an administrator sees at `/admin`, so write them for a buyer, not
 for a developer:
 
@@ -102,7 +102,7 @@ That is the whole registration step — `ALL_PACKAGE_IDS`, the admin listing, th
 `GET /api/v1/packages` response, and `isPackageId()` all derive from the
 catalog.
 
-**3. Put the code under its own directory**, `packages/core/src/lib/your-package/`, so the
+**3. Put the code under its own directory**, `packages/cascadia-api/src/lib/your-package/`, so the
 licensing boundary is legible at a glance.
 
 **4. Gate every entry point** (below).
@@ -177,7 +177,7 @@ error. `GET /api/v1/signatures/capability` does this — it answers
 The client hook drives **presentation only**:
 
 ```tsx
-import { usePackageEnabled } from '@/lib/hooks/usePackages'
+import { usePackageEnabled } from '@cascadia/web/lib/hooks/usePackages'
 
 function YourPanel() {
   const { enabled, loading } = usePackageEnabled('your-package')
@@ -202,13 +202,13 @@ panel does not flash in and out on first paint.
 
 ## Where package code lives
 
-| Concern         | Location                                          |
-| --------------- | ------------------------------------------------- |
-| Services, logic | `packages/core/src/lib/your-package/`             |
-| Database schema | `packages/core/src/lib/db/schema/your-package.ts` |
-| API routes      | `packages/core/src/server/routes/your-thing.ts`   |
-| UI components   | `packages/core/src/components/your-package/`      |
-| Tests           | Co-located, `*.test.ts`                           |
+| Concern         | Location                                                  |
+| --------------- | --------------------------------------------------------- |
+| Services, logic | `packages/cascadia-api/src/lib/your-package/`             |
+| Database schema | `packages/cascadia-api/src/lib/db/schema/your-package.ts` |
+| API routes      | `packages/cascadia-api/src/server/routes/your-thing.ts`   |
+| UI components   | `packages/cascadia-web/src/components/your-package/`      |
+| Tests           | Co-located, `*.test.ts`                                   |
 
 Keeping the package under its own directory means a reviewer can see what is
 covered by which licence without tracing imports.
@@ -224,7 +224,7 @@ uniform across all instances.
 
 Two follow-ups when you add tables:
 
-1. Export the new schema file from `packages/core/src/lib/db/schema/index.ts`.
+1. Export the new schema file from `packages/cascadia-api/src/lib/db/schema/index.ts`.
 2. Add the table names to `ALL_TABLES` in `scripts/truncate-all.ts`, or
    `npm run db:reset` will leave rows behind.
 

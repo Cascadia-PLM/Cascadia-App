@@ -31,7 +31,7 @@ resources.
 - React components
 - Table mappings
 - Labels, icons, relationships and searchable fields
-- Item numbering schemes (`packages/core/src/lib/items/numbering/schemes.ts`)
+- Item numbering schemes (`packages/cascadia-commons/src/lib/items/numbering/schemes.ts`)
 
 ### API Endpoints
 

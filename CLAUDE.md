@@ -18,7 +18,7 @@ This is `Cascadia-PLM/Cascadia-App`, the **public AGPL edition** of Cascadia PLM
 It is dual licensed by Cascadia PLM LLC: this repository is the AGPL v3 half, and
 a proprietary edition adds separately licensed modules on top of the same core.
 
-**This tree is generated.** `packages/core` and `apps/cascadia` are composed and
+**This tree is generated.** The `packages/cascadia-*` packages and `apps/cascadia` are composed and
 published from the upstream repository, so a change lands there first and arrives
 here through the publish pipeline. Contributions are still made by pull request
 against this repository — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how an
@@ -50,41 +50,84 @@ Related repositories:
 
 ## Project Structure
 
-An npm workspace. `packages/core` holds the application; an app under `apps/` is
-a composition root plus a build config, choosing which modules exist. This
-edition composes core alone — separately licensed modules register into the same
-extension points, described under "The extension boundary" below.
+An npm workspace. The application is three packages under `packages/` with a
+one-way dependency graph; an app under `apps/` is a composition root plus a
+build config, choosing which modules exist. This edition composes the three
+alone — separately licensed modules register into the same extension points,
+described under "The extension boundary" below.
+
+```
+@cascadia/web  ──►  @cascadia/commons  ◄──  @cascadia/api
+```
+
+- **`@cascadia/commons`** (`packages/cascadia-commons`) — code both sides
+  share: item Zod schemas and definitions, permissions, lifecycle types, the
+  import parser, and every _wire type_ the client names (thread nodes,
+  conflicts, checkout status, file records, …). Depends on nothing else in
+  the workspace, and on no server-only npm package.
+- **`@cascadia/api`** (`packages/cascadia-api`) — the Hono server: routes,
+  services, the Drizzle schema, jobs, events, extensions, MCP, the test
+  helpers and fixtures (they need the database).
+- **`@cascadia/web`** (`packages/cascadia-web`) — the Vite SPA: routes,
+  components, hooks, the query layer, the API client, styles.
+
+**The web never imports the api.** Its tsconfig maps no `@cascadia/api/*`
+path and the Vite alias plugin refuses the specifier, so a component that
+reaches for a service or the schema fails to resolve rather than shipping
+`postgres` to the browser. `npm run boundary:check` states the rule and
+enforces it on resolved paths. When the client needs a type a service
+declares, move the type into commons and re-export it from the service — see
+`lib/thread/types.ts` or `lib/services/types/*.ts` for the pattern.
 
 ```
 packages/
-└── core/                  The application
+├── cascadia-commons/      Shared by api and web
+│   └── src/lib/
+│       ├── items/types/   Zod schemas per item type; item-type-definitions.ts
+│       ├── auth/          permissions.ts (roles, resources, actions), types
+│       ├── errors/        Error codes, the API error envelope, ApiError, retry
+│       ├── import/        CSV/XLSX import parsing, mapping, validation
+│       ├── lifecycles/    Lifecycle & workflow types, normalize
+│       ├── services/types/ Wire types the services compute and the UI renders
+│       ├── thread/        Digital-thread wire types
+│       ├── vault/         File categories, preview, annotations, wire types
+│       └── types/         Design/Program rows, BOM, Serialized<T>, assert
+├── cascadia-api/          The server
+│   ├── src/
+│   │   ├── lib/
+│   │   │   ├── auth/      Authentication & authorization services
+│   │   │   ├── db/        Drizzle schema & database utilities
+│   │   │   ├── items/     Item services, type handlers, registry
+│   │   │   ├── services/  Core services (Branch, Checkout, Commit, …)
+│   │   │   ├── lifecycles/ Lifecycle engine + approval registry
+│   │   │   ├── jobs/      Background job dispatch, definitions & worker
+│   │   │   ├── api/       apiHandler, response builders, route registry
+│   │   │   ├── events/    Domain event log, consumers, webhooks
+│   │   │   ├── extensions/ Extension registry and the public surface
+│   │   │   ├── vault/     File storage services and adapters
+│   │   │   ├── sysml/     SysML v2 serialization
+│   │   │   ├── ai/        AI chatbot tools, adapters, session service
+│   │   │   ├── mcp/       MCP servers, built on the AI tool registry
+│   │   │   └── packages/  Package entitlement registry
+│   │   ├── server/        Hono API server
+│   │   │   ├── index.ts   Entry: mounts every route module under /api/v1/*
+│   │   │   ├── adapter.ts tagged() factory for consistent OpenAPI tags
+│   │   │   └── routes/    API route modules — one file per resource
+│   │   └── __tests__/     Test utilities and fixtures (database-backed)
+│   └── test-data/         Component-catalog seed JSON
+└── cascadia-web/          The client
     ├── src/
     │   ├── components/    React components (forms, tables, dialogs)
     │   │   ├── ui/        Base UI primitives (Button, Card, DataGrid, …)
     │   │   ├── ai/        AI chatbot panel
     │   │   └── work-instructions/  Authoring and execution
     │   ├── lib/
-    │   │   ├── auth/      Authentication & authorization services
-    │   │   ├── db/        Drizzle schema & database utilities
-    │   │   ├── items/     Item services (Parts, Documents, …)
-    │   │   ├── services/  Core services (Branch, Checkout, Commit, …)
-    │   │   ├── lifecycles/ Lifecycle engine + approval registry
-    │   │   ├── jobs/      Background job dispatch, definitions & worker
-    │   │   ├── api/       apiHandler, response builders, route registry
-    │   │   ├── ui/        Slot registry — named UI extension points
     │   │   ├── query/     TanStack Query keys, options, invalidation graph
-    │   │   ├── vault/     File storage system
-    │   │   ├── sysml/     SysML v2 serialization
-    │   │   ├── ai/        AI chatbot tools, adapters, session service
-    │   │   ├── mcp/       MCP servers, built on the AI tool registry
-    │   │   └── packages/  Package entitlement registry
+    │   │   ├── hooks/     React hooks
+    │   │   ├── api/       apiFetch client, generated OpenAPI types
+    │   │   └── ui/        Slot registry — named UI extension points
     │   ├── routes/        TanStack Router file-based routes
-    │   ├── server/        Hono API server
-    │   │   ├── index.ts   Entry: mounts every route module under /api/v1/*
-    │   │   ├── adapter.ts tagged() factory for consistent OpenAPI tags
-    │   │   └── routes/    API route modules — one file per resource
-    │   └── __tests__/     Test utilities and fixtures
-    ├── test-data/         Component-catalog seed JSON
+    │   └── styles.css     Tailwind entry
     └── vite.config.base.ts  Shared Vite config, parameterized by edition
 
 apps/
@@ -104,6 +147,12 @@ tests/
 docs/                 # Architecture & feature documentation
 scripts/              # Database seeding, deployment scripts
 ```
+
+Paths were preserved across the split: a file that was
+`packages/core/src/lib/x.ts` is now `packages/cascadia-<pkg>/src/lib/x.ts`,
+so `@/lib/x` still means the same thing inside whichever package holds it.
+`git log --follow` crosses the split for any file, since each move commit
+carried the old content to the new path unchanged.
 
 ## Development Commands
 
@@ -141,7 +190,7 @@ npm run test:e2e:ui   # Run E2E tests with UI
 npm run test:e2e:full # Reset database + run E2E tests (clean slate)
 
 # Run a single test file
-npx vitest run packages/core/src/lib/services/BranchService.test.ts
+npx vitest run packages/cascadia-api/src/lib/services/BranchService.test.ts
 
 # Run tests matching a pattern
 npx vitest run -t "should create branch"
@@ -249,7 +298,7 @@ package id appears in the `CASCADIA_PACKAGES` environment variable
 (comma-separated, or `*`). Read once at process start; there is deliberately no
 in-app toggle.
 
-- Registry: `packages/core/src/lib/packages/` — `PackageRegistry.isEnabled(id)`,
+- Registry: `packages/cascadia-api/src/lib/packages/` — `PackageRegistry.isEnabled(id)`,
   `PackageRegistry.list()`, and `requirePackage(id)` which throws
   `PackageNotLicensedError` (403).
 - Client: `usePackageEnabled(id)` from `@/lib/hooks/usePackages` drives
@@ -272,7 +321,7 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Always check docs before:**
 
-- Modifying service layer code (`packages/core/src/lib/services/`, `packages/core/src/lib/items/services/`)
+- Modifying service layer code (`packages/cascadia-api/src/lib/services/`, `packages/cascadia-api/src/lib/items/services/`)
 - Working with versioning/branching logic
 - Changing change-order or lifecycle behavior
 - Adding or modifying item types
@@ -287,26 +336,26 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 ### Documentation Map
 
-| Working In                              | Read First                                     |
-| --------------------------------------- | ---------------------------------------------- |
-| `packages/core/src/lib/services/`       | `./docs/development/service-patterns.md`       |
-| `packages/core/src/lib/items/services/` | `./docs/development/service-patterns.md`       |
-| `packages/core/src/server/routes/`      | `./docs/development/adding-api-routes.md`      |
-| Versioning, branches, commits           | `./docs/features/versioning.md`                |
-| `packages/core/src/lib/db/schema/`      | `./docs/development/database-patterns.md`      |
-| Database queries, Drizzle ORM           | `./docs/development/database-patterns.md`      |
-| Lifecycles, instances, change actions   | `./docs/features/workflow-engine.md`           |
-| Item type changes                       | `./docs/development/adding-item-types.md`      |
-| Change-order logic                      | `./docs/features/change-management.md`         |
-| File vault                              | `./docs/features/file-vault.md`                |
-| Auth/permissions                        | `./docs/admin/access-control.md`               |
-| UI components / forms                   | `./docs/development/ui-components.md`          |
-| Testing patterns                        | `./docs/development/testing.md`                |
-| Background jobs                         | `./docs/development/adding-background-jobs.md` |
-| Domain events, the event log            | `./docs/development/adding-domain-events.md`   |
-| Extensions, the three phases            | `./docs/development/writing-extensions.md`     |
-| Webhooks, building a receiver           | `./docs/features/webhooks.md`                  |
-| Demo data and seeding                   | `./docs/development/demo-datasets.md`          |
+| Working In                                      | Read First                                     |
+| ----------------------------------------------- | ---------------------------------------------- |
+| `packages/cascadia-api/src/lib/services/`       | `./docs/development/service-patterns.md`       |
+| `packages/cascadia-api/src/lib/items/services/` | `./docs/development/service-patterns.md`       |
+| `packages/cascadia-api/src/server/routes/`      | `./docs/development/adding-api-routes.md`      |
+| Versioning, branches, commits                   | `./docs/features/versioning.md`                |
+| `packages/cascadia-api/src/lib/db/schema/`      | `./docs/development/database-patterns.md`      |
+| Database queries, Drizzle ORM                   | `./docs/development/database-patterns.md`      |
+| Lifecycles, instances, change actions           | `./docs/features/workflow-engine.md`           |
+| Item type changes                               | `./docs/development/adding-item-types.md`      |
+| Change-order logic                              | `./docs/features/change-management.md`         |
+| File vault                                      | `./docs/features/file-vault.md`                |
+| Auth/permissions                                | `./docs/admin/access-control.md`               |
+| UI components / forms                           | `./docs/development/ui-components.md`          |
+| Testing patterns                                | `./docs/development/testing.md`                |
+| Background jobs                                 | `./docs/development/adding-background-jobs.md` |
+| Domain events, the event log                    | `./docs/development/adding-domain-events.md`   |
+| Extensions, the three phases                    | `./docs/development/writing-extensions.md`     |
+| Webhooks, building a receiver                   | `./docs/features/webhooks.md`                  |
+| Demo data and seeding                           | `./docs/development/demo-datasets.md`          |
 
 ## Architecture Quick Reference
 
@@ -346,9 +395,9 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Revision assignment**: Revision letters (A, B, C...) are assigned only when merging a change-order branch to main, not during work.
 
-**Lifecycle states are configuration, never literals**: no state name appears in application logic. A state carries `isInitial`, `isFinal` (+ `finalKind`), and the roles it plays in change-action mappings; everything else is the configuring user's choice. Every item type has a lifecycle (defaults in `packages/core/src/lib/items/default-lifecycles.ts`). Ask `LifecycleService` — `isReleasedFamilyState`, `isInitialState`, `getFinalStateIds`, `getFinalKind`, `resolveActionStates` — never compare `state === 'Released'`; render with `StateBadge`. See `docs/features/workflow-engine.md`.
+**Lifecycle states are configuration, never literals**: no state name appears in application logic. A state carries `isInitial`, `isFinal` (+ `finalKind`), and the roles it plays in change-action mappings; everything else is the configuring user's choice. Every item type has a lifecycle (defaults in `packages/cascadia-api/src/lib/items/default-lifecycles.ts`). Ask `LifecycleService` — `isReleasedFamilyState`, `isInitialState`, `getFinalStateIds`, `getFinalKind`, `resolveActionStates` — never compare `state === 'Released'`; render with `StateBadge`. See `docs/features/workflow-engine.md`.
 
-**Item types** (13): Part, Document, ChangeOrder, Requirement, Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, Software, WorkOrder, PhysicalPart. All extend `BaseItem` and register via `ItemTypeRegistry` (definitions in `packages/core/src/lib/items/item-type-definitions.ts`, DB handlers in `packages/core/src/lib/items/type-handlers/`). A type is more than its definition: it also needs a type handler, a numbering scheme, an RBAC resource and a detail-route path, and the derived surfaces (AI and MCP tools, the OpenAPI create union, the admin listing, the type filters) follow from the definition automatically. `docs/development/adding-item-types.md` has the checklist, marked by which entries a test will catch and which degrade quietly. The one runtime-configurable thing about an item type is which lifecycle governs it.
+**Item types** (13): Part, Document, ChangeOrder, Requirement, Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, Software, WorkOrder, PhysicalPart. All extend `BaseItem` and register via `ItemTypeRegistry` (definitions in `packages/cascadia-commons/src/lib/items/item-type-definitions.ts`, DB handlers in `packages/cascadia-api/src/lib/items/type-handlers/`). A type is more than its definition: it also needs a type handler, a numbering scheme, an RBAC resource and a detail-route path, and the derived surfaces (AI and MCP tools, the OpenAPI create union, the admin listing, the type filters) follow from the definition automatically. `docs/development/adding-item-types.md` has the checklist, marked by which entries a test will catch and which degrade quietly. The one runtime-configurable thing about an item type is which lifecycle governs it.
 
 **Physical traceability**: PhysicalPart (serialized units and lots, non-versioned, Tool pattern) + WorkOrder consumption/production recorded as `Consumes`/`Produces`/`Evidences` edges in `item_relationships` (WO/PhysicalPart always the edge source). Genealogy is derived, never stored; the qualification rollup (`GET /api/v1/work-orders/:id/qualification`) reports requirement satisfaction and uncertified-material gaps. Parts carry `trackingMode` (`none | lot | serial`); the AML lives in `manufacturer_parts`/`part_manufacturer_parts` bound to the part masterId. See `docs/features/physical-parts-and-traceability.md`.
 
@@ -373,7 +422,7 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 ### Data Fetching Pattern
 
-The frontend has **one** cache: the TanStack Query client in `packages/core/src/lib/query/`,
+The frontend has **one** cache: the TanStack Query client in `packages/cascadia-web/src/lib/query/`,
 shared with the router through context. Route loaders prime it with
 `ensureQueryData`, components read the same query factory with `useQuery`, and
 mutations refresh it with `useInvalidateResources()`.
@@ -394,7 +443,7 @@ await invalidate('designs')
 ```
 
 Keys are built with `qk` (never inline) so prefix invalidation reaches them.
-`RESOURCE_DEPENDENTS` in `packages/core/src/lib/query/invalidation.ts` encodes which
+`RESOURCE_DEPENDENTS` in `packages/cascadia-web/src/lib/query/invalidation.ts` encodes which
 resources go stale together — name the resource you wrote, not its dependents.
 
 **Do not** return data from a loader and read it with `useLoaderData()`, call
@@ -405,7 +454,7 @@ five idioms this layer replaced. Full guide:
 
 ### API Route Pattern
 
-API routes live in `packages/core/src/server/routes/` as Hono modules. Every module mounts under `/api/v1/` and uses the `tagged()` factory so all its handlers carry a consistent OpenAPI tag:
+API routes live in `packages/cascadia-api/src/server/routes/` as Hono modules. Every module mounts under `/api/v1/` and uses the `tagged()` factory so all its handlers carry a consistent OpenAPI tag:
 
 ```typescript
 import { Hono } from 'hono'
@@ -442,7 +491,7 @@ app.get(
 export default app
 ```
 
-Mount new route modules in `packages/core/src/server/index.ts` via `app.route('/api/v1/example', example)`.
+Mount new route modules in `packages/cascadia-api/src/server/index.ts` via `app.route('/api/v1/example', example)`.
 
 For responses needing custom status codes or headers (201 Created, Set-Cookie), return a raw `Response` from within the handler. Use `parseQuery(request, zodSchema)` for validated query parameters. Use `requireDesignAccess`/`requireBranchAccess` from `@/lib/auth/access` for design/branch access checks.
 
@@ -452,21 +501,21 @@ The OpenAPI document is regenerated from these annotations at request time (`/op
 
 ### Adding a Field to an Existing Item Type
 
-1. Add column to schema in `packages/core/src/lib/db/schema/items.ts`
+1. Add column to schema in `packages/cascadia-api/src/lib/db/schema/items.ts`
 2. Run `npm run db:push` to apply it to your dev database, then mint the migration that ships it: `npm run db:generate`, and commit what appears under `apps/cascadia/drizzle/`
-3. Update Zod schema in `packages/core/src/lib/items/types/`
+3. Update Zod schema in `packages/cascadia-commons/src/lib/items/types/`
 4. Update form component to include new field
 5. Update ItemService type-specific methods if needed
 
 ### Adding an API Route
 
-1. Add handlers to an existing domain file in `packages/core/src/server/routes/` or create a new one
+1. Add handlers to an existing domain file in `packages/cascadia-api/src/server/routes/` or create a new one
 2. If new file, declare the tag at the top: `const adapt = tagged('YourResource')` (replaces plain `adapt` import)
 3. Use `adapt(apiHandler(options, fn))` to define each route handler
 4. Declare auth in options: `{ permission: ['resource', 'action'] }`, `{}` (auth-only), or `{ public: true }`
 5. Call service layer methods; throw typed errors (`NotFoundError`, `ValidationError`) on failure
 6. Return a plain object — it auto-wraps as `{ data: { ... } }` with JSON Content-Type
-7. If new file, mount it in `packages/core/src/server/index.ts` via `app.route('/api/v1/newroute', newroute)`
+7. If new file, mount it in `packages/cascadia-api/src/server/index.ts` via `app.route('/api/v1/newroute', newroute)`
 8. Optional but encouraged: add `openapi: { summary, request, responses }` to the handler options to enrich the spec
 
 The committed `docs/api/openapi.v1.json` snapshot is refreshed by the maintainers — leave it out of your PR.
@@ -475,7 +524,7 @@ The committed `docs/api/openapi.v1.json` snapshot is refreshed by the maintainer
 
 Background jobs use RabbitMQ for async processing. Pattern mirrors ItemTypeRegistry.
 
-**1. Define payload/result schemas** in `packages/core/src/lib/jobs/definitions/yourjob/types.ts`:
+**1. Define payload/result schemas** in `packages/cascadia-api/src/lib/jobs/definitions/yourjob/types.ts`:
 
 ```typescript
 import { z } from 'zod'
@@ -493,7 +542,7 @@ export const myJobResultSchema = z.object({
 export type MyJobResult = z.infer<typeof myJobResultSchema>
 ```
 
-**2. Create job config** in `packages/core/src/lib/jobs/definitions/yourjob/config.ts`:
+**2. Create job config** in `packages/cascadia-api/src/lib/jobs/definitions/yourjob/config.ts`:
 
 ```typescript
 import type { JobTypeConfig } from '../../types'
@@ -512,7 +561,7 @@ export const myJobConfig: JobTypeConfig<MyJobPayload, MyJobResult> = {
 }
 ```
 
-**3. Create job handler** in `packages/core/src/lib/jobs/node-handlers/yourjob.ts` (for Node.js workers):
+**3. Create job handler** in `packages/cascadia-api/src/lib/jobs/node-handlers/yourjob.ts` (for Node.js workers):
 
 ```typescript
 import type { JobHandler, JobContext } from '../types'
@@ -541,7 +590,7 @@ export const myJobHandler: JobHandler<MyJobPayload, MyJobResult> = {
 }
 ```
 
-**4. Register the definition** in `packages/core/src/lib/jobs/definitions/register.ts` and **the handler** in `packages/core/src/lib/jobs/node-handlers/register.ts`:
+**4. Register the definition** in `packages/cascadia-api/src/lib/jobs/definitions/register.ts` and **the handler** in `packages/cascadia-api/src/lib/jobs/node-handlers/register.ts`:
 
 ```typescript
 // definitions/register.ts — add config (used by main app for dispatch)
@@ -581,7 +630,7 @@ const job = await JobService.submit(
 - Strict mode enabled, avoid `any` types
 - Use Zod schemas for validation and type inference
 - Prefer interfaces for object types, type for unions
-- Path alias: `@/*` maps to `packages/core/src/*`, then this edition's module package
+- Path alias: `@/*` means _the importing file's own package_ (`packages/cascadia-<pkg>/src/*`). Reach another package by name — `@cascadia/commons/lib/...` from api or web; `@cascadia/api/...` and `@cascadia/web/...` only from apps and scripts. Commons imports itself relatively (it is compiled inside the other two programs, where `@/` means something else). In an app's Vite build, `@/` searches web first, then this edition's module package
 
 ### Database Queries
 
@@ -592,7 +641,7 @@ const job = await JobService.submit(
 
 ### UI Components
 
-- Base components in `packages/core/src/components/ui/` (Button, Input, Card, Badge, Dialog, Table, DataGrid, etc.)
+- Base components in `packages/cascadia-web/src/components/ui/` (Button, Input, Card, Badge, Dialog, Table, DataGrid, etc.)
 - Use `cn()` utility from `@/lib/utils` for class merging
 - Use Radix UI primitives for accessible components
 - Forms use TanStack Form (`@tanstack/react-form`) + Zod validation
@@ -600,18 +649,18 @@ const job = await JobService.submit(
 
 ### Error Handling
 
-- Service layer throws typed errors from `packages/core/src/lib/errors/` (`NotFoundError`, `ValidationError`, `PermissionDeniedError`, etc.)
+- Service layer throws typed errors from `packages/cascadia-api/src/lib/errors/` (`NotFoundError`, `ValidationError`, `PermissionDeniedError`, etc.)
 - `apiHandler()` catches all errors automatically via `handleApiError` — routes just throw
 - Validation errors from Zod are surfaced to forms
 
 ### Testing Strategy
 
-- `packages/core/src/__tests__/` - Test utilities and fixtures (import via `@test/` alias)
+- `packages/cascadia-api/src/__tests__/` - Test utilities and fixtures (import via `@test/` alias)
 - `packages/*/src/**/*.test.ts` - Unit/integration tests (co-located)
 - `tests/e2e/` - Playwright E2E tests
 - **Unit tests**: Vitest with `@testing-library/react` for components
 - **Service tests**: Run against a real Postgres via `TestDatabase` (most suites); mocking is the rare exception
-- **The suite has its own database.** It runs against `TEST_DATABASE_URL`, never `DATABASE_URL`, and refuses to start without it — it truncates tables and commits shared config rows, so pointed at the dev database it rewrites what you were working on. Provision once with `createdb -U postgres cascadia_test` then `npm run test:db:push`, and add `TEST_DATABASE_URL` to `.env`. Re-run `test:db:push` after a schema change. Nothing is derived or guessed; see `packages/core/src/__tests__/README.md`
+- **The suite has its own database.** It runs against `TEST_DATABASE_URL`, never `DATABASE_URL`, and refuses to start without it — it truncates tables and commits shared config rows, so pointed at the dev database it rewrites what you were working on. Provision once with `createdb -U postgres cascadia_test` then `npm run test:db:push`, and add `TEST_DATABASE_URL` to `.env`. Re-run `test:db:push` after a schema change. Nothing is derived or guessed; see `packages/cascadia-api/src/__tests__/README.md`
 - **E2E tests**: Playwright with page object model pattern
 - **CI/CD**: GitHub Actions for automated testing
 - Key utilities: `TestDatabase` (transaction-per-test), `ConcurrentTestDatabase` (multi-connection race tests), `insertTestUser`/`insertTestUserWithRole`, `seedStandardPartLifecycle`/`overrideItemTypeConfig`
@@ -634,7 +683,7 @@ If a file passes none of the three gates, skip tests. UI components, API routes 
 
 Claude may run tests automatically after meaningful changes. Prefer scoped runs:
 
-- After a service change: `npx vitest run packages/core/src/lib/services/ThatService.test.ts`
+- After a service change: `npx vitest run packages/cascadia-api/src/lib/services/ThatService.test.ts`
 - While iterating: `/test-ready --scoped` (lint + tests for changed files only)
 - Before a commit: `/test-ready` (lint + full unit suite + tier-1 E2E if UI touched)
 - Skip running tests for trivial changes (doc edits, styling, obviously inert refactors)
@@ -838,45 +887,62 @@ npm run db:reset:seed         # Truncate + minimal seed
 
 **Key insight**: Always truncate before reseeding. Seed scripts use `onConflictDoNothing()` for idempotency, but complex seeds with multiple related records can still conflict on unique constraints.
 
-### Postgres Package Bundled into Client Build
+### Client Code Reaching the API Package
 
 **Error:**
 
 ```
-error during build:
-node_modules/postgres/src/connection.js (5:9): "performance" is not exported by "__vite-browser-external"
+[vite] packages/cascadia-web/src/components/x/Y.tsx imports @cascadia/api/lib/services/Z.
+The client bundle cannot reach @cascadia/api: ...
 ```
 
+or, from `tsc`, `Cannot find module '@cascadia/api/...'` / `'@/lib/db'` in a
+web file, or `npm run boundary:check` reporting a layering violation.
+
 **Root Cause:**
-Server-only code (database queries via `postgres` package) is being pulled into the client bundle through import chains.
+The web package has no route to the api package — not in its tsconfig
+`paths`, not in the Vite alias plugin — so a component or query option that
+imports a service, the schema, or anything else under `packages/cascadia-api`
+cannot resolve. That is the point: before the split, the same import compiled
+fine and only failed as
+`node_modules/postgres/src/connection.js: "performance" is not exported by "__vite-browser-external"`
+at build time, or not at all when it was `import type`.
 
 **Solutions:**
 
-1. **Move shared types to separate files** without database imports:
+1. **A type the client needs**: move the declaration into commons and re-export
+   it from where it was, so server callers are untouched:
 
    ```typescript
-   // BAD: packages/core/src/lib/db/schema/config.ts imports drizzle-orm
-   import type { RuntimeItemTypeConfig } from '../db/schema/config'
+   // packages/cascadia-commons/src/lib/services/types/checkout.ts
+   export interface CheckoutStatus { ... }
 
-   // GOOD: packages/core/src/lib/items/types/runtime-config.ts has no db imports
-   import type { RuntimeItemTypeConfig } from './types/runtime-config'
+   // packages/cascadia-api/src/lib/services/CheckoutService.ts
+   export type { CheckoutStatus } from '@cascadia/commons/lib/services/types/checkout'
+
+   // packages/cascadia-web/src/lib/query/options/checkout.ts
+   import type { CheckoutStatus } from '@cascadia/commons/lib/services/types/checkout'
    ```
 
-2. **Use lazy/dynamic imports** for server-only services:
+   If the type is inferred from a Drizzle table (`typeof t.$inferSelect`),
+   write it out in commons and pin it to the table with `Expect<Equal<...>>`
+   from `@cascadia/commons/lib/types/assert` — see `lib/db/schema/designs.ts`.
 
-   ```typescript
-   // BAD: Static import pulls db into client
-   import { ConfigService } from '../config'
+2. **Behaviour the client needs**: it belongs behind an endpoint; the client
+   calls it through `apiFetch` and the query layer.
 
-   // GOOD: Dynamic import only loads on server
-   const module = await import('../config')
-   ```
+3. **Pure logic both sides run** (a parser, a formatter): it belongs in
+   commons — provided it imports no `node:*` module and no server-only
+   package. `formatFileSize` lives in `commons/lib/vault/format-file-size.ts`
+   for exactly this reason, apart from the `node:crypto`-using `file-utils`.
 
 **Prevention:**
 
-- Keep database imports strictly in `routes/api/`, services, and server-only files
-- Use `import type` for types, but ensure the source file doesn't have database imports
-- Consider file naming conventions like `*.server.ts` for server-only code
+- `npm run boundary:check` fails on any web→api or commons→anything import,
+  resolved by path rather than matched by pattern.
+- Commons files must not import `node:*`, `drizzle-orm`, `hono`, or
+  `postgres`; the commons tsconfig has no `@types/node` reach, so a `Buffer`
+  is a type error there.
 
 ### API Response Structure Mismatch
 

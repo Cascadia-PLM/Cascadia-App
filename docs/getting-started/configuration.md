@@ -256,7 +256,7 @@ not any more — nothing read the last three, `states` came from the lifecycle,
 and the labels reached two of the dozen surfaces that show a type's name. A
 setting that does not take effect is worse than no setting. Everything but
 the lifecycle is code: see `ITEM_TYPE_DEFINITIONS` in
-`packages/core/src/lib/items/item-type-definitions.ts`.
+`packages/cascadia-commons/src/lib/items/item-type-definitions.ts`.
 
 ### Managing runtime configuration
 

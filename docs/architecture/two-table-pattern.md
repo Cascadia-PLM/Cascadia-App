@@ -53,7 +53,7 @@ The `itemId` column in each extension table is both the primary key and a foreig
 
 ## The Shared `items` Table
 
-Defined in `packages/core/src/lib/db/schema/items.ts`:
+Defined in `packages/cascadia-api/src/lib/db/schema/items.ts`:
 
 ```typescript
 export const items = pgTable(
@@ -142,7 +142,7 @@ export const parts = pgTable('parts', {
 
 ## ItemService: Automatic Two-Table Handling
 
-`ItemService` in `packages/core/src/lib/items/services/ItemService.ts` handles both tables transparently. When you create an item, ItemService:
+`ItemService` in `packages/cascadia-api/src/lib/items/services/ItemService.ts` handles both tables transparently. When you create an item, ItemService:
 
 1. **Looks up the type config** via `ItemTypeRegistry.getType(type)`
 2. **Validates the full payload** against the Zod schema for that type (e.g., `partSchema`)
@@ -161,7 +161,7 @@ When querying, `ItemService.findById()` joins `items` with the appropriate exten
 
 ## ItemTypeRegistry
 
-`ItemTypeRegistry` in `packages/core/src/lib/items/registry.ts` is the central registry. The definitions it holds live in one place, `packages/core/src/lib/items/item-type-definitions.ts`:
+`ItemTypeRegistry` in `packages/cascadia-api/src/lib/items/registry.ts` is the central registry. The definitions it holds live in one place, `packages/cascadia-commons/src/lib/items/item-type-definitions.ts`:
 
 ```typescript
 Part: {
@@ -213,7 +213,7 @@ lifecycle rather than the assigned one.
 ### Type handlers
 
 Reads and writes to an extension table go through a `TypeHandler`, registered
-in `packages/core/src/lib/items/type-handlers/` and looked up with
+in `packages/cascadia-api/src/lib/items/type-handlers/` and looked up with
 `getTypeHandler(itemType)`. It owns the Drizzle table object and the type's
 insert/get/update, so `ItemService` has no per-type switch — and neither does
 anything else that needs a type's own columns.
@@ -309,13 +309,13 @@ Type-specific columns only exist in the extension table. A ChangeOrder row does 
 
 Start with these files:
 
-| File                                                   | Contains                                                                 |
-| ------------------------------------------------------ | ------------------------------------------------------------------------ |
-| `packages/core/src/lib/db/schema/items.ts`             | The `items` table + all extension tables + `itemRelationships`           |
-| `packages/core/src/lib/db/schema/versioning.ts`        | `branches`, `commits`, `branchItems`, `itemVersions`, `itemFieldChanges` |
-| `packages/core/src/lib/db/schema/designs.ts`           | `designs` table                                                          |
-| `packages/core/src/lib/db/schema/users.ts`             | `users`, `sessions`, `roles`, `userRoles`, `authEvents`                  |
-| `packages/core/src/lib/items/types/part.ts`            | Part-specific Zod schema and interface                                   |
-| `packages/core/src/lib/items/types/base.ts`            | `BaseItem` interface and `ItemTypeConfig` definition                     |
-| `packages/core/src/lib/items/registry.ts`              | `ItemTypeRegistry` class                                                 |
-| `packages/core/src/lib/items/item-type-definitions.ts` | All item type definitions                                                |
+| File                                                               | Contains                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `packages/cascadia-api/src/lib/db/schema/items.ts`                 | The `items` table + all extension tables + `itemRelationships`           |
+| `packages/cascadia-api/src/lib/db/schema/versioning.ts`            | `branches`, `commits`, `branchItems`, `itemVersions`, `itemFieldChanges` |
+| `packages/cascadia-api/src/lib/db/schema/designs.ts`               | `designs` table                                                          |
+| `packages/cascadia-api/src/lib/db/schema/users.ts`                 | `users`, `sessions`, `roles`, `userRoles`, `authEvents`                  |
+| `packages/cascadia-commons/src/lib/items/types/part.ts`            | Part-specific Zod schema and interface                                   |
+| `packages/cascadia-commons/src/lib/items/types/base.ts`            | `BaseItem` interface and `ItemTypeConfig` definition                     |
+| `packages/cascadia-api/src/lib/items/registry.ts`                  | `ItemTypeRegistry` class                                                 |
+| `packages/cascadia-commons/src/lib/items/item-type-definitions.ts` | All item type definitions                                                |

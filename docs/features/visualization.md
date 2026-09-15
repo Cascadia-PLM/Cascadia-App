@@ -4,7 +4,7 @@ Cascadia PLM provides several graphical interfaces for exploring complex enginee
 
 ## BOM Tree View
 
-**Component:** `packages/core/src/components/bom/BomTreeView.tsx`
+**Component:** `packages/cascadia-web/src/components/bom/BomTreeView.tsx`
 
 The BOM Tree View renders a hierarchical Bill of Materials as an interactive tree-table. It is the primary way users explore parent-child part structures.
 
@@ -29,7 +29,7 @@ The component supports two layout modes:
 
 ### Data Shape
 
-Each node implements the `BOMTreeNode` interface defined in `packages/core/src/components/bom/types.ts`:
+Each node implements the `BOMTreeNode` interface defined in `packages/cascadia-web/src/components/bom/types.ts`:
 
 ```typescript
 interface BOMTreeNode {
@@ -61,7 +61,7 @@ interface BOMTreeNode {
 
 ## Relationship Graph
 
-**Component:** `packages/core/src/components/items/GraphNavigator.tsx`
+**Component:** `packages/cascadia-web/src/components/items/GraphNavigator.tsx`
 
 The Relationship Graph renders a directed graph of all relationships connected to a given item. It uses React Flow (`@xyflow/react`) for the canvas and Dagre for automatic top-to-bottom layout.
 
@@ -98,7 +98,7 @@ Each node (`GraphItemNode`) displays:
 
 ## Scope Graph (Program / Design Drill-Down)
 
-**Components:** `packages/core/src/components/graph/ScopeGraphView.tsx`, `packages/core/src/components/graph/GraphScopeNode.tsx`
+**Components:** `packages/cascadia-web/src/components/graph/ScopeGraphView.tsx`, `packages/cascadia-web/src/components/graph/GraphScopeNode.tsx`
 
 The Scope Graph extends the relationship graph upward into the organizational hierarchy, mixing three node kinds in one canvas: **Programs** (indigo), **Designs** (violet), and **Items** (rendered with the same `GraphItemNode` as the relationship graph). It supports step-by-step drill-down from a program all the way to physical traceability:
 
@@ -121,7 +121,7 @@ Program → Designs → Items (Parts, Requirements, Documents, …)
 - `GET /api/v1/designs/:id/graph?direction=all|up|down&itemTypes=A,B` -- design node, parent program (up), top-level items (down). Requires design access.
 - Item nodes expand via the existing `GET /api/v1/items/:id/graph`.
 
-Program and design nodes use prefixed IDs (`program:<uuid>`, `design:<uuid>`); item nodes keep raw item IDs so responses from the scope endpoints and the item graph endpoint merge into one client-side cache. Shared node/edge builders live in `packages/core/src/lib/api/scope-graph.ts`.
+Program and design nodes use prefixed IDs (`program:<uuid>`, `design:<uuid>`); item nodes keep raw item IDs so responses from the scope endpoints and the item graph endpoint merge into one client-side cache. Shared node/edge builders live in `packages/cascadia-api/src/lib/api/scope-graph.ts`.
 
 ### Where It Appears
 
@@ -132,8 +132,8 @@ Program and design nodes use prefixed IDs (`program:<uuid>`, `design:<uuid>`); i
 
 **Components:**
 
-- `packages/core/src/components/versioning/CommitGraphView.tsx` (design-level)
-- `packages/core/src/components/programs/ProgramHistoryGraphView.tsx` (program-level)
+- `packages/cascadia-web/src/components/versioning/CommitGraphView.tsx` (design-level)
+- `packages/cascadia-web/src/components/programs/ProgramHistoryGraphView.tsx` (program-level)
 
 The Design History Graph visualizes the commit history of a design as a Git-style branch/merge timeline. It uses React Flow v12 (`@xyflow/react`) with Dagre layout in bottom-to-top (BT) orientation -- oldest commits at the bottom, newest at the top.
 
@@ -184,7 +184,7 @@ Each commit node (`CommitNode`) shows:
 
 ## ECO History Graph
 
-**Component:** `packages/core/src/components/change-orders/ChangeOrderHistoryGraphView.tsx`
+**Component:** `packages/cascadia-web/src/components/change-orders/ChangeOrderHistoryGraphView.tsx`
 
 The ECO History Graph is a specialized variant of the Design History Graph, scoped to a single Engineering Change Order. It shows the commit history of the ECO's branch alongside the main branch it forked from.
 
@@ -200,7 +200,7 @@ The ECO History Graph is a specialized variant of the Design History Graph, scop
 
 ## Affected Items Graph
 
-**Component:** `packages/core/src/components/change-orders/ChangeOrderAffectedItemsPanel.tsx`
+**Component:** `packages/cascadia-web/src/components/change-orders/ChangeOrderAffectedItemsPanel.tsx`
 
 The ECO Affected Items panel provides two complementary views of items included in an Engineering Change Order:
 
@@ -234,14 +234,14 @@ Uses `ChangeOrderDesignStructureTree` (which wraps `BomTreeView`) to show the fu
 
 **Components:**
 
-- `packages/core/src/components/parts/CADViewer.tsx` -- The scene: camera, lights, controls, framing
-- `packages/core/src/components/parts/CADModel.tsx` -- The model: loading, materials, part picking
-- `packages/core/src/components/parts/CADViewerToolbar.tsx` -- Floating toolbar
-- `packages/core/src/components/parts/CADViewerTypes.ts` -- Type definitions and presets
-- `packages/core/src/components/parts/useCADViewerKeyboard.ts` -- Keyboard shortcut hook
-- `packages/core/src/components/parts/useCADSelectionState.ts` -- Which part is selected, and what it is
-- `packages/core/src/components/parts/CADSelectionOverlay.tsx` -- Selection caption and context menu
-- `packages/core/src/components/parts/CADNodeLinkDialog.tsx` -- Correcting what a model part is
+- `packages/cascadia-web/src/components/parts/CADViewer.tsx` -- The scene: camera, lights, controls, framing
+- `packages/cascadia-web/src/components/parts/CADModel.tsx` -- The model: loading, materials, part picking
+- `packages/cascadia-web/src/components/parts/CADViewerToolbar.tsx` -- Floating toolbar
+- `packages/cascadia-web/src/components/parts/CADViewerTypes.ts` -- Type definitions and presets
+- `packages/cascadia-web/src/components/parts/useCADViewerKeyboard.ts` -- Keyboard shortcut hook
+- `packages/cascadia-web/src/components/parts/useCADSelectionState.ts` -- Which part is selected, and what it is
+- `packages/cascadia-web/src/components/parts/CADSelectionOverlay.tsx` -- Selection caption and context menu
+- `packages/cascadia-web/src/components/parts/CADNodeLinkDialog.tsx` -- Correcting what a model part is
 
 The 3D CAD Viewer renders CAD models directly in the browser using WebGL. It is built on React Three Fiber and Three.js.
 
@@ -390,7 +390,7 @@ The `CADViewer` component uses `forwardRef` to expose a `CADViewerHandle` with `
 
 ## Digital Thread Navigator
 
-**Component:** `packages/core/src/components/thread/DigitalThreadNavigator.tsx`
+**Component:** `packages/cascadia-web/src/components/thread/DigitalThreadNavigator.tsx`
 
 The Digital Thread Navigator visualizes the full traceability chain of an item across engineering and manufacturing domains using a swim-lane layout.
 
@@ -410,7 +410,7 @@ The Digital Thread Navigator visualizes the full traceability chain of an item a
 
 ## Workflow Builder
 
-**Component:** `packages/core/src/components/lifecycles/LifecycleBuilder.tsx`
+**Component:** `packages/cascadia-web/src/components/lifecycles/LifecycleBuilder.tsx`
 
 While primarily a configuration tool rather than a data visualization, the Workflow Builder uses React Flow v12 with Dagre layout to render lifecycle state machines as interactive graphs.
 
@@ -432,9 +432,9 @@ While primarily a configuration tool rather than a data visualization, the Workf
 
 ### Edge Direction
 
-**Module:** `packages/core/src/components/graph/edgeStyles.ts`
-**Edge component:** `packages/core/src/components/graph/RelationshipEdge.tsx`
-**Legend:** `packages/core/src/components/graph/EdgeDirectionLegend.tsx`
+**Module:** `packages/cascadia-web/src/components/graph/edgeStyles.ts`
+**Edge component:** `packages/cascadia-web/src/components/graph/RelationshipEdge.tsx`
+**Legend:** `packages/cascadia-web/src/components/graph/EdgeDirectionLegend.tsx`
 
 Relationships are directed and asymmetric: a Part that `Satisfies` a Requirement is stored as `source: part`, `target: requirement`, and the graph must read that way -- "the Part satisfies the Requirement", never the reverse. Three cues carry that direction, and every relationship graph uses all three:
 
@@ -468,7 +468,7 @@ Containment sits one step lighter than relationships so the organizational scaff
 
 ### FullscreenGraphWrapper
 
-**Component:** `packages/core/src/components/ui/FullscreenGraphWrapper.tsx`
+**Component:** `packages/cascadia-web/src/components/ui/FullscreenGraphWrapper.tsx`
 
 A reusable wrapper that adds fullscreen/focus mode to any graph view. It renders the graph inline at a configurable height (default 600px) with an expand button, and opens a near-full-viewport Radix Dialog when toggled. The dialog includes a title bar, optional header controls, and footer area (typically used for legends).
 

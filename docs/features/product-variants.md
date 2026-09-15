@@ -53,7 +53,7 @@ item_relationships.target_make_code text execution of the target Part revision
 designs.configuration         jsonb   how a Manufacturing design was resolved
 ```
 
-Shapes (`packages/core/src/lib/types/variants.ts`):
+Shapes (`packages/cascadia-commons/src/lib/types/variants.ts`):
 
 ```ts
 interface OptionCondition {
@@ -230,11 +230,11 @@ Part and moves lines onto it, and merging is the reverse.
 
 | Concern                         | Where                                                                                                                                   |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Types, canonical form, matching | `packages/core/src/lib/types/variants.ts`                                                                                               |
-| Validation, lint, resolve       | `packages/core/src/lib/services/VariantService.ts`                                                                                      |
+| Types, canonical form, matching | `packages/cascadia-commons/src/lib/types/variants.ts`                                                                                   |
+| Validation, lint, resolve       | `packages/cascadia-api/src/lib/services/VariantService.ts`                                                                              |
 | Line write rules                | `ItemRelationshipService.assertOptionDeclared`, `edgeKey`                                                                               |
 | Part write rules                | `VariantService.assertPartVariantWrite` (called from `ItemService.update`)                                                              |
 | MBOM derivation                 | `MbomService.createFromEbom`, `copyEbomStructureInternal`                                                                               |
-| Routes                          | `packages/core/src/server/routes/variants.ts`                                                                                           |
-| UI                              | `packages/core/src/components/variants/`                                                                                                |
+| Routes                          | `packages/cascadia-api/src/server/routes/variants.ts`                                                                                   |
+| UI                              | `packages/cascadia-web/src/components/variants/`                                                                                        |
 | Tests                           | `variants.test.ts`, `VariantService.test.ts`, `ItemRelationshipService.option.test.ts`, `item-structure.test.ts`, `MbomService.test.ts` |

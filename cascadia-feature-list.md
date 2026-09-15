@@ -593,13 +593,13 @@ LLM-powered chatbot for navigating and querying PLM data.
 
 ### MCP Servers ✅
 
-| Feature                     | Status | Notes                                                                                        |
-| --------------------------- | ------ | -------------------------------------------------------------------------------------------- |
-| PLM server (`cascadia-plm`) | ✅     | Chatbot tool registry over Streamable HTTP at `/api/mcp`                                     |
-| API-key auth + scoping      | ✅     | Bearer `csc_` keys; key scope intersects role permissions                                    |
-| Dev server (`cascadia-dev`) | ✅     | Stdio server for self-hosters: status, docs, db push/seed/reset                              |
-| Shared tool registry        | ✅     | One tool stack for the in-app chatbot and MCP (`packages/core/src/lib/ai/tools/registry.ts`) |
-| API key management UI       | ✅     | Self-service (profile) and admin issuance: scope editor, activity log, policy                |
+| Feature                     | Status | Notes                                                                                                |
+| --------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| PLM server (`cascadia-plm`) | ✅     | Chatbot tool registry over Streamable HTTP at `/api/mcp`                                             |
+| API-key auth + scoping      | ✅     | Bearer `csc_` keys; key scope intersects role permissions                                            |
+| Dev server (`cascadia-dev`) | ✅     | Stdio server for self-hosters: status, docs, db push/seed/reset                                      |
+| Shared tool registry        | ✅     | One tool stack for the in-app chatbot and MCP (`packages/cascadia-api/src/lib/ai/tools/registry.ts`) |
+| API key management UI       | ✅     | Self-service (profile) and admin issuance: scope editor, activity log, policy                        |
 
 ---
 

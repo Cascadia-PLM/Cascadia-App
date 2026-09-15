@@ -795,4 +795,4 @@ User requests item at context
 
 - [Change Orders](./change-management.md) -- ECO workflow and lifecycle
 - [Architecture](../architecture/) -- Overall system architecture
-- Developer reference: `packages/core/src/lib/services/VersionResolver.ts`, `packages/core/src/lib/services/CommitService.ts`, `packages/core/src/lib/services/BranchService.ts`
+- Developer reference: `packages/cascadia-api/src/lib/services/VersionResolver.ts`, `packages/cascadia-api/src/lib/services/CommitService.ts`, `packages/cascadia-api/src/lib/services/BranchService.ts`

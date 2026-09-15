@@ -226,7 +226,7 @@ AFTER MERGE:
 
 ## Branch Isolation
 
-The isolation guarantee is implemented by `VersionResolver` in `packages/core/src/lib/services/VersionResolver.ts`.
+The isolation guarantee is implemented by `VersionResolver` in `packages/cascadia-api/src/lib/services/VersionResolver.ts`.
 
 ### How It Works
 
@@ -307,7 +307,7 @@ Once a design enters post-release, there is no going back. All changes must flow
 
 ## Conflict Detection
 
-`ConflictDetectionService` in `packages/core/src/lib/services/ConflictDetectionService.ts` detects three kinds of conflicts:
+`ConflictDetectionService` in `packages/cascadia-api/src/lib/services/ConflictDetectionService.ts` detects three kinds of conflicts:
 
 ### 1. Checkout Locks
 
@@ -346,16 +346,16 @@ current version and re-apply our non-conflicting changes) or
 
 ## Key Service Files
 
-| Service                    | File                                                         | Key Methods                                                       |
-| -------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
-| `BranchService`            | `packages/core/src/lib/services/BranchService.ts`            | `createChangeOrderBranch()`, `lockBranch()`, `archiveBranch()`    |
-| `CommitService`            | `packages/core/src/lib/services/CommitService.ts`            | `create()`, `createMergeCommit()`, `getBranchChanges()`           |
-| `CheckoutService`          | `packages/core/src/lib/services/CheckoutService.ts`          | `checkout()`, `saveChanges()`, `createOnBranch()`                 |
-| `VersionResolver`          | `packages/core/src/lib/services/VersionResolver.ts`          | `getReleasedVersion()`, `getWorkingVersion()`, `getBranchItems()` |
-| `ChangeOrderMergeService`  | `packages/core/src/lib/services/ChangeOrderMergeService.ts`  | `merge()`, `mergeBranchToMain()`, `validateMerge()`               |
-| `ConflictDetectionService` | `packages/core/src/lib/services/ConflictDetectionService.ts` | `detectConflictsForBranch()`, `detectCrossChangeOrderConflicts()` |
-| `ChangeOrderService`       | `packages/core/src/lib/items/services/ChangeOrderService.ts` | `addAffectedItem()`, `close()`                                    |
-| `RevisionService`          | `packages/core/src/lib/services/RevisionService.ts`          | `getNextRevision()`                                               |
+| Service                    | File                                                                 | Key Methods                                                       |
+| -------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `BranchService`            | `packages/cascadia-api/src/lib/services/BranchService.ts`            | `createChangeOrderBranch()`, `lockBranch()`, `archiveBranch()`    |
+| `CommitService`            | `packages/cascadia-api/src/lib/services/CommitService.ts`            | `create()`, `createMergeCommit()`, `getBranchChanges()`           |
+| `CheckoutService`          | `packages/cascadia-api/src/lib/services/CheckoutService.ts`          | `checkout()`, `saveChanges()`, `createOnBranch()`                 |
+| `VersionResolver`          | `packages/cascadia-api/src/lib/services/VersionResolver.ts`          | `getReleasedVersion()`, `getWorkingVersion()`, `getBranchItems()` |
+| `ChangeOrderMergeService`  | `packages/cascadia-api/src/lib/services/ChangeOrderMergeService.ts`  | `merge()`, `mergeBranchToMain()`, `validateMerge()`               |
+| `ConflictDetectionService` | `packages/cascadia-api/src/lib/services/ConflictDetectionService.ts` | `detectConflictsForBranch()`, `detectCrossChangeOrderConflicts()` |
+| `ChangeOrderService`       | `packages/cascadia-api/src/lib/items/services/ChangeOrderService.ts` | `addAffectedItem()`, `close()`                                    |
+| `RevisionService`          | `packages/cascadia-api/src/lib/services/RevisionService.ts`          | `getNextRevision()`                                               |
 
 ---
 

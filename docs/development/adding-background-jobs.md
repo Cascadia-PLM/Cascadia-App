@@ -23,10 +23,10 @@ Service Code                    RabbitMQ                  Worker Process
 
 ## Step 1: Define Payload and Result Schemas
 
-Create a `types.ts` file in `packages/core/src/lib/jobs/definitions/yourjob/`:
+Create a `types.ts` file in `packages/cascadia-api/src/lib/jobs/definitions/yourjob/`:
 
 ```typescript
-// packages/core/src/lib/jobs/definitions/yourjob/types.ts
+// packages/cascadia-api/src/lib/jobs/definitions/yourjob/types.ts
 import { z } from 'zod'
 
 /**
@@ -66,7 +66,7 @@ export type WidgetProcessingResult = z.infer<
 Create a `config.ts` file with the job type configuration:
 
 ```typescript
-// packages/core/src/lib/jobs/definitions/yourjob/config.ts
+// packages/cascadia-api/src/lib/jobs/definitions/yourjob/config.ts
 import type { JobTypeConfig } from '../../types'
 import {
   widgetProcessingPayloadSchema,
@@ -129,10 +129,10 @@ export const widgetProcessingConfig: JobTypeConfig<
 
 ## Step 3: Create Job Handler
 
-Create a handler file at `packages/core/src/lib/jobs/node-handlers/yourjob.ts`:
+Create a handler file at `packages/cascadia-api/src/lib/jobs/node-handlers/yourjob.ts`:
 
 ```typescript
-// packages/core/src/lib/jobs/node-handlers/yourjob.ts
+// packages/cascadia-api/src/lib/jobs/node-handlers/yourjob.ts
 import type { JobHandler, JobContext } from '../../types'
 import type { WidgetProcessingPayload, WidgetProcessingResult } from './types'
 
@@ -244,10 +244,10 @@ scheduler the difference between a slow job and a lost one.
 
 Registration is split into two files:
 
-**Config registration** in `packages/core/src/lib/jobs/definitions/register.ts`:
+**Config registration** in `packages/cascadia-api/src/lib/jobs/definitions/register.ts`:
 
 ```typescript
-// packages/core/src/lib/jobs/definitions/register.ts
+// packages/cascadia-api/src/lib/jobs/definitions/register.ts
 import { JobTypeRegistry } from '../registry'
 
 // ... existing registrations ...
@@ -258,10 +258,10 @@ import { widgetProcessingConfig } from './yourjob/config'
 JobTypeRegistry.register(widgetProcessingConfig)
 ```
 
-**Handler registration** in `packages/core/src/lib/jobs/node-handlers/register.ts`:
+**Handler registration** in `packages/cascadia-api/src/lib/jobs/node-handlers/register.ts`:
 
 ```typescript
-// packages/core/src/lib/jobs/node-handlers/register.ts
+// packages/cascadia-api/src/lib/jobs/node-handlers/register.ts
 import { JobTypeRegistry } from '../registry'
 
 // ... existing registrations ...
@@ -338,7 +338,7 @@ const job = await JobService.getById(jobId)
 ## Directory Structure
 
 ```
-packages/core/src/lib/jobs/
+packages/cascadia-api/src/lib/jobs/
 ├── JobService.ts              # Submit, query, cancel jobs
 ├── registry.ts                # JobTypeRegistry (mirrors ItemTypeRegistry)
 ├── types.ts                   # Core interfaces (JobTypeConfig, JobHandler, JobContext)

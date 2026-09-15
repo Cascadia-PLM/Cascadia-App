@@ -90,7 +90,7 @@ An approved execution of one traveler line was never evidence that a unit left t
 
 ## 3. Schema
 
-Replaced `work_instruction_executions` with two tables (`packages/core/src/lib/db/schema/work-orders.ts`;
+Replaced `work_instruction_executions` with two tables (`packages/cascadia-api/src/lib/db/schema/work-orders.ts`;
 the migration drops the old table):
 
 ```

@@ -25,7 +25,7 @@ COPY apps/cascadia/package.json ./apps/cascadia/
 # =============================================================================
 # Stage 2: Dependencies
 # =============================================================================
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
+FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN npm ci
 # =============================================================================
 # Stage 3: Builder
 # =============================================================================
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
+FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 
 WORKDIR /app
 
@@ -60,7 +60,7 @@ RUN npm run build:app -- "$APP"
 # Split out of the production stage below so it can be built, and therefore
 # smoke-tested, without the builder stage — the same seam, for the same reason,
 # as docker/app.Dockerfile. The first `COPY --from=builder` begins stage 5.
-FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
+FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
 
 WORKDIR /app
 

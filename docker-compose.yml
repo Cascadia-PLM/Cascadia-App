@@ -83,7 +83,7 @@ services:
     # no-op on every boot after the first, so a separate service would
     # duplicate the whole image/env block for no concurrency this stack can
     # have.
-    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
+    command: sh -c "tsx scripts/boot-migrate.ts && npm run serve"
 
   # RabbitMQ for background jobs
   rabbitmq:

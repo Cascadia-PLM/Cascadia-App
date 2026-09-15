@@ -60,7 +60,7 @@ services:
     # Apply the committed migrations, then serve. boot-migrate.ts refuses to
     # start a database that has tables but no migration journal (pre-v0.5);
     # see docs/deployment/upgrading.md for the one-time db:baseline stamp.
-    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
+    command: sh -c "tsx scripts/boot-migrate.ts && npm run serve"
 
 volumes:
   app_storage:

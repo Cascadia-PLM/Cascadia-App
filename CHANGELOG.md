@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **An MBOM is derived from one product.** `POST /api/v1/mbom` and the Create MBOM dialog copy the selected root Part and its reachable BOM subtree into the Manufacturing design; unrelated roots and orphan items of the Engineering design are left out. A design with a single root needs nothing new. One with several roots must name `rootItemId`, where before the whole design was copied.
 
+### Fixed
+
+- **The production container uses the admin tools installed in `/opt/admin`.** Container startup and migration commands invoked `tsx` and `drizzle-kit` through `npx`, which ignored their separate dependency tree, downloaded replacement packages into the runtime user's cache, and then failed because the Drizzle config could not resolve that replacement package from `/app`. Container entry points now use the installed binaries directly, the Drizzle config keeps its `drizzle-kit` dependency type-only, and the CLI's dynamically imported ORM and database driver resolve to the production copies already installed under `/app`, so a published image can migrate and start without downloading packages at runtime.
+
 ## [0.6.0] - 2026-09-13
 
 ### Added

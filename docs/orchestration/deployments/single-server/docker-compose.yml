@@ -63,7 +63,7 @@ services:
     # Apply committed migrations on startup (scripts/boot-migrate.ts). Refuses
     # a populated database with no migration journal — see
     # docs/deployment/upgrading.md.
-    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
+    command: sh -c "tsx scripts/boot-migrate.ts && npm run serve"
 
   # Optional: pgAdmin for database management
   pgadmin:

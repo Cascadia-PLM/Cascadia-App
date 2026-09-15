@@ -224,7 +224,7 @@ pre-0.5 databases are where the offending rows accumulated.
 The published image carries `tsx` and `drizzle-kit` as admin tools:
 
 ```bash
-docker exec cascadia-app npx tsx scripts/db-baseline.ts   # once
+docker exec cascadia-app npm run db:baseline              # once
 docker exec cascadia-app node scripts/drizzle.mjs migrate # every upgrade
 ```
 
@@ -240,7 +240,7 @@ docker exec cascadia-app node scripts/drizzle.mjs migrate # every upgrade
 > that fixes it:
 >
 > ```bash
-> docker exec cascadia-app npx tsx scripts/db-baseline.ts
+> docker exec cascadia-app npm run db:baseline
 > ```
 >
 > Restart after stamping. Every boot from then on applies whatever is new

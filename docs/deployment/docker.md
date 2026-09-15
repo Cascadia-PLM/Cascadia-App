@@ -152,7 +152,7 @@ docker compose up -d
 Runs PostgreSQL + the app container on one machine. The app applies committed migrations on startup — `scripts/boot-migrate.ts` guards the migrate so a pre-v0.5 database (tables, no journal) is refused with the one command that fixes it rather than migrated blind:
 
 ```yaml
-command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
+command: sh -c "tsx scripts/boot-migrate.ts && npm run serve"
 ```
 
 ### Production Image References

@@ -120,8 +120,8 @@ services:
     # All steps are idempotent so reboots are safe.
     command: >
       sh -c "node scripts/drizzle.mjs push --force
-      && npx tsx scripts/seed-minimal.ts
-      && npx tsx scripts/seed-demo.ts
+      && tsx scripts/seed-minimal.ts
+      && tsx scripts/seed-demo.ts
       && npm run serve"
 
   cad-converter:

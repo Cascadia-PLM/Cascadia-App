@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { defineConfig } from 'drizzle-kit'
+// Keep this type-only: production installs the CLI in /opt/admin, outside the
+// app's module tree, and loading this config must not require it from /app.
+import type { Config } from 'drizzle-kit'
 
 // Parse DATABASE_URL for Cloud SQL Unix socket support
 // Cloud SQL URLs use ?host=/cloudsql/instance format which drizzle-kit doesn't parse correctly
@@ -38,7 +40,7 @@ if (!rawUrl) {
 }
 const parsed = parseConnectionUrl(rawUrl)
 
-export default defineConfig({
+export default {
   dialect: 'postgresql',
   // This edition's composed schema — core plus every module's tables.
   schema: './src/modules.schema.ts',
@@ -59,4 +61,4 @@ export default defineConfig({
     : {
         url: parsed.url!,
       },
-})
+} satisfies Config

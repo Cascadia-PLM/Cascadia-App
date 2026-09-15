@@ -64,7 +64,7 @@ export function generateSingleServerCompose(
         depends_on: {
           postgres: { condition: 'service_healthy' },
         },
-        command: 'sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"',
+        command: 'sh -c "tsx scripts/boot-migrate.ts && npm run serve"',
         healthcheck: {
           test: [
             'CMD',

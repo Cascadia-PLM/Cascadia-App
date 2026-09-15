@@ -100,7 +100,7 @@ async function main(): Promise<never> {
         '',
         'Stamp the baseline as already applied, once, then restart:',
         '',
-        '  docker exec cascadia-app npx tsx scripts/db-baseline.ts',
+        '  docker exec cascadia-app npm run db:baseline',
         '',
         'db-baseline verifies the live schema matches the baseline before stamping,',
         'and refuses if it does not. Nothing has been changed in your database.',

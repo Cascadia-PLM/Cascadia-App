@@ -168,7 +168,7 @@ kubectl logs job/cascadia-migrate -n cascadia
 
 That is a one-shot `batch/v1` Job named `cascadia-migrate` in the `cascadia`
 namespace. It runs the app image with its command replaced by
-`npx tsx scripts/boot-migrate.ts`, which applies the committed migrations under
+`tsx scripts/boot-migrate.ts`, which applies the committed migrations under
 `apps/*/drizzle/` and then exits. It reads `DATABASE_URL` from
 `cascadia-secrets` and `NODE_ENV` from `cascadia-config` — both created by the
 steps above, and `NODE_ENV` is not decoration: with no `?sslmode=` in the URL it
@@ -194,7 +194,7 @@ Stamp it once and re-run the Job — see
 [Migrating a pre-v0.5 database](#migrating-a-pre-v05-database) below.
 
 The compose-based deployments do this differently: their templates override the
-container command with `sh -c "npx tsx scripts/boot-migrate.ts && npm run
+container command with `sh -c "tsx scripts/boot-migrate.ts && npm run
 serve"`, so a single-container install migrates as it boots. That pattern is
 compose-only. The Deployment here overrides no command, so its pods run the
 image's bare server entry point and touch the schema not at all.
@@ -596,7 +596,7 @@ refusal, and nothing in the database has been changed.
 Stamp the baseline as already applied, once, then re-run the Job:
 
 ```bash
-kubectl exec -it deployment/cascadia-app -n cascadia -- npx tsx scripts/db-baseline.ts
+kubectl exec -it deployment/cascadia-app -n cascadia -- npm run db:baseline
 ```
 
 `db-baseline` verifies the live schema matches the baseline before stamping and

@@ -189,7 +189,7 @@ function generateMigrateJob(config: KubernetesConfig): GeneratedFile {
               name: 'migrate',
               image: `${config.imageRepository}:${config.imageTag}`,
               // Replaces the image CMD, not its ENTRYPOINT.
-              command: ['npx', 'tsx', 'scripts/boot-migrate.ts'],
+              command: ['tsx', 'scripts/boot-migrate.ts'],
               env: [
                 // NODE_ENV is load-bearing here, not cosmetic: with no
                 // `?sslmode=` in the URL it decides whether the connection

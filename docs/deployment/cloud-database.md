@@ -206,7 +206,7 @@ docker compose up -d
 The compose file applies committed migrations on startup, through the guard in `scripts/boot-migrate.ts`:
 
 ```yaml
-command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
+command: sh -c "tsx scripts/boot-migrate.ts && npm run serve"
 ```
 
 ### Step 4: Seed the Database (Optional)
@@ -242,7 +242,7 @@ services:
     volumes:
       - app_storage:/app/storage
       - app_vault:/app/vault
-    command: sh -c "npx tsx scripts/boot-migrate.ts && npm run serve"
+    command: sh -c "tsx scripts/boot-migrate.ts && npm run serve"
 ```
 
 When using S3 storage, the local volumes (`app_storage`, `app_vault`) are not needed for file vault data, but the app may still use them for temporary files.
@@ -391,7 +391,7 @@ refusing container is restarting on a loop, so run the stamp as a one-off
 container rather than exec-ing into the one that keeps exiting:
 
 ```bash
-docker compose run --rm app npx tsx scripts/db-baseline.ts
+docker compose run --rm app npm run db:baseline
 docker compose up -d
 ```
 

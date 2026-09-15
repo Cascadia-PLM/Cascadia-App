@@ -27,6 +27,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { config as loadEnv } from 'dotenv'
 import { resolveApp } from './edition.mjs'
@@ -50,13 +51,25 @@ if (args.length === 0) {
 }
 
 const appDir = resolve(process.cwd(), 'apps', resolveApp())
+// A full checkout has the CLI in the root dependency tree. The production
+// image keeps it in /opt/admin instead and exposes only its binary through
+// PATH, so prefer the local binary when present and otherwise let PATH resolve
+// the image's copy. `npx` does neither: it downloads a third copy at runtime.
+const localDrizzleKit = resolve(
+  import.meta.dirname,
+  '..',
+  'node_modules',
+  '.bin',
+  process.platform === 'win32' ? 'drizzle-kit.cmd' : 'drizzle-kit',
+)
+const drizzleKit = existsSync(localDrizzleKit) ? localDrizzleKit : 'drizzle-kit'
 
 function runDrizzleKit() {
-  execFileSync(
-    'npx',
-    ['drizzle-kit', ...args, '--config', 'drizzle.config.ts'],
-    { cwd: appDir, stdio: 'inherit', shell: process.platform === 'win32' },
-  )
+  execFileSync(drizzleKit, [...args, '--config', 'drizzle.config.ts'], {
+    cwd: appDir,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  })
 }
 
 try {

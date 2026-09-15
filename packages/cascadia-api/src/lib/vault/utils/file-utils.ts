@@ -6,8 +6,8 @@ import path from 'node:path'
 import {
   DISPLAYABLE_IMAGE_EXTENSIONS,
   isDisplayableImage,
-} from '../image-files'
-import type { FileCategory } from '../file-categories'
+} from '@cascadia/commons/lib/vault/image-files'
+import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
 
 /**
  * Sanitize filename to remove dangerous characters
@@ -51,18 +51,9 @@ export function generateStoragePath(
   return [masterId, revision, fileId, version.toString(), sanitized].join('/')
 }
 
-/**
- * Format file size in human-readable format
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes'
-
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
-}
+// Display formatting is the one thing the client needs from here; it lives in
+// commons, and is re-exported so server callers keep importing it from here.
+export { formatFileSize } from '@cascadia/commons/lib/vault/format-file-size'
 
 /**
  * Get MIME type icon/category
@@ -464,7 +455,7 @@ export function isCADViewable(filename: string): boolean {
  * Content-based extraction stops there, deliberately:
  *
  * - **No image EXIF.** Reading it needs `sharp` or `exif-parser`, neither in the
- *   tree, and both native. This module lives in `packages/core`, the published
+ *   tree, and both native. This module lives in `packages/cascadia-api`, the published
  *   AGPL package, so that binary would land in every community-edition install —
  *   for fields nothing in the app reads today.
  * - **No native CAD property parsing.** Converted CAD already gets units,

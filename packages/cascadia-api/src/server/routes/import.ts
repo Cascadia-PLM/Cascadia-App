@@ -2,13 +2,23 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import {
+  DOCUMENT_FIELDS,
+  ISSUE_FIELDS,
+  MAX_IMPORT_ROWS,
+  PART_FIELDS,
+  importDocumentsRequestSchema,
+  importIssuesRequestSchema,
+  importPartsWithBomRequestSchema,
+} from '@cascadia/commons/lib/import'
 import { tagged } from '../adapter'
-import type { BaseItem } from '@/lib/items/types/base'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import type {
   BomImportResult,
   ImportResult,
   ItemFieldConfig,
-} from '@/lib/import'
+} from '@cascadia/commons/lib/import'
+import { generateXlsxTemplate } from '@/lib/import/xlsx-template'
 import { optionConditionKey, parseOptionText } from '@/lib/types/variants'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
@@ -20,16 +30,6 @@ import {
   PermissionDeniedError,
   ValidationError,
 } from '@/lib/errors'
-import {
-  DOCUMENT_FIELDS,
-  ISSUE_FIELDS,
-  MAX_IMPORT_ROWS,
-  PART_FIELDS,
-  generateXlsxTemplate,
-  importDocumentsRequestSchema,
-  importIssuesRequestSchema,
-  importPartsWithBomRequestSchema,
-} from '@/lib/import'
 import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
 import { requireRole } from '@/lib/auth/server'
 import '@/lib/items/registerItemTypes.server'

@@ -89,8 +89,6 @@ export type { PartFieldConfig } from './constants'
 // Parser
 export { parseFile, ParseError, isValidFileType, getFileType } from './parser'
 
-export { generateXlsxTemplate } from './xlsx-template'
-
 // Mapper
 export type { ApplyMappingsOptions } from './mapper'
 export {

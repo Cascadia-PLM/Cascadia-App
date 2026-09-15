@@ -12,23 +12,47 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 import type { Plugin } from 'vite'
 import type { VirtualRootRoute } from '@tanstack/virtual-file-routes'
 
-const CORE_DIR = dirname(fileURLToPath(import.meta.url))
-const REPO_ROOT = resolve(CORE_DIR, '../..')
+const WEB_DIR = dirname(fileURLToPath(import.meta.url))
+const REPO_ROOT = resolve(WEB_DIR, '../..')
+const PACKAGES_DIR = resolve(REPO_ROOT, 'packages')
+
+/**
+ * The application packages the client may import, by name.
+ *
+ * `@cascadia/web` is this package. `@cascadia/commons` is what the client may
+ * share with the server. `@cascadia/api` is deliberately **absent**: the
+ * client build has no way to resolve it, so a component that reaches for a
+ * service or the schema fails at build time rather than shipping `postgres`
+ * to the browser. (The app tsconfigs draw the same line for `tsc`.)
+ */
+const APP_PACKAGES = new Map([
+  ['@cascadia/web', resolve(WEB_DIR, 'src')],
+  ['@cascadia/commons', resolve(PACKAGES_DIR, 'cascadia-commons/src')],
+])
+const APP_PACKAGE_DIRS = new Set([
+  'cascadia-web',
+  'cascadia-commons',
+  'cascadia-api',
+])
+
 // Discovered, not named: writing a module package's id here would put
 // proprietary knowledge in a core file — `boundary:check` says so, and it is
 // right, because this file is published to a tree where those packages do not
 // exist. Presence on disk is the test instead, the same principle as
 // `scripts/workers.mjs` choosing its CAD services by `existsSync`: a directory
 // that is not there contributes nothing, with no flag to get wrong.
-const MODULE_PACKAGES = existsSync(resolve(REPO_ROOT, 'packages'))
-  ? readdirSync(resolve(REPO_ROOT, 'packages')).filter(
+const MODULE_PACKAGES = existsSync(PACKAGES_DIR)
+  ? readdirSync(PACKAGES_DIR).filter(
       (name) =>
-        name !== 'core' &&
-        existsSync(resolve(REPO_ROOT, 'packages', name, 'src')),
+        !APP_PACKAGE_DIRS.has(name) &&
+        existsSync(resolve(PACKAGES_DIR, name, 'src')),
     )
   : []
 const MODULE_SRC = new Map(
-  MODULE_PACKAGES.map((p) => [p, resolve(REPO_ROOT, 'packages', p, 'src')]),
+  MODULE_PACKAGES.map((p) => [
+    `@cascadia/${p}`,
+    resolve(PACKAGES_DIR, p, 'src'),
+  ]),
 )
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.css', '.json']
@@ -38,18 +62,22 @@ const posixPath = (...segments: Array<string>) =>
   resolve(...segments).replace(/\\/g, '/')
 
 /**
- * Resolve `@/`, `@cascadia/core/` and each `@cascadia/<module>/` against the
- * package roots this edition includes.
+ * Resolve `@/`, `@cascadia/web/`, `@cascadia/commons/` and each
+ * `@cascadia/<module>/` against the package roots this edition includes.
  *
  * Written out rather than delegating to `vite-tsconfig-paths` because that
- * plugin scopes each mapping to its tsconfig's `include`, and core's tsconfig
+ * plugin scopes each mapping to its tsconfig's `include`, and web's tsconfig
  * deliberately excludes `src/routes/**` — those files are typed through an
  * app's generated route tree. Bundler resolution and typecheck scope are
  * different questions, and tying them together silently drops the alias inside
  * every route file.
  *
  * `@/` tries each root in order, exactly as the `paths` arrays in the app
- * tsconfigs do: core first, then the module package if this edition has one.
+ * tsconfigs do: web first, then the module package if this edition has one.
+ *
+ * `@cascadia/api/` is refused outright rather than left unresolved: an
+ * unresolved bare specifier is a generic Vite error three screens long, and
+ * the fix — move the type to commons — is not something it can suggest.
  */
 function cascadiaAliases(roots: Array<string>): Plugin {
   const firstExisting = (root: string, rest: string) => {
@@ -69,17 +97,23 @@ function cascadiaAliases(roots: Array<string>): Plugin {
   return {
     name: 'cascadia-aliases',
     enforce: 'pre',
-    resolveId(source) {
+    resolveId(source, importer) {
+      if (source === '@cascadia/api' || source.startsWith('@cascadia/api/')) {
+        this.error(
+          `${importer ?? 'a client file'} imports ${source}. The client ` +
+            'bundle cannot reach @cascadia/api: a type the client needs ' +
+            'belongs in @cascadia/commons, and behaviour belongs behind an ' +
+            'endpoint.',
+        )
+      }
+
       let rest: string | null = null
       let search = roots
       if (source.startsWith('@/')) {
         rest = source.slice(2)
-      } else if (source.startsWith('@cascadia/core/')) {
-        rest = source.slice('@cascadia/core/'.length)
-        search = [resolve(CORE_DIR, 'src')]
       } else {
-        for (const [name, dir] of MODULE_SRC) {
-          const prefix = `@cascadia/${name}/`
+        for (const [name, dir] of [...APP_PACKAGES, ...MODULE_SRC]) {
+          const prefix = `${name}/`
           if (source.startsWith(prefix)) {
             rest = source.slice(prefix.length)
             search = [dir]
@@ -102,7 +136,7 @@ export interface AppViteOptions {
   /** Absolute path to the app directory (its `index.html` lives here). */
   appDir: string
   /**
-   * Extra package source roots this edition includes, searched after core when
+   * Extra package source roots this edition includes, searched after web when
    * resolving `@/`. Empty for the community edition — which is what makes its
    * bundle unable to reach module code even by accident.
    */
@@ -134,13 +168,13 @@ export function createAppViteConfig({
     root: appDir,
     envDir: REPO_ROOT,
     plugins: [
-      cascadiaAliases([resolve(CORE_DIR, 'src'), ...moduleRoots]),
+      cascadiaAliases([resolve(WEB_DIR, 'src'), ...moduleRoots]),
       tailwindcss(),
-      // The routes *directory* is core's — every edition shares core's pages
-      // and its `__root.tsx`. The generated *tree* is the app's, because which
-      // extra directories get scanned is the edition's business.
+      // The routes *directory* is the web package's — every edition shares
+      // its pages and its `__root.tsx`. The generated *tree* is the app's,
+      // because which extra directories get scanned is the edition's business.
       TanStackRouterVite({
-        routesDirectory: resolve(CORE_DIR, 'src/routes'),
+        routesDirectory: resolve(WEB_DIR, 'src/routes'),
         generatedRouteTree: resolve(appDir, 'src/routeTree.gen.ts'),
         virtualRouteConfig,
       }),
@@ -148,7 +182,7 @@ export function createAppViteConfig({
       // pdf.js loads character maps and the Base-14 font data at runtime rather
       // than bundling them. Served from our own origin, not a CDN, so the PDF
       // viewer works in air-gapped deployments. Paths must stay in step with
-      // PDFJS_OPTIONS in packages/core/src/components/vault/PdfViewer.tsx.
+      // PDFJS_OPTIONS in packages/cascadia-web/src/components/vault/PdfViewer.tsx.
       viteStaticCopy({
         // stripBase flattens the node_modules/... prefix off the matched paths;
         // without it the files land under dist/pdfjs/cmaps/node_modules/...

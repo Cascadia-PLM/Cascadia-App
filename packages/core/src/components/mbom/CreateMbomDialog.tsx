@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Factory, Loader2, XCircle } from 'lucide-react'
+import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,11 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { apiFetch } from '@/lib/api/client'
-import { designTagsQuery, useResourceMutation } from '@/lib/query'
+import {
+  designStructureQuery,
+  designTagsQuery,
+  useResourceMutation,
+} from '@/lib/query'
 
 interface Tag {
   id: string
@@ -35,12 +40,26 @@ interface Tag {
   createdAt: string
 }
 
+/** Product variants: derive the MBOM as one configuration of a part. */
+export interface MbomConfigurationInput {
+  rootItemId: string
+  rootItemNumber: string
+  makeCode?: string
+  selections: Record<string, string>
+}
+
 interface CreateMbomDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   sourceDesignId: string
   sourceDesignCode: string
   sourceDesignName: string
+  /**
+   * When given, the copied BOM is resolved against these selections: lines
+   * they do not admit are left out and the rest become fixed lines. Shown
+   * read-only; the Variants tab is where it is chosen.
+   */
+  configuration?: MbomConfigurationInput
 }
 
 interface MbomResult {
@@ -52,6 +71,7 @@ interface MbomResult {
   itemsCopied: number
   relationshipsCopied: number
   sourceLinks: number
+  linesFiltered?: number
 }
 
 export function CreateMbomDialog({
@@ -60,6 +80,7 @@ export function CreateMbomDialog({
   sourceDesignId,
   sourceDesignCode,
   sourceDesignName,
+  configuration,
 }: CreateMbomDialogProps) {
   const navigate = useNavigate()
   const [code, setCode] = useState('')
@@ -69,6 +90,7 @@ export function CreateMbomDialog({
   const [copyBomStructure, setCopyBomStructure] = useState(true)
   const [linkToSource, setLinkToSource] = useState(true)
   const [renumberItems, setRenumberItems] = useState(true)
+  const [rootItemId, setRootItemId] = useState(configuration?.rootItemId ?? '')
 
   // The baseline tags are only worth asking for while the dialog is on
   // screen, but the answer is the one every other reader of this design's
@@ -78,6 +100,10 @@ export function CreateMbomDialog({
     ...designTagsQuery<Tag>(sourceDesignId),
     enabled: open,
   })
+  const { data: structure } = useQuery(
+    designStructureQuery<BOMTreeNode, OrphanItem>(sourceDesignId),
+  )
+  const roots = structure?.roots ?? []
 
   /**
    * Creating an MBOM mints a whole Manufacturing design carrying copies of
@@ -91,6 +117,7 @@ export function CreateMbomDialog({
         method: 'POST',
         body: JSON.stringify({
           sourceDesignId,
+          rootItemId,
           code: code.toUpperCase(),
           name,
           description: description || undefined,
@@ -98,6 +125,13 @@ export function CreateMbomDialog({
           copyBomStructure,
           linkToSource,
           renumberItems,
+          configuration: configuration
+            ? {
+                rootItemId: configuration.rootItemId,
+                makeCode: configuration.makeCode,
+                selections: configuration.selections,
+              }
+            : undefined,
         }),
       })
       return response.data
@@ -115,16 +149,27 @@ export function CreateMbomDialog({
   // from the query above, which needs no prompting.
   useEffect(() => {
     if (open) {
-      setCode(`M-${sourceDesignCode}`)
-      setName(`${sourceDesignName} (MBOM)`)
+      const makeSuffix = configuration?.makeCode
+        ? `-${configuration.makeCode.toUpperCase()}`
+        : ''
+      setCode(`M-${sourceDesignCode}${makeSuffix}`)
+      setName(
+        configuration
+          ? `${sourceDesignName} ${configuration.makeCode ?? 'configured'} (MBOM)`
+          : `${sourceDesignName} (MBOM)`,
+      )
       setDescription('')
       setSourceTagId('__current__')
       setCopyBomStructure(true)
       setLinkToSource(true)
       setRenumberItems(true)
+      setRootItemId(
+        configuration?.rootItemId ??
+          (structure?.roots.length === 1 ? structure.roots[0]!.itemId : ''),
+      )
       createMbom.reset()
     }
-  }, [open, sourceDesignCode, sourceDesignName])
+  }, [open, sourceDesignCode, sourceDesignName, configuration, structure])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -182,6 +227,56 @@ export function CreateMbomDialog({
                   </span>
                 </div>
               </div>
+
+              {configuration && (
+                <div className="bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800 rounded-lg p-3 text-sm space-y-1">
+                  <div className="font-medium text-slate-900 dark:text-slate-100">
+                    Configuration
+                    {configuration.makeCode && (
+                      <span className="ml-2 font-mono text-cyan-700 dark:text-cyan-300">
+                        {configuration.makeCode}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400">
+                    {configuration.rootItemNumber}:{' '}
+                    {Object.entries(configuration.selections)
+                      .map(([family, value]) => `${family}=${value}`)
+                      .join(', ')}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    BOM lines this configuration does not select are left out;
+                    the rest become fixed lines.
+                  </p>
+                </div>
+              )}
+
+              {!configuration && (
+                <div className="space-y-2">
+                  <Label htmlFor="mbomRoot">Root Part</Label>
+                  <Select
+                    value={rootItemId}
+                    onValueChange={setRootItemId}
+                    disabled={isFormDisabled}
+                  >
+                    <SelectTrigger id="mbomRoot">
+                      <SelectValue placeholder="Select the product to release" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roots.map((root) => (
+                        <SelectItem key={root.itemId} value={root.itemId}>
+                          {root.itemNumber} — {root.name || 'Unnamed'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {copyBomStructure
+                      ? 'Only this Part and its BOM subtree are copied to the MBOM.'
+                      : 'Identifies the product this Manufacturing design represents.'}
+                  </p>
+                </div>
+              )}
 
               {/* Baseline Tag Selector */}
               <div className="space-y-2">
@@ -313,7 +408,7 @@ export function CreateMbomDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isFormDisabled}>
+              <Button type="submit" disabled={isFormDisabled || !rootItemId}>
                 {createMbom.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -366,6 +461,16 @@ export function CreateMbomDialog({
                   {result.sourceLinks}
                 </span>
               </div>
+              {result.linesFiltered !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Lines left out by configuration:
+                  </span>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {result.linesFiltered}
+                  </span>
+                </div>
+              )}
             </div>
             <DialogFooter className="sm:justify-center">
               <Button onClick={handleNavigateToNewDesign}>

@@ -40,6 +40,7 @@ import type {
   ToolContext,
   WriteOperationMeta,
 } from './permission-wrapper'
+import { parseOptionText } from '@/lib/types/variants'
 import { AppError } from '@/lib/errors'
 
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
@@ -110,6 +111,8 @@ interface CreateRelationshipInput {
   quantity?: number
   findNumber?: number
   referenceDesignator?: string
+  option?: string
+  targetMakeCode?: string
   confirmed?: boolean
   confirmationToken?: string
 }
@@ -770,6 +773,9 @@ async function createRelationshipHandlerImpl(
       if (input.findNumber) relationshipInfo.push(`Find #: ${input.findNumber}`)
       if (input.referenceDesignator)
         relationshipInfo.push(`Ref Des: ${input.referenceDesignator}`)
+      if (input.option) relationshipInfo.push(`Option: ${input.option}`)
+      if (input.targetMakeCode)
+        relationshipInfo.push(`Target execution: ${input.targetMakeCode}`)
 
       return withConfirmationToken(
         confirmationRequired(
@@ -798,6 +804,8 @@ async function createRelationshipHandlerImpl(
         quantity: input.quantity?.toString(),
         findNumber: input.findNumber,
         referenceDesignator: input.referenceDesignator,
+        option: input.option ? parseOptionText(input.option) : null,
+        targetMakeCode: input.targetMakeCode,
       },
     )
 

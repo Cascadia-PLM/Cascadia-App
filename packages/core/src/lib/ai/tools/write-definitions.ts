@@ -39,6 +39,7 @@ import {
 import { partTypeSchema } from '@/lib/items/types/part'
 import { requirementTypeSchema } from '@/lib/items/types/requirement'
 import { taskPrioritySchema } from '@/lib/items/types/task'
+import { makeCodeSchema } from '@/lib/types/variants'
 
 /**
  * Item types create_item can produce — every registered type except
@@ -285,6 +286,19 @@ Requires user confirmation before creating.`,
       .string()
       .optional()
       .describe('Reference designator like R1, C2 (BOM only)'),
+    option: z
+      .string()
+      .optional()
+      .describe(
+        'Product variants: option condition admitting this line, as ' +
+          '"family=value[,value][; family=value]" (BOM only). The parent ' +
+          'part must declare those families in its option model.',
+      ),
+    targetMakeCode: makeCodeSchema
+      .optional()
+      .describe(
+        'Product variants: active execution of the target Part revision, e.g. MK2 (BOM only).',
+      ),
     // Confirmation plumbing
     confirmationToken: z
       .string()

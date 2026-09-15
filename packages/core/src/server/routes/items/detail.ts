@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../../adapter'
+import { makeCodeSchema, optionConditionSchema } from '@/lib/types/variants'
 import { requirePermission } from '@/lib/auth/server'
 import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -635,6 +636,15 @@ const addRelationshipSchema = z.object({
     ),
   referenceDesignator: z.string().optional(),
   findNumber: z.number().optional(),
+  option: optionConditionSchema
+    .nullish()
+    .describe(
+      'Product variants: the option selections that admit this BOM line. ' +
+        'Omit or null for a fixed line.',
+    ),
+  targetMakeCode: makeCodeSchema
+    .nullish()
+    .describe('Active execution of the target Part revision, e.g. `MK2`.'),
 })
 
 // POST /api/items/:id/relationships
@@ -647,9 +657,9 @@ app.post(
         openapi: {
           summary: 'Add a relationship from this item',
           description:
-            'The path item is the edge source. `(sourceId, targetId, ' +
-            'relationshipType)` is unique, so re-adding an existing edge ' +
-            'fails rather than duplicating it.',
+            'The path item is the edge source. Source, target, relationship ' +
+            'type, option condition and target execution identify the edge, ' +
+            'so re-adding that same edge fails rather than duplicating it.',
           request: { params: z.object({ id: z.string().uuid() }) },
           responses: {
             201: { schema: z.object({ success: z.boolean() }) },
@@ -689,6 +699,8 @@ app.post(
               data.quantity === undefined ? undefined : String(data.quantity),
             referenceDesignator: data.referenceDesignator,
             findNumber: data.findNumber,
+            option: data.option ?? null,
+            targetMakeCode: data.targetMakeCode ?? null,
           },
         )
 

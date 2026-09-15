@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Parts now support product families, option models and named executions.** A lightweight Product Family groups independently revisioned Part variants such as `P3001V1` and `P3001V2`; each remains a normal Part with its own files, lifecycle and revision. Within one revision, _makes_ (`MK1`, `MK2`) are named complete option selections and never revise independently. A BOM line may carry an _option condition_ and may pin an active execution on its target Part, so a parent can identify `B3001R4MK2` without changing the child's stored item number. The BOM then holds every line the product can use, a "150 % BOM", and recursive resolution yields one 100 % BOM; a pinned child execution supplies that child's selections. Conditions and execution pins travel through checkout, ECO merge, cloning, graphs, Digital Thread and CSV/AI tools. Every Part exposes a Variants tab for family assignment and configuration, while configurable Parts add option views and live resolved-BOM preview. `POST /api/v1/mbom` accepts a root plus a named execution or explicit selections, validates nested configurations, and copies only that root's selected subtree as fixed lines. Full designations such as `P3001V1R2MK1` are composed for display from separate item-number, revision and execution fields. BOM import accepts both Option Condition (`color=black; display=yes,no`) and Target Execution columns. Prompted by [Cascadia-App#95](https://github.com/Cascadia-PLM/Cascadia-App/discussions/95). See `docs/features/product-variants.md`.
+- **Numeric revision schemes can start at zero.** `numeric` and `prefixed-numeric` take an optional `startAt`, so a lifecycle can run `0, 1, 2` or `R0, R1, R2`; the default stays 1.
+
+### Changed
+
+- **An MBOM is derived from one product.** `POST /api/v1/mbom` and the Create MBOM dialog copy the selected root Part and its reachable BOM subtree into the Manufacturing design; unrelated roots and orphan items of the Engineering design are left out. A design with a single root needs nothing new. One with several roots must name `rootItemId`, where before the whole design was copied.
+
 ## [0.6.0] - 2026-09-13
 
 ### Added

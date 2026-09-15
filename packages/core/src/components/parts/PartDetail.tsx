@@ -20,10 +20,8 @@ import type { Design } from '@/lib/types/design'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
 import type { EnrichmentSources } from '@/components/items/enrichment-sources'
 import { PageContainer } from '@/components/layout'
-import { DigitalThreadNavigator } from '@/components/thread'
-import { PartRelationshipsPanel } from '@/components/items/PartRelationshipsPanel'
-import { RequirementLinkingPanel } from '@/components/requirements/RequirementLinkingPanel'
-import { PartValidationPanel } from '@/components/parts/PartValidationPanel'
+import { PartRelationshipsTab } from '@/components/parts/PartRelationshipsTab'
+import { PartVariantsTab } from '@/components/variants/PartVariantsTab'
 import { ImpactAnalysisDialog } from '@/components/impact'
 import { Slot } from '@/lib/ui/slot-registry'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
@@ -87,9 +85,14 @@ import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 
 // Spelled out so Tailwind's scanner sees the class names — the tab count
 // varies with mode and with whether the part has images to show.
-const tabGridCols = (isCreateMode: boolean, hasGallery: boolean): string => {
+const tabGridCols = (
+  isCreateMode: boolean,
+  hasGallery: boolean,
+  hasVariants: boolean,
+): string => {
   if (isCreateMode) return 'grid-cols-2'
-  return hasGallery ? 'grid-cols-6' : 'grid-cols-5'
+  const count = 5 + (hasGallery ? 1 : 0) + (hasVariants ? 1 : 0)
+  return { 5: 'grid-cols-5', 6: 'grid-cols-6', 7: 'grid-cols-7' }[count]!
 }
 
 // Default empty part for create mode
@@ -125,6 +128,7 @@ export const PART_DETAIL_TABS = [
   'details',
   'gallery',
   'relationships',
+  'variants',
   'sources',
   'work-instructions',
   'history',
@@ -372,6 +376,8 @@ export function PartDetail({
     },
   )
   const hasGallery = !isCreateMode && galleryImages.length > 0
+  // Every existing Part can start its family/variant configuration here.
+  const hasVariants = !isCreateMode
 
   // Field update helper
   const updateField = (field: keyof Part, value: any) => {
@@ -579,6 +585,24 @@ export function PartDetail({
                       {contextLabel}
                     </Badge>
                   )}
+                {hasVariants && Boolean(currentPart.optionModel) && (
+                  <Badge
+                    variant="outline"
+                    className="text-sm text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700"
+                    title="This part has option families; its BOM lines can carry option conditions"
+                  >
+                    Configurable
+                  </Badge>
+                )}
+                {!isCreateMode && currentPart.productFamilyCode && (
+                  <Badge
+                    variant="outline"
+                    className="text-sm font-mono"
+                    title="Product family and independently revisioned variant"
+                  >
+                    {currentPart.productFamilyCode} / {currentPart.variantCode}
+                  </Badge>
+                )}
                 {!isCreateMode && editLock.status?.isCheckedOut && (
                   <Badge
                     variant="outline"
@@ -740,11 +764,14 @@ export function PartDetail({
           className="w-full"
         >
           <TabsList
-            className={`grid w-full ${tabGridCols(isCreateMode, hasGallery)}`}
+            className={`grid w-full ${tabGridCols(isCreateMode, hasGallery, hasVariants)}`}
           >
             <TabsTrigger value="details">Details</TabsTrigger>
             {hasGallery && <TabsTrigger value="gallery">Gallery</TabsTrigger>}
             <TabsTrigger value="relationships">Relationships</TabsTrigger>
+            {hasVariants && (
+              <TabsTrigger value="variants">Variants</TabsTrigger>
+            )}
             {!isCreateMode && (
               <TabsTrigger value="sources">Sources</TabsTrigger>
             )}
@@ -900,48 +927,29 @@ export function PartDetail({
             </TabsContent>
           )}
 
-          {/* Relationships Tab */}
+          {/* Relationships Tab — see PartRelationshipsTab */}
           <TabsContent value="relationships" className="mt-6 space-y-6">
-            {currentPart.id ? (
-              <>
-                <DigitalThreadNavigator
-                  itemId={currentPart.id}
-                  itemNumber={currentPart.itemNumber}
-                  itemName={currentPart.name}
-                  designId={currentPart.designId}
-                />
-                {/* Structure edits follow the click-Edit policy: read-only
-                    until the user enters edit mode (which holds the server-
-                    side checkout lock) */}
-                <PartRelationshipsPanel
-                  itemId={currentPart.id}
-                  itemType="Part"
-                  branchId={
-                    context.type === 'branch' ? context.branchId : undefined
-                  }
-                  readOnly={!isEditing}
-                />
-                <RequirementLinkingPanel
-                  itemId={currentPart.id}
-                  designId={currentPart.designId}
-                  readOnly={!isEditing}
-                />
-                <PartValidationPanel
-                  partId={currentPart.id}
-                  designId={currentPart.designId}
-                  isEditable={isEditing}
-                />
-              </>
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Save the part first to manage relationships
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <PartRelationshipsTab
+              part={currentPart}
+              branchId={
+                context.type === 'branch' ? context.branchId : undefined
+              }
+              isEditing={isEditing}
+            />
           </TabsContent>
+
+          {/* Variants tab also creates the first option model/family assignment. */}
+          {hasVariants && currentPart.id && (
+            <TabsContent value="variants" className="mt-6">
+              <PartVariantsTab
+                part={currentPart}
+                branchId={
+                  context.type === 'branch' ? context.branchId : undefined
+                }
+                isEditing={isEditing}
+              />
+            </TabsContent>
+          )}
 
           {/* Sources Tab — Approved Manufacturer List (only for existing parts) */}
           {!isCreateMode && (currentPart.masterId ?? currentPart.id) && (

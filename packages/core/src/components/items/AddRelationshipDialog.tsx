@@ -2,7 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { Check, Link2, X } from 'lucide-react'
+import type { Part } from '@/lib/items/types/part'
 import {
   Dialog,
   DialogContent,
@@ -35,7 +37,7 @@ import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { useListSelection } from '@/lib/hooks/useListSelection'
 import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query'
+import { entityQuery, useInvalidateResources } from '@/lib/query'
 import { StateBadge } from '@/components/items/StateBadge'
 import { cn } from '@/lib/utils'
 
@@ -52,12 +54,14 @@ interface LineDetails {
   quantity: string
   referenceDesignator: string
   findNumber: string
+  targetMakeCode: string
 }
 
 const EMPTY_DETAILS: LineDetails = {
   quantity: '',
   referenceDesignator: '',
   findNumber: '',
+  targetMakeCode: '__none__',
 }
 
 /**
@@ -111,6 +115,19 @@ export function AddRelationshipDialog({
 
   const isBom = relationshipType === BOM_RELATIONSHIP_TYPE
   const defaultDetails = isBom ? BOM_DEFAULT_DETAILS : EMPTY_DETAILS
+  const selectedPartQueries = useQueries({
+    queries: isBom
+      ? selection.selected.map((item) =>
+          entityQuery<Part>('parts', item.id, 'part'),
+        )
+      : [],
+  })
+  const makesByItemId = new Map(
+    selection.selected.map((item, index) => [
+      item.id,
+      selectedPartQueries[index]?.data?.makes ?? [],
+    ]),
+  )
 
   const setDetail = (
     id: string,
@@ -158,6 +175,10 @@ export function AddRelationshipDialog({
                 findNumber: line.findNumber
                   ? parseInt(line.findNumber)
                   : undefined,
+                targetMakeCode:
+                  line.targetMakeCode === '__none__'
+                    ? undefined
+                    : line.targetMakeCode,
               }
             }),
           }),
@@ -370,11 +391,19 @@ export function AddRelationshipDialog({
 
               {/* Outside the scroller, so the columns stay labelled once the
                   selection is long enough to scroll */}
-              <div className="grid grid-cols-[minmax(0,1fr)_4rem_6rem_4rem_1.75rem] gap-2 text-xs text-slate-500 dark:text-slate-400 pr-1">
+              <div
+                className={cn(
+                  'grid gap-2 text-xs text-slate-500 dark:text-slate-400 pr-1',
+                  isBom
+                    ? 'grid-cols-[minmax(0,1fr)_4rem_6rem_4rem_7rem_1.75rem]'
+                    : 'grid-cols-[minmax(0,1fr)_4rem_6rem_4rem_1.75rem]',
+                )}
+              >
                 <span>Item</span>
                 <span>Qty</span>
                 <span>Ref Des</span>
                 <span>Find #</span>
+                {isBom && <span>Execution</span>}
                 <span />
               </div>
 
@@ -384,7 +413,12 @@ export function AddRelationshipDialog({
                   return (
                     <div
                       key={item.id}
-                      className="grid grid-cols-[minmax(0,1fr)_4rem_6rem_4rem_1.75rem] gap-2 items-center"
+                      className={cn(
+                        'grid gap-2 items-center',
+                        isBom
+                          ? 'grid-cols-[minmax(0,1fr)_4rem_6rem_4rem_7rem_1.75rem]'
+                          : 'grid-cols-[minmax(0,1fr)_4rem_6rem_4rem_1.75rem]',
+                      )}
                     >
                       <span
                         className="truncate text-sm font-medium text-slate-900 dark:text-slate-100"
@@ -435,6 +469,31 @@ export function AddRelationshipDialog({
                           setDetail(item.id, 'findNumber', e.target.value)
                         }
                       />
+                      {isBom && (
+                        <Select
+                          value={line.targetMakeCode}
+                          onValueChange={(value) =>
+                            setDetail(item.id, 'targetMakeCode', value)
+                          }
+                        >
+                          <SelectTrigger
+                            className="h-8"
+                            aria-label={`Execution for ${item.itemNumber}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">—</SelectItem>
+                            {(makesByItemId.get(item.id) ?? [])
+                              .filter((make) => make.active)
+                              .map((make) => (
+                                <SelectItem key={make.code} value={make.code}>
+                                  {make.code}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"

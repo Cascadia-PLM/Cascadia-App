@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useState } from 'react'
+import type { Make, OptionCondition, OptionModel } from '@/lib/types/variants'
 import {
   Dialog,
   DialogContent,
@@ -13,12 +14,20 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select'
 import { BOM_RELATIONSHIP_TYPE } from '@/components/items/bom-target-scope'
 import { isValidQuantity } from '@/components/items/bom-quantity'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
 import { cn } from '@/lib/utils'
+import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
 
 /** The line being edited — the columns `PUT /relationships/:id` can change. */
 export interface EditableRelationship {
@@ -27,9 +36,13 @@ export interface EditableRelationship {
   quantity: string | null
   referenceDesignator: string | null
   findNumber: number | null
+  /** Product variants: shown here, edited from the row's option icon. */
+  option?: OptionCondition | null
+  targetMakeCode?: string | null
   targetItem: {
     itemNumber: string
     name?: string | null
+    makes?: Array<Make> | null
   }
 }
 
@@ -37,6 +50,8 @@ interface EditRelationshipDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   relationship: EditableRelationship
+  /** For labelling the option chips; the parent part's model. */
+  optionModel?: OptionModel | null
   onSuccess?: () => void
 }
 
@@ -53,6 +68,7 @@ export function EditRelationshipDialog({
   open,
   onOpenChange,
   relationship,
+  optionModel,
   onSuccess,
 }: EditRelationshipDialogProps) {
   const { handleError } = useErrorHandler()
@@ -65,6 +81,9 @@ export function EditRelationshipDialog({
     relationship.findNumber !== null ? String(relationship.findNumber) : '',
   )
   const [saving, setSaving] = useState(false)
+  const [targetMakeCode, setTargetMakeCode] = useState(
+    relationship.targetMakeCode ?? '__none__',
+  )
 
   const isBom = relationship.relationshipType === BOM_RELATIONSHIP_TYPE
   // A BOM line requires a quantity; on any line, a non-empty value must be a
@@ -84,6 +103,7 @@ export function EditRelationshipDialog({
           quantity: quantity.trim() || null,
           referenceDesignator: referenceDesignator.trim() || null,
           findNumber: findNumber ? parseInt(findNumber, 10) : null,
+          targetMakeCode: targetMakeCode === '__none__' ? null : targetMakeCode,
         }),
       })
       await invalidate('relationships')
@@ -157,6 +177,46 @@ export function EditRelationshipDialog({
             />
           </div>
         </div>
+
+        {isBom && (relationship.targetItem.makes?.length ?? 0) > 0 && (
+          <div>
+            <Label htmlFor="edit-rel-execution">Target execution</Label>
+            <Select value={targetMakeCode} onValueChange={setTargetMakeCode}>
+              <SelectTrigger id="edit-rel-execution">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Unspecified</SelectItem>
+                {relationship.targetItem.makes
+                  ?.filter((make) => make.active)
+                  .map((make) => (
+                    <SelectItem key={make.code} value={make.code}>
+                      {make.code}
+                      {make.name ? ` — ${make.name}` : ''}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Pins this BOM line to an execution of the target revision.
+            </p>
+          </div>
+        )}
+
+        {relationship.option && (
+          <div className="text-sm">
+            <span className="text-slate-500 dark:text-slate-400 mr-2">
+              Option condition
+            </span>
+            <OptionConditionChips
+              condition={relationship.option}
+              model={optionModel}
+            />
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Change it from the option icon on the line.
+            </p>
+          </div>
+        )}
 
         <DialogFooter>
           <Button

@@ -15,8 +15,10 @@ import { designs } from '../db/schema/designs'
 import { CrossDesignReferenceService } from './CrossDesignReferenceService'
 import { DesignService } from './DesignService'
 import { VersionResolver } from './VersionResolver'
+import type { OptionCondition } from '@/lib/types/variants'
 import type { VersionContext } from './VersionResolver'
 import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
+import { optionConditionKey } from '@/lib/types/variants'
 
 // The tree this service builds is the same shape the design-structure endpoint
 // builds and the BOM components render, so it is declared once in lib/types.
@@ -422,6 +424,8 @@ export class ChangeOrderStructureService {
         relationshipId: string
         quantity?: number
         findNumber?: number
+        option?: OptionCondition | null
+        targetMakeCode?: string | null
       }>
     >()
     const hasParent = new Set<string>()
@@ -431,7 +435,7 @@ export class ChangeOrderStructureService {
     // repeat, but the fallback for a version that owns no lines still reaches
     // across revisions, and two of those can name two revisions of one child
     // that resolve to the same item.
-    const childMasterIdsBySource = new Map<string, Set<string>>()
+    const childKeysBySource = new Map<string, Set<string>>()
     const addChild = (
       sourceMasterId: string,
       child: {
@@ -440,15 +444,22 @@ export class ChangeOrderStructureService {
         relationshipId: string
         quantity?: number
         findNumber?: number
+        option?: OptionCondition | null
+        targetMakeCode?: string | null
       },
     ) => {
-      let recorded = childMasterIdsBySource.get(sourceMasterId)
+      let recorded = childKeysBySource.get(sourceMasterId)
       if (!recorded) {
         recorded = new Set<string>()
-        childMasterIdsBySource.set(sourceMasterId, recorded)
+        childKeysBySource.set(sourceMasterId, recorded)
       }
-      if (recorded.has(child.childMasterId)) return
-      recorded.add(child.childMasterId)
+      const childKey = [
+        child.childMasterId,
+        optionConditionKey(child.option),
+        child.targetMakeCode ?? '',
+      ].join('\u0000')
+      if (recorded.has(childKey)) return
+      recorded.add(childKey)
 
       const siblings = childrenMap.get(sourceMasterId)
       if (siblings) {
@@ -518,6 +529,8 @@ export class ChangeOrderStructureService {
           relationshipId: r.rel.id,
           quantity: r.rel.quantity ? Number(r.rel.quantity) : undefined,
           findNumber: r.rel.findNumber ?? undefined,
+          option: r.rel.option ?? null,
+          targetMakeCode: r.rel.targetMakeCode ?? null,
         })
       }
     }
@@ -570,6 +583,8 @@ export class ChangeOrderStructureService {
             node.quantity = c.quantity
             node.findNumber = c.findNumber
             node.relationshipId = c.relationshipId
+            node.option = c.option ?? null
+            node.targetMakeCode = c.targetMakeCode ?? null
           }
           return node
         })

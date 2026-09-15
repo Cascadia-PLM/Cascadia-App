@@ -12,6 +12,12 @@
  */
 
 import { z } from 'zod'
+import {
+  makesSchema,
+  optionModelSchema,
+  productFamilyCodeSchema,
+  variantCodeSchema,
+} from '@/lib/types/variants'
 import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
 import { jsonValueSchema } from '@/lib/items/types/base'
 import { testStepSchema } from '@/lib/items/types/testcase'
@@ -83,6 +89,8 @@ export const partCreateSchema = z.object({
   cost: z.string().optional(),
   costCurrency: z.string().length(3).optional().default('USD'),
   leadTimeDays: z.number().int().min(0).optional(),
+  productFamilyCode: productFamilyCodeSchema.nullable().optional(),
+  variantCode: variantCodeSchema.nullable().optional(),
   branchId: z.string().uuid().optional(), // For versioned workflow
 })
 
@@ -115,6 +123,12 @@ export const partUpdateSchema = z.object({
   cost: z.string().nullable().optional(),
   costCurrency: z.string().length(3).nullable().optional(),
   leadTimeDays: z.number().int().min(0).nullable().optional(),
+  // Product variants. Validated for shape here; `ItemService.update` also
+  // refuses a model change that strands a conditioned BOM line or a make.
+  optionModel: optionModelSchema.nullable().optional(),
+  makes: makesSchema.nullable().optional(),
+  productFamilyCode: productFamilyCodeSchema.nullable().optional(),
+  variantCode: variantCodeSchema.nullable().optional(),
   // Echoed by whole-item form saves. `ItemService.update` tolerates an
   // identical value and rejects a changed one — a state change goes through
   // the lifecycle, not through here.
@@ -763,8 +777,15 @@ export type ItemListQuery = z.infer<typeof itemListSchema>
 
 export const revisionSchemeSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('alpha'), uppercase: z.boolean().optional() }),
-  z.object({ type: z.literal('numeric') }),
-  z.object({ type: z.literal('prefixed-numeric'), prefix: z.string().max(20) }),
+  z.object({
+    type: z.literal('numeric'),
+    startAt: z.number().int().min(0).optional(),
+  }),
+  z.object({
+    type: z.literal('prefixed-numeric'),
+    prefix: z.string().max(20),
+    startAt: z.number().int().min(0).optional(),
+  }),
   z.object({ type: z.literal('none') }),
 ])
 

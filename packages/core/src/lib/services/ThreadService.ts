@@ -37,6 +37,7 @@ import {
   RELATIONSHIP_CONSUMES,
   RELATIONSHIP_PRODUCES,
 } from './WorkOrderMaterialService'
+import type { OptionCondition } from '@/lib/types/variants'
 import type { VersionContext } from './VersionResolver'
 import { serviceLogger } from '@/lib/logging/logger'
 
@@ -90,6 +91,10 @@ export interface ThreadEdge {
   domain: 'same' | 'cross' // Same domain (BOM) or cross-domain (EBOM_SOURCE)
   quantity: string | null
   derivationMethod: string | null
+  /** Product variants: option condition on a BOM line; null when fixed. */
+  option?: OptionCondition | null
+  /** Execution pinned on a BOM edge's target Part revision. */
+  targetMakeCode?: string | null
 }
 
 /**
@@ -720,6 +725,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: rel.derivationMethod,
       })
 
@@ -780,6 +786,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: rel.derivationMethod,
       })
 
@@ -840,6 +847,8 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'same',
         quantity: rel.quantity,
+        option: rel.option ?? null,
+        targetMakeCode: rel.targetMakeCode ?? null,
         derivationMethod: null,
       })
 
@@ -937,6 +946,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: null,
       })
 
@@ -982,6 +992,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: null,
       })
     }
@@ -1129,6 +1140,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: null,
       })
     }
@@ -1153,6 +1165,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: null,
       })
     }
@@ -1198,6 +1211,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: null,
       })
       return
@@ -1216,6 +1230,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: null,
       })
       return
@@ -1384,6 +1399,7 @@ export class ThreadService {
             relationshipType: rel.relationshipType,
             domain: 'cross',
             quantity: rel.quantity,
+            option: rel.option ?? null,
             derivationMethod: null,
           })
           if (added) await this.walkWorkOrder(rel.sourceId, depth, ctx)
@@ -1459,6 +1475,7 @@ export class ThreadService {
           relationshipType: rel.relationshipType,
           domain: 'same',
           quantity: rel.quantity,
+          option: rel.option ?? null,
           derivationMethod: null,
         })
         if (added) await this.walkPhysicalPart(target.id, depth - 1, ctx)
@@ -1477,6 +1494,7 @@ export class ThreadService {
           relationshipType: rel.relationshipType,
           domain: 'cross',
           quantity: rel.quantity,
+          option: rel.option ?? null,
           derivationMethod: null,
         })
       }
@@ -1515,6 +1533,7 @@ export class ThreadService {
           relationshipType: rel.relationshipType,
           domain: 'same',
           quantity: rel.quantity,
+          option: rel.option ?? null,
           derivationMethod: null,
         })
       }
@@ -1699,6 +1718,7 @@ export class ThreadService {
         relationshipType: rel.relationshipType,
         domain: 'cross',
         quantity: rel.quantity,
+        option: rel.option ?? null,
         derivationMethod: null,
       })
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '../../db'
 import {
   branchItems,
@@ -9,6 +9,7 @@ import {
   designs,
   itemRelationships,
   items,
+  parts,
 } from '../../db/schema'
 import {
   AlreadyExistsError,
@@ -34,14 +35,20 @@ import { publishStructureEdges, structurePayload } from '../structure-events'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
 import type { TransactionClient } from '../../db'
 import type { PersistedItem } from '../types/base'
+import type { OptionCondition } from '@/lib/types/variants'
 import { itemLogger } from '@/lib/logging/logger'
 import { takeFirst } from '@/lib/db/take-first'
 import { BRANCH_TYPES } from '@/lib/versioning/branch-types'
+import {
+  makeCodeSchema,
+  optionConditionKey,
+  optionConditionSchema,
+} from '@/lib/types/variants'
 
 /**
  * The 409 for an edge that is already there. One shape for every path that can
- * hit `unique(source_id, target_id, relationship_type)`, so a caller sees the
- * same error whether we caught it first or the database did.
+ * hit one of the relationship identity indexes, so a caller sees the same
+ * error whether we caught it first or the database did.
  */
 function relationshipExistsError(
   sourceId: string,
@@ -469,20 +476,169 @@ export class ItemRelationshipService {
   }
 
   /**
-   * An edge is identified by (sourceId, targetId, relationshipType) — the
-   * unique constraint on `item_relationships`. Two BOM lines naming the same
-   * child under different find numbers are therefore the *same* edge, and the
-   * quantity has to be aggregated onto one line. Callers use this to say so
+   * A conditioned line may only name option families and values that its
+   * SOURCE part declares. The parent's option model is the vocabulary for its
+   * own BOM; a part with no model cannot carry conditioned lines.
+   */
+  static async assertOptionDeclared(
+    sourceId: string,
+    option: OptionCondition,
+  ): Promise<void> {
+    const { findUndeclared } = await import('@/lib/types/variants')
+    const [row] = await db
+      .select({ optionModel: parts.optionModel })
+      .from(parts)
+      .where(eq(parts.itemId, sourceId))
+      .limit(1)
+    const model = row?.optionModel
+    if (!model) {
+      throw new ValidationError(
+        'The parent part has no option model; declare its option families before conditioning a BOM line',
+        [
+          {
+            field: 'option',
+            message: 'No option model on the parent',
+            code: 'NO_OPTION_MODEL',
+          },
+        ],
+      )
+    }
+    const problem = findUndeclared(model, option)
+    if (problem) {
+      throw new ValidationError(problem, [
+        { field: 'option', message: problem, code: 'OPTION_NOT_DECLARED' },
+      ])
+    }
+  }
+
+  /** Canonicalise and validate an option condition before it reaches SQL. */
+  static async normalizeOption(
+    sourceId: string,
+    relationshipType: string,
+    option: OptionCondition | null | undefined,
+  ): Promise<OptionCondition | null> {
+    if (!option) return null
+    if (relationshipType !== 'BOM') {
+      throw new ValidationError(
+        'An option condition can only be set on a BOM relationship',
+        [
+          {
+            field: 'option',
+            message: 'Option conditions are only valid for BOM lines',
+            code: 'OPTION_NOT_BOM',
+          },
+        ],
+      )
+    }
+    const parsed = optionConditionSchema.safeParse(option)
+    if (!parsed.success) {
+      throw new ValidationError('Invalid option condition', [
+        {
+          field: 'option',
+          message:
+            parsed.error.issues[0]?.message ?? 'Invalid option condition',
+          code: 'OPTION_INVALID',
+        },
+      ])
+    }
+    await this.assertOptionDeclared(sourceId, parsed.data)
+    return parsed.data
+  }
+
+  /**
+   * A BOM line may pin an active execution of its target Part version. The
+   * reference deliberately points at a code on that exact version: when the
+   * child is revised, its available executions are revised with it.
+   */
+  static async normalizeTargetMake(
+    targetId: string,
+    relationshipType: string,
+    targetMakeCode: string | null | undefined,
+  ): Promise<string | null> {
+    if (!targetMakeCode) return null
+    if (relationshipType !== 'BOM') {
+      throw new ValidationError(
+        'A target execution can only be selected on a BOM relationship',
+        [
+          {
+            field: 'targetMakeCode',
+            message: 'Target execution is only valid for BOM lines',
+            code: 'TARGET_MAKE_NOT_BOM',
+          },
+        ],
+      )
+    }
+
+    const parsedCode = makeCodeSchema.safeParse(targetMakeCode)
+    if (!parsedCode.success) {
+      throw new ValidationError('Invalid target execution code', [
+        {
+          field: 'targetMakeCode',
+          message:
+            parsedCode.error.issues[0]?.message ?? 'Invalid execution code',
+          code: 'TARGET_MAKE_INVALID',
+        },
+      ])
+    }
+    const code = parsedCode.data
+    const [target] = await db
+      .select({ makes: parts.makes })
+      .from(parts)
+      .where(eq(parts.itemId, targetId))
+      .limit(1)
+    const make = (target?.makes ?? []).find(
+      (candidate) => candidate.code === code,
+    )
+    if (!make) {
+      throw new ValidationError(
+        `Execution ${code} does not exist on the target part`,
+        [
+          {
+            field: 'targetMakeCode',
+            message: `Execution ${code} does not exist on the target part`,
+            code: 'TARGET_MAKE_NOT_FOUND',
+          },
+        ],
+      )
+    }
+    if (!make.active) {
+      throw new ValidationError(`Execution ${code} is inactive`, [
+        {
+          field: 'targetMakeCode',
+          message: `Execution ${code} is inactive`,
+          code: 'TARGET_MAKE_INACTIVE',
+        },
+      ])
+    }
+    return make.code
+  }
+
+  /**
+   * An edge is identified by (sourceId, targetId, relationshipType, option,
+   * targetMakeCode) — the partial unique indexes on `item_relationships`. Two BOM lines
+   * naming the same child under different find numbers but the same option
+   * condition are therefore the *same* edge, and the quantity has to be
+   * aggregated onto one line; the same child under two different conditions
+   * is two lines. Callers use this to say so
    * before the database does, because the driver's answer is a wall of SQL.
    */
   static edgeKey(edge: {
     sourceId: string
     targetId: string
     relationshipType: string
+    option?: OptionCondition | null
+    targetMakeCode?: string | null
   }): string {
-    // NUL separates: it cannot occur in a uuid or a relationship type, so no
-    // pair of distinct triples can collide on the joined string.
-    return [edge.sourceId, edge.targetId, edge.relationshipType].join('\u0000')
+    // NUL separates: it cannot occur in a uuid, a relationship type or the
+    // canonical JSON of a condition, so no pair of distinct tuples can
+    // collide on the joined string. A fixed line contributes ''.
+    return [
+      edge.sourceId,
+      edge.targetId,
+      edge.relationshipType,
+      optionConditionKey(edge.option),
+      edge.targetMakeCode?.toUpperCase() ?? '',
+    ].join('\u0000')
   }
 
   /**
@@ -493,7 +649,13 @@ export class ItemRelationshipService {
    * later one.
    */
   static findDuplicateEdges<
-    T extends { sourceId: string; targetId: string; relationshipType: string },
+    T extends {
+      sourceId: string
+      targetId: string
+      relationshipType: string
+      option?: OptionCondition | null
+      targetMakeCode?: string | null
+    },
   >(edges: Array<T>): Array<{ index: number; firstIndex: number; edge: T }> {
     const firstSeenAt = new Map<string, number>()
     const duplicates: Array<{ index: number; firstIndex: number; edge: T }> = []
@@ -666,6 +828,8 @@ export class ItemRelationshipService {
           referenceDesignator: rel.referenceDesignator,
           findNumber: rel.findNumber,
           metadata: rel.metadata,
+          option: rel.option,
+          targetMakeCode: rel.targetMakeCode,
           createdBy: userId,
         })),
       )
@@ -690,11 +854,24 @@ export class ItemRelationshipService {
       quantity?: string
       referenceDesignator?: string
       findNumber?: number
+      option?: OptionCondition | null
+      targetMakeCode?: string | null
     },
     options?: { bypassEditGuard?: boolean },
   ): Promise<typeof itemRelationships.$inferSelect> {
     // Lazy import to avoid circular dependency
     const { ItemService } = await import('./ItemService')
+
+    const option = await this.normalizeOption(
+      sourceId,
+      relationshipType,
+      data?.option,
+    )
+    const targetMakeCode = await this.normalizeTargetMake(
+      targetId,
+      relationshipType,
+      data?.targetMakeCode,
+    )
 
     const sourceItem = await ItemService.findById(sourceId)
     await this.assertBomTargetScope([{ sourceId, targetId, relationshipType }])
@@ -717,6 +894,12 @@ export class ItemRelationshipService {
           eq(itemRelationships.sourceId, sourceId),
           eq(itemRelationships.targetId, targetId),
           eq(itemRelationships.relationshipType, relationshipType),
+          option
+            ? eq(itemRelationships.option, option)
+            : isNull(itemRelationships.option),
+          targetMakeCode
+            ? eq(itemRelationships.targetMakeCode, targetMakeCode)
+            : isNull(itemRelationships.targetMakeCode),
         ),
       )
       .limit(1)
@@ -742,6 +925,8 @@ export class ItemRelationshipService {
               quantity: data?.quantity,
               referenceDesignator: data?.referenceDesignator,
               findNumber: data?.findNumber,
+              option,
+              targetMakeCode,
               createdBy: userId,
             })
             .returning(),
@@ -811,6 +996,7 @@ export class ItemRelationshipService {
                         targetItemNumber: targetItem?.itemNumber,
                         quantity: data?.quantity,
                         findNumber: data?.findNumber,
+                        targetMakeCode,
                       },
                       fieldCategory: 'relationship',
                     },
@@ -860,6 +1046,8 @@ export class ItemRelationshipService {
         referenceDesignator?: string
         findNumber?: number
         metadata?: Record<string, unknown> | null
+        option?: OptionCondition | null
+        targetMakeCode?: string | null
       }
     }>,
     options?: {
@@ -872,9 +1060,30 @@ export class ItemRelationshipService {
 
     const { ItemService } = await import('./ItemService')
 
+    // Canonical conditions first, so the duplicate check below and the
+    // partial unique index agree on what "the same line" is.
+    for (const r of relationships) {
+      r.data ??= {}
+      r.data.option = await this.normalizeOption(
+        r.sourceId,
+        r.relationshipType,
+        r.data.option,
+      )
+      r.data.targetMakeCode = await this.normalizeTargetMake(
+        r.targetId,
+        r.relationshipType,
+        r.data.targetMakeCode,
+      )
+    }
+    const withOption = relationships.map((r) => ({
+      ...r,
+      option: r.data?.option ?? null,
+      targetMakeCode: r.data?.targetMakeCode ?? null,
+    }))
+
     // Duplicates inside the batch collide with each other, not with anything
     // stored, so no amount of replacing saves them. Reject before writing.
-    const duplicates = this.findDuplicateEdges(relationships)
+    const duplicates = this.findDuplicateEdges(withOption)
     if (duplicates.length > 0) {
       throw new ValidationError(
         'A relationship may appear only once per (source, target, type)',
@@ -974,6 +1183,8 @@ export class ItemRelationshipService {
               referenceDesignator: r.data?.referenceDesignator ?? null,
               findNumber: r.data?.findNumber ?? null,
               metadata: r.data?.metadata ?? null,
+              option: r.data?.option ?? null,
+              targetMakeCode: r.data?.targetMakeCode ?? null,
               createdBy: r.userId,
             })),
           )
@@ -1092,6 +1303,7 @@ export class ItemRelationshipService {
               targetItemNumber: targetItem?.itemNumber,
               quantity: rel.data?.quantity,
               findNumber: rel.data?.findNumber,
+              targetMakeCode: rel.data?.targetMakeCode,
             },
             fieldCategory: 'relationship' as const,
           }
@@ -1260,6 +1472,7 @@ export class ItemRelationshipService {
                           targetItemNumber: targetItem?.itemNumber,
                           quantity: relationship.quantity,
                           findNumber: relationship.findNumber,
+                          targetMakeCode: relationship.targetMakeCode,
                         },
                         newValue: null,
                         fieldCategory: 'relationship',
@@ -1290,7 +1503,9 @@ export class ItemRelationshipService {
   }
 
   /**
-   * Update a relationship's properties (quantity, referenceDesignator, findNumber)
+   * Update a relationship's properties (quantity, referenceDesignator,
+   * findNumber, option and targetMakeCode). `option: null` makes the line fixed
+   * again; `targetMakeCode: null` removes the execution pin.
    */
   static async updateRelationship(
     relationshipId: string,
@@ -1299,6 +1514,8 @@ export class ItemRelationshipService {
       quantity?: string | null
       referenceDesignator?: string | null
       findNumber?: number | null
+      option?: OptionCondition | null
+      targetMakeCode?: string | null
     },
     options?: { bypassEditGuard?: boolean },
   ): Promise<typeof itemRelationships.$inferSelect> {
@@ -1313,6 +1530,57 @@ export class ItemRelationshipService {
 
     if (!existing) {
       throw new Error(`Relationship ${relationshipId} not found`)
+    }
+
+    const option =
+      data.option === undefined
+        ? undefined
+        : await this.normalizeOption(
+            existing.sourceId,
+            existing.relationshipType,
+            data.option,
+          )
+    const targetMakeCode =
+      data.targetMakeCode === undefined
+        ? undefined
+        : await this.normalizeTargetMake(
+            existing.targetId,
+            existing.relationshipType,
+            data.targetMakeCode,
+          )
+    const nextOption = option === undefined ? existing.option : option
+    const nextTargetMakeCode =
+      targetMakeCode === undefined ? existing.targetMakeCode : targetMakeCode
+    if (
+      optionConditionKey(nextOption) !== optionConditionKey(existing.option) ||
+      nextTargetMakeCode !== existing.targetMakeCode
+    ) {
+      // Changing the condition can collide with a sibling line on the same
+      // child; say so before the index does.
+      const collision = await db
+        .select({ id: itemRelationships.id })
+        .from(itemRelationships)
+        .where(
+          and(
+            eq(itemRelationships.sourceId, existing.sourceId),
+            eq(itemRelationships.targetId, existing.targetId),
+            eq(itemRelationships.relationshipType, existing.relationshipType),
+            nextOption
+              ? eq(itemRelationships.option, nextOption)
+              : isNull(itemRelationships.option),
+            nextTargetMakeCode
+              ? eq(itemRelationships.targetMakeCode, nextTargetMakeCode)
+              : isNull(itemRelationships.targetMakeCode),
+          ),
+        )
+        .limit(1)
+      if (collision.length > 0) {
+        throw relationshipExistsError(
+          existing.sourceId,
+          existing.targetId,
+          existing.relationshipType,
+        )
+      }
     }
 
     // Edit-lock policy: relationship properties are source-item content
@@ -1334,8 +1602,10 @@ export class ItemRelationshipService {
     if (data.referenceDesignator !== undefined)
       updateData.referenceDesignator = data.referenceDesignator
     if (data.findNumber !== undefined) updateData.findNumber = data.findNumber
+    if (option !== undefined) updateData.option = option
+    if (targetMakeCode !== undefined) updateData.targetMakeCode = targetMakeCode
 
-    // Which of the line's three properties actually changed, hoisted above the
+    // Which of the line's properties actually changed, hoisted above the
     // write. The commit's own comparison below is computed two guards deep —
     // inside a design *and* a branch resolution that does not run for an edge
     // whose source has no design — so the event needs its own, available to
@@ -1349,6 +1619,12 @@ export class ItemRelationshipService {
           data.referenceDesignator,
         ],
         ['findNumber', existing.findNumber, data.findNumber],
+        [
+          'option',
+          optionConditionKey(existing.option),
+          option === undefined ? undefined : optionConditionKey(option),
+        ],
+        ['targetMakeCode', existing.targetMakeCode, targetMakeCode],
       ] as const
     )
       .filter(([, before, after]) => after !== undefined && before !== after)
@@ -1358,11 +1634,25 @@ export class ItemRelationshipService {
     const targetItem = await ItemService.findById(existing.targetId)
 
     const updated = await db.transaction(async (tx) => {
-      const [row] = await tx
-        .update(itemRelationships)
-        .set(updateData)
-        .where(eq(itemRelationships.id, relationshipId))
-        .returning()
+      let row: typeof itemRelationships.$inferSelect | undefined
+      try {
+        ;[row] = await tx
+          .update(itemRelationships)
+          .set(updateData)
+          .where(eq(itemRelationships.id, relationshipId))
+          .returning()
+      } catch (error) {
+        // Changing the condition can collide with a sibling line on the same
+        // child; translate the index's refusal.
+        if (isUniqueViolation(error, { table: 'item_relationships' })) {
+          throw relationshipExistsError(
+            existing.sourceId,
+            existing.targetId,
+            existing.relationshipType,
+          )
+        }
+        throw error
+      }
 
       if (!row) {
         throw new NotFoundError('ItemRelationship', relationshipId)
@@ -1433,6 +1723,25 @@ export class ItemRelationshipService {
           }
 
           if (
+            targetMakeCode !== undefined &&
+            existing.targetMakeCode !== targetMakeCode
+          ) {
+            fieldChanges.push({
+              fieldName: `bom_target_execution_changed`,
+              fieldPath: `relationships.${existing.relationshipType}`,
+              oldValue: {
+                targetItemNumber: targetLabel,
+                targetMakeCode: existing.targetMakeCode,
+              },
+              newValue: {
+                targetItemNumber: targetLabel,
+                targetMakeCode,
+              },
+              fieldCategory: 'relationship',
+            })
+          }
+
+          if (
             data.referenceDesignator !== undefined &&
             existing.referenceDesignator !== data.referenceDesignator
           ) {
@@ -1465,6 +1774,25 @@ export class ItemRelationshipService {
               newValue: {
                 targetItemNumber: targetLabel,
                 findNumber: data.findNumber,
+              },
+              fieldCategory: 'relationship',
+            })
+          }
+
+          if (
+            option !== undefined &&
+            optionConditionKey(option) !== optionConditionKey(existing.option)
+          ) {
+            fieldChanges.push({
+              fieldName: `bom_option_changed`,
+              fieldPath: `relationships.${existing.relationshipType}`,
+              oldValue: {
+                targetItemNumber: targetLabel,
+                option: existing.option,
+              },
+              newValue: {
+                targetItemNumber: targetLabel,
+                option,
               },
               fieldCategory: 'relationship',
             })

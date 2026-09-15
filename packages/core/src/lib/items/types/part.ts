@@ -4,6 +4,13 @@
 import { z } from 'zod'
 import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
+import type { Make, OptionModel } from '@/lib/types/variants'
+import {
+  makesSchema,
+  optionModelSchema,
+  productFamilyCodeSchema,
+  variantCodeSchema,
+} from '@/lib/types/variants'
 
 // Part classification. Exported as a schema so the AI/MCP tool schemas can
 // advertise exactly the values this type accepts (see requirement.ts).
@@ -29,25 +36,46 @@ export interface Part extends BaseItem {
   costCurrency?: string
   leadTimeDays?: number
 
+  // Product variants (see docs/proposals/product-variants.md). A part with an
+  // option model is configurable; its makes are named, complete selections.
+  optionModel?: OptionModel | null
+  makes?: Array<Make> | null
+  /** Lightweight grouping; every family member remains a normal Part. */
+  productFamilyCode?: string | null
+  variantCode?: string | null
+
   // Usage/Definition pattern fields (populated by search with includeUsageCount)
   usageOf?: string // If set, this is a usage referencing a definition
   usageCount?: number // Number of designs using this definition
 }
 
 // Part validation schema
-export const partSchema = baseItemSchema.extend({
-  itemType: z.literal('Part'),
-  designId: z.string().uuid({ message: 'Design is required' }), // Required for Parts
-  description: z.string().max(5000).optional(),
-  partType: partTypeSchema.optional(),
-  trackingMode: z.enum(['none', 'lot', 'serial']).optional(),
-  material: z.string().max(100).optional(),
-  weight: z.string().optional(),
-  weightUnit: z.string().max(10).optional().default('kg'),
-  cost: z.string().optional(),
-  costCurrency: z.string().length(3).optional().default('USD'),
-  leadTimeDays: z.number().int().min(0).optional(),
-})
+export const partSchema = baseItemSchema
+  .extend({
+    itemType: z.literal('Part'),
+    designId: z.string().uuid({ message: 'Design is required' }), // Required for Parts
+    description: z.string().max(5000).optional(),
+    partType: partTypeSchema.optional(),
+    trackingMode: z.enum(['none', 'lot', 'serial']).optional(),
+    material: z.string().max(100).optional(),
+    weight: z.string().optional(),
+    weightUnit: z.string().max(10).optional().default('kg'),
+    cost: z.string().optional(),
+    costCurrency: z.string().length(3).optional().default('USD'),
+    leadTimeDays: z.number().int().min(0).optional(),
+    optionModel: optionModelSchema.nullable().optional(),
+    makes: makesSchema.nullable().optional(),
+    productFamilyCode: productFamilyCodeSchema.nullable().optional(),
+    variantCode: variantCodeSchema.nullable().optional(),
+  })
+  .superRefine((part, ctx) => {
+    if (Boolean(part.productFamilyCode) === Boolean(part.variantCode)) return
+    ctx.addIssue({
+      code: 'custom',
+      path: [part.productFamilyCode ? 'variantCode' : 'productFamilyCode'],
+      message: 'Product family code and variant code must be provided together',
+    })
+  })
 
 // Part relationships
 export const partRelationships = [

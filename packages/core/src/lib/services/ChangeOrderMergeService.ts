@@ -2277,6 +2277,8 @@ export class ChangeOrderMergeService {
                       quantity: rel.quantity,
                       findNumber: rel.findNumber,
                       referenceDesignator: rel.referenceDesignator,
+                      option: rel.option,
+                      targetMakeCode: rel.targetMakeCode,
                       createdBy: userId,
                     })
                     .onConflictDoNothing()

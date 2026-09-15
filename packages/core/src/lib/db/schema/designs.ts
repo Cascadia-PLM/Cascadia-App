@@ -32,6 +32,16 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core'
  */
 export type DesignType = 'Engineering' | 'Manufacturing' | 'Library' | 'Family'
 
+/** How a Manufacturing design was resolved from its source (product variants). */
+export interface DesignConfiguration {
+  /** The configurable part the selections were resolved against. */
+  rootItemId: string
+  /** The make the selections came from, when one was named. */
+  makeCode: string | null
+  /** Option family code → value code. */
+  selections: Record<string, string>
+}
+
 export const designs = pgTable(
   'designs',
   {
@@ -88,6 +98,12 @@ export const designs = pgTable(
         onDelete: 'set null',
       },
     ),
+
+    // Product variants: the configuration a Manufacturing design was derived
+    // with. Null for an unconfigured derivation and for every other design
+    // type. Recorded so upstream-change review can say whether a changed EBOM
+    // line was ever selected by this make.
+    configuration: jsonb('configuration').$type<DesignConfiguration>(),
 
     // Planning info
     plannedQuantity: integer('planned_quantity'),

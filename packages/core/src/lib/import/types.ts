@@ -4,6 +4,7 @@
 import { z } from 'zod'
 import { MAX_IMPORT_RELATIONSHIPS } from './constants'
 import { jsonValueSchema } from '@/lib/items/types/base'
+import { makeCodeSchema } from '@/lib/types/variants'
 
 /**
  * Supported item types for import
@@ -122,6 +123,10 @@ export interface BomRelationship {
   quantity: number
   findNumber?: number
   referenceDesignator?: string
+  /** Product variants: text form of the option condition (see parseOptionText). */
+  option?: string
+  /** Execution of the target Part revision, e.g. MK2. */
+  targetMakeCode?: string
 }
 
 /**
@@ -231,6 +236,14 @@ export const bomRelationshipSchema = z.object({
   quantity: z.number().min(0).default(1),
   findNumber: z.number().int().optional(),
   referenceDesignator: z.string().optional(),
+  option: z
+    .string()
+    .max(500)
+    .optional()
+    .describe('Product variants: `color=black; display=yes,no`'),
+  targetMakeCode: makeCodeSchema
+    .optional()
+    .describe('Execution of the target Part revision, e.g. `MK2`'),
 })
 
 export type BomRelationshipRequest = z.infer<typeof bomRelationshipSchema>

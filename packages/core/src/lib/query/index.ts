@@ -293,6 +293,14 @@ export {
   itemWhereUsedQuery,
   threadComparisonTargetsQuery,
 } from './options/relationships'
+export {
+  partVariantLintQuery,
+  partVariantResolveQuery,
+  partVariantValidateQuery,
+  type ResolvedBom,
+  type ResolvedBomNode,
+  type VariantLintFinding,
+} from './options/variants'
 export type {
   ItemGraph,
   ItemGraphDirection,

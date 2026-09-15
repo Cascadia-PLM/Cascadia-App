@@ -105,6 +105,15 @@ function extractLevelBasedRelationships(
       row.mappedData.referenceDesignator !== undefined
         ? String(row.mappedData.referenceDesignator)
         : undefined
+    const option =
+      row.mappedData.option !== undefined && row.mappedData.option !== ''
+        ? String(row.mappedData.option)
+        : undefined
+    const targetMakeCode =
+      row.mappedData.targetMakeCode !== undefined &&
+      row.mappedData.targetMakeCode !== ''
+        ? String(row.mappedData.targetMakeCode)
+        : undefined
 
     // Pop items from stack until we find a parent (level < current level)
     let parent = stack[stack.length - 1]
@@ -123,6 +132,8 @@ function extractLevelBasedRelationships(
         quantity,
         findNumber,
         referenceDesignator,
+        option,
+        targetMakeCode,
       })
     }
 
@@ -175,6 +186,15 @@ function extractParentChildRelationships(
       row.mappedData.referenceDesignator !== undefined
         ? String(row.mappedData.referenceDesignator)
         : undefined
+    const option =
+      row.mappedData.option !== undefined && row.mappedData.option !== ''
+        ? String(row.mappedData.option)
+        : undefined
+    const targetMakeCode =
+      row.mappedData.targetMakeCode !== undefined &&
+      row.mappedData.targetMakeCode !== ''
+        ? String(row.mappedData.targetMakeCode)
+        : undefined
 
     // Find parent row index
     const parentRowIndex = itemNumberToRowIndex.get(parentItemNumberLower) ?? -1
@@ -187,6 +207,8 @@ function extractParentChildRelationships(
       quantity,
       findNumber,
       referenceDesignator,
+      option,
+      targetMakeCode,
     })
   }
 

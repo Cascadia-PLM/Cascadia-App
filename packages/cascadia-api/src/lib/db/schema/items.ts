@@ -24,7 +24,11 @@ import { manufacturerParts } from './manufacturer-parts'
 import { designs } from './designs'
 import { programs } from './programs'
 import { branches, commits } from './versioning'
-import type { Make, OptionCondition, OptionModel } from '../../types/variants'
+import type {
+  Make,
+  OptionCondition,
+  OptionModel,
+} from '@cascadia/commons/lib/types/variants'
 
 // =====================================================================
 // Work Instructions Module

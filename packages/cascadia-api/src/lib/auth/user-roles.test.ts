@@ -11,7 +11,7 @@
  * onConflictDoNothing) while an unguarded duplicate insert is now a real
  * violation rather than a silent twin row.
  *
- * Run: npx vitest run packages/core/src/lib/auth/user-roles.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/auth/user-roles.test.ts
  */
 
 import {

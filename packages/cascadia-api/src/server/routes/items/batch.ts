@@ -3,8 +3,8 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../../adapter'
-import type { ResourceType } from '@/lib/auth/permissions'
-import type { BaseItem } from '@/lib/items/types/base'
+import type { ResourceType } from '@cascadia/commons/lib/auth/permissions'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import { requirePermission } from '@/lib/auth/server'
 import { ValidationError } from '@/lib/errors'
 import { getResourceType } from '@/lib/items/item-type-resources'

@@ -27,7 +27,7 @@ import type {
   InstanceApprover,
   LifecycleState,
   StateApprover,
-} from './types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import type {
   ApprovalAttestation,
   ApprovalContext,

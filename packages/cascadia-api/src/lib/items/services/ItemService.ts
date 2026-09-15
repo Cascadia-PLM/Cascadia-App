@@ -57,8 +57,8 @@ import { ItemVersioningFacade } from './ItemVersioningFacade'
 import { ItemEditPolicy } from './ItemEditPolicy'
 import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
-import type { OptionCondition } from '@/lib/types/variants'
-import type { Part } from '../types/part'
+import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import type { AccessScope } from '../../db/filters'
 import type { TypeHandlerContext } from '../type-handlers'
 import type { SQL } from 'drizzle-orm'
@@ -69,7 +69,10 @@ import type {
   VersionContext,
 } from '../../services/VersionResolver'
 import type { ItemHistoryEntry } from '../../services/CommitService'
-import type { BaseItem, PersistedItem } from '../types/base'
+import type {
+  BaseItem,
+  PersistedItem,
+} from '@cascadia/commons/lib/items/types/base'
 import type {
   GlobalSearchCriteria,
   GlobalSearchRow,

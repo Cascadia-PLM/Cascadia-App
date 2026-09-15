@@ -9,7 +9,7 @@ import type {
   WorkOrderCreateInput,
   WorkOrderStatus,
   WorkOrderUpdateInput,
-} from '@/lib/items/types/work-order'
+} from '@cascadia/commons/lib/items/types/work-order'
 import { db } from '@/lib/db'
 import { likeContains } from '@/lib/db/like-pattern'
 import { designs, items, programs, workOrders } from '@/lib/db/schema'

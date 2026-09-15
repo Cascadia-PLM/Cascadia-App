@@ -23,8 +23,11 @@
  * client bundle.
  */
 
-import { DEFAULT_OLLAMA_BASE_URL } from './model-catalog'
-import type { AiModelOption, AiProviderType } from './model-catalog'
+import { DEFAULT_OLLAMA_BASE_URL } from '@cascadia/commons/lib/ai/model-catalog'
+import type {
+  AiModelOption,
+  AiProviderType,
+} from '@cascadia/commons/lib/ai/model-catalog'
 
 const REQUEST_TIMEOUT_MS = 10_000
 

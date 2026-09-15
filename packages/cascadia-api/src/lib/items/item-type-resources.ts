@@ -17,8 +17,8 @@
  * that resource in the role definitions.
  */
 
-import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
-import type { ResourceType } from '@/lib/auth/permissions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
+import type { ResourceType } from '@cascadia/commons/lib/auth/permissions'
 
 export const ITEM_TYPE_RESOURCES: Record<string, ResourceType> =
   Object.fromEntries(

@@ -16,10 +16,10 @@
  */
 
 import { eq } from 'drizzle-orm'
+import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '@/lib/db/schema'
 import { itemTypeConfigs, lifecycleDefinitions, users } from '@/lib/db/schema'
-import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
 import {
   PART_LIFECYCLE_DEFINITION,
   REQUIREMENT_LIFECYCLE_DEFINITION,

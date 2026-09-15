@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq } from 'drizzle-orm'
+import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
 import { db } from '../db'
 import { itemRelationships } from '../db/schema'
-import { optionConditionKey } from '../types/variants'
 
 /**
  * An item's BOM structure, reduced to something two versions can be compared

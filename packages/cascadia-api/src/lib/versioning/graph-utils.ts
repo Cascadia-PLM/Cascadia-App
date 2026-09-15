@@ -35,7 +35,10 @@
  */
 
 import type { Node } from '@xyflow/react'
-import type { CommitGraphEdge, CommitNodeData } from './graph-types'
+import type {
+  CommitGraphEdge,
+  CommitNodeData,
+} from '@cascadia/commons/lib/versioning/graph-types'
 
 /** Time window in milliseconds for consolidating commits (30 minutes) */
 export const CONSOLIDATION_TIME_WINDOW_MS = 30 * 60 * 1000

@@ -5,8 +5,13 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { eq, isNull } from 'drizzle-orm'
 import { streamToText } from '@tanstack/ai'
+import {
+  DEFAULT_API_KEY_POLICY,
+  validateApiKeyPolicy,
+} from '@cascadia/commons/lib/auth/api-key-policy-types'
+import { AI_PROVIDERS } from '@cascadia/commons/lib/ai/model-catalog'
 import { tagged } from '../adapter'
-import type { ApiKeyPolicy } from '@/lib/auth/api-key-policy-types'
+import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
 import type { UpdateApiKeyInput } from '@/lib/auth/ApiKeyService'
 import type { AIProviderConfig as AIProviderDBConfig } from '@/lib/db/schema/ai'
 import type { AIProviderConfig, ProviderType } from '@/lib/ai/adapters'
@@ -18,17 +23,12 @@ import { aiSettings } from '@/lib/db/schema/ai'
 import { ApiKeyService } from '@/lib/auth/ApiKeyService'
 import { loadApiKeyPolicy, saveApiKeyPolicy } from '@/lib/auth/api-key-policy'
 import {
-  DEFAULT_API_KEY_POLICY,
-  validateApiKeyPolicy,
-} from '@/lib/auth/api-key-policy-types'
-import {
   decryptSecret,
   encrypt,
   isEncryptionConfigured,
 } from '@/lib/crypto/encryption'
 import { getAdapter } from '@/lib/ai/adapters'
 import { aiLogger } from '@/lib/logging/logger'
-import { AI_PROVIDERS } from '@/lib/ai/model-catalog'
 import { listProviderModels } from '@/lib/ai/model-discovery'
 import {
   CatalogService,

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { PackageDescriptor, PackageId } from './types'
+import type {
+  PackageDescriptor,
+  PackageId,
+} from '@cascadia/commons/lib/packages/types'
 
 /**
  * Every optional package this build knows about.

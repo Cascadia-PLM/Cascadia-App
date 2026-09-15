@@ -8,10 +8,13 @@
  * and audit logging to AI tool handlers.
  */
 
-import type { PermissionAction, ResourceType } from '@/lib/auth/permissions'
+import { hasPermission } from '@cascadia/commons/lib/auth/permissions'
+import type {
+  PermissionAction,
+  ResourceType,
+} from '@cascadia/commons/lib/auth/permissions'
 
 import { permissionService } from '@/lib/auth/permission-service'
-import { hasPermission } from '@/lib/auth/permissions'
 import { intersectPermissions } from '@/lib/auth/api-key-utils'
 import { db } from '@/lib/db'
 import { aiUsageLogs } from '@/lib/db/schema/ai'

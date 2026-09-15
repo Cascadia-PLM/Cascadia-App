@@ -20,9 +20,6 @@
 
 import { and, eq, isNotNull } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { db } from '../db'
-import { itemRelationships, items, parts } from '../db/schema'
-import { NotFoundError, ValidationError } from '../errors'
 import {
   conditionMatches,
   findUndeclared,
@@ -31,14 +28,17 @@ import {
   makesSchema,
   optionModelSchema,
   validateSelectionsAgainst,
-} from '../types/variants'
+} from '@cascadia/commons/lib/types/variants'
+import { db } from '../db'
+import { itemRelationships, items, parts } from '../db/schema'
+import { NotFoundError, ValidationError } from '../errors'
 import type {
   Make,
   OptionCondition,
   OptionModel,
   SelectionIssue,
-} from '../types/variants'
-import type { Part } from '../items/types/part'
+} from '@cascadia/commons/lib/types/variants'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 
 type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 

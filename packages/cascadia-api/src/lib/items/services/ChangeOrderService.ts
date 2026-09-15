@@ -13,6 +13,12 @@ import {
   or,
   sql,
 } from 'drizzle-orm'
+import {
+  CHANGE_ACTION_LABELS,
+  changeOrderTypeSchema,
+} from '@cascadia/commons/lib/items/types/change-order'
+import { isDrivingDefinition } from '@cascadia/commons/lib/lifecycles/normalize'
+import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
 import { db, withTx } from '../../db'
 import {
   CHANGE_ORDER_CANCELLED,
@@ -61,12 +67,7 @@ import {
   constraintOf,
   isUniqueViolation,
 } from '../../errors/pg'
-import {
-  CHANGE_ACTION_LABELS,
-  changeOrderTypeSchema,
-} from '../types/change-order'
 import { copyTypeSpecificData } from '../type-handlers/copy'
-import { isDrivingDefinition } from '../../lifecycles/normalize'
 import { ItemService } from './ItemService'
 import { ItemRelationshipService } from './ItemRelationshipService'
 import type { TransactionClient } from '../../db'
@@ -77,13 +78,13 @@ import type {
   ChangeOrderType,
   ImpactReport,
   Risk,
-} from '../types/change-order'
-import type { BaseItem } from '../types/base'
+} from '@cascadia/commons/lib/items/types/change-order'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import type {
   FinalKind,
   LifecycleInstance,
   TransitionResult,
-} from '../../lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 
 // Lazy-cached dynamic imports to avoid circular dependencies
 // (same pattern as src/lib/items/registry.ts)
@@ -93,7 +94,6 @@ import type { ConflictDetectionService as ConflictDetectionServiceType } from '.
 import type { ItemTypeRegistry as ItemTypeRegistryType } from '../registry'
 import type { requireChangeOrderAccess as requireChangeOrderAccessType } from '../../auth/access'
 import { takeFirst } from '@/lib/db/take-first'
-import { BRANCH_TYPES } from '@/lib/versioning/branch-types'
 
 /** A BOM edit on the ECO's working copy of an affected item */
 export interface BomChangeInput {

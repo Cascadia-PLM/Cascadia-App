@@ -17,11 +17,11 @@
  */
 
 import { eq } from 'drizzle-orm'
+import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
 import { db } from '../db'
 import { lifecycleDefinitions } from '../db/schema/lifecycles'
 import { ItemTypeRegistry } from '../items/registry'
 import { InternalError, ValidationError } from '../errors'
-import { resolveLifecycleType } from '../lifecycles/normalize'
 import { RevisionService } from './RevisionService'
 import type {
   ActionValidationResult,
@@ -32,14 +32,14 @@ import type {
   ReviseActionMapping,
   RevisionScheme,
   StateChangeActionMapping,
-} from '../types/lifecycle'
+} from '@cascadia/commons/lib/types/lifecycle'
 import type {
   InstanceTransition,
   LifecycleDefinition,
   LifecycleState,
   LifecycleTransition,
   LifecycleType,
-} from '../lifecycles/types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import { serviceLogger } from '@/lib/logging/logger'
 
 /**

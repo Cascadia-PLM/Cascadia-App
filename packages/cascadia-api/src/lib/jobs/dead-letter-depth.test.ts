@@ -17,7 +17,7 @@
  * passive `checkQueue` wrapper — is stubbed, the way the retry-sweep suite
  * stubs `publish`. No database either, so this file needs no TestDatabase.
  *
- * Run: npx vitest run packages/core/src/lib/jobs/dead-letter-depth.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/jobs/dead-letter-depth.test.ts
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

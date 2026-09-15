@@ -37,6 +37,11 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
+import { changeOrderTypeSchema } from '@cascadia/commons/lib/items/types/change-order'
+import { partTypeSchema } from '@cascadia/commons/lib/items/types/part'
+import { requirementTypeSchema } from '@cascadia/commons/lib/items/types/requirement'
+import { taskPrioritySchema } from '@cascadia/commons/lib/items/types/task'
 import mcpRoutes from './mcp'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -49,11 +54,6 @@ import {
   hashApiKey,
 } from '@/lib/auth/api-key-utils'
 import { apiKeys } from '@/lib/db/schema/api-keys'
-import { ITEM_TYPE_DEFINITIONS } from '@/lib/items/item-type-definitions'
-import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
-import { partTypeSchema } from '@/lib/items/types/part'
-import { requirementTypeSchema } from '@/lib/items/types/requirement'
-import { taskPrioritySchema } from '@/lib/items/types/task'
 
 // Import to register item types (read tools reach the item services)
 import '@/lib/items/registerItemTypes.server'

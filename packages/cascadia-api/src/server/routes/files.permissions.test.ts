@@ -25,7 +25,7 @@
  * `documents:update` plus `system:manage` on eviction, and no leg here had
  * ever asserted that a role can actually reach it.
  *
- * Run: npx vitest run packages/core/src/server/routes/files.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/files.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -40,10 +40,11 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq, inArray } from 'drizzle-orm'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import filesRoutes from './files'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
-import type { Tool } from '@/lib/items/types/tool'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Tool } from '@cascadia/commons/lib/items/types/tool'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -60,7 +61,6 @@ import { permissionService } from '@/lib/auth/permission-service'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { items, vaultFiles } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
-import { ErrorCode } from '@/lib/errors/codes'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'

@@ -14,6 +14,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import { z } from 'zod'
+import { MAX_ENRICHMENT_IMAGES } from '@cascadia/commons/lib/items/enrichment/limits'
 import { tagged } from '../../adapter'
 import { readableItemTypes } from './shared'
 import { requirePermission } from '@/lib/auth/server'
@@ -33,7 +34,6 @@ import {
   enrichItem,
   enrichmentImageSchema,
 } from '@/lib/items/enrichment/enrich-item'
-import { MAX_ENRICHMENT_IMAGES } from '@/lib/items/enrichment/limits'
 import { BranchService } from '@/lib/services/BranchService'
 import { DesignService } from '@/lib/services/DesignService'
 import { ProgramService } from '@/lib/services/ProgramService'

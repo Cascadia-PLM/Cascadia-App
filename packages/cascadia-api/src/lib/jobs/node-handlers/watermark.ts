@@ -29,7 +29,8 @@ export const watermarkPdfHandler: JobHandler<
     // vault service, matching the other Node handlers.
     const { FileService } = await import('@/lib/vault/services/FileService')
     const { applyWatermark } = await import('@/lib/vault/pdf/watermark')
-    const { previewKindFor } = await import('@/lib/vault/preview')
+    const { previewKindFor } =
+      await import('@cascadia/commons/lib/vault/preview')
 
     await context.log.info('Starting watermark job', {
       fileCount: payload.fileIds.length,

@@ -25,7 +25,7 @@
  *    403/BRANCH_PROTECTED from further down. The admitted legs therefore
  *    assert on `error.code`, not on the status.
  *
- * Run: npx vitest run packages/core/src/server/routes/items.detail-writes.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/items.detail-writes.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -40,10 +40,11 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
-import type { Document } from '@/lib/items/types/document'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Document } from '@cascadia/commons/lib/items/types/document'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -57,7 +58,6 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 import { itemRelationships, items, programMembers } from '@/lib/db/schema'
-import { ErrorCode } from '@/lib/errors/codes'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'

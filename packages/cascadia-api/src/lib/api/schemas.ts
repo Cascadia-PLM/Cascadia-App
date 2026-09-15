@@ -17,19 +17,19 @@ import {
   optionModelSchema,
   productFamilyCodeSchema,
   variantCodeSchema,
-} from '@/lib/types/variants'
-import { changeOrderTypeSchema } from '@/lib/items/types/change-order'
-import { jsonValueSchema } from '@/lib/items/types/base'
-import { testStepSchema } from '@/lib/items/types/testcase'
+} from '@cascadia/commons/lib/types/variants'
+import { changeOrderTypeSchema } from '@cascadia/commons/lib/items/types/change-order'
+import { jsonValueSchema } from '@cascadia/commons/lib/items/types/base'
+import { testStepSchema } from '@cascadia/commons/lib/items/types/testcase'
 import {
   issueCategories,
   issuePriorities,
   issueSeverities,
-} from '@/lib/items/types/issue'
-import { workOrderUpdateSchema } from '@/lib/items/types/work-order'
-import { softwareSourceUpdateFields } from '@/lib/items/types/software'
+} from '@cascadia/commons/lib/items/types/issue'
+import { workOrderUpdateSchema } from '@cascadia/commons/lib/items/types/work-order'
+import { softwareSourceUpdateFields } from '@cascadia/commons/lib/items/types/software'
+import { TAG_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
 import { clearableDate } from '@/lib/api/wire-date'
-import { TAG_TYPES } from '@/lib/versioning/branch-types'
 
 // =============================================================================
 // User Schemas

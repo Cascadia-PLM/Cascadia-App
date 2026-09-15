@@ -23,7 +23,7 @@
  * and take the test with it, which is why there is an explicit timeout rather
  * than a silent hang.
  *
- * Run: npx vitest run packages/core/src/lib/db/commit-ancestry.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/db/commit-ancestry.test.ts
  */
 
 import {

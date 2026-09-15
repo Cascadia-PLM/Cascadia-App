@@ -22,9 +22,10 @@ import {
   vi,
 } from 'vitest'
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
+import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
 import { ChangeOrderService } from './ChangeOrderService'
 import { ItemService } from './ItemService'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import type { ChangeOrderReleasedPayload } from '@/lib/events'
 import { RevisionService } from '@/lib/services/RevisionService'
@@ -54,7 +55,6 @@ import {
 } from '@/lib/db/schema/lifecycles'
 import { ConflictDetectionService } from '@/lib/services/ConflictDetectionService'
 import { LifecycleService } from '@/lib/services/LifecycleService'
-import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 import {
   SYSTEM_USER_ID,

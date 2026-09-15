@@ -115,7 +115,7 @@ export class ConcurrentTestDatabase {
     if (!connectionUrl) {
       throw new Error(
         'ConcurrentTestDatabase: TEST_DATABASE_URL is not set. See the ' +
-          'provisioning steps in packages/core/src/__tests__/README.md.',
+          'provisioning steps in packages/cascadia-api/src/__tests__/README.md.',
       )
     }
 

@@ -16,7 +16,7 @@ import {
 import { CrossDesignReferenceService } from '../../services/CrossDesignReferenceService'
 import { ItemService } from './ItemService'
 import { ChangeOrderService } from './ChangeOrderService'
-import type { Risk } from '../types/change-order'
+import type { Risk } from '@cascadia/commons/lib/items/types/change-order'
 
 export type ImpactRelationshipType =
   | 'bom_where_used'

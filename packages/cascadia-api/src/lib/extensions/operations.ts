@@ -29,7 +29,7 @@
  * late refusal leaks a blob rather than refusing anything).
  */
 
-import type { ChangeAction } from '@/lib/types/lifecycle'
+import type { ChangeAction } from '@cascadia/commons/lib/types/lifecycle'
 
 /**
  * A guard-able operation. `TIntent` is carried phantom-wise: there is nothing
@@ -210,7 +210,7 @@ export type GuardableChangeAction = ChangeAction
  * Normalise an absent value to `null` for an intent field.
  *
  * A guard site reads fields whose optionality three tsconfigs in this
- * repository disagree about: `packages/core`'s own project sees
+ * repository disagree about: `packages/cascadia-api`'s own project sees
  * `BaseItem.designId` as non-nullable, the app projects see
  * `string | undefined`. Writing `?? null` inline therefore fails one gate or
  * the other — ESLint calls it an unnecessary condition under one config while

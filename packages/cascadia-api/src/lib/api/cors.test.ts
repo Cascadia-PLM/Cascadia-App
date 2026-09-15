@@ -22,7 +22,7 @@
  *  - what the preflight advertises is exactly what the real response carries,
  *    because both are `applySecurityHeaders` over the same request
  *
- * Run: npx vitest run packages/core/src/lib/api/cors.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/api/cors.test.ts
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'

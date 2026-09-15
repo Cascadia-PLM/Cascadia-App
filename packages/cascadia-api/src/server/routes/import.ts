@@ -11,6 +11,10 @@ import {
   importIssuesRequestSchema,
   importPartsWithBomRequestSchema,
 } from '@cascadia/commons/lib/import'
+import {
+  optionConditionKey,
+  parseOptionText,
+} from '@cascadia/commons/lib/types/variants'
 import { tagged } from '../adapter'
 import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import type {
@@ -19,7 +23,6 @@ import type {
   ItemFieldConfig,
 } from '@cascadia/commons/lib/import'
 import { generateXlsxTemplate } from '@/lib/import/xlsx-template'
-import { optionConditionKey, parseOptionText } from '@/lib/types/variants'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'

@@ -2,8 +2,15 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { sql } from 'drizzle-orm'
-import { familyNumberingConfig, numberingSchemes } from './schemes'
-import type { NumberSegment, NumberingContext, SequenceScope } from './types'
+import {
+  familyNumberingConfig,
+  numberingSchemes,
+} from '@cascadia/commons/lib/items/numbering/schemes'
+import type {
+  NumberSegment,
+  NumberingContext,
+  SequenceScope,
+} from '@cascadia/commons/lib/items/numbering/types'
 import { autonomousDb } from '@/lib/db'
 
 /**

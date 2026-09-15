@@ -20,8 +20,8 @@
  * the components. The browser's item-type map is `item-type-ui.ts`.
  */
 
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
 import { ItemTypeRegistry } from './registry'
-import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
 
 for (const def of Object.values(ITEM_TYPE_DEFINITIONS)) {
   ItemTypeRegistry.register(def)

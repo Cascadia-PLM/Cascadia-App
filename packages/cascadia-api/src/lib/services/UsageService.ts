@@ -15,7 +15,7 @@ import { extensionRowCopy } from '../items/type-handlers/copy'
 import { publishStructureEdges } from '../items/structure-events'
 import { BranchService } from './BranchService'
 import { LifecycleService } from './LifecycleService'
-import type { BaseItem } from '../items/types/base'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import '../items/type-handlers/init'
 import { takeFirst } from '@/lib/db/take-first'
 

@@ -7,7 +7,7 @@
  * Integration tests for lifecycle instances: starting, transitions, guards, actions, claims, history and flexible structure. Split from the WorkflowService suite along
  * the same seam as the service (remediation plan CM-22).
  *
- * Run: npx vitest run packages/core/src/lib/lifecycles/LifecycleInstanceService.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/lifecycles/LifecycleInstanceService.test.ts
  */
 
 import {
@@ -24,7 +24,10 @@ import { eq } from 'drizzle-orm'
 import { LifecycleDefinitionService } from './LifecycleDefinitionService'
 import { LifecycleInstanceService } from './LifecycleInstanceService'
 import { ApprovalService } from './ApprovalService'
-import type { CreateLifecycleInput, TransitionAction } from './types'
+import type {
+  CreateLifecycleInput,
+  TransitionAction,
+} from '@cascadia/commons/lib/lifecycles/types'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import {
   AlreadyExistsError,

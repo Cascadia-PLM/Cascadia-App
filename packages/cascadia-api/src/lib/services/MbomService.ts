@@ -3,6 +3,11 @@
 
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import {
+  formatOptionText,
+  makeCodeSchema,
+  optionConditionKey,
+} from '@cascadia/commons/lib/types/variants'
 import { db } from '../db'
 import { DESIGN_CREATED, publishDomainEvent } from '../events'
 import {
@@ -16,11 +21,6 @@ import {
 } from '../db/schema'
 import { notDeleted } from '../db/filters'
 import { NotFoundError, ValidationError } from '../errors'
-import {
-  formatOptionText,
-  makeCodeSchema,
-  optionConditionKey,
-} from '../types/variants'
 import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
 import { UsageService } from './UsageService'

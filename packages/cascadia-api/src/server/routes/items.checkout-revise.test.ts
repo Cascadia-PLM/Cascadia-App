@@ -20,7 +20,7 @@
  *  - re-running the checkout returns the same working copy instead of
  *    minting another
  *
- * Run: npx vitest run packages/core/src/server/routes/items.checkout-revise.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/items.checkout-revise.test.ts
  */
 
 import {

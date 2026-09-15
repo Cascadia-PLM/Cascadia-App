@@ -26,7 +26,7 @@ import {
   WEBHOOK_FAILURE_THRESHOLD,
   WEBHOOK_MAX_ATTEMPTS,
   WEBHOOK_RESPONSE_SNIPPET_BYTES,
-} from './config'
+} from '@cascadia/commons/lib/webhooks/config'
 import { deliverForSubscription, deliverNextForSubscription } from './delivery'
 import { runWebhookPumpOnce } from './pump'
 import { pruneWebhookDeliveries } from './retention'

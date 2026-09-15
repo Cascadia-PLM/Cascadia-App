@@ -10,10 +10,10 @@
  * field existed still resolves.
  */
 
-import { DEFAULT_API_KEY_POLICY } from './api-key-policy-types'
-import type { ApiKeyPolicy } from './api-key-policy-types'
+import { DEFAULT_API_KEY_POLICY } from '@cascadia/commons/lib/auth/api-key-policy-types'
+import { SettingKeys } from '@cascadia/commons/lib/config/SettingKeys'
+import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
 import { SettingsService } from '@/lib/config/SettingsService'
-import { SettingKeys } from '@/lib/config/SettingKeys'
 
 export async function loadApiKeyPolicy(): Promise<ApiKeyPolicy> {
   const stored = await SettingsService.getJsonValue<Partial<ApiKeyPolicy>>(

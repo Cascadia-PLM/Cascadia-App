@@ -4,8 +4,11 @@
 import { Hono } from 'hono'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import {
+  makeCodeSchema,
+  optionConditionSchema,
+} from '@cascadia/commons/lib/types/variants'
 import { tagged } from '../../adapter'
-import { makeCodeSchema, optionConditionSchema } from '@/lib/types/variants'
 import { requirePermission } from '@/lib/auth/server'
 import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
 import { ItemService } from '@/lib/items/services/ItemService'

@@ -13,11 +13,11 @@ import { createAnthropicChat } from '@tanstack/ai-anthropic'
 import { createOpenaiChat } from '@tanstack/ai-openai'
 import { and, eq, gte, isNull, sql } from 'drizzle-orm'
 
+import { DEFAULT_MODEL } from '@cascadia/commons/lib/ai/model-catalog'
 import type { AIProviderConfig, ProviderType } from '@/lib/db/schema/ai'
 import { aiSettings, aiUsageLogs } from '@/lib/db/schema/ai'
 import { db } from '@/lib/db'
 import { decryptSecret } from '@/lib/crypto/encryption'
-import { DEFAULT_MODEL } from '@/lib/ai/model-catalog'
 import { RateLimitedError } from '@/lib/errors'
 
 // Re-export types for convenience

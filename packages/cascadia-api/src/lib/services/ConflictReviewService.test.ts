@@ -31,7 +31,7 @@
  * consume; it does not run detection itself, which is covered by
  * ConflictDetectionService.test.ts.
  *
- * Run: npx vitest run packages/core/src/lib/services/ConflictReviewService.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/services/ConflictReviewService.test.ts
  */
 
 import {

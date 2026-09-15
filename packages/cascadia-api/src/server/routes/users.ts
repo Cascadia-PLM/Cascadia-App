@@ -3,13 +3,16 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
+import {
+  userCreateSchema,
+  userUpdateSchema,
+} from '@cascadia/commons/lib/auth/types'
 import { tagged } from '../adapter'
 import { UserService } from '@/lib/auth/UserService'
 import { NotFoundError } from '@/lib/errors'
 import { hashSessionToken } from '@/lib/auth/password'
 import { AuthService } from '@/lib/auth/AuthService'
 import { apiHandler, created } from '@/lib/api/handler'
-import { userCreateSchema, userUpdateSchema } from '@/lib/auth/types'
 import { resolveClientIp } from '@/lib/api/client-ip'
 import { db } from '@/lib/db'
 import { authEvents } from '@/lib/db/schema/users'

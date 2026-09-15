@@ -2,16 +2,19 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq } from 'drizzle-orm'
+import {
+  matchNodeInPath,
+  toMatchCandidate,
+} from '@cascadia/commons/lib/vault/cad-nodes'
 import type {
   CadModelNode,
   CadModelNodeCandidate,
   MatchCandidate,
-} from '@/lib/vault/cad-nodes'
+} from '@cascadia/commons/lib/vault/cad-nodes'
 import { db } from '@/lib/db'
 import { cadModelNodeLinks, items, vaultFiles } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
-import { matchNodeInPath, toMatchCandidate } from '@/lib/vault/cad-nodes'
 
 /**
  * How deep into the BOM a match will look for the part a model node names.

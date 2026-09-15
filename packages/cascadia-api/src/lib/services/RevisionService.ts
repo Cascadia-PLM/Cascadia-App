@@ -15,8 +15,8 @@ import {
   NO_REVISION_MARKER,
   UNRELEASED_REVISION_DISPLAY,
   isWorkingRevisionValue,
-} from '../types/lifecycle'
-import type { RevisionScheme } from '../types/lifecycle'
+} from '@cascadia/commons/lib/types/lifecycle'
+import type { RevisionScheme } from '@cascadia/commons/lib/types/lifecycle'
 
 export class RevisionService {
   /**

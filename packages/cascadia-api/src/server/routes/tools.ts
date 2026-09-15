@@ -3,7 +3,7 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import type { Tool } from '@/lib/items/types/tool'
+import type { Tool } from '@cascadia/commons/lib/items/types/tool'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler } from '@/lib/api/handler'

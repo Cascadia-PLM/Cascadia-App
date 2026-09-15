@@ -8,7 +8,7 @@ import type {
   CreateAnnotationInput,
   FileAnnotation,
   UpdateAnnotationInput,
-} from '../annotations'
+} from '@cascadia/commons/lib/vault/annotations'
 import { db } from '@/lib/db'
 import { vaultFileAnnotations, vaultFiles } from '@/lib/db/schema/vault'
 import { items } from '@/lib/db/schema/items'

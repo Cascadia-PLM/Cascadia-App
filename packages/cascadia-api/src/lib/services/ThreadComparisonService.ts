@@ -3,6 +3,7 @@
 
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
 import { db } from '../db'
 import {
   branches,
@@ -25,7 +26,6 @@ import type {
   ThreadResponse,
 } from './ThreadService'
 import type { VersionContext } from './VersionResolver'
-import { optionConditionKey } from '@/lib/types/variants'
 
 import type {
   ComparisonTargets,

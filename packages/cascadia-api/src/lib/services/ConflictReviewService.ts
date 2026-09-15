@@ -9,7 +9,7 @@ import type { ItemConflict } from './ConflictDetectionService'
 import type {
   ConflictReview,
   EnrichedItemConflict,
-} from './types/conflict-review'
+} from '@cascadia/commons/lib/services/types/conflict-review'
 import { takeFirst } from '@/lib/db/take-first'
 
 /**

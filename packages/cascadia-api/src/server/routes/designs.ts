@@ -4,11 +4,12 @@
 import { Hono } from 'hono'
 import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
 import { tagged } from '../adapter'
 import type { ScopeGraphEdge, ScopeGraphNode } from '@/lib/api/scope-graph'
-import type { BOMTreeNode, OrphanItem } from '@/lib/types/bom'
-import type { OptionCondition } from '@/lib/types/variants'
-import { optionConditionKey } from '@/lib/types/variants'
+import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
+import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
 import {
   DesignService,
   designCreateSchema,
@@ -70,7 +71,6 @@ import { users } from '@/lib/db/schema/users'
 import { designs } from '@/lib/db/schema/designs'
 import { notDeleted, notWorkingRevision } from '@/lib/db/filters'
 import '@/lib/items/registerItemTypes.server'
-import { BRANCH_TYPES } from '@/lib/versioning/branch-types'
 
 const adapt = tagged('Designs')
 

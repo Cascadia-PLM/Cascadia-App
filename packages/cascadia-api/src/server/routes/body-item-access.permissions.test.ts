@@ -30,7 +30,7 @@
  * refused, and the edge is not written. The in-program caller doing the same
  * thing is not refused, so the gates bound reach rather than the feature.
  *
- * Run: npx vitest run packages/core/src/server/routes/body-item-access.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/body-item-access.permissions.test.ts
  */
 
 import {

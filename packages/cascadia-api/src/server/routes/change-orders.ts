@@ -3,11 +3,12 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
+import { changeActionSchema } from '@cascadia/commons/lib/items/types/change-order'
+import { markConflictReviewedRequestSchema } from '@cascadia/commons/lib/services/types/conflict-review'
 import { tagged } from '../adapter'
-import type { ChangeOrder } from '@/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import type { SessionUser } from '@/lib/auth/session'
 import { ApprovalRegistry } from '@/lib/lifecycles/approval-registry'
-import { changeActionSchema } from '@/lib/items/types/change-order'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { LifecycleService } from '@/lib/services/LifecycleService'
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
@@ -35,7 +36,6 @@ import {
   requireDesignAccess,
   resolveChangeOrderDesignScope,
 } from '@/lib/auth/access'
-import { markConflictReviewedRequestSchema } from '@/lib/services/types/conflict-review'
 import {
   changeOrderUpdateSchema,
   stateApproverInputSchema,

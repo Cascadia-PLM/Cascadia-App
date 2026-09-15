@@ -6,7 +6,10 @@ import { db } from '../db'
 import { settings } from '../db/schema'
 
 // Re-export for backward compatibility with server-side code
-export { SettingKeys, type SettingKey } from './SettingKeys'
+export {
+  SettingKeys,
+  type SettingKey,
+} from '@cascadia/commons/lib/config/SettingKeys'
 
 export interface SettingRecord {
   id: string

@@ -18,7 +18,7 @@
  */
 
 import { z } from 'zod'
-import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
 
 /**
  * The two keys the route consumes itself, before the item type's schema ever

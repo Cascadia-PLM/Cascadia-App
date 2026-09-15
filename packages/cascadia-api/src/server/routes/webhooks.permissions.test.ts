@@ -23,7 +23,7 @@
  * a future column holding the ciphertext under a different name has to fail it
  * too.
  *
- * Run: npx vitest run packages/core/src/server/routes/webhooks.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/webhooks.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -38,6 +38,7 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import webhookRoutes from './webhooks'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -51,7 +52,6 @@ import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 import { ApiKeyService } from '@/lib/auth/ApiKeyService'
 import { webhookSubscriptions } from '@/lib/db/schema'
-import { ErrorCode } from '@/lib/errors/codes'
 
 const ENCRYPTION_KEY = 'b'.repeat(64)
 

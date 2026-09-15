@@ -16,11 +16,11 @@
  * types itself, and a handler test that arranges its own registration is
  * exactly what let the gap ship green.
  *
- * Run: npx vitest run packages/core/src/jobs-worker-main.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/jobs-worker-main.test.ts
  */
 
 import { describe, expect, it } from 'vitest'
-import { ITEM_TYPE_DEFINITIONS } from '@/lib/items/item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
 import { ItemTypeRegistry } from '@/lib/items/registry'
 // The subject under test: importing it must be enough.
 import '@/jobs-worker-main'

@@ -12,13 +12,16 @@
  * gets no further than `assertSafeUrl`.
  */
 
-import { assertSafeUrl, extractText } from './html-to-text'
 import {
   ENRICHMENT_IMAGE_MEDIA_TYPES,
   MAX_ENRICHMENT_IMAGE_BYTES,
-} from './limits'
+} from '@cascadia/commons/lib/items/enrichment/limits'
+import { assertSafeUrl, extractText } from './html-to-text'
 import type { FetchedPage } from './html-to-text'
-import type { EnrichmentImage, EnrichmentImageMediaType } from './limits'
+import type {
+  EnrichmentImage,
+  EnrichmentImageMediaType,
+} from '@cascadia/commons/lib/items/enrichment/limits'
 import { ValidationError } from '@/lib/errors'
 
 /** Hard cap on the HTML we will read into memory; longer pages are truncated. */

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { hasPermission } from '@cascadia/commons/lib/auth/permissions'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import {
   RateLimiter,
   apiLimiter,
@@ -12,16 +14,17 @@ import { resolveClientIp } from './client-ip'
 import type { RateLimitConfig } from './rate-limit'
 import type { OpenApiMetadata } from './openapi-helpers'
 import type { z } from 'zod'
-import type { PermissionAction, ResourceType } from '@/lib/auth/permissions'
+import type {
+  PermissionAction,
+  ResourceType,
+} from '@cascadia/commons/lib/auth/permissions'
 import type { SessionUser } from '@/lib/auth/session'
 import type { AuthMethod } from '@/lib/auth/credentials'
 import { resolveCredentials } from '@/lib/auth/credentials'
 import { intersectPermissions } from '@/lib/auth/api-key-utils'
 import { permissionService } from '@/lib/auth/permission-service'
-import { hasPermission } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { authEvents } from '@/lib/db/schema/users'
-import { ErrorCode } from '@/lib/errors/codes'
 import { getRequestId, handleApiError } from '@/lib/errors/handleApiError'
 import {
   AppError,

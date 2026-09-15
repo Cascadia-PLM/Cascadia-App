@@ -4,7 +4,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import type { Requirement } from '@/lib/items/types/requirement'
+import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { RequirementService } from '@/lib/services/RequirementService'
 import { NotFoundError, ValidationError } from '@/lib/errors'

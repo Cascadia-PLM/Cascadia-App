@@ -15,7 +15,7 @@
  * search that matches only withheld rows is answered exactly like a search
  * that matches nothing, so existence itself does not leak.
  *
- * Run: npx vitest run packages/core/src/server/routes/items.by-filename.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/items.by-filename.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -32,8 +32,8 @@ import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
-import type { Document } from '@/lib/items/types/document'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Document } from '@cascadia/commons/lib/items/types/document'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,

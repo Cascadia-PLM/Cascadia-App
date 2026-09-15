@@ -6,8 +6,10 @@
  *
  * Nothing DOM-flavoured belongs here: these files run without jsdom (that is
  * the point of the split), so `window`, `document`, and Element do not exist.
- * The component tests' setup lives in setup.dom.ts, which imports this file
- * for the shared mock hygiene.
+ * The component tests' setup is the web package's `setup.dom.ts`, which
+ * restates the mock hygiene below rather than importing it: this file also
+ * initializes the item-type registry against the database, which the web
+ * package does not reach.
  */
 
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'

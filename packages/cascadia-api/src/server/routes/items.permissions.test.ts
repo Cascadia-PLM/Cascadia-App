@@ -37,9 +37,10 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Document } from '@/lib/items/types/document'
+import type { Document } from '@cascadia/commons/lib/items/types/document'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -55,7 +56,6 @@ import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 import { programMembers, programs } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
-import { ErrorCode } from '@/lib/errors/codes'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'

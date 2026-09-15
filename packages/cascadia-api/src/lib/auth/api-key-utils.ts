@@ -3,7 +3,7 @@
 
 import { SHA256 } from '@oslojs/crypto/sha2'
 import { encodeHexLowerCase } from '@oslojs/encoding'
-import { canonicalResource } from './permissions'
+import { canonicalResource } from '@cascadia/commons/lib/auth/permissions'
 
 const API_KEY_PREFIX = 'csc_'
 

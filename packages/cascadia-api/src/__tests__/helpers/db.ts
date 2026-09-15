@@ -78,7 +78,7 @@ export class TestDatabase {
       throw new Error(
         'TestDatabase: TEST_DATABASE_URL is not set and no connectionUrl was ' +
           'passed. Refusing to fall back to an implicit database — see the ' +
-          'provisioning steps in packages/core/src/__tests__/README.md.',
+          'provisioning steps in packages/cascadia-api/src/__tests__/README.md.',
       )
     }
     this.config = {

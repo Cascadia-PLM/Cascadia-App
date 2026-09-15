@@ -40,7 +40,7 @@
  * OS temp dir — never the dev vault — because the ordering of the store
  * against the transaction is the point of half of them.
  *
- * Run: npx vitest run packages/core/src/lib/vault/services/FileService.race.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/vault/services/FileService.race.test.ts
  */
 
 import { mkdtemp, rm } from 'node:fs/promises'

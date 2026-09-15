@@ -17,7 +17,7 @@ import type {
   ItemFilters,
   VersionContext,
 } from '../../services/VersionResolver'
-import type { BaseItem } from '../types/base'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 
 /**
  * Reading and writing items at a point in version history: resolve an item (or

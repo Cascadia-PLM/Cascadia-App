@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm'
+import { WEBHOOK_DELIVERY_CONCURRENCY } from '@cascadia/commons/lib/webhooks/config'
 import { deliverForSubscription } from './delivery'
-import { WEBHOOK_DELIVERY_CONCURRENCY } from './config'
 import type { DbInstance } from '@/lib/db'
 import type { DeliverOptions, DeliveryLease } from './delivery'
 import { db as defaultDb } from '@/lib/db'

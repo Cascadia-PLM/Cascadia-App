@@ -8,10 +8,13 @@
  * Each handler uses existing services and is wrapped with permission checking.
  */
 
+import {
+  formatOptionText,
+  formatPartDesignation,
+} from '@cascadia/commons/lib/types/variants'
 import { withPermissionAndAudit } from './permission-wrapper'
 import type { ToolContext } from './permission-wrapper'
 import type { ItemNumberMatch } from '@/lib/items/services/ItemService'
-import { formatOptionText, formatPartDesignation } from '@/lib/types/variants'
 import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'

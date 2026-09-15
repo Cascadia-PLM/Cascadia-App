@@ -24,7 +24,7 @@
  * deleting an ECO that a commit does name keeps the commit and nulls the
  * pointer, which is only correct if the graph readers tolerate the null.
  *
- * Run: npx vitest run packages/core/src/lib/db/versioning-fks.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/db/versioning-fks.test.ts
  */
 
 import {
@@ -38,7 +38,7 @@ import {
 } from 'vitest'
 import { and, eq, isNotNull, notInArray, sql } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { ChangeOrder } from '@/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { DesignService } from '@/lib/services/DesignService'

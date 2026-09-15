@@ -25,7 +25,7 @@
  * spy on purpose — that function swallows its own insert failures, so a spy
  * can pass while nothing lands.
  *
- * Run: npx vitest run packages/core/src/lib/items/enrichment/enrich-item.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/items/enrichment/enrich-item.test.ts
  */
 
 import {
@@ -39,12 +39,12 @@ import {
   vi,
 } from 'vitest'
 import { eq, isNull } from 'drizzle-orm'
-import { MAX_ENRICHMENT_IMAGE_BASE64_CHARS } from './limits'
+import { MAX_ENRICHMENT_IMAGE_BASE64_CHARS } from '@cascadia/commons/lib/items/enrichment/limits'
 import type * as TanStackAi from '@tanstack/ai'
 import type * as Adapters from '@/lib/ai/adapters'
 import type * as FetchSource from './fetch-source'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { EnrichmentImage } from './limits'
+import type { EnrichmentImage } from '@cascadia/commons/lib/items/enrichment/limits'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { aiSettings, aiUsageLogs } from '@/lib/db/schema'

@@ -15,7 +15,7 @@
  * stream's finally — so these tests pin the request-level invariant without
  * standing up the SSE stack around it.
  *
- * Run: npx vitest run packages/core/src/lib/ai/usage.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/ai/usage.test.ts
  */
 
 import {

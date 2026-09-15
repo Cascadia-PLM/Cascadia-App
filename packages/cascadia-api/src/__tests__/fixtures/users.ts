@@ -22,11 +22,14 @@
  */
 
 import { eq } from 'drizzle-orm'
+import {
+  ROLE_DEFINITIONS,
+  roleToDbFormat,
+} from '@cascadia/commons/lib/auth/permissions'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '@/lib/db/schema'
-import type { RoleName } from '@/lib/auth/permissions'
+import type { RoleName } from '@cascadia/commons/lib/auth/permissions'
 import { roles, userRoles, users } from '@/lib/db/schema'
-import { ROLE_DEFINITIONS, roleToDbFormat } from '@/lib/auth/permissions'
 import { takeFirst } from '@/lib/db/take-first'
 
 type DbSchema = typeof schema

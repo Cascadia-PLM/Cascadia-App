@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
 import type { JobContext, JobHandler } from '../types'
 import type {
   CloneDesignPayload,
@@ -20,7 +21,6 @@ import { BranchService } from '@/lib/services/BranchService'
 import { CommitService } from '@/lib/services/CommitService'
 import { UsageService } from '@/lib/services/UsageService'
 import { VersionResolver } from '@/lib/services/VersionResolver'
-import { optionConditionKey } from '@/lib/types/variants'
 
 const BATCH_SIZE = 50
 

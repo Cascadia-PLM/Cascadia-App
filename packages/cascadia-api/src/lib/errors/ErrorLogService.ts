@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
-import { getErrorStrategy } from './severity'
+import { getErrorStrategy } from '@cascadia/commons/lib/errors/severity'
 import type { AppError } from './AppError'
 import { db } from '@/lib/db'
 import { errorLogs } from '@/lib/db/schema'

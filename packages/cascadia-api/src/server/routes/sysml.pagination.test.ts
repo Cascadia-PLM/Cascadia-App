@@ -16,7 +16,7 @@
  * a bare `parseInt`, so garbage became NaN and a negative start was passed
  * through to the database untouched.
  *
- * Run: npx vitest run packages/core/src/server/routes/sysml.pagination.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/sysml.pagination.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

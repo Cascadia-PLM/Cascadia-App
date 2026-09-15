@@ -17,7 +17,7 @@ import type {
   CommitGraphData,
   CommitGraphEdge,
   CommitGraphNode,
-} from '../versioning/graph-types'
+} from '@cascadia/commons/lib/versioning/graph-types'
 
 export interface AffectedItemCommit {
   commitId: string

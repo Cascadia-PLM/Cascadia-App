@@ -21,6 +21,7 @@ import {
   vi,
 } from 'vitest'
 import { and, eq, isNotNull } from 'drizzle-orm'
+import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import {
@@ -62,7 +63,6 @@ import {
 } from '@/lib/db/schema/lifecycles'
 import { itemTypeConfigs } from '@/lib/db/schema/config'
 import { ItemTypeRegistry } from '@/lib/items/registry'
-import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
 import { SYSTEM_USER_ID } from '@/__tests__/fixtures/lifecycles'
 import { takeFirst } from '@/lib/db/take-first'
 

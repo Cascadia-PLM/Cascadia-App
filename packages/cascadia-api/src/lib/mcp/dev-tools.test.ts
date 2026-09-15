@@ -9,7 +9,7 @@
  * that REPO_ROOT is the checkout, and that the traversal guard built on it
  * still refuses to read outside the doc tree.
  *
- * Run: npx vitest run packages/core/src/lib/mcp/dev-tools.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/mcp/dev-tools.test.ts
  */
 
 import { readFileSync } from 'node:fs'
@@ -63,7 +63,7 @@ describe('dev MCP tools — doc path guard', () => {
     '../CLAUDE.md',
     'docs/../../CLAUDE.md',
     String.raw`..\FreeCADSampleData\CLAUDE.md`,
-    'packages/core/package.json',
+    'packages/cascadia-api/package.json',
     'docs/features/mcp.txt',
   ])('refuses %s', async (bad) => {
     await expect(call('read_doc', { path: bad })).rejects.toThrow()

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { previewKindFor } from '@cascadia/commons/lib/vault/preview'
 import { defineExtension } from '../registry'
 import type { ConsumedExtension } from '../types'
 import type { DesignReleasedPayload } from '@/lib/events'
 import { DESIGN_RELEASED } from '@/lib/events'
 import { FileService } from '@/lib/vault/services/FileService'
-import { previewKindFor } from '@/lib/vault/preview'
 
 export const SUPERSEDED_WATERMARK_EXTENSION_ID = 'core.superseded-watermarks'
 

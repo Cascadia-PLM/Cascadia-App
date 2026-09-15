@@ -21,7 +21,7 @@
  * the 409 keeps carrying its field conflicts, in the `data` sibling, because
  * they are the whole answer to "what do I have to resolve".
  *
- * Run: npx vitest run packages/core/src/server/routes/branch-items.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/branch-items.test.ts
  */
 
 import {
@@ -35,6 +35,8 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
+import { ApiError } from '@cascadia/commons/lib/errors/api-error'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import branchItemsRoutes from './branch-items'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import type { ErrorResponse } from '@/lib/errors/api'
@@ -43,8 +45,6 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
 import { errorResponseSchema } from '@/lib/api/openapi-helpers'
-import { ApiError } from '@/lib/api/client'
-import { ErrorCode } from '@/lib/errors/codes'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { DesignService } from '@/lib/services/DesignService'
 import { BranchService } from '@/lib/services/BranchService'

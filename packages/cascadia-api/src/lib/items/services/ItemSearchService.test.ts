@@ -21,13 +21,13 @@ import {
   expect,
   it,
 } from 'vitest'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
 import { ItemSearchService } from './ItemSearchService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { designs, items, programs, tools } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'
-import { ITEM_TYPE_DEFINITIONS } from '@/lib/items/item-type-definitions'
 import { getTypeHandler } from '@/lib/items/type-handlers'
 
 // Import to register item types

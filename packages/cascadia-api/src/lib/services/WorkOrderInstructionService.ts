@@ -7,7 +7,7 @@ import type {
   InstantiateInstructionInput,
   WorkOrderInstruction,
   WorkOrderInstructionStatus,
-} from '@/lib/items/types/work-order'
+} from '@cascadia/commons/lib/items/types/work-order'
 import type { InstructionSnapshot } from '@/lib/db/schema/work-orders'
 import type { TransactionClient } from '@/lib/db'
 import { db } from '@/lib/db'

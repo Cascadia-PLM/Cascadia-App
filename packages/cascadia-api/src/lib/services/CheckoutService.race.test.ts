@@ -22,13 +22,13 @@
  * `ConcurrentTestDatabase`, which is a real pool — so they commit, and the
  * harness cleans up after itself.
  *
- * Run: npx vitest run packages/core/src/lib/services/CheckoutService.race.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/services/CheckoutService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { CheckoutService } from '@/lib/services/CheckoutService'

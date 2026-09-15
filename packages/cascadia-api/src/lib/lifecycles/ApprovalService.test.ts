@@ -7,7 +7,7 @@
  * Integration tests for the ApprovalService class.
  * Tests cover definition-level approver management and instance-level approval tracking.
  *
- * Run: npm run test -- packages/core/src/lib/lifecycles/ApprovalService.test.ts
+ * Run: npm run test -- packages/cascadia-api/src/lib/lifecycles/ApprovalService.test.ts
  */
 
 import { and, eq, isNull } from 'drizzle-orm'
@@ -23,7 +23,7 @@ import {
 import { ApprovalService } from './ApprovalService'
 import { LifecycleDefinitionService } from './LifecycleDefinitionService'
 import { LifecycleInstanceService } from './LifecycleInstanceService'
-import type { CreateLifecycleInput } from './types'
+import type { CreateLifecycleInput } from '@cascadia/commons/lib/lifecycles/types'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,

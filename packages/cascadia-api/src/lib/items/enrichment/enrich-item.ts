@@ -21,19 +21,22 @@
 
 import { chat } from '@tanstack/ai'
 import { z } from 'zod'
-import { assertSafeUrl } from './html-to-text'
-import { fetchSource } from './fetch-source'
 import {
   ENRICHMENT_IMAGE_MEDIA_TYPES,
   MAX_ENRICHMENT_IMAGES,
   MAX_ENRICHMENT_IMAGE_BASE64_CHARS,
-} from './limits'
+} from '@cascadia/commons/lib/items/enrichment/limits'
+import {
+  CAPABILITY_SCHEMAS,
+  TOOL_SUBTYPES,
+} from '@cascadia/commons/lib/items/types/tool'
+import { assertSafeUrl } from './html-to-text'
+import { fetchSource } from './fetch-source'
 import type { FetchedPage } from './html-to-text'
-import type { EnrichmentImage } from './limits'
-import type { KnownToolSubtype } from '@/lib/items/types/tool'
+import type { EnrichmentImage } from '@cascadia/commons/lib/items/enrichment/limits'
+import type { KnownToolSubtype } from '@cascadia/commons/lib/items/types/tool'
 import type { ProviderType } from '@/lib/ai/adapters'
 import { getAdapter, isAIEnabled, loadProviderConfig } from '@/lib/ai/adapters'
-import { CAPABILITY_SCHEMAS, TOOL_SUBTYPES } from '@/lib/items/types/tool'
 import { UsageAccumulator, recordLlmUsage } from '@/lib/ai/usage'
 import { RateLimitedError, ValidationError } from '@/lib/errors'
 

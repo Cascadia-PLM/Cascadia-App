@@ -6,7 +6,7 @@
  *
  * MCP server for self-hosters standing up, customizing, and operating a
  * Cascadia instance. Runs over stdio from a repository checkout (see
- * `packages/core/src/mcp-dev-server.ts`), with the operator's own shell
+ * `packages/cascadia-api/src/mcp-dev-server.ts`), with the operator's own shell
  * credentials (direct database access — the same trust level as the admin
  * shell it replaces). It is not authenticated and must never be exposed
  * over the network.

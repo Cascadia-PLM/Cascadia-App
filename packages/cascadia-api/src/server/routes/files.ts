@@ -3,6 +3,23 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
+import {
+  CATEGORY_SOURCES,
+  FILE_CATEGORY_VALUES,
+} from '@cascadia/commons/lib/vault/file-categories'
+import {
+  PREVIEWABLE_EXTENSIONS,
+  maxPreviewBytesFor,
+  previewFormatFor,
+} from '@cascadia/commons/lib/vault/preview'
+import {
+  createAnnotationSchema,
+  updateAnnotationSchema,
+} from '@cascadia/commons/lib/vault/annotations'
+import {
+  resetNodeLinkSchema,
+  setNodeLinkSchema,
+} from '@cascadia/commons/lib/vault/cad-nodes'
 import { tagged } from '../adapter'
 import { FileService } from '@/lib/vault/services/FileService'
 import { JobService } from '@/lib/jobs/JobService'
@@ -22,21 +39,7 @@ import {
   batchFileCheckinRequestSchema,
   batchFileCheckoutRequestSchema,
 } from '@/lib/api/schemas'
-import {
-  CATEGORY_SOURCES,
-  FILE_CATEGORY_VALUES,
-} from '@/lib/vault/file-categories'
-import {
-  PREVIEWABLE_EXTENSIONS,
-  maxPreviewBytesFor,
-  previewFormatFor,
-} from '@/lib/vault/preview'
-import {
-  createAnnotationSchema,
-  updateAnnotationSchema,
-} from '@/lib/vault/annotations'
 import { AnnotationService } from '@/lib/vault/services/AnnotationService'
-import { resetNodeLinkSchema, setNodeLinkSchema } from '@/lib/vault/cad-nodes'
 import { CadModelNodeService } from '@/lib/vault/services/CadModelNodeService'
 import { WATERMARK_POSITIONS } from '@/lib/vault/pdf/watermark'
 

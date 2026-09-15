@@ -58,7 +58,7 @@
  * exceptions), `files.permissions.test.ts` (the vault, including the mixed
  * batch).
  *
- * Run: npx vitest run packages/core/src/server/routes/by-id-enumeration.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/by-id-enumeration.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -72,6 +72,7 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { RESOURCE_TYPES } from '@cascadia/commons/lib/auth/permissions'
 import itemsRoutes from './items'
 import partsRoutes from './parts'
 import documentsRoutes from './documents'
@@ -89,8 +90,8 @@ import physicalPartsRoutes from './physical-parts'
 import filesRoutes from './files'
 import branchesRoutes from './branches'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
-import type { BaseItem } from '@/lib/items/types/base'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -107,7 +108,6 @@ import { PhysicalPartService } from '@/lib/services/PhysicalPartService'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
-import { RESOURCE_TYPES } from '@/lib/auth/permissions'
 import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
 import { vaultFiles } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'

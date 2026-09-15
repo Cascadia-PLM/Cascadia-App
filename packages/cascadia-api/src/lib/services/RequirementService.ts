@@ -20,8 +20,8 @@ import { resolveInheritedLineage } from '../items/version-lineage'
 import { BranchService } from './BranchService'
 import { VersionResolver } from './VersionResolver'
 import type { VersionContext } from './VersionResolver'
-import type { PersistedItem } from '../items/types/base'
-import type { Requirement } from '../items/types/requirement'
+import type { PersistedItem } from '@cascadia/commons/lib/items/types/base'
+import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
 
 /**
  * Relationship type constants for requirements domain.

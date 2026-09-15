@@ -4,9 +4,12 @@
 import { Hono } from 'hono'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import {
+  makeCodeSchema,
+  optionConditionSchema,
+} from '@cascadia/commons/lib/types/variants'
 import { tagged } from '../adapter'
-import type { OptionCondition } from '@/lib/types/variants'
-import { makeCodeSchema, optionConditionSchema } from '@/lib/types/variants'
+import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
 import { db } from '@/lib/db'
 import { itemRelationships, items } from '@/lib/db/schema'
 import { NotFoundError, ValidationError } from '@/lib/errors'

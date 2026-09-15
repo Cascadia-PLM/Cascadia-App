@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray } from 'drizzle-orm'
+import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
 import { db } from '../../db'
 import { branchItems, branches, users } from '../../db/schema'
 import {
@@ -13,7 +14,6 @@ import {
 import { BranchService } from '../../services/BranchService'
 import { LifecycleService } from '../../services/LifecycleService'
 import { isBranchProtectionExempt } from '../branch-protection'
-import { BRANCH_TYPES } from '@/lib/versioning/branch-types'
 
 /**
  * Who may edit an item's content right now.

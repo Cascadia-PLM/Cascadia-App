@@ -34,7 +34,7 @@ import { SoftwareSourceService } from './SoftwareSourceService'
 import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Software } from '@/lib/items/types/software'
+import type { Software } from '@cascadia/commons/lib/items/types/software'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {

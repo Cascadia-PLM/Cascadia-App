@@ -33,7 +33,7 @@
  * the delivery in between. Its flip is guarded to the statuses a re-publish
  * may legitimately move, which is what keeps the claim from being undone.
  *
- * Run: npx vitest run packages/core/src/lib/jobs/scheduler.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/jobs/scheduler.test.ts
  */
 
 import {

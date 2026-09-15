@@ -12,7 +12,7 @@
  *   Error: { error: { code, message, details } }
  */
 
-import type { ErrorCode } from '@/lib/errors/codes'
+import type { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 
 /**
  * Pagination metadata for collection responses.

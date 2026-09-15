@@ -2,9 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, count, desc, eq, isNull, sql } from 'drizzle-orm'
+import { COUNTABLE_EXECUTION_STATUSES } from '@cascadia/commons/lib/items/types/work-order'
 import { paginatedOrderBy } from '../db/paginated-order'
 import { LifecycleService } from './LifecycleService'
-import type { ExecutionStatus } from '@/lib/items/types/work-order'
+import type { ExecutionStatus } from '@cascadia/commons/lib/items/types/work-order'
 import { db } from '@/lib/db'
 import {
   executionSignOffs,
@@ -20,7 +21,6 @@ import {
   WORK_ORDER_SIGN_OFF_SUBMITTED,
   publishDomainEvent,
 } from '@/lib/events'
-import { COUNTABLE_EXECUTION_STATUSES } from '@/lib/items/types/work-order'
 import {
   asPostgresError,
   constraintOf,

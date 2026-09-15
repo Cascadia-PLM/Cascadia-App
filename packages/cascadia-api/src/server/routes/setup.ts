@@ -3,10 +3,10 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
+import { SettingKeys } from '@cascadia/commons/lib/config/SettingKeys'
 import { tagged } from '../adapter'
 import { apiHandler } from '@/lib/api/handler'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { SettingKeys } from '@/lib/config/SettingKeys'
 import { SettingsService } from '@/lib/config/SettingsService'
 import { CatalogSeedService } from '@/lib/services/CatalogSeedService'
 

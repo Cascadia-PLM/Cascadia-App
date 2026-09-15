@@ -13,10 +13,10 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import { PackageRegistry } from './registry'
 import { requirePackage } from './guard'
 import { clearPackages, registerPackage } from './catalog'
-import { ErrorCode } from '@/lib/errors/codes'
 import { AppError } from '@/lib/errors'
 
 /** A package that exists only here, so core never asserts on a shipped one. */

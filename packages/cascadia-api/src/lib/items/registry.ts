@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { resolveLifecycleType } from '../lifecycles/normalize'
-import type { ItemTypeConfig } from './types/base'
+import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
+import type { ItemTypeConfig } from '@cascadia/commons/lib/items/types/base'
 import type { RuntimeItemTypeConfig } from './types/runtime-config'
-import type { LifecycleDefinition } from '../lifecycles/types'
+import type { LifecycleDefinition } from '@cascadia/commons/lib/lifecycles/types'
 import type { ConfigService as ConfigServiceType } from '../config'
 import type { LifecycleDefinitionService as LifecycleDefinitionServiceType } from '../lifecycles/LifecycleDefinitionService'
 

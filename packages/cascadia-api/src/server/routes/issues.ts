@@ -3,7 +3,7 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import type { Issue } from '@/lib/items/types/issue'
+import type { Issue } from '@cascadia/commons/lib/items/types/issue'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { NotFoundError, PermissionDeniedError } from '@/lib/errors'

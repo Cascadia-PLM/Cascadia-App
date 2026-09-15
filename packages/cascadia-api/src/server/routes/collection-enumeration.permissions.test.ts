@@ -63,7 +63,7 @@
  * items/change-orders/work-orders), `enterprise-search.permissions.test.ts`,
  * `manufacturer-parts.permissions.test.ts`.
  *
- * Run: npx vitest run packages/core/src/server/routes/collection-enumeration.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/collection-enumeration.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -77,6 +77,7 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { RESOURCE_TYPES } from '@cascadia/commons/lib/auth/permissions'
 import adminRoutes from './admin'
 import aiRoutes from './ai'
 import branchItemsRoutes from './branch-items'
@@ -119,8 +120,8 @@ import workOrdersRoutes from './work-orders'
 import workflowsRoutes from './workflows'
 import workspacesRoutes from './workspaces'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
-import type { BaseItem } from '@/lib/items/types/base'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -137,7 +138,6 @@ import { PhysicalPartService } from '@/lib/services/PhysicalPartService'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
-import { RESOURCE_TYPES } from '@/lib/auth/permissions'
 import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
 import { vaultFiles } from '@/lib/db/schema'
 import { takeFirst } from '@/lib/db/take-first'

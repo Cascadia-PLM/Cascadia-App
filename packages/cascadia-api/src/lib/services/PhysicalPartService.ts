@@ -3,7 +3,7 @@
 
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { PhysicalPart } from '@/lib/items/types/physical-part'
+import type { PhysicalPart } from '@cascadia/commons/lib/items/types/physical-part'
 import { db } from '@/lib/db'
 import { physicalPartAccessScopeCondition } from '@/lib/db/filters'
 import { likeContains } from '@/lib/db/like-pattern'

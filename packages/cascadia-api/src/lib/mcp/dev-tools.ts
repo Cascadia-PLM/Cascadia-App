@@ -197,7 +197,8 @@ async function listItemTypes(): Promise<Record<string, unknown>> {
 }
 
 async function listRoles(): Promise<Record<string, unknown>> {
-  const { ROLE_DEFINITIONS } = await import('@/lib/auth/permissions')
+  const { ROLE_DEFINITIONS } =
+    await import('@cascadia/commons/lib/auth/permissions')
   const builtIn = Object.values(ROLE_DEFINITIONS).map((role) => ({
     name: role.name,
     description: role.description,

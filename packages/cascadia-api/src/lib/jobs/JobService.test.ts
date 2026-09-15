@@ -23,7 +23,7 @@
  * (or an operator cancel) the job in between. Those flips are guarded to the
  * status they expect, and these tests race them on purpose.
  *
- * Run: npx vitest run packages/core/src/lib/jobs/JobService.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/jobs/JobService.test.ts
  */
 
 import {

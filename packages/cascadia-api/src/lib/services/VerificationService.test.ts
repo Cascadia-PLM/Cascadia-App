@@ -32,9 +32,9 @@ import {
   VerificationService,
 } from './VerificationService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
-import type { Requirement } from '@/lib/items/types/requirement'
-import type { TestCase } from '@/lib/items/types/testcase'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
+import type { TestCase } from '@cascadia/commons/lib/items/types/testcase'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { takeFirst } from '@/lib/db/take-first'

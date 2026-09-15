@@ -22,25 +22,25 @@
 import { randomUUID } from 'node:crypto'
 
 import { eq } from 'drizzle-orm'
+import { parseOptionText } from '@cascadia/commons/lib/types/variants'
 import { withWritePermissionAndAudit } from './permission-wrapper'
 import {
   issueConfirmationToken,
   redeemConfirmationToken,
 } from './confirmation-store'
-import type { BaseItem } from '@/lib/items/types/base'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
 import type {
   ChangeOrderPriority,
   ChangeOrderType,
-} from '@/lib/items/types/change-order'
-import type { PartType } from '@/lib/items/types/part'
-import type { RequirementType } from '@/lib/items/types/requirement'
-import type { TaskPriority } from '@/lib/items/types/task'
+} from '@cascadia/commons/lib/items/types/change-order'
+import type { PartType } from '@cascadia/commons/lib/items/types/part'
+import type { RequirementType } from '@cascadia/commons/lib/items/types/requirement'
+import type { TaskPriority } from '@cascadia/commons/lib/items/types/task'
 import type {
   PermissionSpec,
   ToolContext,
   WriteOperationMeta,
 } from './permission-wrapper'
-import { parseOptionText } from '@/lib/types/variants'
 import { AppError } from '@/lib/errors'
 
 import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'

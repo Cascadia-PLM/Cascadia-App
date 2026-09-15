@@ -2,6 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
+import {
+  WEBHOOK_DISPATCHER_CONSUMER_ID,
+  WEBHOOK_PAYLOAD_VERSION,
+} from '@cascadia/commons/lib/webhooks/config'
 import type { EveryEventConsumedExtension } from '@/lib/extensions/types'
 import type { DomainEvent } from '@/lib/events/types'
 import type { TransactionClient } from '@/lib/db'
@@ -12,10 +16,6 @@ import {
   webhookDeliveries,
   webhookSubscriptions,
 } from '@/lib/db/schema/webhooks'
-import {
-  WEBHOOK_DISPATCHER_CONSUMER_ID,
-  WEBHOOK_PAYLOAD_VERSION,
-} from '@/lib/webhooks/config'
 
 export interface WebhookDispatcherOptions {
   /**

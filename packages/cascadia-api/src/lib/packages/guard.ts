@@ -3,7 +3,7 @@
 
 import { PackageRegistry } from './registry'
 import { packageDescriptor } from './catalog'
-import type { PackageId } from './types'
+import type { PackageId } from '@cascadia/commons/lib/packages/types'
 import { PackageNotLicensedError } from '@/lib/errors'
 
 /**

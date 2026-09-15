@@ -5,7 +5,7 @@
  * Compile-time proof that `defineExtension` types what it claims to type.
  *
  * There is no runtime assertion here and there is not meant to be: this file is
- * inside `packages/core`'s tsc project, so `npm run typecheck` is the
+ * inside `packages/cascadia-api`'s tsc project, so `npm run typecheck` is the
  * assertion. Task 4.1 required the signature to be prototyped rather than
  * sketched, because a signature that infers nothing leaves the layer's one
  * genuine differentiator undelivered while looking finished — and no

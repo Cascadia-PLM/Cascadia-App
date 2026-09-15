@@ -17,7 +17,7 @@ import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import { VERIFIED_BY_RELATIONSHIP, idsWithLinks } from './RequirementService'
-import type { ExecutionStatus } from '../items/types/testcase'
+import type { ExecutionStatus } from '@cascadia/commons/lib/items/types/testcase'
 import { takeFirst } from '@/lib/db/take-first'
 
 /**

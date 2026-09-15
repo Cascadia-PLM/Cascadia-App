@@ -20,7 +20,7 @@
 
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
-import { ITEM_TYPE_DEFINITIONS } from '@/lib/items/item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
 
 /**
  * Item type names derived from the canonical item-type definitions, so

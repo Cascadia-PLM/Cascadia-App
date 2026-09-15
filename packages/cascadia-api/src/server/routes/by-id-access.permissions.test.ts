@@ -28,7 +28,7 @@
  *    `history`), which hand-rolled a design check that an ECO — whose
  *    `items.design_id` is always NULL — passed vacuously
  *
- * Run: npx vitest run packages/core/src/server/routes/by-id-access.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/by-id-access.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -43,14 +43,15 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import itemsRoutes from './items'
 import requirementsRoutes from './requirements'
 import physicalPartsRoutes from './physical-parts'
 import workOrdersRoutes from './work-orders'
 import issuesRoutes from './issues'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
-import type { Requirement } from '@/lib/items/types/requirement'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -61,7 +62,6 @@ import { PhysicalPartService } from '@/lib/services/PhysicalPartService'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
-import { ErrorCode } from '@/lib/errors/codes'
 import { issueDesigns, items, workOrders } from '@/lib/db/schema'
 
 // Import to register item types

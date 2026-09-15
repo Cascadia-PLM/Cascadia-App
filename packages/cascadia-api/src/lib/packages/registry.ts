@@ -2,7 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { allPackageIds, isPackageId, packageDescriptor } from './catalog'
-import type { PackageId, PackageStatus } from './types'
+import type {
+  PackageId,
+  PackageStatus,
+} from '@cascadia/commons/lib/packages/types'
 import { logger } from '@/lib/logging/logger'
 
 /**

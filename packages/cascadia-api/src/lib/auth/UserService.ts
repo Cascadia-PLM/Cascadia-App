@@ -2,15 +2,15 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, ilike, inArray, or, sql } from 'drizzle-orm'
-import { hashPassword } from './password'
 import {
   passwordChangeSchema,
   userCreateSchema,
   userUpdateSchema,
-} from './types'
+} from '@cascadia/commons/lib/auth/types'
+import { hashPassword } from './password'
 import { permissionService } from './permission-service'
 import type { SQL } from 'drizzle-orm'
-import type { UserWithRoles } from './types'
+import type { UserWithRoles } from '@cascadia/commons/lib/auth/types'
 import type { z } from 'zod'
 import type { TransactionClient } from '@/lib/db'
 import { db, withTx } from '@/lib/db'

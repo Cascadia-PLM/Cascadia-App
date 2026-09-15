@@ -31,15 +31,15 @@
 
 import { toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
-import { ITEM_TYPE_NAMES } from './definitions'
 import {
   changeOrderPrioritySchema,
   changeOrderTypeSchema,
-} from '@/lib/items/types/change-order'
-import { partTypeSchema } from '@/lib/items/types/part'
-import { requirementTypeSchema } from '@/lib/items/types/requirement'
-import { taskPrioritySchema } from '@/lib/items/types/task'
-import { makeCodeSchema } from '@/lib/types/variants'
+} from '@cascadia/commons/lib/items/types/change-order'
+import { partTypeSchema } from '@cascadia/commons/lib/items/types/part'
+import { requirementTypeSchema } from '@cascadia/commons/lib/items/types/requirement'
+import { taskPrioritySchema } from '@cascadia/commons/lib/items/types/task'
+import { makeCodeSchema } from '@cascadia/commons/lib/types/variants'
+import { ITEM_TYPE_NAMES } from './definitions'
 
 /**
  * Item types create_item can produce — every registered type except

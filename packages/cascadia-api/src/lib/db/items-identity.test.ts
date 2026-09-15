@@ -15,7 +15,7 @@
  * collisions are now real, and the legitimate multiplicities (same number in
  * different designs; new revisions of one master) still insert.
  *
- * Run: npx vitest run packages/core/src/lib/db/items-identity.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/db/items-identity.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

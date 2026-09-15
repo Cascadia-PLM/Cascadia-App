@@ -2,10 +2,13 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
+import {
+  reportExecutionOptionsSchema,
+  reportSchema,
+} from '@cascadia/commons/lib/reports/types'
 import { tagged } from '../adapter'
 import type { z } from 'zod'
 import { ReportService } from '@/lib/reports/ReportService'
-import { reportExecutionOptionsSchema, reportSchema } from '@/lib/reports/types'
 import { NotFoundError } from '@/lib/errors'
 import { apiHandler, created } from '@/lib/api/handler'
 

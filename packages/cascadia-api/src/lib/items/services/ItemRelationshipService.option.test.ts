@@ -19,7 +19,7 @@ import {
 import { eq } from 'drizzle-orm'
 import { ItemRelationshipService } from './ItemRelationshipService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { OptionModel } from '@/lib/types/variants'
+import type { OptionModel } from '@cascadia/commons/lib/types/variants'
 import { DesignService } from '@/lib/services/DesignService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'

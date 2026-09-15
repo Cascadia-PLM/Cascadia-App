@@ -2,6 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import {
+  isDrivingDefinition,
+  resolveLifecycleType,
+} from '@cascadia/commons/lib/lifecycles/normalize'
 import { db } from '../db'
 import {
   lifecycleDefinitions,
@@ -11,7 +15,6 @@ import { items } from '../db/schema/items'
 import { ItemTypeRegistry } from '../items/registry'
 import { notDeleted } from '../db/filters'
 import { ConflictError, NotFoundError, ValidationError } from '../errors'
-import { isDrivingDefinition, resolveLifecycleType } from './normalize'
 import type {
   CreateLifecycleInput,
   ValidationError as DefinitionValidationIssue,
@@ -20,7 +23,7 @@ import type {
   UpdateLifecycleInput,
   ValidationResult,
   ValidationWarning,
-} from './types'
+} from '@cascadia/commons/lib/lifecycles/types'
 import { takeFirst } from '@/lib/db/take-first'
 
 /**

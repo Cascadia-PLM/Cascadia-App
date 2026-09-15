@@ -21,6 +21,7 @@ import {
   it,
 } from 'vitest'
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { ChangeOrderMergeService } from './ChangeOrderMergeService'
@@ -31,7 +32,7 @@ import { RequirementService } from './RequirementService'
 import { LifecycleService } from './LifecycleService'
 import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { PersistedItem } from '@/lib/items/types/base'
+import type { PersistedItem } from '@cascadia/commons/lib/items/types/base'
 import type { DesignReleasedPayload } from '@/lib/events'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
@@ -54,7 +55,6 @@ import {
   vaultFiles,
 } from '@/lib/db/schema'
 import { ItemTypeRegistry } from '@/lib/items/registry'
-import { LIFECYCLE_IDS } from '@/lib/items/lifecycle-ids'
 import {
   seedRequirementLifecycle,
   seedStandardPartLifecycle,

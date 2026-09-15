@@ -16,8 +16,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
 import { ITEM_TYPE_RESOURCES, getResourceType } from './item-type-resources'
-import { ITEM_TYPE_DEFINITIONS } from './item-type-definitions'
 
 describe('ITEM_TYPE_RESOURCES', () => {
   it('has a mapping for every registered item type', () => {

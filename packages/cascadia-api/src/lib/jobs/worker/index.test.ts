@@ -22,7 +22,7 @@
  * likewise a pair of spies, with `RabbitMQClient.getChannel` pointed at it so
  * the channel-identity guard in `ack`/`nack` treats it as current.
  *
- * Run: npx vitest run packages/core/src/lib/jobs/worker/index.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/jobs/worker/index.test.ts
  */
 
 import {

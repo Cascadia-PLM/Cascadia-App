@@ -20,7 +20,7 @@
  * opts out by name; and a route that declares no schema is untouched by any
  * of it.
  *
- * Run: npx vitest run packages/core/src/lib/api/handler.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/api/handler.test.ts
  */
 
 import {
@@ -35,10 +35,10 @@ import {
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import { apiHandler } from './handler'
 import { errorResponseSchema } from './openapi-helpers'
 import { adapt } from '@/server/adapter'
-import { ErrorCode } from '@/lib/errors/codes'
 import { PermissionDeniedError } from '@/lib/errors'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'

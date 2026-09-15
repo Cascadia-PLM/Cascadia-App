@@ -21,9 +21,9 @@
  */
 
 import { and, eq, inArray, isNull, ne, or } from 'drizzle-orm'
+import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
 import { UsageService } from './UsageService'
-import type { OptionCondition } from '@/lib/types/variants'
-import { optionConditionKey } from '@/lib/types/variants'
+import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
 import { db } from '@/lib/db'
 import {
   itemRelationships,

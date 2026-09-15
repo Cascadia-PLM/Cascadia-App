@@ -3,13 +3,13 @@
 
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
 import { db } from '../db'
 import { itemTypeConfigs, items } from '../db/schema'
 import { notDeleted } from '../db/filters'
 import { ConflictError, ValidationError } from '../errors'
 import { ItemTypeRegistry } from '../items/registry'
 import { LifecycleDefinitionService } from '../lifecycles/LifecycleDefinitionService'
-import { resolveLifecycleType } from '../lifecycles/normalize'
 import type { RuntimeItemTypeConfig } from '../db/schema'
 
 const lifecyclesByChangeTypeSchema = z

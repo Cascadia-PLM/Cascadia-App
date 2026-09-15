@@ -51,7 +51,7 @@
  * The type map is asserted exhaustive against `ITEM_TYPE_RESOURCES`, so a
  * fourteenth item type fails here until it is covered.
  *
- * Run: npx vitest run packages/core/src/server/routes/resource-tuple.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/resource-tuple.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -65,6 +65,7 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { RESOURCE_TYPES } from '@cascadia/commons/lib/auth/permissions'
 import itemsRoutes from './items'
 import partsRoutes from './parts'
 import documentsRoutes from './documents'
@@ -79,9 +80,9 @@ import toolsRoutes from './tools'
 import softwareRoutes from './software'
 import workOrdersRoutes from './work-orders'
 import physicalPartsRoutes from './physical-parts'
-import type { Part } from '@/lib/items/types/part'
-import type { BaseItem } from '@/lib/items/types/base'
-import type { ResourceType } from '@/lib/auth/permissions'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
+import type { ResourceType } from '@cascadia/commons/lib/auth/permissions'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -97,7 +98,6 @@ import { PhysicalPartService } from '@/lib/services/PhysicalPartService'
 import { WorkOrderService } from '@/lib/services/WorkOrderService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
-import { RESOURCE_TYPES } from '@/lib/auth/permissions'
 import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
 import { programMembers } from '@/lib/db/schema'
 

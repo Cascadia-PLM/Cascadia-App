@@ -45,7 +45,7 @@
  * request makes that argument out loud: same caller, same item, their own
  * branch, and the answer is anything but 403.
  *
- * Run: npx vitest run packages/core/src/server/routes/branches.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/branches.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -59,9 +59,10 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -72,7 +73,6 @@ import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 import { requireBranchAccess } from '@/lib/auth/access'
 import { PermissionDeniedError } from '@/lib/errors'
-import { ErrorCode } from '@/lib/errors/codes'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'

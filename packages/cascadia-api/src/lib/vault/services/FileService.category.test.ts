@@ -31,7 +31,7 @@ import {
 import { eq } from 'drizzle-orm'
 import { FileService } from './FileService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { FileCategory } from '@/lib/vault/file-categories'
+import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestDocument } from '@/__tests__/fixtures/items'

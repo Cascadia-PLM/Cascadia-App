@@ -21,7 +21,7 @@
  * first exists, one `db:generate` before it reaches anyone. No database and no
  * fixtures — the guard costs a file read and covers both editions.
  *
- * Run: npx vitest run packages/core/src/lib/db/constraint-name-length.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/db/constraint-name-length.test.ts
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs'

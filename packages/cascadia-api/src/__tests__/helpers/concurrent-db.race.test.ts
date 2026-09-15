@@ -22,14 +22,14 @@
  * Named `.race.test.ts` by the convention the harness header describes: these
  * files must not share a process with a gate-transaction suite.
  *
- * Run: npx vitest run packages/core/src/__tests__/helpers/concurrent-db.race.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/__tests__/helpers/concurrent-db.race.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { eq, sql } from 'drizzle-orm'
 import { ConcurrentTestDatabase } from './concurrent-db'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { designs, items, programs, users } from '@/lib/db/schema'
 

@@ -54,7 +54,7 @@ export default async function globalSetup() {
 
   // Point the application's own db module at the test database too.
   //
-  // packages/core/src/lib/db reads DATABASE_URL at import time and builds a
+  // packages/cascadia-api/src/lib/db reads DATABASE_URL at import time and builds a
   // client from it. TestDatabase swaps that client out via setTestDb(), but
   // anything importing the module before a suite calls setup() — or any code
   // reaching for the global handle rather than the injected one — would still

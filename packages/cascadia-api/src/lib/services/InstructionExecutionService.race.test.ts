@@ -34,7 +34,7 @@
  * transaction serializes every call, so the race cannot occur. These commit
  * for real through `ConcurrentTestDatabase`, which cleans up after itself.
  *
- * Run: npx vitest run packages/core/src/lib/services/InstructionExecutionService.race.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/lib/services/InstructionExecutionService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'

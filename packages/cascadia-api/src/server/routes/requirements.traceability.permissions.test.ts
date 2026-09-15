@@ -20,7 +20,7 @@
  * the caller, and pinning the exact success code would pin service behaviour
  * this suite is not about.
  *
- * Run: npx vitest run packages/core/src/server/routes/requirements.traceability.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/requirements.traceability.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -35,10 +35,11 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq, or } from 'drizzle-orm'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import requirementsRoutes from './requirements'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Requirement } from '@/lib/items/types/requirement'
-import type { Part } from '@/lib/items/types/part'
+import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -52,7 +53,6 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
 import { itemRelationships, programMembers } from '@/lib/db/schema'
-import { ErrorCode } from '@/lib/errors/codes'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'

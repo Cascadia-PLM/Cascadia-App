@@ -18,7 +18,7 @@
  * number are instance-global master data, like the standard library. That
  * exception is asserted below so it reads as a decision rather than a miss.
  *
- * Run: npx vitest run packages/core/src/server/routes/manufacturer-parts.permissions.test.ts
+ * Run: npx vitest run packages/cascadia-api/src/server/routes/manufacturer-parts.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -32,9 +32,10 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
 import manufacturerPartsRoutes from './manufacturer-parts'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@/lib/items/types/part'
+import type { Part } from '@cascadia/commons/lib/items/types/part'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -48,7 +49,6 @@ import { ProgramService } from '@/lib/services/ProgramService'
 import { ManufacturerPartService } from '@/lib/services/ManufacturerPartService'
 import { SessionManager } from '@/lib/auth/session'
 import { permissionService } from '@/lib/auth/permission-service'
-import { ErrorCode } from '@/lib/errors/codes'
 
 // Import to register item types
 import '@/lib/items/registerItemTypes.server'

@@ -13,14 +13,14 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { intersectPermissions, intersectRoles } from './api-key-utils'
-import { deriveStatus } from './ApiKeyService'
 import {
   DEFAULT_API_KEY_POLICY,
   resolveKeyExpiration,
   validateApiKeyPolicy,
-} from './api-key-policy-types'
-import type { ApiKeyPolicy } from './api-key-policy-types'
+} from '@cascadia/commons/lib/auth/api-key-policy-types'
+import { intersectPermissions, intersectRoles } from './api-key-utils'
+import { deriveStatus } from './ApiKeyService'
+import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
 
 describe('intersectRoles', () => {
   it('returns every owner role when the key is unscoped', () => {

@@ -8,7 +8,7 @@ import type { UpstreamChangeItem } from '@/lib/db/schema'
  * module exists — the post-release sibling of `ApprovalRegistry`.
  *
  * @deprecated Register a `consumed` extension on `design.released` instead
- * (`defineExtension` from `@cascadia/core/extensions`). **This registry now has
+ * (`defineExtension` from `@cascadia/api/extensions`). **This registry now has
  * zero registrants in both editions** — the Odoo connector, its last one, moved
  * to a consumer — so the loop in `ChangeOrderMergeService` iterates an empty
  * array on every release. It is kept for one more wave and then removed: it is

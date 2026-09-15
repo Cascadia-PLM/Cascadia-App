@@ -9,4 +9,8 @@ export {
 } from './catalog'
 export { PackageRegistry } from './registry'
 export { requirePackage } from './guard'
-export type { PackageDescriptor, PackageId, PackageStatus } from './types'
+export type {
+  PackageDescriptor,
+  PackageId,
+  PackageStatus,
+} from '@cascadia/commons/lib/packages/types'

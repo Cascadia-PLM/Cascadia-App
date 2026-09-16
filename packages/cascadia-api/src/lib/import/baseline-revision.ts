@@ -10,10 +10,12 @@ interface FormalRevisionContext {
   operation?: string
 }
 
+type ResolvedFormalRevisionContext = Required<FormalRevisionContext>
+
 function fail(
   revision: string,
   expected: string,
-  context: FormalRevisionContext,
+  context: ResolvedFormalRevisionContext,
 ): never {
   const message = `Revision '${revision}' is not a valid formal revision for this lifecycle; expected ${expected}`
   throw new ValidationError(message, [{ field: context.field, message }], {

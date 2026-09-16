@@ -49,6 +49,28 @@ interface ChangeOrderDesignStructureTreeProps {
   onItemsAdded?: () => void
 }
 
+/**
+ * The existing add-item dialogs operate on the common BOM node shape, but a
+ * design's non-BOM items cross the wire as OrphanItem (`id` instead of
+ * `itemId`). Normalize only the shared item fields here so Documents,
+ * Software, Requirements, and Parts excluded from the structure can use the
+ * same server-resolved ECO action flow as BOM nodes.
+ */
+function orphanAsCandidate(item: OrphanItem, designId: string): BOMTreeNode {
+  return {
+    itemId: item.id,
+    itemNumber: item.itemNumber,
+    name: item.name,
+    revision: item.revision,
+    state: item.state,
+    itemType: item.itemType,
+    designId,
+    isInEco: item.isInEco,
+    isBranchChanged: item.isBranchChanged,
+    changeAction: item.changeAction,
+  }
+}
+
 export function ChangeOrderDesignStructureTree({
   designId,
   designName,
@@ -539,8 +561,10 @@ export function ChangeOrderDesignStructureTree({
                 </div>
               )}
 
-              {/* Items outside the BOM tree: documents, requirements, and
-                  parts that are neither a top-level part nor anyone's child */}
+              {/* Items outside the BOM tree: documents, software,
+                  requirements, and parts that are neither a top-level part
+                  nor anyone's child. They are still normal ECO candidates;
+                  BOM membership is not a release prerequisite. */}
               {filteredOrphans.length > 0 && (
                 <div className="mt-4">
                   <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -555,7 +579,7 @@ export function ChangeOrderDesignStructureTree({
                       <div className="w-24 flex-shrink-0 text-center">
                         State
                       </div>
-                      <div className="w-28 flex-shrink-0 text-center">
+                      <div className="w-32 flex-shrink-0 text-center">
                         ECO Action
                       </div>
                     </div>
@@ -590,7 +614,7 @@ export function ChangeOrderDesignStructureTree({
                               className="text-xs"
                             />
                           </div>
-                          <div className="w-28 flex-shrink-0 flex justify-center">
+                          <div className="w-32 flex-shrink-0 flex justify-center">
                             {item.isInEco ? (
                               <Badge
                                 variant={
@@ -607,6 +631,20 @@ export function ChangeOrderDesignStructureTree({
                                     item.changeAction.slice(1)
                                   : 'In change order'}
                               </Badge>
+                            ) : !readOnly ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={() =>
+                                  handleAddToChangeOrder(
+                                    orphanAsCandidate(item, designId),
+                                  )
+                                }
+                              >
+                                <Plus className="mr-1 h-3 w-3" />
+                                Add to ECO
+                              </Button>
                             ) : (
                               <span className="text-slate-400 text-xs">—</span>
                             )}

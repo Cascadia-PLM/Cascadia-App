@@ -17,6 +17,8 @@ interface RevisionSchemeSelectorProps {
   value?: RevisionScheme
   onChange: (scheme: RevisionScheme) => void
   label?: string
+  /** Driven lifecycles must advance their revision on every release. */
+  allowNone?: boolean
 }
 
 type SchemeType = 'alpha' | 'numeric' | 'prefixed-numeric' | 'none'
@@ -59,6 +61,7 @@ export function RevisionSchemeSelector({
   value,
   onChange,
   label = 'Revision Scheme',
+  allowNone = true,
 }: RevisionSchemeSelectorProps) {
   const schemeType = getSchemeType(value)
   const prefix = getPrefix(value)
@@ -117,7 +120,7 @@ export function RevisionSchemeSelector({
           <SelectItem value="alpha">Alpha (A, B, C)</SelectItem>
           <SelectItem value="numeric">Numeric (1, 2, 3)</SelectItem>
           <SelectItem value="prefixed-numeric">Prefixed-Numeric</SelectItem>
-          <SelectItem value="none">None</SelectItem>
+          {allowNone && <SelectItem value="none">None</SelectItem>}
         </SelectContent>
       </Select>
 

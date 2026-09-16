@@ -31,6 +31,8 @@ interface ChangeOrderBranch {
   itemsAffected: number
 }
 
+const NO_EXPANDED_NODES = new Set<string>()
+
 interface ChangeOrderDesignStructureTreeProps {
   designId: string
   designName: string
@@ -390,6 +392,15 @@ export function ChangeOrderDesignStructureTree({
 
   // Whether to show selection UI
   const showSelection = !readOnly && !!onBatchAddToChangeOrder
+  const bomExpandedNodes = hasActiveFilters ? NO_EXPANDED_NODES : expandedNodes
+  const bomSelectionState = selection.getSelectionStateForNodes(
+    filteredRoots,
+    bomExpandedNodes,
+  )
+  const orphanSelectionState = selection.getSelectionStateForNodes(
+    filteredOrphanNodes,
+    NO_EXPANDED_NODES,
+  )
 
   // Get state badge variant
   // Count active filters
@@ -517,9 +528,7 @@ export function ChangeOrderDesignStructureTree({
               {filteredRoots.length > 0 ? (
                 <ChangeOrderTreeTable
                   nodes={filteredRoots}
-                  expandedNodes={
-                    hasActiveFilters ? new Set<string>() : expandedNodes
-                  }
+                  expandedNodes={bomExpandedNodes}
                   onToggle={toggleNode}
                   onAddToChangeOrder={handleAddToChangeOrder}
                   onAddChild={onAddChild ? handleAddChild : undefined}
@@ -530,13 +539,14 @@ export function ChangeOrderDesignStructureTree({
                   onSelectionClick={selection.handleClick}
                   onCheckboxChange={selection.handleCheckboxChange}
                   isItemSelectable={isEligible}
-                  onSelectAll={
-                    selection.isAllSelected
-                      ? selection.clearSelection
-                      : selection.selectAll
+                  onSelectAll={() =>
+                    selection.toggleSelectAllForNodes(
+                      filteredRoots,
+                      bomExpandedNodes,
+                    )
                   }
-                  isAllSelected={selection.isAllSelected}
-                  isIndeterminate={selection.isIndeterminate}
+                  isAllSelected={bomSelectionState.isAllSelected}
+                  isIndeterminate={bomSelectionState.isIndeterminate}
                   columnFilters={columnFilters}
                   onColumnFilterChange={handleColumnFilterChange}
                 />
@@ -571,7 +581,7 @@ export function ChangeOrderDesignStructureTree({
                   </h4>
                   <ChangeOrderTreeTable
                     nodes={filteredOrphanNodes}
-                    expandedNodes={new Set<string>()}
+                    expandedNodes={NO_EXPANDED_NODES}
                     onToggle={() => {}}
                     onAddToChangeOrder={handleAddToChangeOrder}
                     readOnly={readOnly}
@@ -581,13 +591,14 @@ export function ChangeOrderDesignStructureTree({
                     onSelectionClick={selection.handleClick}
                     onCheckboxChange={selection.handleCheckboxChange}
                     isItemSelectable={isEligible}
-                    onSelectAll={
-                      selection.isAllSelected
-                        ? selection.clearSelection
-                        : selection.selectAll
+                    onSelectAll={() =>
+                      selection.toggleSelectAllForNodes(
+                        filteredOrphanNodes,
+                        NO_EXPANDED_NODES,
+                      )
                     }
-                    isAllSelected={selection.isAllSelected}
-                    isIndeterminate={selection.isIndeterminate}
+                    isAllSelected={orphanSelectionState.isAllSelected}
+                    isIndeterminate={orphanSelectionState.isIndeterminate}
                     columnFilters={columnFilters}
                     onColumnFilterChange={handleColumnFilterChange}
                   />

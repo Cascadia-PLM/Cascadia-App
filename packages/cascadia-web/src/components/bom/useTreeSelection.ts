@@ -20,6 +20,14 @@ interface UseTreeSelectionReturn {
   ) => void
   handleCheckboxChange: (itemId: string) => void
   selectAll: () => void
+  toggleSelectAllForNodes: (
+    nodes: Array<BOMTreeNode>,
+    expandedNodes: Set<string>,
+  ) => void
+  getSelectionStateForNodes: (
+    nodes: Array<BOMTreeNode>,
+    expandedNodes: Set<string>,
+  ) => { isAllSelected: boolean; isIndeterminate: boolean }
   clearSelection: () => void
   isItemSelected: (itemId: string) => boolean
   /** Update the flattened list when nodes or expansion changes */
@@ -162,6 +170,50 @@ export function useTreeSelection(
     setSelectedIds(new Set(eligible.map((n) => n.itemId)))
   }, [isEligible])
 
+  const toggleSelectAllForNodes = useCallback(
+    (nodes: Array<BOMTreeNode>, expandedNodes: Set<string>) => {
+      const eligibleIds = flattenVisibleNodes(nodes, expandedNodes)
+        .filter(isEligible)
+        .map((node) => node.itemId)
+
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        const allSelected =
+          eligibleIds.length > 0 && eligibleIds.every((id) => next.has(id))
+
+        for (const id of eligibleIds) {
+          if (allSelected) {
+            next.delete(id)
+          } else {
+            next.add(id)
+          }
+        }
+
+        return next
+      })
+    },
+    [isEligible],
+  )
+
+  const getSelectionStateForNodes = useCallback(
+    (nodes: Array<BOMTreeNode>, expandedNodes: Set<string>) => {
+      const eligibleIds = flattenVisibleNodes(nodes, expandedNodes)
+        .filter(isEligible)
+        .map((node) => node.itemId)
+      const selectedCount = eligibleIds.filter((id) =>
+        selectedIds.has(id),
+      ).length
+
+      return {
+        isAllSelected:
+          eligibleIds.length > 0 && selectedCount === eligibleIds.length,
+        isIndeterminate:
+          selectedCount > 0 && selectedCount < eligibleIds.length,
+      }
+    },
+    [isEligible, selectedIds],
+  )
+
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set())
     lastClickedIdRef.current = null
@@ -185,6 +237,8 @@ export function useTreeSelection(
     handleClick,
     handleCheckboxChange,
     selectAll,
+    toggleSelectAllForNodes,
+    getSelectionStateForNodes,
     clearSelection,
     isItemSelected,
     setVisibleNodes,

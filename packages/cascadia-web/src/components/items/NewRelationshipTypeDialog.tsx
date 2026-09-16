@@ -35,6 +35,7 @@ import {
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { apiFetch } from '@/lib/api/client'
 import { useInvalidateResources } from '@/lib/query'
+import { ITEM_TYPE_OPTIONS } from '@/lib/items/item-type-ui'
 import { StateBadge } from '@/components/items/StateBadge'
 import { cn } from '@/lib/utils'
 
@@ -59,6 +60,7 @@ const RELATIONSHIP_TYPE_SUGGESTIONS = [
   'Dependency',
   'Reference',
   'Attachment',
+  'Software',
 ]
 
 export function NewRelationshipTypeDialog({
@@ -217,11 +219,11 @@ export function NewRelationshipTypeDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Part">Part</SelectItem>
-                  <SelectItem value="Document">Document</SelectItem>
-                  <SelectItem value="Requirement">Requirement</SelectItem>
-                  <SelectItem value="Task">Task</SelectItem>
-                  <SelectItem value="ChangeOrder">Change Order</SelectItem>
+                  {ITEM_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -1,0 +1,1 @@
+ALTER TABLE "change_order_affected_items" ADD COLUMN "initial_revision_override" varchar(10);

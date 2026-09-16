@@ -8,9 +8,11 @@ import {
   TAG_TYPES,
 } from '@cascadia/commons/lib/versioning/branch-types'
 import { db } from '../db'
+import { notWorkingRevision } from '../db/filters'
 import { withSerializableRetry } from '../db/retry'
 import {
   branchItems,
+  changeOrderAffectedItems,
   changeOrderDesigns,
   changeOrders,
   itemRelationships,
@@ -58,6 +60,7 @@ import type {
 import type { MergeConflict } from '@cascadia/commons/lib/services/types/conflicts'
 import { serviceLogger } from '@/lib/logging/logger'
 import { takeFirst } from '@/lib/db/take-first'
+import { parseBaselineReleaseRevision } from '@/lib/import/baseline-revision'
 
 // ============================================
 // Types
@@ -605,6 +608,28 @@ export class ChangeOrderMergeService {
   }
 
   /**
+   * Find any formal revision in a master's lineage.
+   *
+   * An imported initial revision is valid only when it really is the first
+   * release. This is deliberately checked again inside the release
+   * transaction: validation performed while editing the ECO can become stale
+   * if another ECO releases the same master before this one merges.
+   */
+  private static async formalRevisionInLineage(
+    masterId: string,
+    tx?: TransactionClient,
+  ): Promise<string | null> {
+    return (
+      (await (tx ?? db)
+        .select({ revision: items.revision })
+        .from(items)
+        .where(and(eq(items.masterId, masterId), notWorkingRevision()))
+        .limit(1)
+        .then((rows) => rows.at(0)?.revision)) ?? null
+    )
+  }
+
+  /**
    * Retire the versions of a master that are currently in service — keeping
    * one, or none when the replacement does not exist yet.
    *
@@ -681,13 +706,14 @@ export class ChangeOrderMergeService {
     pinned: ActionableItem,
     states: ResolvedActionStates,
     run:
-      | { dryRun: true }
+      | { dryRun: true; initialRevisionOverride?: string | null }
       | {
           dryRun?: false
           userId: string
           tx: TransactionClient
           /** Carried for the per-item release fact this emits. */
           changeOrderId: string
+          initialRevisionOverride?: string | null
         },
   ): Promise<ChangeActionOutcome> {
     const write = run.dryRun ? null : run
@@ -707,6 +733,33 @@ export class ChangeOrderMergeService {
       kind: 'invalid',
       error: `The ${item.itemType} lifecycle no longer defines a "${action}" action; remove the affected item or restore the mapping`,
     })
+
+    if (
+      run.initialRevisionOverride &&
+      (action !== 'release' ||
+        !RevisionService.isWorkingRevision(item.revision))
+    ) {
+      return {
+        kind: 'invalid',
+        error:
+          action !== 'release'
+            ? 'An initial revision override is valid only for the release action'
+            : `Initial revision override ${run.initialRevisionOverride} cannot be applied because the item already carries formal revision ${item.revision}`,
+      }
+    }
+
+    if (run.initialRevisionOverride) {
+      const priorRelease = await this.formalRevisionInLineage(
+        item.masterId,
+        write?.tx,
+      )
+      if (priorRelease) {
+        return {
+          kind: 'invalid',
+          error: `Initial revision override ${run.initialRevisionOverride} cannot be applied because this item already has formal release ${priorRelease}`,
+        }
+      }
+    }
 
     const validation = await LifecycleService.canApplyAction(
       item.itemType,
@@ -744,9 +797,29 @@ export class ChangeOrderMergeService {
           if (toState === null) return undefinedAction()
           // The initial letter if the item has never carried a real revision
           const needsRevision = RevisionService.isWorkingRevision(item.revision)
-          const newRevision = needsRevision
-            ? RevisionService.getInitialRevision(states.revisionScheme)
-            : item.revision
+          let newRevision = item.revision
+          if (needsRevision) {
+            try {
+              newRevision = run.initialRevisionOverride
+                ? parseBaselineReleaseRevision(
+                    run.initialRevisionOverride,
+                    states.revisionScheme,
+                    {
+                      field: 'initialRevisionOverride',
+                      operation: 'releaseInitialRevisionOverride',
+                    },
+                  )
+                : RevisionService.getInitialRevision(states.revisionScheme)
+            } catch (error) {
+              return {
+                kind: 'invalid',
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : 'Invalid initial revision override',
+              }
+            }
+          }
           const updates: { state?: string; revision?: string } = {}
           if (item.state !== toState) updates.state = toState
           if (needsRevision) updates.revision = newRevision
@@ -1248,7 +1321,12 @@ export class ChangeOrderMergeService {
                 action,
                 item,
                 await LifecycleService.resolveActionStates(item.itemType),
-                { userId, tx, changeOrderId },
+                {
+                  userId,
+                  tx,
+                  changeOrderId,
+                  initialRevisionOverride: affected.initialRevisionOverride,
+                },
               )
               if (outcome.kind === 'invalid') {
                 throw new ValidationError(
@@ -1505,7 +1583,12 @@ export class ChangeOrderMergeService {
                 action,
                 item,
                 await LifecycleService.resolveActionStates(item.itemType),
-                { userId, tx, changeOrderId },
+                {
+                  userId,
+                  tx,
+                  changeOrderId,
+                  initialRevisionOverride: affected.initialRevisionOverride,
+                },
               )
               if (outcome.kind === 'invalid') {
                 throw new ValidationError(
@@ -1778,6 +1861,28 @@ export class ChangeOrderMergeService {
       throw new ValidationError('No changes to merge')
     }
 
+    // The affected-items row is the approved source of an imported initial
+    // revision. Resolve it by master because the branch carries a different
+    // item-version id from the row originally added to the ECO.
+    const initialRevisionOverrides = new Map(
+      (
+        await db
+          .select({
+            masterId: changeOrderAffectedItems.affectedItemMasterId,
+            revision: changeOrderAffectedItems.initialRevisionOverride,
+          })
+          .from(changeOrderAffectedItems)
+          .where(
+            and(
+              eq(changeOrderAffectedItems.changeOrderId, changeOrderId),
+              eq(changeOrderAffectedItems.changeAction, 'release'),
+              isNotNull(changeOrderAffectedItems.affectedItemMasterId),
+              isNotNull(changeOrderAffectedItems.initialRevisionOverride),
+            ),
+          )
+      ).map((row) => [row.masterId!, row.revision!]),
+    )
+
     // 4. Resolve the lifecycle states each item type releases into, before
     // opening the transaction. `resolveActionStates` is the one place those
     // five values and their fallbacks are worked out; the registry memoizes the
@@ -1901,9 +2006,37 @@ export class ChangeOrderMergeService {
 
               if (bi.changeType === 'added') {
                 // New item - assign initial revision based on scheme
-                const newRevision = RevisionService.getInitialRevision(
-                  lifecycleStates.revisionScheme,
+                const revisionOverride = initialRevisionOverrides.get(
+                  bi.itemMasterId,
                 )
+                if (
+                  revisionOverride &&
+                  !RevisionService.isWorkingRevision(currentItem.revision)
+                ) {
+                  throw new ValidationError(
+                    `Initial revision override ${revisionOverride} cannot be applied to ${currentItem.itemNumber}, which already carries formal revision ${currentItem.revision}`,
+                  )
+                }
+                const priorRelease = revisionOverride
+                  ? await this.formalRevisionInLineage(currentItem.masterId, tx)
+                  : null
+                if (priorRelease) {
+                  throw new ValidationError(
+                    `Initial revision override ${revisionOverride} cannot be applied to ${currentItem.itemNumber}, which already has formal release ${priorRelease}`,
+                  )
+                }
+                const newRevision = revisionOverride
+                  ? parseBaselineReleaseRevision(
+                      revisionOverride,
+                      lifecycleStates.revisionScheme,
+                      {
+                        field: 'initialRevisionOverride',
+                        operation: 'releaseInitialRevisionOverride',
+                      },
+                    )
+                  : RevisionService.getInitialRevision(
+                      lifecycleStates.revisionScheme,
+                    )
 
                 // Create new item version with assigned revision
                 const releasedItem = takeFirst(
@@ -2901,6 +3034,22 @@ export class ChangeOrderMergeService {
     // by master listed a checked-out item twice: once as the branch working
     // copy and once as the released row it is based on.
     const seenMasterIds = new Set<string>()
+    const affectedItems =
+      await ChangeOrderService.getAffectedItems(changeOrderId)
+    const initialRevisionOverrides = new Map(
+      affectedItems.flatMap((affected) =>
+        affected.changeAction === 'release' &&
+        affected.affectedItemMasterId &&
+        affected.initialRevisionOverride
+          ? [
+              [
+                affected.affectedItemMasterId,
+                affected.initialRevisionOverride,
+              ] as const,
+            ]
+          : [],
+      ),
+    )
 
     for (const changeOrderDesign of ecoDesigns) {
       if (!changeOrderDesign.branchId) {
@@ -2947,7 +3096,23 @@ export class ChangeOrderMergeService {
         let currentRevision = item.revision
         let newRevision: string
         if (branchItem.changeType === 'added') {
-          newRevision = RevisionService.getInitialRevision(previewScheme)
+          const revisionOverride = initialRevisionOverrides.get(
+            branchItem.itemMasterId,
+          )
+          const priorRelease = revisionOverride
+            ? await this.formalRevisionInLineage(item.masterId)
+            : null
+          if (priorRelease) {
+            validationIssues.push(
+              `${item.itemNumber}: initial revision override ${revisionOverride} cannot be applied because this item already has formal release ${priorRelease}`,
+            )
+          }
+          newRevision = revisionOverride
+            ? parseBaselineReleaseRevision(revisionOverride, previewScheme, {
+                field: 'initialRevisionOverride',
+                operation: 'previewInitialRevisionOverride',
+              })
+            : RevisionService.getInitialRevision(previewScheme)
         } else if (branchItem.changeType === 'modified' && mainBranch) {
           // The helper the merge itself uses, so the letter shown here is the
           // letter assigned: a checked-out working copy carries a branch
@@ -3019,8 +3184,6 @@ export class ChangeOrderMergeService {
     // (`applyAffectedItems` when no branch had changes, `applyRemainingActions`
     // after one did; the same actions either way). Each is a dry run of
     // `applyChangeAction`, the implementation the release will use.
-    const affectedItems =
-      await ChangeOrderService.getAffectedItems(changeOrderId)
     const designEntryById = new Map(designs.map((d) => [d.designId, d]))
 
     for (const affected of affectedItems) {
@@ -3038,7 +3201,10 @@ export class ChangeOrderMergeService {
         action,
         item,
         await LifecycleService.resolveActionStates(item.itemType),
-        { dryRun: true },
+        {
+          dryRun: true,
+          initialRevisionOverride: affected.initialRevisionOverride,
+        },
       )
       if (outcome.kind === 'invalid') {
         validationIssues.push(`${item.itemNumber}: ${outcome.error}`)

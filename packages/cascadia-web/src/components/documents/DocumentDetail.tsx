@@ -277,6 +277,18 @@ export function DocumentDetail({
     editContext,
   })
 
+  // Attachments are revision content, so their controls follow the same
+  // context and checkout as the document fields. Released/historical views,
+  // locked ECOs, and another user's checkout are read-only.
+  const canMutateFiles =
+    !isCreateMode &&
+    isEditing &&
+    !isSubmitting &&
+    editContext !== null &&
+    isEditable &&
+    !editContext.isBranchLocked &&
+    editLock.heldByMe
+
   const handleEdit = async () => {
     if (needsCheckout) {
       setIsCheckoutDialogOpen(true)
@@ -724,10 +736,11 @@ export function DocumentDetail({
                   <CardContent className="space-y-4">
                     <FileUploadZone
                       itemId={currentDocument.id}
+                      readOnly={!canMutateFiles}
                       branchId={
                         context.type === 'branch'
                           ? context.branchId
-                          : mainBranchId
+                          : undefined
                       }
                       onUploadComplete={() => {
                         showSuccess(
@@ -742,6 +755,7 @@ export function DocumentDetail({
                     />
                     <FileList
                       itemId={currentDocument.id}
+                      readOnly={!canMutateFiles}
                       branchId={
                         context.type === 'branch' ? context.branchId : undefined
                       }

@@ -26,6 +26,12 @@ function canBeThumbnail(file: File): boolean {
 interface FileUploadZoneProps {
   itemId: string
   branchId?: string
+  /**
+   * Hide the uploader when the owning item is not mutable in the active
+   * version context. File mutations are authorized by the item checkout, not
+   * independently by this component.
+   */
+  readOnly?: boolean
   onUploadComplete?: (files: Array<any>) => void
   onUploadError?: (error: Error) => void
   maxSizeBytes?: number
@@ -44,6 +50,7 @@ interface FileWithPreview {
 export function FileUploadZone({
   itemId,
   branchId,
+  readOnly = false,
   onUploadComplete,
   onUploadError,
   maxSizeBytes = 500 * 1024 * 1024, // 500MB
@@ -79,12 +86,14 @@ export function FileUploadZone({
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
+    if (readOnly) return
 
     const files = Array.from(e.dataTransfer.files)
     addFiles(files)
   }
 
   const handleFileInput = (e: ChangeEvent<HTMLInputElement>) => {
+    if (readOnly) return
     if (e.target.files) {
       const files = Array.from(e.target.files)
       addFiles(files)
@@ -92,6 +101,7 @@ export function FileUploadZone({
   }
 
   const addFiles = (files: Array<File>) => {
+    if (readOnly) return
     const newFiles: Array<FileWithPreview> = files.map((file) => {
       const id = crypto.randomUUID()
 
@@ -123,7 +133,7 @@ export function FileUploadZone({
   }
 
   const handleUpload = async () => {
-    if (selectedFiles.length === 0) return
+    if (readOnly || selectedFiles.length === 0) return
 
     setUploading(true)
     const formData = new FormData()
@@ -177,6 +187,11 @@ export function FileUploadZone({
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
+
+  // The uploader has no read-only action. Keeping it out of the tree also
+  // prevents drag/drop and a retained file-input reference from being used
+  // when the parent switches to a protected or historical context.
+  if (readOnly) return null
 
   return (
     <div className={cn('space-y-4', className)}>

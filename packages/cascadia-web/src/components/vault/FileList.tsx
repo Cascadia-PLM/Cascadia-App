@@ -63,6 +63,12 @@ interface FileListProps {
   itemId: string
   branchId?: string
   mainBranchId?: string
+  /**
+   * Show only content-neutral actions (preview, viewers, download, and lock
+   * cleanup). The owning item decides this from its version context and edit
+   * checkout.
+   */
+  readOnly?: boolean
   onFileDeleted?: (fileId: string) => void
   onFileCheckedOut?: (fileId: string) => void
   onFileCheckedIn?: (fileId: string) => void
@@ -81,6 +87,7 @@ export function FileList({
   itemId,
   branchId,
   mainBranchId,
+  readOnly = false,
   onFileDeleted,
   onFileCheckedOut,
   onFileCheckedIn,
@@ -135,6 +142,7 @@ export function FileList({
   }
 
   const handleDelete = (fileId: string) => {
+    if (readOnly) return
     confirm({
       title: 'Delete File',
       description: 'Are you sure you want to delete this file?',
@@ -162,6 +170,7 @@ export function FileList({
   }
 
   const handleCheckOut = async (fileId: string) => {
+    if (readOnly) return
     try {
       const response = await fetch(`/api/v1/files/${fileId}/checkout`, {
         method: 'POST',
@@ -228,6 +237,7 @@ export function FileList({
   }
 
   const handleSetThumbnail = async (file: FileRecord) => {
+    if (readOnly) return
     const isCurrent = file.isItemThumbnail === true
 
     try {
@@ -255,6 +265,7 @@ export function FileList({
     file: FileRecord,
     category: FileCategory | null,
   ) => {
+    if (readOnly) return
     try {
       const response = await fetch(`/api/v1/files/${file.id}/category`, {
         method: 'PATCH',
@@ -507,7 +518,7 @@ export function FileList({
     const file = row.original
     return (
       <div className="flex justify-end gap-1">
-        <Slot name="file-row-actions" props={{ file }} />
+        {!readOnly && <Slot name="file-row-actions" props={{ file }} />}
         {isPreviewable(file.originalFileName, file.fileSize) && (
           <Button
             variant="ghost"
@@ -530,12 +541,14 @@ export function FileList({
             <Eye className="w-4 h-4" />
           </Button>
         )}
-        <FileCategoryMenu
-          category={file.fileCategory}
-          categorySource={file.categorySource}
-          onChange={(category) => handleSetCategory(file, category)}
-        />
-        {canBeThumbnail(file) && (
+        {!readOnly && (
+          <FileCategoryMenu
+            category={file.fileCategory}
+            categorySource={file.categorySource}
+            onChange={(category) => handleSetCategory(file, category)}
+          />
+        )}
+        {!readOnly && canBeThumbnail(file) && (
           <Button
             variant="ghost"
             size="icon"
@@ -562,14 +575,16 @@ export function FileList({
           <Download className="w-4 h-4" />
         </Button>
         {!file.isCheckedOut ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleCheckOut(file.id)}
-            title="Check Out"
-          >
-            <Lock className="w-4 h-4" />
-          </Button>
+          !readOnly && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleCheckOut(file.id)}
+              title="Check Out"
+            >
+              <Lock className="w-4 h-4" />
+            </Button>
+          )
         ) : (
           <>
             <Button
@@ -593,15 +608,17 @@ export function FileList({
             )}
           </>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => handleDelete(file.id)}
-          disabled={file.isCheckedOut}
-          title="Delete"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        {!readOnly && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDelete(file.id)}
+            disabled={file.isCheckedOut}
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     )
   }
@@ -615,7 +632,11 @@ export function FileList({
         enableRowActions={true}
         renderRowActions={renderRowActions}
         emptyMessage="No files attached to this item"
-        emptyDescription="Upload files to get started"
+        emptyDescription={
+          readOnly
+            ? 'No files are available in this version'
+            : 'Upload files to get started'
+        }
       />
       <FilePreviewDialog
         file={previewFile}

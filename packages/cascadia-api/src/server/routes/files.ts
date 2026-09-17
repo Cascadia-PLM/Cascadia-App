@@ -42,6 +42,10 @@ import {
 import { AnnotationService } from '@/lib/vault/services/AnnotationService'
 import { CadModelNodeService } from '@/lib/vault/services/CadModelNodeService'
 import { WATERMARK_POSITIONS } from '@/lib/vault/pdf/watermark'
+import {
+  requireFileMutation,
+  requireItemFileMutation,
+} from '@/lib/vault/file-mutation-policy'
 
 const adapt = tagged('Files')
 
@@ -150,10 +154,9 @@ app.post(
   adapt(
     apiHandler(
       {
-        permission: ['documents', 'update'],
         body: batchFileCheckinRequestSchema,
       },
-      async ({ body: { fileIds }, user }) => {
+      async ({ body: { fileIds }, request, user }) => {
         const checkedIn: Array<{ fileId: string; fileName: string }> = []
         const errors: Array<{
           fileId: string
@@ -167,7 +170,15 @@ app.post(
             // Reach first. A batch is a list of ids from the caller, so
             // without this it was the widest way into the vault: one request
             // could unlock a hundred files across every program.
-            const file = await requireFileAccess(fileId, user.id)
+            // Releasing one's own file lock must remain possible if the item
+            // became protected after checkout, so this checks owner RBAC but
+            // deliberately does not require current content editability.
+            const { file } = await requireFileMutation(
+              request,
+              fileId,
+              user.id,
+              { requireEditable: false },
+            )
 
             // Checkin the file (unlock without new version)
             await FileService.checkInFile(fileId, user.id)
@@ -177,6 +188,9 @@ app.post(
               fileName: file.originalFileName,
             })
           } catch (error) {
+            // `requirePermission` throws a Response so apiHandler can retain
+            // the standard auth envelope. Do not fold that into a batch row.
+            if (error instanceof Response) throw error
             const denial = batchDenial(error)
             if (denial) {
               errors.push({ fileId, ...denial })
@@ -220,10 +234,9 @@ app.post(
   adapt(
     apiHandler(
       {
-        permission: ['documents', 'update'],
         body: batchFileCheckoutRequestSchema,
       },
-      async ({ body: { fileIds }, user }) => {
+      async ({ body: { fileIds }, request, user }) => {
         const checkedOut: Array<{
           fileId: string
           fileName: string
@@ -238,7 +251,11 @@ app.post(
         // Process each file
         for (const fileId of fileIds) {
           try {
-            const file = await requireFileAccess(fileId, user.id)
+            const { file } = await requireFileMutation(
+              request,
+              fileId,
+              user.id,
+            )
 
             // Checkout the file
             await FileService.checkOutFile(fileId, user.id)
@@ -249,6 +266,7 @@ app.post(
               checkedOutAt: new Date(),
             })
           } catch (error) {
+            if (error instanceof Response) throw error
             const denial = batchDenial(error)
             if (denial) {
               errors.push({ fileId, ...denial })
@@ -340,11 +358,11 @@ app.delete(
   '/:fileId',
   adapt(
     apiHandler<{ fileId: string }>(
-      { permission: ['documents', 'delete'] },
-      async ({ params, user }) => {
+      {},
+      async ({ params, request, user }) => {
         const { fileId } = params
 
-        await requireFileAccess(fileId, user.id)
+        await requireFileMutation(request, fileId, user.id)
         await FileService.deleteFile(fileId, user.id)
 
         return {
@@ -363,7 +381,8 @@ app.patch(
     apiHandler<{ fileId: string }, z.infer<typeof setFileCategorySchema>>(
       {
         body: setFileCategorySchema,
-        permission: ['documents', 'update'],
+        access: ({ request, params, user }) =>
+          requireFileMutation(request, params.fileId, user.id),
         openapi: {
           summary: "Set or clear a file's category",
           description:
@@ -391,8 +410,6 @@ app.patch(
       async ({ body, params, user }) => {
         const { fileId } = params
 
-        await requireFileAccess(fileId, user.id)
-
         const file = await FileService.setFileCategory(
           fileId,
           body.category,
@@ -410,18 +427,23 @@ app.post(
   '/:fileId/checkin',
   adapt(
     apiHandler<{ fileId: string }>(
-      { permission: ['documents', 'update'], rateLimit: 'upload' },
+      { rateLimit: 'upload' },
       async ({ request, params, user }) => {
         const { fileId } = params
 
-        // Before the multipart read: an unreachable file is a 403, not a
-        // rejected upload the caller has already spent bandwidth on.
-        await requireFileAccess(fileId, user.id)
-
         // Check if multipart (new version) or just unlock
         const contentType = request.headers.get('content-type') || ''
+        const replacesContent = contentType.includes('multipart/form-data')
 
-        if (contentType.includes('multipart/form-data')) {
+        // Before the multipart read: an unreachable or read-only file is a
+        // refusal, not an upload the caller has already spent bandwidth on.
+        // A plain check-in only releases the caller's lock, so it remains
+        // possible if the item became protected after checkout.
+        await requireFileMutation(request, fileId, user.id, {
+          requireEditable: replacesContent,
+        })
+
+        if (replacesContent) {
           // New version upload
           const formData = await request.formData()
           const file = formData.get('file') as File | null
@@ -469,11 +491,11 @@ app.post(
   '/:fileId/checkout',
   adapt(
     apiHandler<{ fileId: string }>(
-      { permission: ['documents', 'update'] },
-      async ({ params, user }) => {
+      {},
+      async ({ params, request, user }) => {
         const { fileId } = params
 
-        await requireFileAccess(fileId, user.id)
+        await requireFileMutation(request, fileId, user.id)
         await FileService.checkOutFile(fileId, user.id)
 
         return {
@@ -495,7 +517,11 @@ app.post(
     >(
       {
         body: convertInputSchema.optional(),
-        permission: ['documents', 'read'],
+        access: ({ request, params, user }) =>
+          requireFileMutation(request, params.fileId, user.id, {
+            action: 'read',
+            requireEditable: false,
+          }),
         openapi: {
           summary: 'Queue a CAD file for mesh conversion',
           description:
@@ -518,10 +544,12 @@ app.post(
           },
         },
       },
-      async ({ body, params, user }) => {
+      async ({ body, params, request, user }) => {
         const { fileId } = params
 
-        // Fetch the vault file to validate it exists and is a CAD format
+        // Conversion reads the source but writes a new attachment to its
+        // target. The source only needs read authority; the output owner must
+        // be editable and supplies the dynamic update permission.
         const file = await requireFileAccess(fileId, user.id)
 
         // Validate file extension is a supported CAD format
@@ -543,11 +571,17 @@ app.post(
         // Submit conversion job
         // targetItemId allows directing output to a different item (e.g., STEP on Document -> STL on Part)
         const outputItemId = input.targetItemId ?? file.itemId
+        const { branch: outputBranch } = await requireItemFileMutation(
+          request,
+          outputItemId,
+          user.id,
+        )
         const job = await JobService.submit(
           'conversion.cad.step-to-stl',
           {
             vaultFileId: fileId,
             itemId: outputItemId,
+            outputBranchId: outputBranch?.branchId ?? null,
             outputFormat: 'stl',
             meshQuality: input.meshQuality,
             decompose: input.decompose,
@@ -723,7 +757,10 @@ app.post(
     apiHandler<{ fileId: string }, z.infer<typeof createAnnotationSchema>>(
       {
         body: createAnnotationSchema,
-        permission: ['documents', 'update'],
+        access: ({ request, params, user }) =>
+          requireFileMutation(request, params.fileId, user.id, {
+            requireEditable: false,
+          }),
         openapi: {
           summary: 'Add markup to a file',
           description:
@@ -736,7 +773,6 @@ app.post(
       async ({ body: input, params, user }) => {
         // AnnotationService gates on the owning item's checkout, not on who
         // may reach the design it belongs to.
-        await requireFileAccess(params.fileId, user.id)
         const annotation = await AnnotationService.create(
           params.fileId,
           input,
@@ -758,7 +794,10 @@ app.patch(
     >(
       {
         body: updateAnnotationSchema,
-        permission: ['documents', 'update'],
+        access: ({ request, params, user }) =>
+          requireFileMutation(request, params.fileId, user.id, {
+            requireEditable: false,
+          }),
         openapi: {
           summary: 'Revise markup (author only)',
           request: {
@@ -770,7 +809,6 @@ app.patch(
         },
       },
       async ({ body: input, params, user }) => {
-        await requireFileAccess(params.fileId, user.id)
         return {
           annotation: await AnnotationService.update(
             params.annotationId,
@@ -789,7 +827,10 @@ app.delete(
   adapt(
     apiHandler<{ fileId: string; annotationId: string }>(
       {
-        permission: ['documents', 'update'],
+        access: ({ request, params, user }) =>
+          requireFileMutation(request, params.fileId, user.id, {
+            requireEditable: false,
+          }),
         openapi: {
           summary: 'Remove markup',
           request: {
@@ -801,7 +842,6 @@ app.delete(
         },
       },
       async ({ params, user }) => {
-        await requireFileAccess(params.fileId, user.id)
         await AnnotationService.delete(params.annotationId, user.id)
         return { deleted: true }
       },
@@ -938,7 +978,8 @@ app.post(
     apiHandler<{ fileId: string }, z.infer<typeof watermarkRequestSchema>>(
       {
         body: watermarkRequestSchema,
-        permission: ['documents', 'update'],
+        access: ({ request, params, user }) =>
+          requireFileMutation(request, params.fileId, user.id),
         openapi: {
           summary: 'Queue a watermark stamp for a PDF attachment',
           request: {
@@ -947,7 +988,9 @@ app.post(
         },
       },
       async ({ body: input, params, user }) => {
-        // Reach before body, like every other route in this file.
+        // The manual endpoint is a user mutation and is gated here. Release
+        // hooks call the job/FileService directly and remain able to stamp
+        // superseded revisions as a deliberate system transformation.
         const file = await requireFileAccess(params.fileId, user.id)
 
         if (previewFormatFor(file.originalFileName)?.kind !== 'pdf') {
@@ -956,7 +999,12 @@ app.post(
 
         const job = await JobService.submit(
           'document.watermark.apply',
-          { ...input, fileIds: [params.fileId], userId: user.id },
+          {
+            ...input,
+            fileIds: [params.fileId],
+            userId: user.id,
+            requireEditable: true,
+          },
           user.id,
           { itemId: file.itemId },
         )
@@ -973,19 +1021,13 @@ app.post(
   adapt(
     apiHandler<{ fileId: string }>(
       {
-        // Charged in two parts, like POST /items/:id/unlock. The declared
-        // tuple is the ordinary write authority over a document's files; the
-        // instance-admin override below is charged only when this call
-        // actually evicts someone. The route used to declare
-        // `['documents', 'manage']`, which no seeded role holds — `manage`
-        // appears on no item-type resource in ROLE_DEFINITIONS, and an API
-        // key cannot acquire it either, since key scopes only narrow — so it
-        // answered 403 to everyone, Administrator included.
-        permission: ['documents', 'update'],
+        // Charged in two parts, like POST /items/:id/unlock. The owning
+        // item's dynamic update tuple is checked below; the instance-admin
+        // override is charged only when this call actually evicts someone.
         openapi: {
           summary: 'Release a file checkout lock held by another user',
           description:
-            'Requires documents:update, plus system:manage when the lock belongs to someone else. Releasing a lock you hold yourself is an ordinary check-in and needs no override.',
+            "Requires update permission for the file's owning item type, plus system:manage when the lock belongs to someone else. Releasing a lock you hold yourself is an ordinary check-in and needs no override.",
           request: {
             params: z.object({ fileId: z.string().uuid() }),
           },
@@ -994,9 +1036,14 @@ app.post(
       async ({ params, request, user }) => {
         const { fileId } = params
 
-        // The declared tuple is authority over a document's files, not over
-        // other programs' files — keep both.
-        const file = await requireFileAccess(fileId, user.id)
+        // Unlocking changes no engineering content, so it requires the
+        // owner's update authority but remains possible on a protected item.
+        const { file } = await requireFileMutation(
+          request,
+          fileId,
+          user.id,
+          { requireEditable: false },
+        )
 
         if (!file.isCheckedOut) {
           return { success: true, message: 'File is not checked out' }

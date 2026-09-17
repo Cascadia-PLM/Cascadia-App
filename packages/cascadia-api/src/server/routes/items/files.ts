@@ -5,13 +5,18 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../../adapter'
 import { requirePermission } from '@/lib/auth/server'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { ValidationError } from '@/lib/errors'
 import { getResourceType } from '@/lib/items/item-type-resources'
 import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
 import { ModelVersionService } from '@/lib/services/ModelVersionService'
 import { apiHandler, created } from '@/lib/api/handler'
 import { requireItemAccess } from '@/lib/auth/access'
 import { FileService } from '@/lib/vault/services/FileService'
+import {
+  requireFileMutation,
+  requireItemFileMutation,
+  requireUploadBranchContext,
+} from '@/lib/vault/file-mutation-policy'
 
 const adapt = tagged('Items')
 
@@ -295,6 +300,8 @@ app.put(
     apiHandler<{ itemId: string }, z.infer<typeof designateFileSchema>>(
       {
         body: designateFileSchema,
+        access: ({ request, params, user }) =>
+          requireItemFileMutation(request, params.itemId, user.id),
         openapi: {
           summary: "Designate an item's primary 3D model",
           description:
@@ -305,16 +312,13 @@ app.put(
           responses: { 200: { schema: designateFileResponseSchema } },
         },
       },
-      async ({ body: { fileId }, params, user }) => {
-        await requireItemAccess(user.id, params.itemId)
+      async ({ body: { fileId }, params, request, user }) => {
         const userId = user.id
         const { itemId } = params
 
-        // Verify the file belongs to this item
-        const file = await FileService.getFileMetadata(fileId)
-        if (!file) {
-          throw new NotFoundError('File', fileId)
-        }
+        // Re-resolve the body-named file after body validation. This also
+        // verifies that it belongs to the editable branch context.
+        const { file } = await requireFileMutation(request, fileId, userId)
 
         if (file.itemId !== itemId) {
           throw new ValidationError('File does not belong to this item')
@@ -355,7 +359,8 @@ app.put(
     apiHandler<{ itemId: string }, z.infer<typeof designateFileSchema>>(
       {
         body: designateFileSchema,
-        permission: ['documents', 'update'],
+        access: ({ request, params, user }) =>
+          requireItemFileMutation(request, params.itemId, user.id),
         openapi: {
           summary: "Designate an uploaded image as the item's thumbnail",
           description:
@@ -367,15 +372,14 @@ app.put(
           responses: { 200: { schema: designateFileResponseSchema } },
         },
       },
-      async ({ body: { fileId }, params, user }) => {
-        await requireItemAccess(user.id, params.itemId)
+      async ({ body: { fileId }, params, request, user }) => {
         const { itemId } = params
 
-        // Verify the file belongs to this item
-        const file = await FileService.getFileMetadata(fileId)
-        if (!file) {
-          throw new NotFoundError('File', fileId)
-        }
+        const { file } = await requireFileMutation(
+          request,
+          fileId,
+          user.id,
+        )
 
         if (file.itemId !== itemId) {
           throw new ValidationError('File does not belong to this item')
@@ -398,9 +402,9 @@ app.delete(
   '/:itemId/files/thumbnail',
   adapt(
     apiHandler<{ itemId: string }>(
-      { permission: ['documents', 'update'] },
-      async ({ params, user }) => {
-        await requireItemAccess(user.id, params.itemId)
+      {},
+      async ({ params, request, user }) => {
+        await requireItemFileMutation(request, params.itemId, user.id)
         await FileService.clearItemThumbnail(params.itemId, user.id)
 
         return { success: true, message: 'Thumbnail cleared' }
@@ -448,7 +452,6 @@ app.post(
   adapt(
     apiHandler<{ itemId: string }>(
       {
-        permission: ['documents', 'update'],
         rateLimit: 'upload',
         openapi: {
           summary: 'Upload one or more files to an item',
@@ -481,15 +484,26 @@ app.post(
         },
       },
       async ({ request, params, user }) => {
-        await requireItemAccess(user.id, params.itemId)
         const { itemId } = params
         const userId = user.id
+
+        // Authorize before consuming a potentially large multipart request.
+        const { item, branch } = await requireItemFileMutation(
+          request,
+          itemId,
+          userId,
+        )
 
         // Parse multipart form data
         const formData = await request.formData()
 
         // Get branchId from form data (for version context)
-        const branchId = formData.get('branchId')?.toString() || undefined
+        const branchId = z
+          .string()
+          .uuid()
+          .optional()
+          .parse(formData.get('branchId')?.toString() || undefined)
+        await requireUploadBranchContext(item, branch, branchId)
 
         const uploadedFiles: Array<any> = []
 

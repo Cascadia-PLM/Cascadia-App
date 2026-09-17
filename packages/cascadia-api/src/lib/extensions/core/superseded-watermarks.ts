@@ -70,6 +70,9 @@ export function createSupersededWatermarkExtension(
           opacity: 0.25,
           reason: payload.reason,
           userId: payload.userId,
+          // Release automation intentionally rewrites the superseded
+          // historical revision after main becomes protected.
+          requireEditable: false,
         },
         payload.userId,
         { itemId: payload.itemId, dedupeKey: payload.dedupeKey },

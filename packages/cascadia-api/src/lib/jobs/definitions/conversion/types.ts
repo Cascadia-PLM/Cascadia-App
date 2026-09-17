@@ -6,6 +6,7 @@ import { z } from 'zod'
 export const cadConversionPayloadSchema = z.object({
   vaultFileId: z.string().uuid(),
   itemId: z.string().uuid(),
+  outputBranchId: z.string().uuid().nullable().optional(),
   outputFormat: z.string().default('stl'),
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
   decompose: z.boolean().default(false),

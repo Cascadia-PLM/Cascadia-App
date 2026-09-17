@@ -31,6 +31,8 @@ export const watermarkPdfPayloadSchema = z.object({
   reason: z.string().max(200).optional(),
   /** Whose name the new file version is checked in under. */
   userId: z.string().uuid(),
+  /** Re-check the owning item's edit policy when a manual job executes. */
+  requireEditable: z.boolean().default(false),
 })
 
 export type WatermarkPdfPayload = z.infer<typeof watermarkPdfPayloadSchema>

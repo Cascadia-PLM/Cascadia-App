@@ -55,6 +55,22 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Which edition this image contains. This tree carries only the AGPL
 # community build.
 ARG APP=cascadia
+
+# Which build this is, for the stamp at the foot of the sidebar. Vite inlines
+# any VITE_-prefixed variable present at build time, so these have to be set
+# before build:app runs, not at container start — the client bundle is already
+# written by then.
+#
+# Passed in rather than derived: `.git` is excluded from the build context (see
+# .dockerignore), so `git describe` cannot run in here. scripts/build-and-push.sh
+# in the plm-server repo computes them on the host.
+ARG BUILD_TAG=dev
+ARG BUILD_SHA=""
+ARG BUILD_DIRTY=false
+ENV VITE_BUILD_TAG=${BUILD_TAG}
+ENV VITE_BUILD_SHA=${BUILD_SHA}
+ENV VITE_BUILD_DIRTY=${BUILD_DIRTY}
+
 RUN npm run build:app -- "$APP"
 
 # =============================================================================

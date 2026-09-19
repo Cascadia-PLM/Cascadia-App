@@ -18,6 +18,7 @@ import { SidebarProvider, useSidebar } from '../lib/sidebar-context'
 import { AlertDialogProvider } from '../lib/hooks/useAlertDialog'
 import { ToastProvider } from '../lib/hooks/useToast'
 import { ToastContainer } from '../components/ui/ToastContainer'
+import { TooltipProvider } from '../components/ui/Tooltip'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { ChatPanelProvider, useChatPanel } from '../lib/ai/chat-context'
 import { ChatPanel, ChatPanelButton } from '../components/ai'
@@ -136,34 +137,36 @@ function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <SidebarProvider>
-          <ToastProvider>
-            <AlertDialogProvider>
-              <ChatPanelProvider>
-                <TourProvider>
-                  <ErrorBoundary>
-                    {isMounted && !isChromelessPage && <Header />}
-                    {isChromelessPage ? (
-                      <Outlet />
-                    ) : (
-                      <MainContent isMounted={isMounted}>
+        <TooltipProvider>
+          <SidebarProvider>
+            <ToastProvider>
+              <AlertDialogProvider>
+                <ChatPanelProvider>
+                  <TourProvider>
+                    <ErrorBoundary>
+                      {isMounted && !isChromelessPage && <Header />}
+                      {isChromelessPage ? (
                         <Outlet />
-                      </MainContent>
+                      ) : (
+                        <MainContent isMounted={isMounted}>
+                          <Outlet />
+                        </MainContent>
+                      )}
+                    </ErrorBoundary>
+                    <ToastContainer />
+                    {/* AI Chat Panel - only show when authenticated and on a chromed page */}
+                    {isMounted && !isChromelessPage && (
+                      <>
+                        <ChatPanelButton />
+                        <ChatPanel />
+                      </>
                     )}
-                  </ErrorBoundary>
-                  <ToastContainer />
-                  {/* AI Chat Panel - only show when authenticated and on a chromed page */}
-                  {isMounted && !isChromelessPage && (
-                    <>
-                      <ChatPanelButton />
-                      <ChatPanel />
-                    </>
-                  )}
-                </TourProvider>
-              </ChatPanelProvider>
-            </AlertDialogProvider>
-          </ToastProvider>
-        </SidebarProvider>
+                  </TourProvider>
+                </ChatPanelProvider>
+              </AlertDialogProvider>
+            </ToastProvider>
+          </SidebarProvider>
+        </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )

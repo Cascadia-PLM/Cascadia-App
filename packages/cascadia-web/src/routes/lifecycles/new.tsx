@@ -12,6 +12,7 @@ import type {
 import { LifecycleTypeSelector } from '@/components/lifecycles/LifecycleTypeSelector'
 import { DriverSelector } from '@/components/lifecycles/DriverSelector'
 import { LifecycleBuilder } from '@/components/lifecycles/LifecycleBuilder'
+import { RevisionSchemeSelector } from '@/components/lifecycles/RevisionSchemeSelector'
 import {
   Button,
   Card,
@@ -77,6 +78,17 @@ function NewLifecyclePage() {
 
   const handleChange = (updates: Partial<LifecycleDefinition>) => {
     setDefinition(updates)
+  }
+
+  const handleLifecycleTypeChange = (newType: LifecycleType) => {
+    setLifecycleType(newType)
+    if (newType === 'Driven') {
+      setDefinition((current) =>
+        current.revisionScheme?.type === 'none'
+          ? { ...current, revisionScheme: { type: 'alpha' } }
+          : current,
+      )
+    }
   }
 
   const handleSave = async () => {
@@ -158,7 +170,7 @@ function NewLifecyclePage() {
               <CardContent>
                 <LifecycleTypeSelector
                   value={lifecycleType}
-                  onChange={setLifecycleType}
+                  onChange={handleLifecycleTypeChange}
                 />
               </CardContent>
             </Card>
@@ -244,6 +256,30 @@ function NewLifecyclePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {lifecycleType !== 'Driving' && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Revision Scheme</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <RevisionSchemeSelector
+                    value={definition.revisionScheme}
+                    onChange={(revisionScheme) =>
+                      setDefinition((current) => ({
+                        ...current,
+                        revisionScheme,
+                      }))
+                    }
+                    label="Default scheme"
+                    allowNone={lifecycleType !== 'Driven'}
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Used by every state unless its phase defines an override.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Driver Selector for Driven lifecycles */}
             {lifecycleType === 'Driven' && (

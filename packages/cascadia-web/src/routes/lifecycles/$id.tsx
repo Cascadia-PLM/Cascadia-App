@@ -14,6 +14,7 @@ import type {
 import { LifecycleTypeSelector } from '@/components/lifecycles/LifecycleTypeSelector'
 import { DriverSelector } from '@/components/lifecycles/DriverSelector'
 import { LifecycleBuilder } from '@/components/lifecycles/LifecycleBuilder'
+import { RevisionSchemeSelector } from '@/components/lifecycles/RevisionSchemeSelector'
 import {
   Badge,
   Button,
@@ -108,6 +109,9 @@ function EditLifecyclePage() {
 
   const handleLifecycleTypeChange = (newType: LifecycleType) => {
     setLifecycleType(newType)
+    if (newType === 'Driven' && definition.revisionScheme?.type === 'none') {
+      setDefinition({ ...definition, revisionScheme: { type: 'alpha' } })
+    }
     setHasChanges(true)
   }
 
@@ -300,6 +304,27 @@ function EditLifecyclePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {lifecycleType !== 'Driving' && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Revision Scheme</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <RevisionSchemeSelector
+                    value={definition.revisionScheme}
+                    onChange={(revisionScheme) =>
+                      handleChange({ ...definition, revisionScheme })
+                    }
+                    label="Default scheme"
+                    allowNone={lifecycleType !== 'Driven'}
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Used by every state unless its phase defines an override.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Driver Selector for Driven lifecycles */}
             {lifecycleType === 'Driven' && (

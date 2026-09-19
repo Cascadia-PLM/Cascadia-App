@@ -57,6 +57,13 @@
       "when": 1789365797834,
       "tag": "0007_product_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789553201522,
+      "tag": "0008_initial_release_revision_overrides",
+      "breakpoints": true
     }
   ]
 }

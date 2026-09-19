@@ -334,7 +334,32 @@ item's lifecycle. `GET`-equivalent preview of the same resolution is available a
    - `targetState`, `targetRevision` (server-resolved prediction; for `revise`
      the merge recomputes the revision against main's current version at release
      time, so this column is for display, never for release)
+   - `initialRevisionOverride` (optional, administrator-approved source-system
+     revision used only for an item's first formal `release`)
    - `workingCopyId` (if a working copy was created for revise)
+
+### Imported Initial Revisions
+
+When existing products enter Cascadia after they have already reached revisions
+such as `R2` or `R3`, an administrator can set an initial revision override on
+each eligible affected item. Items without an override continue to use the
+lifecycle scheme's configured initial revision, so one Initial Release change
+order may release a mixed imported baseline without creating fictitious ECOs.
+
+This is a migration exception, not ordinary revision editing:
+
+- it is available only for the `release` action while the item still carries a
+  working/unreleased revision;
+- the entire master lineage must contain no formal revision;
+- the value must match the item's lifecycle revision scheme;
+- the change-order scope must still be open and only an Administrator may set
+  or clear it;
+- release preview and merge consume the same persisted value and revalidate it
+  at release time.
+
+`targetRevision` remains a server-derived display prediction. The persisted
+`initialRevisionOverride` is the approved release intent. Clearing it restores
+the lifecycle default.
 
 ### Batch Operations
 
@@ -672,12 +697,12 @@ If the change order has `isBaseline = true` and a `baselineName`, a design tag i
 
 Revisions are assigned only during the merge, never during branch work:
 
-| Action     | Revision Behavior                                                      |
-| ---------- | ---------------------------------------------------------------------- |
-| `release`  | Assigns initial revision (e.g., `A` for alpha scheme, `1` for numeric) |
-| `revise`   | Assigns next revision (A -> B, B -> C, Z -> AA)                        |
-| `obsolete` | No revision change                                                     |
-| `promote`  | May reset revision (when crossing phase boundaries) or increment       |
+| Action     | Revision Behavior                                                                                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release`  | Assigns the lifecycle's initial revision (for example `A` or `1`), unless an administrator approved an imported initial-revision override for the item's first formal release |
+| `revise`   | Assigns next revision (A -> B, B -> C, Z -> AA)                                                                                                                               |
+| `obsolete` | No revision change                                                                                                                                                            |
+| `promote`  | May reset revision (when crossing phase boundaries) or increment                                                                                                              |
 
 The revision scheme is configurable per lifecycle and per phase:
 

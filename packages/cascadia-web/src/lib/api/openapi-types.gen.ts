@@ -919,6 +919,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/change-orders/{id}/affected-items/{affectedItemId}/initial-revision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set an imported baseline revision for an affected item */
+        patch: operations["patchApiV1ChangeOrdersByIdAffectedItemsByAffectedItemIdInitialRevision"];
+        trace?: never;
+    };
     "/api/v1/change-orders/{id}/approvals": {
         parameters: {
             query?: never;
@@ -7339,6 +7356,31 @@ export interface operations {
             content: {
                 "application/json": {
                     itemIds: string[];
+                };
+            };
+        };
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    patchApiV1ChangeOrdersByIdAffectedItemsByAffectedItemIdInitialRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                affectedItemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    revision: string | null;
                 };
             };
         };

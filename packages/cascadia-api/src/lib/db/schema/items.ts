@@ -266,6 +266,12 @@ export const changeOrderAffectedItems = pgTable(
     currentRevision: varchar('current_revision', { length: 10 }),
     targetState: varchar('target_state', { length: 50 }),
     targetRevision: varchar('target_revision', { length: 10 }),
+    // An administrator-approved source-system revision for the first formal
+    // release. Unlike targetRevision (a display prediction), this is release
+    // intent and is therefore consumed only by the initial `release` action.
+    initialRevisionOverride: varchar('initial_revision_override', {
+      length: 10,
+    }),
     replacementItemId: uuid('replacement_item_id').references(() => items.id),
     newItemData: jsonb('new_item_data'),
     newItemType: varchar('new_item_type', { length: 50 }),

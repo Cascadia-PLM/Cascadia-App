@@ -24,6 +24,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import * as dagre from 'dagre'
+import { isWorkingRevisionValue } from '@cascadia/commons/lib/types/lifecycle'
 import { ChangeOrderGraphItemNode as ChangeOrderGraphItemNode } from './ChangeOrderGraphItemNode'
 import { ChangeOrderDesignStructureTree as ChangeOrderDesignStructureTree } from './ChangeOrderDesignStructureTree'
 import { AddToChangeOrderDialog } from './AddToChangeOrderDialog'
@@ -44,6 +45,7 @@ import {
 } from '@/components/graph/edgeStyles'
 import { getItemDetailPath } from '@/lib/items/item-type-ui'
 import {
+  authSessionQuery,
   changeOrderAffectedItemsQuery,
   changeOrderDesignsQuery,
   changeOrderDetailQuery,
@@ -57,6 +59,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   FullscreenGraphWrapper,
+  Input,
   Tabs,
   TabsContent,
   TabsList,
@@ -148,6 +151,8 @@ export function ChangeOrderAffectedItemsPanel({
   const { data: affectedItems = [], isLoading: loadingAffectedItems } =
     useQuery(changeOrderAffectedItemsQuery(changeOrderId))
   const { data: changeOrder } = useQuery(changeOrderDetailQuery(changeOrderId))
+  const { data: session } = useQuery(authSessionQuery())
+  const isSystemAdmin = session?.setupStatus?.isAdmin ?? false
   const loading = loadingDesigns || loadingAffectedItems
 
   // Dialog states
@@ -163,6 +168,9 @@ export function ChangeOrderAffectedItemsPanel({
   >([])
   const [selectedNode, setSelectedNode] = useState<BOMTreeNode | null>(null)
   const [selectedDesignId, setSelectedDesignId] = useState<string | null>(null)
+  const [savingInitialRevisionId, setSavingInitialRevisionId] = useState<
+    string | null
+  >(null)
 
   // Graph view state
   const [graphNodes, setGraphNodes, onNodesChange] = useNodesState<Node>([])
@@ -446,6 +454,32 @@ export function ChangeOrderAffectedItemsPanel({
     }
   }
 
+  const handleInitialRevisionChange = useCallback(
+    async (
+      affectedItemId: string,
+      revision: string | null,
+    ): Promise<boolean> => {
+      setSavingInitialRevisionId(affectedItemId)
+      try {
+        await apiFetch(
+          `/api/v1/change-orders/${changeOrderId}/affected-items/${affectedItemId}/initial-revision`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({ revision }),
+          },
+        )
+        await invalidate('change-orders')
+        return true
+      } catch (error) {
+        handleError(error, { title: 'Failed to set initial revision' })
+        return false
+      } finally {
+        setSavingInitialRevisionId(null)
+      }
+    },
+    [changeOrderId, handleError, invalidate],
+  )
+
   // Table view: enriched data with design info baked in
   type AffectedItemRow = ChangeOrderAffectedItem & {
     designCode?: string
@@ -570,6 +604,73 @@ export function ChangeOrderAffectedItemsPanel({
         meta: { width: '100px' },
       },
       {
+        id: 'initialRevisionOverride',
+        header: 'Initial Revision',
+        accessorFn: (row) =>
+          row.initialRevisionOverride ?? row.targetRevision ?? '',
+        enableSorting: true,
+        cell: ({ row }) => {
+          const affected = row.original
+          const eligible =
+            affected.changeAction === 'release' &&
+            isWorkingRevisionValue(
+              affected.affectedItemDetails?.revision ??
+                affected.currentRevision,
+            )
+
+          if (!eligible) return <span className="text-slate-400">—</span>
+
+          if (isSystemAdmin && isEditable) {
+            const saved = affected.initialRevisionOverride ?? ''
+            return (
+              <Input
+                key={`${affected.id}:${saved}`}
+                defaultValue={saved}
+                placeholder={
+                  !saved && affected.targetRevision
+                    ? `Default (${affected.targetRevision})`
+                    : 'Lifecycle default'
+                }
+                disabled={savingInitialRevisionId === affected.id}
+                className="h-8 w-32 font-mono text-xs"
+                aria-label={`Initial revision for ${affected.affectedItemDetails?.itemNumber ?? 'affected item'}`}
+                title="Leave blank to use the lifecycle default"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.currentTarget.blur()
+                  if (event.key === 'Escape') {
+                    event.currentTarget.value = saved
+                    event.currentTarget.blur()
+                  }
+                }}
+                onBlur={async (event) => {
+                  const input = event.currentTarget
+                  const next = input.value.trim()
+                  if (next === saved) return
+                  const success = await handleInitialRevisionChange(
+                    affected.id!,
+                    next || null,
+                  )
+                  if (!success) input.value = saved
+                }}
+              />
+            )
+          }
+
+          return affected.initialRevisionOverride ? (
+            <Badge variant="outline" className="font-mono text-xs">
+              {affected.initialRevisionOverride}
+            </Badge>
+          ) : (
+            <span className="text-xs text-slate-500">
+              {affected.targetRevision
+                ? `Default (${affected.targetRevision})`
+                : 'Default'}
+            </span>
+          )
+        },
+        meta: { width: '150px' },
+      },
+      {
         id: 'status',
         header: 'Status',
         accessorFn: () => 'OK',
@@ -582,7 +683,13 @@ export function ChangeOrderAffectedItemsPanel({
         meta: { width: '80px' },
       },
     ],
-    [affectedItems],
+    [
+      affectedItems,
+      handleInitialRevisionChange,
+      isEditable,
+      isSystemAdmin,
+      savingInitialRevisionId,
+    ],
   )
 
   // Get count statistics
@@ -643,6 +750,27 @@ export function ChangeOrderAffectedItemsPanel({
           </Button>
         )}
       </div>
+
+      {isSystemAdmin &&
+        isEditable &&
+        affectedItems.some(
+          (affected) =>
+            affected.changeAction === 'release' &&
+            isWorkingRevisionValue(
+              affected.affectedItemDetails?.revision ??
+                affected.currentRevision,
+            ),
+        ) && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-100">
+            <p className="font-medium">Imported baseline revisions</p>
+            <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+              In Table View, an administrator may enter the existing formal
+              revision for each item&apos;s first release. Leave it blank to use
+              the lifecycle default. The values lock when the ECO leaves its
+              initial state.
+            </p>
+          </div>
+        )}
 
       {/* Tabs */}
       <Tabs

@@ -8,6 +8,7 @@ import { markConflictReviewedRequestSchema } from '@cascadia/commons/lib/service
 import { tagged } from '../adapter'
 import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
 import type { SessionUser } from '@/lib/auth/session'
+import { requireRole } from '@/lib/auth/server'
 import { ApprovalRegistry } from '@/lib/lifecycles/approval-registry'
 import { ItemService } from '@/lib/items/services/ItemService'
 import { LifecycleService } from '@/lib/services/LifecycleService'
@@ -172,6 +173,10 @@ const addAffectedItemsRequestSchema = z.union([
   affectedItemInputSchema,
   z.object({ items: z.array(affectedItemInputSchema).min(1).max(500) }),
 ])
+
+const initialRevisionOverrideSchema = z.object({
+  revision: z.string().trim().max(10).nullable(),
+})
 
 // ============================================
 // Static routes (MUST come before /:id)
@@ -475,6 +480,40 @@ app.post(
         )
 
         return created({ affectedItem })
+      },
+    ),
+  ),
+)
+
+// PATCH /api/change-orders/:id/affected-items/:affectedItemId/initial-revision
+// Administrator-only migration exception for a first formal release. The
+// service validates the item, action and lifecycle scheme; this route owns the
+// role gate (including API-key role scopes).
+app.patch(
+  '/:id/affected-items/:affectedItemId/initial-revision',
+  adapt(
+    apiHandler<
+      { id: string; affectedItemId: string },
+      z.infer<typeof initialRevisionOverrideSchema>
+    >(
+      {
+        body: initialRevisionOverrideSchema,
+        permission: ['change_orders', 'update'],
+        openapi: {
+          summary: 'Set an imported baseline revision for an affected item',
+        },
+        access: ({ params, user }) =>
+          requireChangeOrderAccess(user.id, params.id),
+      },
+      async ({ body, params, request }) => {
+        await requireRole(request, 'Administrator')
+        const affectedItem =
+          await ChangeOrderService.setInitialRevisionOverride(
+            params.id,
+            params.affectedItemId,
+            body.revision,
+          )
+        return { affectedItem }
       },
     ),
   ),

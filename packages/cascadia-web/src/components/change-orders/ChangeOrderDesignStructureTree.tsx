@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
-import { ChangeOrderTreeTable as ChangeOrderTreeTable } from './ChangeOrderTreeTable'
+import { ChangeOrderTreeTable } from './ChangeOrderTreeTable'
 import { AddPartFromDesignDialog } from './AddPartFromDesignDialog'
 import type { BOMTreeNode } from './ChangeOrderTreeTable'
 import type { OrphanItem } from '@cascadia/commons/lib/types/bom'
@@ -23,7 +23,6 @@ import {
   changeOrderDesignStructureQuery,
   useInvalidateResources,
 } from '@/lib/query'
-import { StateBadge } from '@/components/items/StateBadge'
 import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
 
 interface ChangeOrderBranch {
@@ -31,6 +30,8 @@ interface ChangeOrderBranch {
   mergeStatus: string
   itemsAffected: number
 }
+
+const NO_EXPANDED_NODES = new Set<string>()
 
 interface ChangeOrderDesignStructureTreeProps {
   designId: string
@@ -47,6 +48,28 @@ interface ChangeOrderDesignStructureTreeProps {
     designId: string,
   ) => void
   onItemsAdded?: () => void
+}
+
+/**
+ * The existing add-item dialogs operate on the common BOM node shape, but a
+ * design's non-BOM items cross the wire as OrphanItem (`id` instead of
+ * `itemId`). Normalize only the shared item fields here so Documents,
+ * Software, Requirements, and Parts excluded from the structure can use the
+ * same server-resolved ECO action flow as BOM nodes.
+ */
+function orphanAsCandidate(item: OrphanItem, designId: string): BOMTreeNode {
+  return {
+    itemId: item.id,
+    itemNumber: item.itemNumber,
+    name: item.name,
+    revision: item.revision,
+    state: item.state,
+    itemType: item.itemType,
+    designId,
+    isInEco: item.isInEco,
+    isBranchChanged: item.isBranchChanged,
+    changeAction: item.changeAction,
+  }
 }
 
 export function ChangeOrderDesignStructureTree({
@@ -77,6 +100,10 @@ export function ChangeOrderDesignStructureTree({
 
   const roots = structure?.roots ?? []
   const orphans = structure?.orphans ?? []
+  const orphanNodes = useMemo(
+    () => orphans.map((item) => orphanAsCandidate(item, designId)),
+    [orphans, designId],
+  )
   const changeOrderBranch = structure?.ecoBranch ?? null
   const error = structureError ? 'Failed to load design structure.' : null
 
@@ -169,8 +196,8 @@ export function ChangeOrderDesignStructureTree({
             break
           }
           case 'state': {
-            const selected = value as Array<string>
-            if (!selected.includes(node.state)) return false
+            const search = String(value).toLowerCase()
+            if (!node.state.toLowerCase().includes(search)) return false
             break
           }
           case 'action': {
@@ -222,12 +249,12 @@ export function ChangeOrderDesignStructureTree({
   )
 
   // Compute filtered data
-  const { filteredRoots, filteredOrphans, filteredResultCount } =
+  const { filteredRoots, filteredOrphanNodes, filteredResultCount } =
     useMemo(() => {
       if (!hasActiveFilters) {
         return {
           filteredRoots: roots,
-          filteredOrphans: orphans,
+          filteredOrphanNodes: orphanNodes,
           filteredResultCount: -1, // sentinel: not filtered
         }
       }
@@ -239,28 +266,18 @@ export function ChangeOrderDesignStructureTree({
       )
 
       // Filter orphans too
-      const matchingOrphans = orphans.filter((item) =>
-        nodeMatchesFilters(
-          {
-            itemNumber: item.itemNumber,
-            name: item.name,
-            revision: item.revision,
-            state: item.state,
-            isInEco: item.isInEco,
-            changeAction: item.changeAction,
-          },
-          columnFilters,
-        ),
+      const matchingOrphans = orphanNodes.filter((node) =>
+        nodeMatchesFilters(node, columnFilters),
       )
 
       return {
         filteredRoots: matchingNodes,
-        filteredOrphans: matchingOrphans,
+        filteredOrphanNodes: matchingOrphans,
         filteredResultCount: matchingNodes.length + matchingOrphans.length,
       }
     }, [
       roots,
-      orphans,
+      orphanNodes,
       columnFilters,
       hasActiveFilters,
       flattenTree,
@@ -269,14 +286,13 @@ export function ChangeOrderDesignStructureTree({
 
   // Update visible nodes whenever roots/expansion/filters change
   useEffect(() => {
-    if (filteredRoots.length > 0) {
-      selection.setVisibleNodes(
-        filteredRoots,
-        hasActiveFilters ? new Set() : expandedNodes,
-      )
-    }
+    selection.setVisibleNodes(
+      [...filteredRoots, ...filteredOrphanNodes],
+      hasActiveFilters ? new Set() : expandedNodes,
+    )
   }, [
     filteredRoots,
+    filteredOrphanNodes,
     expandedNodes,
     hasActiveFilters,
     selection.setVisibleNodes,
@@ -357,24 +373,34 @@ export function ChangeOrderDesignStructureTree({
     if (!onBatchAddToChangeOrder || selection.selectedCount === 0) return
 
     // Collect full BOMTreeNode objects for selected IDs
-    const selectedNodes: Array<BOMTreeNode> = []
+    const selectedNodes = new Map<string, BOMTreeNode>()
     const collect = (nodes: Array<BOMTreeNode>) => {
       for (const node of nodes) {
         if (selection.selectedIds.has(node.itemId)) {
-          selectedNodes.push(node)
+          selectedNodes.set(node.itemId, node)
         }
         if (node.children) collect(node.children)
       }
     }
-    // Search in both filtered roots and original roots (filtered roots are flat copies)
+    // Search both the BOM tree and the flat list of non-BOM items.
     collect(filteredRoots)
+    collect(filteredOrphanNodes)
 
-    onBatchAddToChangeOrder(selectedNodes, designId)
+    onBatchAddToChangeOrder([...selectedNodes.values()], designId)
     selection.clearSelection()
   }
 
   // Whether to show selection UI
   const showSelection = !readOnly && !!onBatchAddToChangeOrder
+  const bomExpandedNodes = hasActiveFilters ? NO_EXPANDED_NODES : expandedNodes
+  const bomSelectionState = selection.getSelectionStateForNodes(
+    filteredRoots,
+    bomExpandedNodes,
+  )
+  const orphanSelectionState = selection.getSelectionStateForNodes(
+    filteredOrphanNodes,
+    NO_EXPANDED_NODES,
+  )
 
   // Get state badge variant
   // Count active filters
@@ -502,9 +528,7 @@ export function ChangeOrderDesignStructureTree({
               {filteredRoots.length > 0 ? (
                 <ChangeOrderTreeTable
                   nodes={filteredRoots}
-                  expandedNodes={
-                    hasActiveFilters ? new Set<string>() : expandedNodes
-                  }
+                  expandedNodes={bomExpandedNodes}
                   onToggle={toggleNode}
                   onAddToChangeOrder={handleAddToChangeOrder}
                   onAddChild={onAddChild ? handleAddChild : undefined}
@@ -515,106 +539,69 @@ export function ChangeOrderDesignStructureTree({
                   onSelectionClick={selection.handleClick}
                   onCheckboxChange={selection.handleCheckboxChange}
                   isItemSelectable={isEligible}
-                  onSelectAll={
-                    selection.isAllSelected
-                      ? selection.clearSelection
-                      : selection.selectAll
+                  onSelectAll={() =>
+                    selection.toggleSelectAllForNodes(
+                      filteredRoots,
+                      bomExpandedNodes,
+                    )
                   }
-                  isAllSelected={selection.isAllSelected}
-                  isIndeterminate={selection.isIndeterminate}
+                  isAllSelected={bomSelectionState.isAllSelected}
+                  isIndeterminate={bomSelectionState.isIndeterminate}
                   columnFilters={columnFilters}
                   onColumnFilterChange={handleColumnFilterChange}
                 />
               ) : hasActiveFilters ? (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  <p className="mb-2">No items match the current filters.</p>
-                  <Button variant="outline" size="sm" onClick={clearAllFilters}>
-                    <X className="h-3.5 w-3.5 mr-1" />
-                    Clear Filters
-                  </Button>
-                </div>
+                filteredOrphanNodes.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                    <p className="mb-2">No items match the current filters.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllFilters}
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Clear Filters
+                    </Button>
+                  </div>
+                ) : null
               ) : (
                 <div className="text-center py-8 text-slate-500 dark:text-slate-400">
                   No BOM structure found in this design.
                 </div>
               )}
 
-              {/* Items outside the BOM tree: documents, requirements, and
-                  parts that are neither a top-level part nor anyone's child */}
-              {filteredOrphans.length > 0 && (
+              {/* Items outside the BOM tree: documents, software,
+                  requirements, and parts that are neither a top-level part
+                  nor anyone's child. They are still normal ECO candidates;
+                  BOM membership is not a release prerequisite. */}
+              {filteredOrphanNodes.length > 0 && (
                 <div className="mt-4">
                   <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Other Items (not in the BOM tree)
                   </h4>
-                  <div className="border rounded-lg dark:border-slate-700 overflow-hidden">
-                    {/* Orphan items header */}
-                    <div className="flex items-center h-7 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 px-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-                      <div className="flex-[2] min-w-[200px]">Item</div>
-                      <div className="flex-[2] min-w-[150px]">Name</div>
-                      <div className="w-16 flex-shrink-0 text-center">Rev</div>
-                      <div className="w-24 flex-shrink-0 text-center">
-                        State
-                      </div>
-                      <div className="w-28 flex-shrink-0 text-center">
-                        ECO Action
-                      </div>
-                    </div>
-                    {/* Orphan item rows */}
-                    <div className="divide-y dark:divide-slate-700">
-                      {filteredOrphans.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center h-7 px-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm"
-                        >
-                          <div className="flex-[2] min-w-[200px] flex items-center gap-2">
-                            <Badge
-                              variant="outline"
-                              className="text-xs flex-shrink-0"
-                            >
-                              {item.itemType}
-                            </Badge>
-                            <span className="font-medium text-slate-900 dark:text-white truncate">
-                              {item.itemNumber}
-                            </span>
-                          </div>
-                          <div className="flex-[2] min-w-[150px] truncate text-slate-600 dark:text-slate-400">
-                            {item.name}
-                          </div>
-                          <div className="w-16 flex-shrink-0 text-center text-xs text-slate-500">
-                            {formatRevision(item.revision)}
-                          </div>
-                          <div className="w-24 flex-shrink-0 flex justify-center">
-                            <StateBadge
-                              itemType={item.itemType}
-                              state={item.state}
-                              className="text-xs"
-                            />
-                          </div>
-                          <div className="w-28 flex-shrink-0 flex justify-center">
-                            {item.isInEco ? (
-                              <Badge
-                                variant={
-                                  item.changeAction === 'release'
-                                    ? 'success'
-                                    : item.changeAction === 'obsolete'
-                                      ? 'destructive'
-                                      : 'default'
-                                }
-                                className="text-xs"
-                              >
-                                {item.changeAction
-                                  ? item.changeAction.charAt(0).toUpperCase() +
-                                    item.changeAction.slice(1)
-                                  : 'In change order'}
-                              </Badge>
-                            ) : (
-                              <span className="text-slate-400 text-xs">—</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <ChangeOrderTreeTable
+                    nodes={filteredOrphanNodes}
+                    expandedNodes={NO_EXPANDED_NODES}
+                    onToggle={() => {}}
+                    onAddToChangeOrder={handleAddToChangeOrder}
+                    readOnly={readOnly}
+                    branchId={changeOrderBranch?.id}
+                    showCheckboxes={showSelection}
+                    selectedIds={selection.selectedIds}
+                    onSelectionClick={selection.handleClick}
+                    onCheckboxChange={selection.handleCheckboxChange}
+                    isItemSelectable={isEligible}
+                    onSelectAll={() =>
+                      selection.toggleSelectAllForNodes(
+                        filteredOrphanNodes,
+                        NO_EXPANDED_NODES,
+                      )
+                    }
+                    isAllSelected={orphanSelectionState.isAllSelected}
+                    isIndeterminate={orphanSelectionState.isIndeterminate}
+                    columnFilters={columnFilters}
+                    onColumnFilterChange={handleColumnFilterChange}
+                  />
                 </div>
               )}
             </>

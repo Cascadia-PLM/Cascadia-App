@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { generateState } from 'arctic'
+import { decodeIdToken, generateCodeVerifier, generateState } from 'arctic'
 import { z } from 'zod'
 import { SettingKeys } from '@cascadia/commons/lib/config/SettingKeys'
 import { tagged } from '../adapter'
@@ -15,7 +15,14 @@ import { AccessControlService } from '@/lib/auth/AccessControlService'
 import { permissionService } from '@/lib/auth/permission-service'
 import { buildClearSessionCookie, buildSessionCookie } from '@/lib/auth/cookie'
 import { getSessionTokenFromRequest } from '@/lib/auth/server'
-import { getGitHubProvider } from '@/lib/auth/oauth'
+import {
+  getAllowedGoogleDomains,
+  getGitHubProvider,
+  getGoogleProvider,
+  isGitHubOAuthConfigured,
+  isGoogleAccountPermitted,
+  isGoogleOAuthConfigured,
+} from '@/lib/auth/oauth'
 import { SettingsService } from '@/lib/config/SettingsService'
 import { ApiKeyService } from '@/lib/auth/ApiKeyService'
 import { AuthenticationError } from '@/lib/errors'
@@ -73,6 +80,52 @@ const updateApiKeySchema = z.object({
 })
 
 const app = new Hono()
+
+/** Parse a request's Cookie header into a plain object. */
+function readCookies(request: Request): Record<string, string> {
+  return Object.fromEntries(
+    (request.headers.get('cookie') || '')
+      .split('; ')
+      .filter(Boolean)
+      .map((c) => {
+        const [key, ...v] = c.split('=')
+        return [key, v.join('=')]
+      }),
+  )
+}
+
+/**
+ * Redirect back to the login page with an error code.
+ *
+ * The codes are matched against OAUTH_ERROR_MESSAGES in
+ * packages/cascadia-web/src/routes/login.tsx, so a new code needs a message there or
+ * the page shows a generic fallback.
+ */
+function loginRedirect(error: string): Response {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: `/login?error=${error}` },
+  })
+}
+
+/**
+ * OAuth state and PKCE verifier cookies. Short-lived and single-purpose: they
+ * exist only between the redirect out to the provider and the callback coming
+ * back, and are cleared on the way through.
+ */
+function buildOAuthCookie(name: string, value: string, maxAge = 600): string {
+  const parts = [
+    `${name}=${value}`,
+    'HttpOnly',
+    'Path=/',
+    `Max-Age=${maxAge}`,
+    // Lax, not Strict: the callback arrives as a cross-site top-level
+    // navigation from the provider, and Strict would withhold the cookie.
+    'SameSite=Lax',
+  ]
+  if (process.env.NODE_ENV === 'production') parts.push('Secure')
+  return parts.join('; ')
+}
 
 // POST /api/auth/login
 app.post(
@@ -262,6 +315,38 @@ app.get(
   ),
 )
 
+// GET /api/auth/providers — which OAuth buttons the login page should offer
+app.get(
+  '/providers',
+  adapt(
+    apiHandler(
+      {
+        public: true,
+        openapi: {
+          summary: 'Which OAuth providers are configured',
+          description:
+            'Drives which sign-in buttons the login page offers. Fixed at process start from the environment.',
+          responses: {
+            200: {
+              schema: z.object({
+                github: z.boolean(),
+                google: z.boolean(),
+              }),
+            },
+          },
+        },
+      },
+      // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
+      async () => {
+        return {
+          github: isGitHubOAuthConfigured(),
+          google: isGoogleOAuthConfigured(),
+        }
+      },
+    ),
+  ),
+)
+
 // GET /api/auth/github
 app.get(
   '/github',
@@ -300,15 +385,7 @@ app.get(
       }
 
       // Validate state against cookie
-      const cookies = Object.fromEntries(
-        (request.headers.get('cookie') || '')
-          .split('; ')
-          .filter(Boolean)
-          .map((c) => {
-            const [key, ...v] = c.split('=')
-            return [key, v.join('=')]
-          }),
-      )
+      const cookies = readCookies(request)
 
       const storedState = cookies['github_oauth_state']
       if (!storedState || storedState !== state) {
@@ -393,6 +470,150 @@ app.get(
           status: 302,
           headers: { Location: '/login?error=oauth_failed' },
         })
+      }
+    }),
+  ),
+)
+
+// GET /api/auth/google
+app.get(
+  '/google',
+  adapt(
+    // eslint-disable-next-line @typescript-eslint/require-await -- apiHandler signature requires async
+    apiHandler({ public: true }, async () => {
+      const google = getGoogleProvider()
+      const state = generateState()
+      const codeVerifier = generateCodeVerifier()
+
+      // openid and email are what the id token claims below are read from;
+      // profile supplies the display name.
+      const url = google.createAuthorizationURL(state, codeVerifier, [
+        'openid',
+        'email',
+        'profile',
+      ])
+
+      // A hint to Google's account chooser so people with several accounts
+      // signed in land on the right one. Purely cosmetic — it is a request
+      // parameter the user can edit, so the callback still verifies `hd`
+      // itself and does not trust this having been honoured.
+      const [onlyDomain, ...otherDomains] = getAllowedGoogleDomains()
+      if (onlyDomain && otherDomains.length === 0) {
+        url.searchParams.set('hd', onlyDomain)
+      }
+
+      const headers = new Headers({ Location: url.toString() })
+      headers.append(
+        'Set-Cookie',
+        buildOAuthCookie('google_oauth_state', state),
+      )
+      headers.append(
+        'Set-Cookie',
+        buildOAuthCookie('google_oauth_verifier', codeVerifier),
+      )
+
+      return new Response(null, { status: 302, headers })
+    }),
+  ),
+)
+
+// GET /api/auth/callback/google
+app.get(
+  '/callback/google',
+  adapt(
+    apiHandler({ public: true }, async ({ request }) => {
+      const url = new URL(request.url, 'http://localhost')
+      const code = url.searchParams.get('code')
+      const state = url.searchParams.get('state')
+
+      if (!code || !state) {
+        return loginRedirect('missing_params')
+      }
+
+      const cookies = readCookies(request)
+      const storedState = cookies['google_oauth_state']
+      const codeVerifier = cookies['google_oauth_verifier']
+
+      if (!storedState || storedState !== state || !codeVerifier) {
+        return loginRedirect('invalid_state')
+      }
+
+      try {
+        const google = getGoogleProvider()
+        const tokens = await google.validateAuthorizationCode(
+          code,
+          codeVerifier,
+        )
+
+        // Decoded, not signature-verified — and that is correct here. This
+        // token came straight back from Google's token endpoint over TLS in
+        // the exchange above, rather than being presented by the browser, so
+        // there is no untrusted party between Google and this line.
+        const claims = decodeIdToken(tokens.idToken()) as {
+          sub?: string
+          email?: string
+          email_verified?: boolean
+          name?: string
+          hd?: string
+        }
+
+        if (!claims.sub || !claims.email) {
+          return loginRedirect('google_api_error')
+        }
+
+        if (claims.email_verified !== true) {
+          return loginRedirect('email_unverified')
+        }
+
+        // The organisation restriction, when one is configured: the only thing
+        // standing between a successful Google sign-in and an auto-provisioned
+        // account. Checked before loginWithOAuth so a rejected account is
+        // neither created nor linked. The refusal is still recorded, since an
+        // operator wants to see who is knocking. See isGoogleAccountPermitted
+        // for why `hd` and not the email's domain.
+        if (!isGoogleAccountPermitted(claims.hd)) {
+          await db.insert(authEvents).values({
+            eventType: 'login_failed',
+            ipAddress: resolveClientIp(request),
+            metadata: {
+              username: claims.email,
+              provider: 'google',
+              reason: 'domain_not_allowed',
+              hd: claims.hd ?? null,
+            },
+          })
+          return loginRedirect('wrong_domain')
+        }
+
+        const result = await AuthService.loginWithOAuth({
+          provider: 'google',
+          providerId: claims.sub,
+          email: claims.email,
+          name: claims.name || null,
+          ipAddress: resolveClientIp(request),
+          userAgent: request.headers.get('user-agent') || 'unknown',
+        })
+
+        const headers = new Headers({ Location: '/' })
+        headers.append('Set-Cookie', buildSessionCookie(result.sessionToken))
+        headers.append(
+          'Set-Cookie',
+          buildOAuthCookie('google_oauth_state', '', 0),
+        )
+        headers.append(
+          'Set-Cookie',
+          buildOAuthCookie('google_oauth_verifier', '', 0),
+        )
+
+        return new Response(null, { status: 302, headers })
+      } catch (error) {
+        // A deactivated account is a normal outcome worth naming, rather than
+        // sending someone to the generic "try again" message forever.
+        if (error instanceof AuthenticationError) {
+          return loginRedirect('account_inactive')
+        }
+        console.error('Google OAuth error:', error)
+        return loginRedirect('oauth_failed')
       }
     }),
   ),

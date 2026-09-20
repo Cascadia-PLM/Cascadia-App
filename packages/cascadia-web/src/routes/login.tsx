@@ -7,8 +7,9 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { invalidateEverything } from '../lib/query'
+import { authProvidersQuery } from '../lib/query/options/auth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Label } from '../components/ui/Label'
@@ -22,7 +23,13 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   missing_params: 'OAuth callback missing required parameters.',
   invalid_state: 'OAuth state validation failed. Please try again.',
   github_api_error: 'Failed to communicate with GitHub.',
+  google_api_error: 'Failed to communicate with Google.',
   no_email: 'Your GitHub account must have a verified email address.',
+  email_unverified: 'Your email address is not verified with the provider.',
+  wrong_domain:
+    'That account is not part of an organisation permitted to sign in here. Use your work Google account.',
+  account_inactive:
+    'Your account has been deactivated. Contact an administrator.',
   oauth_failed: 'OAuth authentication failed. Please try again.',
 }
 
@@ -37,8 +44,13 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null)
   const gearBackgroundRef = useRef<AnimatedGearBackgroundRef>(null)
+
+  // Only offer the providers the server actually has credentials for; both
+  // buttons stay hidden until the answer arrives.
+  const { data: providers = { github: false, google: false } } =
+    useQuery(authProvidersQuery())
 
   // Show OAuth errors from callback redirects, and prefill the email when a
   // link carries one (the hosted demo's "open my demo" flow lands here with
@@ -195,39 +207,82 @@ function LoginPage() {
           </Button>
         </form>
 
-        {/* OAuth divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+        {/* OAuth divider — hidden entirely when no provider is configured */}
+        {(providers.google || providers.github) && (
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
+                Or continue with
+              </span>
+            </div>
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">
-              Or continue with
-            </span>
-          </div>
-        </div>
+        )}
+
+        {/* Google OAuth */}
+        {providers.google && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2"
+            disabled={!!oauthLoading || isLoading}
+            onClick={() => {
+              setOauthLoading('google')
+              window.location.href = '/api/v1/auth/google'
+            }}
+            data-testid="login-google"
+          >
+            {oauthLoading === 'google' ? (
+              <LoadingSpinner size="sm" />
+            ) : (
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.46a5.52 5.52 0 01-2.4 3.62v3.01h3.88c2.27-2.09 3.58-5.17 3.58-8.82z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.96-1.08 7.94-2.91l-3.88-3.01c-1.08.72-2.45 1.15-4.06 1.15-3.12 0-5.77-2.11-6.71-4.95H1.29v3.11A11.995 11.995 0 0012 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.29 14.28a7.2 7.2 0 010-4.56V6.61H1.29a12.01 12.01 0 000 10.78l4-3.11z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.44-3.44C17.95 1.19 15.23 0 12 0 7.31 0 3.26 2.69 1.29 6.61l4 3.11C6.23 6.86 8.88 4.75 12 4.75z"
+                />
+              </svg>
+            )}
+            Sign in with Google
+          </Button>
+        )}
 
         {/* GitHub OAuth */}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full flex items-center justify-center gap-2"
-          disabled={oauthLoading || isLoading}
-          onClick={() => {
-            setOauthLoading(true)
-            window.location.href = '/api/v1/auth/github'
-          }}
-          data-testid="login-github"
-        >
-          {oauthLoading ? (
-            <LoadingSpinner size="sm" />
-          ) : (
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
-            </svg>
-          )}
-          Sign in with GitHub
-        </Button>
+        {providers.github && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full flex items-center justify-center gap-2 mt-3"
+            disabled={!!oauthLoading || isLoading}
+            onClick={() => {
+              setOauthLoading('github')
+              window.location.href = '/api/v1/auth/github'
+            }}
+            data-testid="login-github"
+          >
+            {oauthLoading === 'github' ? (
+              <LoadingSpinner size="sm" />
+            ) : (
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+              </svg>
+            )}
+            Sign in with GitHub
+          </Button>
+        )}
       </Card>
     </div>
   )

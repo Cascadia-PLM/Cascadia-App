@@ -38,6 +38,7 @@ import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { useListSelection } from '@/lib/hooks/useListSelection'
 import { apiFetch } from '@/lib/api/client'
 import { entityQuery, useInvalidateResources } from '@/lib/query'
+import { ITEM_TYPE_OPTIONS } from '@/lib/items/item-type-ui'
 import { StateBadge } from '@/components/items/StateBadge'
 import { cn } from '@/lib/utils'
 
@@ -242,11 +243,11 @@ export function AddRelationshipDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Part">Part</SelectItem>
-                  <SelectItem value="Document">Document</SelectItem>
-                  <SelectItem value="Requirement">Requirement</SelectItem>
-                  <SelectItem value="Task">Task</SelectItem>
-                  <SelectItem value="ChangeOrder">Change Order</SelectItem>
+                  {ITEM_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

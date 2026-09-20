@@ -20,6 +20,7 @@ import {
 import { isDrivingDefinition } from '@cascadia/commons/lib/lifecycles/normalize'
 import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
 import { db, withTx } from '../../db'
+import { parseBaselineReleaseRevision } from '../../import/baseline-revision'
 import {
   CHANGE_ORDER_CANCELLED,
   CHANGE_ORDER_RELEASED,
@@ -1375,6 +1376,139 @@ export class ChangeOrderService {
           eq(changeOrderAffectedItems.affectedItemMasterId, itemMasterId),
         ),
       )
+  }
+
+  /**
+   * Set or clear the source-system revision an unreleased item will receive
+   * on its first formal release.
+   *
+   * Role authorization belongs to the route; this service owns the domain
+   * boundary. The override is deliberately separate from targetRevision:
+   * targetRevision is a prediction, while this value is approved release
+   * intent and is revalidated by the merge before it is consumed.
+   */
+  static async setInitialRevisionOverride(
+    changeOrderId: string,
+    affectedItemId: string,
+    requestedRevision: string | null,
+  ): Promise<AffectedItem> {
+    await this.assertScopeOpen(
+      changeOrderId,
+      'change imported baseline revisions',
+    )
+
+    const affected = await db
+      .select()
+      .from(changeOrderAffectedItems)
+      .where(
+        and(
+          eq(changeOrderAffectedItems.id, affectedItemId),
+          eq(changeOrderAffectedItems.changeOrderId, changeOrderId),
+        ),
+      )
+      .limit(1)
+      .then((rows) => rows.at(0))
+
+    if (!affected) {
+      throw new NotFoundError('Affected item', affectedItemId, {
+        operation: 'setInitialRevisionOverride',
+      })
+    }
+
+    const trimmed = requestedRevision?.trim() || null
+    if (!trimmed) {
+      const item = affected.affectedItemId
+        ? await ItemService.findById(affected.affectedItemId)
+        : null
+      const target = item
+        ? await LifecycleService.resolveActionTarget(
+            item.itemType,
+            affected.changeAction as ChangeAction,
+            item.revision,
+          )
+        : null
+      return takeFirst(
+        await db
+          .update(changeOrderAffectedItems)
+          .set({
+            initialRevisionOverride: null,
+            targetRevision: target?.assignsRevision ? target.revision : null,
+          })
+          .where(eq(changeOrderAffectedItems.id, affected.id))
+          .returning(),
+      ) as AffectedItem
+    }
+
+    if (affected.changeAction !== 'release') {
+      throw new ValidationError(
+        'An initial revision override is valid only for the release action',
+        [
+          {
+            field: 'initialRevisionOverride',
+            message:
+              'Select the release action before setting an initial revision',
+          },
+        ],
+        { operation: 'setInitialRevisionOverride' },
+      )
+    }
+    if (!affected.affectedItemId) {
+      throw new ValidationError(
+        'An initial revision override requires an existing affected item',
+        undefined,
+        { operation: 'setInitialRevisionOverride' },
+      )
+    }
+
+    const item = await ItemService.findById(affected.affectedItemId)
+    if (!item) {
+      throw new NotFoundError('Item', affected.affectedItemId, {
+        operation: 'setInitialRevisionOverride',
+      })
+    }
+    if (!RevisionService.isWorkingRevision(item.revision)) {
+      throw new ValidationError(
+        `${item.itemNumber} already has formal revision ${item.revision}; an initial revision override can be used only before the first release`,
+        undefined,
+        { operation: 'setInitialRevisionOverride', itemId: item.id },
+      )
+    }
+
+    const lineage = await db
+      .select({ revision: items.revision })
+      .from(items)
+      .where(eq(items.masterId, item.masterId))
+    const priorRelease = lineage.find(
+      (row) => !RevisionService.isWorkingRevision(row.revision),
+    )
+    if (priorRelease) {
+      throw new ValidationError(
+        `${item.itemNumber} already has a formal release (${priorRelease.revision}); imported baseline revisions cannot replace revision history`,
+        undefined,
+        { operation: 'setInitialRevisionOverride', itemId: item.id },
+      )
+    }
+
+    const normalized = parseBaselineReleaseRevision(
+      trimmed,
+      await LifecycleService.getRevisionScheme(item.itemType),
+      {
+        field: 'initialRevisionOverride',
+        operation: 'setInitialRevisionOverride',
+      },
+    )
+    return takeFirst(
+      await db
+        .update(changeOrderAffectedItems)
+        .set({
+          initialRevisionOverride: normalized,
+          // Keep the presentation prediction honest. The merge still consumes
+          // initialRevisionOverride directly and never trusts this column.
+          targetRevision: normalized,
+        })
+        .where(eq(changeOrderAffectedItems.id, affected.id))
+        .returning(),
+    ) as AffectedItem
   }
 
   /**

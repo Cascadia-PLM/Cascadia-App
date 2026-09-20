@@ -189,6 +189,7 @@ Returns all items affected by this change order. Requires `change_orders.read` p
         "changeOrderId": "eco-uuid",
         "affectedItemId": "item-uuid",
         "changeAction": "revise",
+        "initialRevisionOverride": null,
         "affectedItemDetails": {
           "itemNumber": "PRT-001",
           "name": "Motor Housing",
@@ -230,6 +231,27 @@ Add one or more items to the change order's affected items list. Requires `chang
 ```
 
 **Status:** `201 Created`
+
+### Set an Imported Initial Revision
+
+```
+PATCH /api/v1/change-orders/:id/affected-items/:affectedItemId/initial-revision
+```
+
+Administrators can set the formal revision that an unreleased item receives on
+its first `release`. This is intended for importing an existing baseline, for
+example assigning `R3` to one item while other items use the lifecycle's normal
+initial revision. The value must match that item's configured revision scheme.
+
+```json
+{ "revision": "R3" }
+```
+
+Use `{ "revision": null }` to clear the override and return to the lifecycle
+default. The operation is rejected for actions other than `release`, after the
+change-order scope is locked, or when any formal revision already exists in the
+item's lineage. The release preview and merge both revalidate and use this
+value; `targetRevision` remains a presentation prediction.
 
 ### Remove Affected Item
 

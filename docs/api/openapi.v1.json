@@ -4416,6 +4416,76 @@
         ]
       }
     },
+    "/api/v1/change-orders/{id}/affected-items/{affectedItemId}/initial-revision": {
+      "patch": {
+        "operationId": "patchApiV1ChangeOrdersByIdAffectedItemsByAffectedItemIdInitialRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "affectedItemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "revision": {
+                    "anyOf": [
+                      {
+                        "maxLength": 10,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "revision"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Set an imported baseline revision for an affected item",
+        "tags": [
+          "Change Orders"
+        ]
+      }
+    },
     "/api/v1/change-orders/{id}/approvals": {
       "get": {
         "operationId": "getApiV1ChangeOrdersByIdApprovals",

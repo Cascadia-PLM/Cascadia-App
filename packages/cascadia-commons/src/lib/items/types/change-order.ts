@@ -152,6 +152,11 @@ export const affectedItemSchema = z.object({
   currentRevision: z.string().max(10).nullable(),
   targetState: z.string().max(50).nullable(),
   targetRevision: z.string().max(10).nullable(),
+  /**
+   * Administrator-approved source-system revision for an item's first formal
+   * release. This is release intent; targetRevision remains only a prediction.
+   */
+  initialRevisionOverride: z.string().max(10).nullable(),
   replacementItemId: z.string().uuid().nullable(),
   newItemData: z
     .record(

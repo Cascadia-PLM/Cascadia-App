@@ -3184,9 +3184,59 @@
         ]
       }
     },
+    "/api/v1/auth/callback/google": {
+      "get": {
+        "operationId": "getApiV1AuthCallbackGoogle",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/v1/auth/github": {
       "get": {
         "operationId": "getApiV1AuthGithub",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/google": {
+      "get": {
+        "operationId": "getApiV1AuthGoogle",
         "responses": {
           "400": {
             "$ref": "#/components/responses/ValidationError"
@@ -3356,6 +3406,63 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/providers": {
+      "get": {
+        "description": "Drives which sign-in buttons the login page offers. Fixed at process start from the environment.",
+        "operationId": "getApiV1AuthProviders",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "github": {
+                          "type": "boolean"
+                        },
+                        "google": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "github",
+                        "google"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Which OAuth providers are configured",
         "tags": [
           "Auth"
         ]

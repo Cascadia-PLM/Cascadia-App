@@ -62,14 +62,14 @@ spec:
 
           # Overrides the image CMD, not its ENTRYPOINT, so this still runs
           # under dumb-init. boot-migrate.ts applies the committed migrations
-          # under apps/*/drizzle and refuses rather than guessing when the
+          # under cascadia-app*/drizzle and refuses rather than guessing when the
           # database predates the journal.
           command: ['tsx', 'scripts/boot-migrate.ts']
 
           env:
             # Not decoration: with no `?sslmode=` in the URL, NODE_ENV is what
             # decides whether the connection requires TLS (see resolveSslOption
-            # in packages/cascadia-api/src/lib/db/index.ts). Omit it here and the Job
+            # in cascadia-api/src/lib/db/index.ts). Omit it here and the Job
             # would connect in cleartext while the app pods, which read the
             # same key from this ConfigMap, require TLS — so against a managed
             # database the migration fails where the app works.

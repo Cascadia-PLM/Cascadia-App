@@ -7,7 +7,7 @@ services:
     # Or build locally:
     # build:
     #   context: ../../../..
-    #   dockerfile: docker/app.Dockerfile
+    #   dockerfile: cascadia-app/Dockerfile
     container_name: cascadia-app
     restart: unless-stopped
     environment:

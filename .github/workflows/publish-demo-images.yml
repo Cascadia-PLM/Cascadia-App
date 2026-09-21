@@ -77,20 +77,22 @@ jobs:
       # only symptom is a `:latest` that is quietly older than main. That is
       # how `src/**`, `index.html`, `vite.config.ts`, `drizzle.config.ts` and
       # `test-data/**` survived the workspace split here — all five had moved
-      # under packages/ or apps/, and nothing said so.
+      # into the workspace directories, and nothing said so.
       #
-      # Everything up to the first wildcard has to exist. That is enough to
-      # catch a path that moved, without pretending to verify a glob.
+      # Everything up to the first wildcard, as a shell glob, has to match at
+      # least one entry. That is enough to catch a path that moved — and, for
+      # `cascadia-*/**`, the day the last workspace directory disappears —
+      # without pretending to verify the whole glob.
       - name: Refuse a filter pattern that matches nothing
         run: |
           set -euo pipefail
           workflow=.github/workflows/publish-demo-images.yml
           stale=0
           while read -r pattern; do
-            base=${pattern%%\**}
-            base=${base%/}
-            [ -n "$base" ] || continue
-            if [ ! -e "$base" ]; then
+            prefix=${pattern%%\**}
+            [ -n "$prefix" ] || continue
+            set -- ${prefix}*
+            if [ ! -e "$1" ]; then
               echo "::error file=$workflow::paths-filter pattern '$pattern' matches nothing in the tree. It moved or was deleted; update the filters block."
               stale=1
             fi
@@ -116,22 +118,21 @@ jobs:
             # surfaces as its own filter key, which the catalog below has no entry
             # for and drops.
             #
-            # `packages/**` and `apps/**` are deliberately whole subtrees rather
-            # than a list of the files inside them. This block named `src/**`,
-            # `index.html`, `vite.config.ts`, `drizzle.config.ts` and `test-data/**`
-            # long after the workspace split moved every one of them under
-            # packages/ or apps/, so an ordinary source change matched nothing and
+            # `cascadia-*/**` is deliberately a whole subtree rather than a list
+            # of the files inside it. This block named `src/**`, `index.html`,
+            # `vite.config.ts`, `drizzle.config.ts` and `test-data/**` long after
+            # the workspace split moved every one of them into the workspace
+            # directories, so an ordinary source change matched nothing and
             # rebuilt nothing — `:latest` went stale silently, which is the worst
             # way for a selective build to fail. Whole subtrees also pick up a new
             # package or app for free, instead of waiting to be noticed.
             #
-            # The rest is what the runtime stage of docker/app.Dockerfile copies:
+            # The rest is what the runtime stage of cascadia-app/Dockerfile copies:
             # public/, scripts/, tsconfig.json and tsconfig.base.json. `tests/**`
             # and `docs/**` are absent on purpose — neither reaches the image, and
             # a test-only or docs-only commit should build nothing.
             _app_sources: &app_sources
-              - 'packages/**'
-              - 'apps/**'
+              - 'cascadia-*/**'
               - 'scripts/**'
               - 'public/**'
               - 'package.json'
@@ -146,15 +147,15 @@ jobs:
             app:
               - *app_sources
               - *pipeline
-              - 'docker/app.Dockerfile'
+              - 'cascadia-app/Dockerfile'
             jobs_worker:
               - *app_sources
               - *pipeline
-              - 'workers/node/Dockerfile'
+              - 'cascadia-workers-job/Dockerfile'
             cad_converter:
               - *pipeline
-              - 'workers/cad-converter/**'
-              - 'workers/py-common/**'
+              - 'cascadia-workers-cad/**'
+              - 'cascadia-workers-commons/**'
 
       - name: Select images to build
         id: select
@@ -172,9 +173,9 @@ jobs:
           # toolchains first - set it for images whose cold build would otherwise
           # run the runner out of disk.
           catalog='[
-            {"name":"cascadia-app","context":".","dockerfile":"docker/app.Dockerfile","target":"production","filter":"app"},
-            {"name":"cascadia-jobs-worker","context":".","dockerfile":"workers/node/Dockerfile","target":"production","filter":"jobs_worker"},
-            {"name":"cascadia-cad-converter","context":"workers","dockerfile":"workers/cad-converter/Dockerfile","target":"","filter":"cad_converter","freeDisk":true}
+            {"name":"cascadia-app","context":".","dockerfile":"cascadia-app/Dockerfile","target":"production","filter":"app"},
+            {"name":"cascadia-jobs-worker","context":".","dockerfile":"cascadia-workers-job/Dockerfile","target":"production","filter":"jobs_worker"},
+            {"name":"cascadia-cad-converter","context":".","dockerfile":"cascadia-workers-cad/Dockerfile","target":"","filter":"cad_converter","freeDisk":true}
           ]'
 
           if [ -z "${CHANGES}" ]; then

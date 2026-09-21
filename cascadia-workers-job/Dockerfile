@@ -7,7 +7,7 @@
 # The single copy of the manifest list. Two stages below install from it, and
 # each used to carry its own transcription of it — so a workspace that was
 # renamed or deleted had to be fixed in two places, and the deleted
-# `packages/cad-generation` duly outlived its package in both. An empty base
+# `cad-generation` duly outlived its package in both. An empty base
 # image because nothing here runs: this stage is a file list the other stages
 # read, not a layer either of them inherits.
 FROM scratch AS manifests
@@ -17,12 +17,13 @@ COPY package.json package-lock.json ./
 # Workspace manifests, before the install: `npm ci` in a workspace root reads
 # them to know what each workspace depends on. Without them it succeeds and
 # quietly installs only the root's dependencies. Listed one per line rather than
-# globbed because `COPY packages/*/…` flattens the paths. A new workspace
-# belongs here too.
-COPY packages/cascadia-commons/package.json ./packages/cascadia-commons/
-COPY packages/cascadia-api/package.json ./packages/cascadia-api/
-COPY packages/cascadia-web/package.json ./packages/cascadia-web/
-COPY apps/cascadia/package.json ./apps/cascadia/
+# globbed because `COPY cascadia-*/…` flattens the paths. A new workspace
+# belongs here too. (Every workspace is a top-level `cascadia-*` directory;
+# the two Python workers have no manifest and are not npm workspaces.)
+COPY cascadia-commons/package.json ./cascadia-commons/
+COPY cascadia-api/package.json ./cascadia-api/
+COPY cascadia-web/package.json ./cascadia-web/
+COPY cascadia-app/package.json ./cascadia-app/
 
 # =============================================================================
 # Stage 2: Dependencies
@@ -52,8 +53,8 @@ COPY . .
 
 # Build application (increase heap for large TanStack Start builds)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-# Which edition's job handlers this worker carries. See docker/app.Dockerfile.
-ARG APP=cascadia
+# Which edition's job handlers this worker carries. See cascadia-app/Dockerfile.
+ARG APP=cascadia-app
 RUN npm run build:app -- "$APP"
 
 # =============================================================================
@@ -61,7 +62,7 @@ RUN npm run build:app -- "$APP"
 # =============================================================================
 # Split out of the production stage below so it can be built, and therefore
 # smoke-tested, without the builder stage — the same seam, for the same reason,
-# as docker/app.Dockerfile. The first `COPY --from=builder` begins stage 5.
+# as cascadia-app/Dockerfile. The first `COPY --from=builder` begins stage 5.
 FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
 
 WORKDIR /app
@@ -82,7 +83,7 @@ RUN apk add --no-cache \
 COPY --from=manifests / ./
 
 # Production deps only, lifecycle scripts off — the same policy as
-# docker/app.Dockerfile. Nothing in the runtime tree needs a postinstall:
+# cascadia-app/Dockerfile. Nothing in the runtime tree needs a postinstall:
 # @node-rs/argon2 is the only native runtime dependency and ships napi
 # prebuilds, and `postgres` is pure JS. A dependency that does need one
 # (sharp, say) fails at *runtime* with a missing-binary error, not at build
@@ -99,7 +100,7 @@ FROM runtime-deps AS production
 COPY --from=builder /app/.output ./.output
 
 # Copy job-related code
-COPY --from=builder /app/packages/cascadia-api/src/lib/db ./packages/cascadia-api/src/lib/db
+COPY --from=builder /app/cascadia-api/src/lib/db ./cascadia-api/src/lib/db
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -131,6 +132,6 @@ ENTRYPOINT ["dumb-init", "--"]
 # Start jobs worker
 # Re-declared: an ARG from an earlier stage is not in scope here. Shell form so
 # ${APP} expands — the exec form would pass it literally.
-ARG APP=cascadia
+ARG APP=cascadia-app
 ENV APP=${APP}
 CMD node .output/${APP}/server/jobs-worker.mjs

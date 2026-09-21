@@ -7,7 +7,7 @@
 # The single copy of the manifest list. Two stages below install from it, and
 # each used to carry its own transcription of it — so a workspace that was
 # renamed or deleted had to be fixed in two places, and the deleted
-# `packages/cad-generation` duly outlived its package in both. An empty base
+# `cad-generation` duly outlived its package in both. An empty base
 # image because nothing here runs: this stage is a file list the other stages
 # read, not a layer either of them inherits.
 FROM scratch AS manifests
@@ -17,12 +17,13 @@ COPY package.json package-lock.json ./
 # Workspace manifests, before the install: `npm ci` in a workspace root reads
 # them to know what each workspace depends on. Without them it succeeds and
 # quietly installs only the root's dependencies. Listed one per line rather than
-# globbed because `COPY packages/*/…` flattens the paths. A new workspace
-# belongs here too.
-COPY packages/cascadia-commons/package.json ./packages/cascadia-commons/
-COPY packages/cascadia-api/package.json ./packages/cascadia-api/
-COPY packages/cascadia-web/package.json ./packages/cascadia-web/
-COPY apps/cascadia/package.json ./apps/cascadia/
+# globbed because `COPY cascadia-*/…` flattens the paths. A new workspace
+# belongs here too. (Every workspace is a top-level `cascadia-*` directory;
+# the two Python workers have no manifest and are not npm workspaces.)
+COPY cascadia-commons/package.json ./cascadia-commons/
+COPY cascadia-api/package.json ./cascadia-api/
+COPY cascadia-web/package.json ./cascadia-web/
+COPY cascadia-app/package.json ./cascadia-app/
 
 # =============================================================================
 # Stage 2: Dependencies
@@ -54,7 +55,7 @@ COPY . .
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Which edition this image contains. This tree carries only the AGPL
 # community build.
-ARG APP=cascadia
+ARG APP=cascadia-app
 
 # Which build this is, for the stamp at the foot of the sidebar. Vite inlines
 # any VITE_-prefixed variable present at build time, so these have to be set
@@ -99,7 +100,7 @@ COPY --from=manifests / ./
 # Lifecycle scripts stay off: no runtime dependency needs a postinstall (the
 # one native package, @node-rs/argon2, ships napi prebuilds). A dependency
 # that does need one fails at runtime with a missing binary, not at build
-# time. workers/node/Dockerfile carries the same policy.
+# time. cascadia-workers-job/Dockerfile carries the same policy.
 RUN npm ci --omit=dev --ignore-scripts && \
     npm cache clean --force
 
@@ -163,13 +164,15 @@ COPY --from=builder /app/public ./public
 
 # Admin scripts (seed, migrate, reset) run via tsx and import from the
 # workspace packages. The server itself reads none of this at runtime — only
-# `scripts/*.ts` do. The catalog seed JSON under packages/cascadia-api/test-data comes
+# `scripts/*.ts` do. The catalog seed JSON under cascadia-api/test-data comes
 # along with them: the bundled server inlines it, but tsx-run scripts read it
 # from disk.
 COPY --from=builder /app/tsconfig.base.json ./
 COPY --from=builder /app/tsconfig.json ./
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps ./apps
+COPY --from=builder /app/cascadia-commons ./cascadia-commons
+COPY --from=builder /app/cascadia-api ./cascadia-api
+COPY --from=builder /app/cascadia-web ./cascadia-web
+COPY --from=builder /app/cascadia-app ./cascadia-app
 COPY --from=builder /app/scripts ./scripts
 
 # Create non-root user
@@ -206,7 +209,7 @@ ENTRYPOINT ["dumb-init", "--"]
 
 # Re-declared: an ARG from an earlier stage is not in scope here. Carried into
 # the environment so the CMD below can name the edition's output directory.
-ARG APP=cascadia
+ARG APP=cascadia-app
 ENV APP=${APP}
 
 # Shell form deliberately — the exec form does not expand ${APP}.

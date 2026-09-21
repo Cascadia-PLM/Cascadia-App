@@ -83,7 +83,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: docker/app.Dockerfile
+      dockerfile: cascadia-app/Dockerfile
       target: production
     container_name: cascadia-demo-app
     restart: unless-stopped
@@ -126,10 +126,10 @@ services:
 
   cad-converter:
     build:
-      # Context is ./workers so the image can carry the shared py-common
+      # Context is the repo root so the image can carry the shared cascadia-workers-commons
       # package alongside the worker's own source (JOBS-8).
-      context: ./workers
-      dockerfile: cad-converter/Dockerfile
+      context: .
+      dockerfile: cascadia-workers-cad/Dockerfile
     container_name: cascadia-demo-cad-converter
     restart: unless-stopped
     depends_on:
@@ -150,7 +150,7 @@ services:
   jobs-worker:
     build:
       context: .
-      dockerfile: workers/node/Dockerfile
+      dockerfile: cascadia-workers-job/Dockerfile
       target: production
     container_name: cascadia-demo-jobs-worker
     restart: unless-stopped

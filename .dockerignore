@@ -1,5 +1,5 @@
-# Build context filter for the repo-root builds (docker/app.Dockerfile,
-# workers/node/Dockerfile). Both do `COPY . .` in their builder stage, so
+# Build context filter for the repo-root builds — every Dockerfile in the tree
+# builds from here. The two Node ones do `COPY . .` in their builder stage, so
 # anything not excluded here is both transferred to the daemon and baked into
 # a builder layer that `cache-to: gha,mode=max` uploads.
 #
@@ -34,7 +34,7 @@ storage
 todos.json
 
 # Demo dataset (~200 MB of GLB + thumbnails, ~590 MB with STEPs). Only
-# docker/demo-data.Dockerfile needs it, and that build uses `demo-data` as its
+# the demo-data image build needs it, and that build uses `demo-data` as its
 # own context with demo-data/.dockerignore filtering it.
 demo-data
 
@@ -75,3 +75,7 @@ list-tables.js
 *.log
 tmp
 temp
+
+# Python caches (the CAD worker and its commons build from the repo root)
+__pycache__
+.pytest_cache

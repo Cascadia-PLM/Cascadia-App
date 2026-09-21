@@ -3,9 +3,10 @@
 # from a known image; bump via `docker buildx imagetools inspect <image>`.
 FROM docker.io/condaforge/miniforge3:latest@sha256:3a41fcca7d6740df102951d9f122bf1a5f81170fdba234243060f72eb4891901 AS build
 
-# Build context is ./workers (not this directory): the image also carries
-# the shared py-common package alongside the worker source (JOBS-8).
-COPY cad-converter/environment.yml /tmp/environment.yml
+# Build context is the repo root (not this directory): the image also carries
+# the shared cascadia-workers-commons package alongside the worker source
+# (JOBS-8).
+COPY cascadia-workers-cad/environment.yml /tmp/environment.yml
 
 RUN conda env create -f /tmp/environment.yml && \
     conda install -y -n base conda-pack && \
@@ -65,13 +66,13 @@ RUN mkdir -p /vault && chown cadworker:cadworker /vault
 # Attribution for everything this image redistributes. THIRD-PARTY-NOTICES is
 # reviewed by hand and names the copyleft components and their obligations;
 # /app/licenses carries the texts collected from the resolved environment.
-COPY cad-converter/THIRD-PARTY-NOTICES /app/THIRD-PARTY-NOTICES
+COPY cascadia-workers-cad/THIRD-PARTY-NOTICES /app/THIRD-PARTY-NOTICES
 COPY --from=build /licenses /app/licenses
 
 # Copy application source and entrypoint
-COPY cad-converter/src/ /app/src/
-COPY py-common/src/ /app/common/src/
-COPY cad-converter/entrypoint.sh /app/entrypoint.sh
+COPY cascadia-workers-cad/src/ /app/src/
+COPY cascadia-workers-commons/src/ /app/common/src/
+COPY cascadia-workers-cad/entrypoint.sh /app/entrypoint.sh
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Switch to non-root user

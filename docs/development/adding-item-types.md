@@ -20,10 +20,10 @@ by tests and some are not, and it says which.
 
 ## Step 1: Add Database Schema
 
-Create a type-specific table in `packages/cascadia-api/src/lib/db/schema/items.ts`. This table holds fields unique to your item type, with a foreign key back to the shared `items` table.
+Create a type-specific table in `cascadia-api/src/lib/db/schema/items.ts`. This table holds fields unique to your item type, with a foreign key back to the shared `items` table.
 
 ```typescript
-// packages/cascadia-api/src/lib/db/schema/items.ts
+// cascadia-api/src/lib/db/schema/items.ts
 
 export const widgets = pgTable('widgets', {
   // Primary key that references the base items table
@@ -43,7 +43,7 @@ export const widgets = pgTable('widgets', {
 Export the new table from the schema index:
 
 ```typescript
-// packages/cascadia-api/src/lib/db/schema/index.ts
+// cascadia-api/src/lib/db/schema/index.ts
 export { widgets } from './items'
 ```
 
@@ -57,10 +57,10 @@ Apply the change to your dev database with `npm run db:push` (interactive — dr
 
 ## Step 3: Create Type Definition
 
-Create `packages/cascadia-commons/src/lib/items/types/widget.ts` with the TypeScript interface and Zod schema.
+Create `cascadia-commons/src/lib/items/types/widget.ts` with the TypeScript interface and Zod schema.
 
 ```typescript
-// packages/cascadia-commons/src/lib/items/types/widget.ts
+// cascadia-commons/src/lib/items/types/widget.ts
 import { z } from 'zod'
 import { baseItemSchema } from './base'
 import type { BaseItem } from './base'
@@ -109,13 +109,13 @@ export type WidgetInput = z.infer<typeof widgetSchema>
 ## Step 4: Add the Definition
 
 Every item type is one entry in `ITEM_TYPE_DEFINITIONS`
-(`packages/cascadia-commons/src/lib/items/item-type-definitions.ts`). There are no
+(`cascadia-commons/src/lib/items/item-type-definitions.ts`). There are no
 per-type `register()` calls: `registerItemTypes.server.ts` loops over this
 record, and the AI and MCP tool enums, the OpenAPI create union, the admin
 listing and the search type filter all derive from it.
 
 ```typescript
-// packages/cascadia-commons/src/lib/items/item-type-definitions.ts
+// cascadia-commons/src/lib/items/item-type-definitions.ts
 import { widgetRelationships, widgetSchema } from './types/widget'
 
 export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
@@ -138,7 +138,7 @@ There is no client-side registration step. A `registerItemTypes.tsx` used to
 register the same definitions with React components attached; nothing
 imported it and nothing read the components, so both are gone. The browser
 gets a type's icon, label and detail-route path from
-`packages/cascadia-web/src/lib/items/item-type-ui.ts`.
+`cascadia-web/src/lib/items/item-type-ui.ts`.
 
 ### Lifecycle Definition
 
@@ -148,8 +148,8 @@ anywhere in the services; `ItemService.create` resolves the lifecycle's
 exemption and final states all derive from the lifecycle's flags and
 mappings. A new type needs:
 
-1. A well-known ID in `packages/cascadia-commons/src/lib/items/lifecycle-ids.ts`.
-2. A default definition in `packages/cascadia-api/src/lib/items/default-lifecycles.ts` — added to `DEFAULT_ITEM_LIFECYCLES` and linked in `DEFAULT_LIFECYCLE_LINKS` — which the app seed, the test global-setup and the fixtures all seed. Or reuse one: Software links to `LIFECYCLE_IDS.part`.
+1. A well-known ID in `cascadia-commons/src/lib/items/lifecycle-ids.ts`.
+2. A default definition in `cascadia-api/src/lib/items/default-lifecycles.ts` — added to `DEFAULT_ITEM_LIFECYCLES` and linked in `DEFAULT_LIFECYCLE_LINKS` — which the app seed, the test global-setup and the fixtures all seed. Or reuse one: Software links to `LIFECYCLE_IDS.part`.
 3. `lifecycleDefinitionId` in the definition above pointing at it.
 
 Both of the first two are pinned by `default-lifecycles.test.ts`.
@@ -176,10 +176,10 @@ everything else on this page is code.
 `ItemService` has no per-type switch. Reads and writes to an extension table
 go through a `TypeHandler`, which owns the Drizzle table object and the
 type's insert/get/update. Create
-`packages/cascadia-api/src/lib/items/type-handlers/widget.ts`:
+`cascadia-api/src/lib/items/type-handlers/widget.ts`:
 
 ```typescript
-// packages/cascadia-api/src/lib/items/type-handlers/widget.ts
+// cascadia-api/src/lib/items/type-handlers/widget.ts
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
 import { db } from '@/lib/db'
@@ -225,7 +225,7 @@ registerTypeHandler('Widget', {
 ```
 
 Then add the side-effect import to
-`packages/cascadia-api/src/lib/items/type-handlers/init.ts`.
+`cascadia-api/src/lib/items/type-handlers/init.ts`.
 
 Registering the handler is what makes generic machinery work for the new
 type: `ItemService` create/update, the version-to-version row copy, checkout,
@@ -239,15 +239,15 @@ operations and steps), also declare `copyChildren` on the handler, so a new
 version carries them.
 
 Numbering is separate and required: add a scheme to
-`packages/cascadia-commons/src/lib/items/numbering/schemes.ts`, or `ItemService.create`
+`cascadia-commons/src/lib/items/numbering/schemes.ts`, or `ItemService.create`
 throws for the new type.
 
 ## Step 6: Add API Schemas
 
-Add create and update schemas to `packages/cascadia-api/src/lib/api/schemas.ts`:
+Add create and update schemas to `cascadia-api/src/lib/api/schemas.ts`:
 
 ```typescript
-// packages/cascadia-api/src/lib/api/schemas.ts
+// cascadia-api/src/lib/api/schemas.ts
 
 export const widgetCreateSchema = z.object({
   itemNumber: z.string().min(1, 'Item number is required').max(100),
@@ -277,10 +277,10 @@ export type WidgetUpdate = z.infer<typeof widgetUpdateSchema>
 
 ## Step 7: Create API Routes
 
-Create a route file at `packages/cascadia-api/src/server/routes/widgets.ts`:
+Create a route file at `cascadia-api/src/server/routes/widgets.ts`:
 
 ```typescript
-// packages/cascadia-api/src/server/routes/widgets.ts
+// cascadia-api/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
 import { ItemService } from '@/lib/items/services/ItemService'
@@ -331,7 +331,7 @@ app.delete(
 export default app
 ```
 
-Then mount the route in `packages/cascadia-api/src/server/index.ts`:
+Then mount the route in `cascadia-api/src/server/index.ts`:
 
 ```typescript
 import widgets from './routes/widgets'
@@ -341,7 +341,7 @@ app.route('/api/v1/widgets', widgets)
 
 ## Step 8: Create Form Component
 
-Create `packages/cascadia-web/src/components/widgets/WidgetForm.tsx`:
+Create `cascadia-web/src/components/widgets/WidgetForm.tsx`:
 
 ```typescript
 import { useForm } from '@tanstack/react-form'
@@ -396,16 +396,16 @@ export function WidgetForm({ onSubmit, item, disabled }: WidgetFormProps) {
 
 Pinned by a test — CI fails if you skip it:
 
-- [ ] Definition entry in `packages/cascadia-commons/src/lib/items/item-type-definitions.ts`
-- [ ] Type definition in `packages/cascadia-commons/src/lib/items/types/widget.ts`
+- [ ] Definition entry in `cascadia-commons/src/lib/items/item-type-definitions.ts`
+- [ ] Type definition in `cascadia-commons/src/lib/items/types/widget.ts`
 - [ ] Lifecycle in `default-lifecycles.ts` (`DEFAULT_ITEM_LIFECYCLES` + `DEFAULT_LIFECYCLE_LINKS`) and an ID in `lifecycle-ids.ts`
-- [ ] RBAC resource in `packages/cascadia-api/src/lib/items/item-type-resources.ts`, and the resource granted in `ROLE_DEFINITIONS` (`packages/cascadia-commons/src/lib/auth/permissions.ts`)
+- [ ] RBAC resource in `cascadia-api/src/lib/items/item-type-resources.ts`, and the resource granted in `ROLE_DEFINITIONS` (`cascadia-commons/src/lib/auth/permissions.ts`)
 - [ ] Type handler in `type-handlers/`, imported from `type-handlers/init.ts`
-- [ ] Numbering scheme in `packages/cascadia-commons/src/lib/items/numbering/schemes.ts`
+- [ ] Numbering scheme in `cascadia-commons/src/lib/items/numbering/schemes.ts`
 
 Not pinned — forgetting one degrades quietly, so check them by hand:
 
-- [ ] Detail-route path in `packages/cascadia-web/src/lib/items/item-type-ui.ts` (without it, nothing can link to an item of the type)
+- [ ] Detail-route path in `cascadia-web/src/lib/items/item-type-ui.ts` (without it, nothing can link to an item of the type)
 - [ ] Icon name in that file's `ICONS_BY_NAME` (an unknown name silently renders a magnifying glass)
 - [ ] Filterable/sortable columns in `ItemSearchService` (`typeSpecificColumns` and the two `typeColumnMaps`)
 - [ ] If the type has no `designId`: an arm in `requireItemAccess` (`lib/auth/access.ts`) and an entry in `SELF_SCOPED_ITEM_TYPES` (`lib/db/filters.ts`) — **without these an item-level access check may not run at all**
@@ -414,12 +414,12 @@ Not pinned — forgetting one degrades quietly, so check them by hand:
 
 Ordinary application work:
 
-- [ ] Type-specific table in `packages/cascadia-api/src/lib/db/schema/items.ts`, exported from `schema/index.ts`
+- [ ] Type-specific table in `cascadia-api/src/lib/db/schema/items.ts`, exported from `schema/index.ts`
 - [ ] Migrations generated for **both** editions and committed
-- [ ] API schemas in `packages/cascadia-api/src/lib/api/schemas.ts` (at minimum an update schema — `itemUpdateSchemaFor` has a test that covers every type)
-- [ ] API routes in `packages/cascadia-api/src/server/routes/widgets.ts`, mounted in `server/index.ts`
+- [ ] API schemas in `cascadia-api/src/lib/api/schemas.ts` (at minimum an update schema — `itemUpdateSchemaFor` has a test that covers every type)
+- [ ] API routes in `cascadia-api/src/server/routes/widgets.ts`, mounted in `server/index.ts`
 - [ ] `npm run openapi:snapshot` and commit the result
-- [ ] Client pages under `packages/cascadia-web/src/routes/` and a navigation entry
+- [ ] Client pages under `cascadia-web/src/routes/` and a navigation entry
 - [ ] Form component
 - [ ] Seed data (if needed for testing)
 

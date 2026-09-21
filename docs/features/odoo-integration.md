@@ -36,7 +36,7 @@ The parts that are not the connector itself:
   [adding-packages.md](../development/adding-packages.md).
 - **The domain event log and the extension registry**, which the connector's
   release trigger uses: it is a `consumed` extension on `design.released`
-  ([`packages/cascadia-api/src/lib/services/release-hooks.ts`](../../packages/cascadia-api/src/lib/services/release-hooks.ts)).
+  ([`cascadia-api/src/lib/services/release-hooks.ts`](../../cascadia-api/src/lib/services/release-hooks.ts)).
   Hooks run after the merge transaction commits, each in a warn-only try/catch,
   so a failing hook can never roll back or block a release. Core ships zero
   hooks; with none registered a release behaves exactly as it did before the

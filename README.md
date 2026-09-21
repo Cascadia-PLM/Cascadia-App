@@ -104,34 +104,36 @@ For detailed setup instructions, see [SETUP.md](./SETUP.md).
 ## Project Structure
 
 ```
-packages/
-├── cascadia-commons/src/lib/   # Shared by api and web: item schemas, permissions,
-│                               # lifecycle types, import parsing, wire types
-├── cascadia-api/src/           # The Hono API server
-│   ├── lib/
-│   │   ├── auth/               # Authentication & authorization services
-│   │   ├── db/                 # Drizzle schema & database utilities
-│   │   ├── items/              # Item services, type handlers, registry
-│   │   ├── services/           # Core services (Branch, Checkout, Commit, etc.)
-│   │   ├── lifecycles/         # Lifecycle engine + approval registry
-│   │   ├── jobs/               # Background job dispatch, definitions & worker
-│   │   ├── events/             # Domain event log, consumers, webhooks
-│   │   ├── api/                # API utilities (apiHandler, response builders)
-│   │   ├── vault/              # File storage system
-│   │   ├── sysml/              # SysML v2 serialization
-│   │   ├── ai/                 # AI chatbot tools, adapters, session service
-│   │   ├── mcp/                # MCP servers, built on the AI tool registry
-│   │   └── packages/           # Package entitlement registry
-│   ├── server/                 # Hono app
-│   │   ├── index.ts            # Entry: mounts every route module under /api/v1/*
-│   │   └── routes/             # API route modules — one file per resource
-│   └── __tests__/              # Test utilities and fixtures
-└── cascadia-web/src/           # The Vite + TanStack Router SPA
-    ├── components/             # React components (forms, tables, dialogs)
-    ├── lib/query/              # TanStack Query keys, options, invalidation graph
-    ├── lib/hooks/              # React hooks
-    └── routes/                 # TanStack Router file-based routes
-apps/cascadia/        # Composition root: entry points and build config
+cascadia-commons/src/lib/   # Shared by api and web: item schemas, permissions,
+│                           # lifecycle types, import parsing, wire types
+cascadia-api/src/           # The Hono API server
+├── lib/
+│   ├── auth/               # Authentication & authorization services
+│   ├── db/                 # Drizzle schema & database utilities
+│   ├── items/              # Item services, type handlers, registry
+│   ├── services/           # Core services (Branch, Checkout, Commit, etc.)
+│   ├── lifecycles/         # Lifecycle engine + approval registry
+│   ├── jobs/               # Job submission: JobService, registry, definitions
+│   ├── events/             # Domain event log, consumers, webhooks
+│   ├── api/                # API utilities (apiHandler, response builders)
+│   ├── vault/              # File storage system
+│   ├── sysml/              # SysML v2 serialization
+│   ├── ai/                 # AI chatbot tools, adapters, session service
+│   ├── mcp/                # MCP servers, built on the AI tool registry
+│   └── packages/           # Package entitlement registry
+├── server/                 # Hono app
+│   ├── index.ts            # Entry: mounts every route module under /api/v1/*
+│   └── routes/             # API route modules — one file per resource
+└── __tests__/              # Test utilities and fixtures
+cascadia-web/src/           # The Vite + TanStack Router SPA
+├── components/             # React components (forms, tables, dialogs)
+├── lib/query/              # TanStack Query keys, options, invalidation graph
+├── lib/hooks/              # React hooks
+└── routes/                 # TanStack Router file-based routes
+cascadia-workers-job/src/   # The Node.js jobs worker: consumer, scheduler, handlers
+cascadia-workers-cad/       # Python worker: STEP/IGES → STL/GLB (pythonocc-core)
+cascadia-workers-commons/   # Python: jobs/vault DB layer shared by the Python workers
+cascadia-app/               # Composition root: entry points, build config, Dockerfile
 tests/
 ├── e2e/              # Playwright E2E tests
 │   ├── pages/        # Page object models
@@ -222,7 +224,7 @@ npm run serve         # Preview production build
 
 # Database
 npm run db:push       # Diff-apply schema directly (dev/CI/demo only)
-npm run db:generate   # Mint migration SQL into apps/cascadia/drizzle/ (CI drift gate)
+npm run db:generate   # Mint migration SQL into cascadia-app/drizzle/ (CI drift gate)
 npm run db:migrate    # Apply committed migrations (the upgrade path for released installs)
 npm run db:studio     # Open Drizzle Studio GUI
 npm run db:seed       # Minimal seed (admin, roles, program, standard library)
@@ -248,8 +250,8 @@ npm run check         # Format + lint fix
 
 ### Adding a New Item Type
 
-1. Define the type and Zod schema in `packages/cascadia-commons/src/lib/items/types/`
-2. Add database columns in `packages/cascadia-api/src/lib/db/schema/items.ts`
+1. Define the type and Zod schema in `cascadia-commons/src/lib/items/types/`
+2. Add database columns in `cascadia-api/src/lib/db/schema/items.ts`
 3. Create form, table, and detail components
 4. Register the type in `ItemTypeRegistry`
 5. Run `npm run db:push`

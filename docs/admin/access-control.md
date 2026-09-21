@@ -146,7 +146,7 @@ decides _who actually did_, and the two are recorded separately.
 
 ### How Permission Checks Work
 
-The `PermissionService` (singleton at `packages/cascadia-api/src/lib/auth/permission-service.ts`) handles all permission checks:
+The `PermissionService` (singleton at `cascadia-api/src/lib/auth/permission-service.ts`) handles all permission checks:
 
 1. **Query user roles**: Look up all roles assigned to the user via the `user_roles` join table
 2. **Check each role**: For each role, examine its `permissions` JSONB to see if the requested resource-action pair is present
@@ -255,7 +255,7 @@ Cross-program authority (`programs:manage`) bypasses all three, like every other
 
 ### Program Isolation
 
-The `AccessControlService` (`packages/cascadia-api/src/lib/auth/AccessControlService.ts`) enforces program isolation:
+The `AccessControlService` (`cascadia-api/src/lib/auth/AccessControlService.ts`) enforces program isolation:
 
 - `canAccessProgram(userId, programId)` -- Checks if the user is a member of the program
 - `getAccessiblePrograms(userId)` -- Returns only programs the user belongs to
@@ -295,7 +295,7 @@ Designs inherit access from their parent program, with special handling for glob
 
 ### Access Check Functions
 
-Two convenience functions in `packages/cascadia-api/src/lib/auth/access.ts` enforce design and branch access:
+Two convenience functions in `cascadia-api/src/lib/auth/access.ts` enforce design and branch access:
 
 - `requireDesignAccess(userId, designId)` -- Throws `PermissionDeniedError` if the user cannot access the design
 - `requireBranchAccess(userId, branchId)` -- Looks up the branch's design, then checks design access. Returns the branch object for convenience.
@@ -307,7 +307,7 @@ These functions are used by API routes handling design and branch operations.
 Access to an item type is granted by giving a role a permission on the
 matching resource — `parts`, `documents`, `change_orders` and so on. The map
 from item type to resource is `ITEM_TYPE_RESOURCES` in
-`packages/cascadia-api/src/lib/items/item-type-resources.ts`, a test keeps it total,
+`cascadia-api/src/lib/items/item-type-resources.ts`, a test keeps it total,
 and every route, AI tool and MCP handler resolves through it.
 
 `RuntimeItemTypeConfig` used to accept a per-type `permissions` object, and

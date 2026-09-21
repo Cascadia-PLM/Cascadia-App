@@ -92,7 +92,7 @@ Cascadia takes the opposite approach:
 
 - **Item types are TypeScript interfaces** registered via `ItemTypeRegistry`. Adding a field means adding a Drizzle column and a Zod property.
 - **Workflows are code-defined state machines** stored in `workflow_definitions` with transitions validated by `LifecycleDefinitionService` and run by `LifecycleInstanceService`.
-- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `packages/cascadia-commons/src/lib/auth/permissions.ts`) and enforced via `apiHandler()`.
+- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `cascadia-commons/src/lib/auth/permissions.ts`) and enforced via `apiHandler()`.
 - **All customization lives in the Git repository**, reviewed through PRs, tested with Vitest/Playwright.
 
 A two-tier configuration pattern allows runtime overrides from the database (labels, icons, lifecycle assignment) while keeping schemas, validation, and components strictly in code. See [two-table-pattern.md](./two-table-pattern.md) for details.
@@ -142,7 +142,7 @@ The application is three workspace packages with a one-way dependency graph:
 
 ```
 @cascadia/web  ──►  @cascadia/commons  ◄──  @cascadia/api
-packages/cascadia-web   packages/cascadia-commons   packages/cascadia-api
+cascadia-web   cascadia-commons   cascadia-api
 ```
 
 | Package             | Holds                                                                                                                                        | May import   |
@@ -164,12 +164,14 @@ own. Directory layouts were preserved across the split, so a path under
 `src/` identifies a file regardless of which package it landed in, and
 `git log --follow` crosses the split for any file.
 
-An app under `apps/` composes the three (plus, in the enterprise edition, the
+The jobs worker (`cascadia-workers-job`) sits above the api: it registers
+the handlers and runs them, and the api never imports it. The app
+(`cascadia-app`) composes the four (plus, in the enterprise edition, the
 module packages) into one deployable — see "The extension boundary" in
 [CLAUDE.md](../../CLAUDE.md) and
 [writing-extensions.md](../development/writing-extensions.md).
 
-### `packages/cascadia-web/src/components/`
+### `cascadia-web/src/components/`
 
 React UI components, organized by domain.
 
@@ -185,7 +187,7 @@ components/
 └── forms/               # Item-type-specific form components (PartForm, DocumentForm, etc.)
 ```
 
-### `packages/cascadia-api/src/lib/`
+### `cascadia-api/src/lib/`
 
 All business logic, organized by concern.
 
@@ -222,9 +224,9 @@ lib/
 └── sysml/               # SysML v2 serialization
 ```
 
-### `packages/cascadia-api/src/server/`
+### `cascadia-api/src/server/`
 
-Hono API server. Route modules live in `packages/cascadia-api/src/server/routes/` (one file per domain), mounted in `packages/cascadia-api/src/server/index.ts`.
+Hono API server. Route modules live in `cascadia-api/src/server/routes/` (one file per domain), mounted in `cascadia-api/src/server/index.ts`.
 
 ```
 server/
@@ -242,7 +244,7 @@ server/
     └── ...
 ```
 
-### `packages/cascadia-web/src/routes/`
+### `cascadia-web/src/routes/`
 
 TanStack Router file-based routes for the Vite SPA frontend.
 
@@ -254,16 +256,21 @@ routes/
 └── ...
 ```
 
-### `workers/`
+### `cascadia-workers-*/`
 
-External worker processes that run in separate containers.
+Worker processes that run in separate containers. Each carries its own
+Dockerfile; every build uses the repo root as its context.
 
 ```
-workers/
-├── node/                # Node.js job worker Dockerfile
-├── cad-converter/       # Python worker using pythonocc-core
-│   └── src/             # STEP/IGES -> STL/GLB conversion with color preservation
-└── cad-generator/       # Python worker: Parametric CAD (CadQuery)
+cascadia-workers-job/        # Node.js job worker (@cascadia/workers-job)
+├── src/main.ts              # runJobsWorker(): queue naming, health server, shutdown
+├── src/worker/              # RabbitMQ consumer and job execution
+├── src/handlers/            # One handler per job type
+└── Dockerfile
+cascadia-workers-cad/        # Python worker using pythonocc-core
+├── src/                     # STEP/IGES -> STL/GLB conversion with color preservation
+└── Dockerfile
+cascadia-workers-commons/    # Python: the jobs/vault database layer the Python workers share
 ```
 
 ### `scripts/`

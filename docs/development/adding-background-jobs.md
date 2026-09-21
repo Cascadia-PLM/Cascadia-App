@@ -23,10 +23,10 @@ Service Code                    RabbitMQ                  Worker Process
 
 ## Step 1: Define Payload and Result Schemas
 
-Create a `types.ts` file in `packages/cascadia-api/src/lib/jobs/definitions/yourjob/`:
+Create a `types.ts` file in `cascadia-api/src/lib/jobs/definitions/yourjob/`:
 
 ```typescript
-// packages/cascadia-api/src/lib/jobs/definitions/yourjob/types.ts
+// cascadia-api/src/lib/jobs/definitions/yourjob/types.ts
 import { z } from 'zod'
 
 /**
@@ -66,7 +66,7 @@ export type WidgetProcessingResult = z.infer<
 Create a `config.ts` file with the job type configuration:
 
 ```typescript
-// packages/cascadia-api/src/lib/jobs/definitions/yourjob/config.ts
+// cascadia-api/src/lib/jobs/definitions/yourjob/config.ts
 import type { JobTypeConfig } from '../../types'
 import {
   widgetProcessingPayloadSchema,
@@ -129,12 +129,19 @@ export const widgetProcessingConfig: JobTypeConfig<
 
 ## Step 3: Create Job Handler
 
-Create a handler file at `packages/cascadia-api/src/lib/jobs/node-handlers/yourjob.ts`:
+Create a handler file at `cascadia-workers-job/src/handlers/yourjob.ts`:
 
 ```typescript
-// packages/cascadia-api/src/lib/jobs/node-handlers/yourjob.ts
-import type { JobHandler, JobContext } from '../../types'
-import type { WidgetProcessingPayload, WidgetProcessingResult } from './types'
+// cascadia-workers-job/src/handlers/yourjob.ts
+//
+// Handlers live in the worker package, not the api: the api submits jobs and
+// never runs them, so it imports a job's definition and never its handler.
+// The worker sits above the api and reaches it by name.
+import type { JobHandler, JobContext } from '@cascadia/api/lib/jobs/types'
+import type {
+  WidgetProcessingPayload,
+  WidgetProcessingResult,
+} from '@cascadia/api/lib/jobs/definitions/yourjob/types'
 
 export const widgetProcessingHandler: JobHandler<
   WidgetProcessingPayload,
@@ -244,10 +251,10 @@ scheduler the difference between a slow job and a lost one.
 
 Registration is split into two files:
 
-**Config registration** in `packages/cascadia-api/src/lib/jobs/definitions/register.ts`:
+**Config registration** in `cascadia-api/src/lib/jobs/definitions/register.ts`:
 
 ```typescript
-// packages/cascadia-api/src/lib/jobs/definitions/register.ts
+// cascadia-api/src/lib/jobs/definitions/register.ts
 import { JobTypeRegistry } from '../registry'
 
 // ... existing registrations ...
@@ -258,16 +265,16 @@ import { widgetProcessingConfig } from './yourjob/config'
 JobTypeRegistry.register(widgetProcessingConfig)
 ```
 
-**Handler registration** in `packages/cascadia-api/src/lib/jobs/node-handlers/register.ts`:
+**Handler registration** in `cascadia-workers-job/src/register.ts`:
 
 ```typescript
-// packages/cascadia-api/src/lib/jobs/node-handlers/register.ts
-import { JobTypeRegistry } from '../registry'
+// cascadia-workers-job/src/register.ts
+import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
 
 // ... existing registrations ...
 
 // Widget processing jobs
-import { widgetProcessingHandler } from './yourjob'
+import { widgetProcessingHandler } from './handlers/yourjob'
 
 JobTypeRegistry.registerHandler(widgetProcessingHandler)
 ```
@@ -277,7 +284,7 @@ If the handler runs in a separate worker process (e.g., Python CAD converter), r
 ```typescript
 // Config only — handled by external worker
 JobTypeRegistry.register(cadConversionConfig)
-// No registerHandler() call in node-handlers/register.ts
+// No registerHandler() call in cascadia-workers-job/src/register.ts
 ```
 
 ## Step 5: Submit Jobs
@@ -338,7 +345,7 @@ const job = await JobService.getById(jobId)
 ## Directory Structure
 
 ```
-packages/cascadia-api/src/lib/jobs/
+cascadia-api/src/lib/jobs/
 ├── JobService.ts              # Submit, query, cancel jobs
 ├── registry.ts                # JobTypeRegistry (mirrors ItemTypeRegistry)
 ├── types.ts                   # Core interfaces (JobTypeConfig, JobHandler, JobContext)
@@ -360,16 +367,18 @@ packages/cascadia-api/src/lib/jobs/
 │   └── yourjob/               # Your new job type
 │       ├── types.ts
 │       └── config.ts
-├── node-handlers/             # Handler implementations (Node.js worker)
-│   ├── register.ts            # Handler registration entry point
-│   ├── workflow-transition.ts # Email on state change
-│   ├── design-clone.ts        # Clone a design with all items
-│   ├── ai-generation.ts       # AI CAD generation (FreeCAD agent)
-│   └── yourjob.ts             # Your new job handler
-├── rabbitmq/
-│   └── client.ts              # RabbitMQ connection and publishing
-└── worker/
-    └── ...                    # Worker process entry point
+└── rabbitmq/
+    └── client.ts              # RabbitMQ connection and publishing
+
+cascadia-workers-job/src/         # The Node.js worker — runs the handlers
+├── main.ts                    # runJobsWorker(): queue naming, health server, shutdown
+├── worker/                    # RabbitMQ consumer, claim, timeout, execution
+├── scheduler.ts               # Parked-retry sweep, dead-letter depth
+├── register.ts                # Handler registration entry point
+└── handlers/                  # Handler implementations, one per job type
+    ├── notification.ts        # Email on state change
+    ├── design-clone.ts        # Clone a design with all items
+    └── yourjob.ts             # Your new job handler
 ```
 
 ## Running the Worker
@@ -493,7 +502,7 @@ the case the reap in step 4 above exists for. The alternative is what used to
 happen: the Node consume callback discarded the handler's promise, so a
 transient outage surfaced as an unhandled rejection and Node ended the process,
 crash-looping it for the length of the outage. The worker also registers
-process-level backstops (`installProcessBackstops` in `jobs-worker-main.ts`) —
+process-level backstops (`installProcessBackstops` in `cascadia-workers-job/src/main.ts`) —
 an unhandled rejection is logged and survived, an uncaught exception is logged
 and exits 1 for the restart policy.
 

@@ -23,16 +23,16 @@ The import system is designed for migrating data from other PLM systems, ERP exp
 
 The import system is organized into these layers:
 
-| Layer         | Location                                                  | Responsibility                                                   |
-| ------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| Parser        | `packages/cascadia-commons/src/lib/import/parser.ts`      | File reading, Excel/CSV parsing, cell value extraction           |
-| Mapper        | `packages/cascadia-commons/src/lib/import/mapper.ts`      | Column auto-detection, mapping application, attribute collection |
-| Validator     | `packages/cascadia-commons/src/lib/import/validator.ts`   | Row validation, duplicate detection, BOM structure validation    |
-| BOM Parser    | `packages/cascadia-commons/src/lib/import/bom-parser.ts`  | BOM format detection, relationship extraction                    |
-| Field Configs | `packages/cascadia-commons/src/lib/import/field-configs/` | Per-type field definitions with aliases                          |
-| Types         | `packages/cascadia-commons/src/lib/import/types.ts`       | Zod schemas, TypeScript interfaces                               |
-| API Routes    | `packages/cascadia-api/src/server/routes/import.ts`       | Server-side endpoints for bulk creation                          |
-| UI Components | `packages/cascadia-web/src/components/import/`            | Multi-step wizard dialog                                         |
+| Layer         | Location                                         | Responsibility                                                   |
+| ------------- | ------------------------------------------------ | ---------------------------------------------------------------- |
+| Parser        | `cascadia-commons/src/lib/import/parser.ts`      | File reading, Excel/CSV parsing, cell value extraction           |
+| Mapper        | `cascadia-commons/src/lib/import/mapper.ts`      | Column auto-detection, mapping application, attribute collection |
+| Validator     | `cascadia-commons/src/lib/import/validator.ts`   | Row validation, duplicate detection, BOM structure validation    |
+| BOM Parser    | `cascadia-commons/src/lib/import/bom-parser.ts`  | BOM format detection, relationship extraction                    |
+| Field Configs | `cascadia-commons/src/lib/import/field-configs/` | Per-type field definitions with aliases                          |
+| Types         | `cascadia-commons/src/lib/import/types.ts`       | Zod schemas, TypeScript interfaces                               |
+| API Routes    | `cascadia-api/src/server/routes/import.ts`       | Server-side endpoints for bulk creation                          |
+| UI Components | `cascadia-web/src/components/import/`            | Multi-step wizard dialog                                         |
 
 ---
 
@@ -551,7 +551,7 @@ Templates include all field labels as headers and one example row.
 
 ## BOM Export
 
-Cascadia also supports exporting BOM structures and affected item lists to CSV via client-side functions in `packages/cascadia-web/src/components/bom/exportBomTree.ts`.
+Cascadia also supports exporting BOM structures and affected item lists to CSV via client-side functions in `cascadia-web/src/components/bom/exportBomTree.ts`.
 
 ### BOM Tree Export
 

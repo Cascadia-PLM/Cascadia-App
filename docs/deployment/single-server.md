@@ -144,7 +144,7 @@ services:
   app:
     build:
       context: ../../..
-      dockerfile: docker/app.Dockerfile
+      dockerfile: cascadia-app/Dockerfile
       target: production
     container_name: cascadia-app
     restart: unless-stopped

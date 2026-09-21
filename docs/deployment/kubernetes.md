@@ -169,7 +169,7 @@ kubectl logs job/cascadia-migrate -n cascadia
 That is a one-shot `batch/v1` Job named `cascadia-migrate` in the `cascadia`
 namespace. It runs the app image with its command replaced by
 `tsx scripts/boot-migrate.ts`, which applies the committed migrations under
-`apps/*/drizzle/` and then exits. It reads `DATABASE_URL` from
+`cascadia-app*/drizzle/` and then exits. It reads `DATABASE_URL` from
 `cascadia-secrets` and `NODE_ENV` from `cascadia-config` — both created by the
 steps above, and `NODE_ENV` is not decoration: with no `?sslmode=` in the URL it
 is what decides whether the connection requires TLS, so a Job without it would
@@ -214,7 +214,7 @@ This creates:
 Do not run this before Step 4 has completed. The readiness probe will **not**
 protect you if you do: it requests `/api/v1/health`, which reports the process
 is up and its version and nothing else — it opens no database connection (see
-`packages/cascadia-api/src/server/routes/health.ts`). A pod pointed at an unmigrated
+`cascadia-api/src/server/routes/health.ts`). A pod pointed at an unmigrated
 database therefore passes both probes, joins the Service endpoints, and serves
 500s to real traffic until the migration lands. There is no crash and no
 restart loop to alert on; the only symptom is failing requests.

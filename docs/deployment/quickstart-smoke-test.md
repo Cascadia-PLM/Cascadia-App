@@ -13,7 +13,7 @@ end-to-end, on a clean Docker host with no clone of the repo.
 Run this after any change to:
 
 - `docker-compose.demo.yml`
-- `docker/app.Dockerfile` / `workers/cad-converter/Dockerfile` / `workers/node/Dockerfile`
+- `cascadia-app/Dockerfile` / `cascadia-workers-cad/Dockerfile` / `cascadia-workers-job/Dockerfile`
 - `scripts/seed-demo-robot-arm.ts` (or anything seed-adjacent)
 - the dataset or Dockerfile in [Cascadia-PLM/Demo-Data](https://github.com/Cascadia-PLM/Demo-Data),
   which builds and publishes `cascadia-demo-data`

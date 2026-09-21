@@ -22,7 +22,7 @@ Key principles of Cascadia's BOM approach:
 
 BOM relationships use the general-purpose `item_relationships` table. A BOM relationship connects a **source** (parent assembly) to a **target** (child component).
 
-**Schema** (`packages/cascadia-api/src/lib/db/schema/items.ts`):
+**Schema** (`cascadia-api/src/lib/db/schema/items.ts`):
 
 ```
 item_relationships
@@ -135,7 +135,7 @@ Cascadia provides an expandable tree-table view for visualizing BOM structures. 
 
 ### Component Architecture
 
-The BOM tree visualization is built from reusable components in `packages/cascadia-web/src/components/bom/`:
+The BOM tree visualization is built from reusable components in `cascadia-web/src/components/bom/`:
 
 | Component            | Purpose                                            |
 | -------------------- | -------------------------------------------------- |
@@ -153,7 +153,7 @@ The BOM tree visualization is built from reusable components in `packages/cascad
 
 ### BOMTreeNode Interface
 
-All BOM tree components share a common node type (`packages/cascadia-web/src/components/bom/types.ts`):
+All BOM tree components share a common node type (`cascadia-web/src/components/bom/types.ts`):
 
 ```typescript
 interface BOMTreeNode {
@@ -189,15 +189,15 @@ interface BOMTreeNode {
 
 The BOM tree is used in several contexts:
 
-1. **Design Structure Tab** (`packages/cascadia-web/src/components/designs/StructureTab.tsx`) -- the main BOM view for a design, showing root assemblies, their children, orphan items, and cross-design references.
+1. **Design Structure Tab** (`cascadia-web/src/components/designs/StructureTab.tsx`) -- the main BOM view for a design, showing root assemblies, their children, orphan items, and cross-design references.
 
-2. **Part Relationships Panel** (`packages/cascadia-web/src/components/items/PartRelationshipsPanel.tsx`) -- the BOM tab on a part detail page, showing both the children (outgoing BOM) and where-used (incoming BOM) of a specific part, with graph, table, and tree views.
+2. **Part Relationships Panel** (`cascadia-web/src/components/items/PartRelationshipsPanel.tsx`) -- the BOM tab on a part detail page, showing both the children (outgoing BOM) and where-used (incoming BOM) of a specific part, with graph, table, and tree views.
 
-3. **ECO Tree Table** (`packages/cascadia-web/src/components/change-orders/ChangeOrderTreeTable.tsx`) -- the BOM tree within an ECO context, highlighting which items are affected and their change actions.
+3. **ECO Tree Table** (`cascadia-web/src/components/change-orders/ChangeOrderTreeTable.tsx`) -- the BOM tree within an ECO context, highlighting which items are affected and their change actions.
 
 ### Tree Construction
 
-The BOM tree is built server-side in the `GET /api/v1/designs/:id/structure` endpoint (`packages/cascadia-api/src/server/routes/designs.ts`):
+The BOM tree is built server-side in the `GET /api/v1/designs/:id/structure` endpoint (`cascadia-api/src/server/routes/designs.ts`):
 
 1. **Resolve items for the current branch context** (main, ECO branch, historical tag/commit)
 2. **Query all BOM relationships** where source items are in the design
@@ -227,7 +227,7 @@ A where-used query answers the question: "What assemblies use this part?" It tra
 
 ### Implementation
 
-Where-used queries are implemented as a recursive CTE (Common Table Expression) in PostgreSQL, found in `ImpactAssessmentService.findWhereUsed()` (`packages/cascadia-api/src/lib/items/services/ImpactAssessmentService.ts`):
+Where-used queries are implemented as a recursive CTE (Common Table Expression) in PostgreSQL, found in `ImpactAssessmentService.findWhereUsed()` (`cascadia-api/src/lib/items/services/ImpactAssessmentService.ts`):
 
 ```sql
 WITH RECURSIVE where_used AS (
@@ -327,7 +327,7 @@ The expansion algorithm:
 
 ### CSV Export
 
-The BOM tree can be exported to CSV via `exportBomTreeToCsv()` (`packages/cascadia-web/src/components/bom/exportBomTree.ts`). The export:
+The BOM tree can be exported to CSV via `exportBomTreeToCsv()` (`cascadia-web/src/components/bom/exportBomTree.ts`). The export:
 
 - Flattens the tree with a `Level` column (0 = root, 1 = first child level, etc.)
 - Includes: Level, Item Number, Name, Revision, State, Type, Quantity, Find Number, Design, External
@@ -342,7 +342,7 @@ Cross-design references allow a design to link to items managed in other designs
 
 ### Data Model
 
-Cross-design references use a dedicated table (`packages/cascadia-api/src/lib/db/schema/crossReferences.ts`):
+Cross-design references use a dedicated table (`cascadia-api/src/lib/db/schema/crossReferences.ts`):
 
 ```
 design_cross_references
@@ -383,7 +383,7 @@ In the BOM tree:
 
 ### Service
 
-`CrossDesignReferenceService` (`packages/cascadia-api/src/lib/services/CrossDesignReferenceService.ts`) handles:
+`CrossDesignReferenceService` (`cascadia-api/src/lib/services/CrossDesignReferenceService.ts`) handles:
 
 - Creating references (validates item exists, is in a different design)
 - Querying references for a design (with branch awareness)
@@ -405,7 +405,7 @@ After a design's initial release, all BOM changes must go through an Engineering
 
 ### API Endpoint
 
-`POST /api/v1/change-orders/:id/bom-changes` (`packages/cascadia-api/src/server/routes/change-orders.ts`):
+`POST /api/v1/change-orders/:id/bom-changes` (`cascadia-api/src/server/routes/change-orders.ts`):
 
 ```typescript
 // Request body
@@ -496,7 +496,7 @@ WA-1201     | Motor           | Purchase
 
 ### Auto-Detection
 
-The import system automatically detects the BOM format based on which columns are mapped (`packages/cascadia-commons/src/lib/import/bom-parser.ts`):
+The import system automatically detects the BOM format based on which columns are mapped (`cascadia-commons/src/lib/import/bom-parser.ts`):
 
 | Mapped Columns                      | Detected Format         | Confidence |
 | ----------------------------------- | ----------------------- | ---------- |
@@ -562,7 +562,7 @@ designs table:
 
 ### Creation Process
 
-`MbomService.createFromEbom()` (`packages/cascadia-api/src/lib/services/MbomService.ts`) handles MBOM creation:
+`MbomService.createFromEbom()` (`cascadia-api/src/lib/services/MbomService.ts`) handles MBOM creation:
 
 1. Validates the source is an Engineering design
 2. Creates a new Manufacturing design with source tracking
@@ -640,26 +640,26 @@ The `upstreamChanges` table tracks when the source EBOM changes, allowing the MB
 
 ## Key Source Files
 
-| File                                                                        | Purpose                                          |
-| --------------------------------------------------------------------------- | ------------------------------------------------ |
-| `packages/cascadia-api/src/lib/db/schema/items.ts`                          | `itemRelationships` table definition             |
-| `packages/cascadia-api/src/lib/db/schema/crossReferences.ts`                | `designCrossReferences` table definition         |
-| `packages/cascadia-api/src/lib/items/services/ItemRelationshipService.ts`   | Relationship CRUD with branch merging            |
-| `packages/cascadia-api/src/lib/items/services/ImpactAssessmentService.ts`   | Where-used traversal and impact analysis         |
-| `packages/cascadia-api/src/lib/services/CrossDesignReferenceService.ts`     | Cross-design reference management                |
-| `packages/cascadia-api/src/lib/services/MbomService.ts`                     | MBOM creation and upstream change tracking       |
-| `packages/cascadia-api/src/lib/services/ChangeOrderMergeService.ts`         | BOM relationship copying during ECO release      |
-| `packages/cascadia-commons/src/lib/import/bom-parser.ts`                    | BOM format detection and relationship extraction |
-| `packages/cascadia-commons/src/lib/import/types.ts`                         | BOM import type definitions                      |
-| `packages/cascadia-web/src/components/bom/BomTreeView.tsx`                  | Core tree-table UI component                     |
-| `packages/cascadia-web/src/components/bom/types.ts`                         | Shared `BOMTreeNode` interface                   |
-| `packages/cascadia-web/src/components/bom/exportBomTree.ts`                 | CSV export of BOM trees                          |
-| `packages/cascadia-web/src/components/bom/useTreeSelection.ts`              | Multi-select hook for tree views                 |
-| `packages/cascadia-web/src/components/designs/StructureTab.tsx`             | Design structure BOM tab                         |
-| `packages/cascadia-web/src/components/items/PartRelationshipsPanel.tsx`     | Part-level relationships panel                   |
-| `packages/cascadia-web/src/components/designs/AddPartToStructureDialog.tsx` | Add child to BOM dialog                          |
-| `packages/cascadia-api/src/server/routes/designs.ts`                        | BOM tree API endpoint                            |
-| `packages/cascadia-api/src/server/routes/items.ts`                          | Relationship and graph/where-used endpoints      |
-| `packages/cascadia-api/src/server/routes/change-orders.ts`                  | ECO BOM changes API                              |
-| `packages/cascadia-api/src/server/routes/relationships.ts`                  | Batch relationship creation                      |
-| `tests/e2e/workflows/bom-management.spec.ts`                                | E2E tests for BOM workflows                      |
+| File                                                               | Purpose                                          |
+| ------------------------------------------------------------------ | ------------------------------------------------ |
+| `cascadia-api/src/lib/db/schema/items.ts`                          | `itemRelationships` table definition             |
+| `cascadia-api/src/lib/db/schema/crossReferences.ts`                | `designCrossReferences` table definition         |
+| `cascadia-api/src/lib/items/services/ItemRelationshipService.ts`   | Relationship CRUD with branch merging            |
+| `cascadia-api/src/lib/items/services/ImpactAssessmentService.ts`   | Where-used traversal and impact analysis         |
+| `cascadia-api/src/lib/services/CrossDesignReferenceService.ts`     | Cross-design reference management                |
+| `cascadia-api/src/lib/services/MbomService.ts`                     | MBOM creation and upstream change tracking       |
+| `cascadia-api/src/lib/services/ChangeOrderMergeService.ts`         | BOM relationship copying during ECO release      |
+| `cascadia-commons/src/lib/import/bom-parser.ts`                    | BOM format detection and relationship extraction |
+| `cascadia-commons/src/lib/import/types.ts`                         | BOM import type definitions                      |
+| `cascadia-web/src/components/bom/BomTreeView.tsx`                  | Core tree-table UI component                     |
+| `cascadia-web/src/components/bom/types.ts`                         | Shared `BOMTreeNode` interface                   |
+| `cascadia-web/src/components/bom/exportBomTree.ts`                 | CSV export of BOM trees                          |
+| `cascadia-web/src/components/bom/useTreeSelection.ts`              | Multi-select hook for tree views                 |
+| `cascadia-web/src/components/designs/StructureTab.tsx`             | Design structure BOM tab                         |
+| `cascadia-web/src/components/items/PartRelationshipsPanel.tsx`     | Part-level relationships panel                   |
+| `cascadia-web/src/components/designs/AddPartToStructureDialog.tsx` | Add child to BOM dialog                          |
+| `cascadia-api/src/server/routes/designs.ts`                        | BOM tree API endpoint                            |
+| `cascadia-api/src/server/routes/items.ts`                          | Relationship and graph/where-used endpoints      |
+| `cascadia-api/src/server/routes/change-orders.ts`                  | ECO BOM changes API                              |
+| `cascadia-api/src/server/routes/relationships.ts`                  | Batch relationship creation                      |
+| `tests/e2e/workflows/bom-management.spec.ts`                       | E2E tests for BOM workflows                      |

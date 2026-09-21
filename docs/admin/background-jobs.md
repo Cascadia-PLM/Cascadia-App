@@ -95,7 +95,7 @@ docker logs -f cascadia-jobs-worker-dev
 
 The dev worker uses plain `tsx` (not watch mode). You must restart it manually to pick up code changes.
 
-**Production**: The worker runs as a Docker container using `workers/node/Dockerfile`.
+**Production**: The worker runs as a Docker container using `cascadia-workers-job/Dockerfile`.
 
 ### Worker Configuration
 

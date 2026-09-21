@@ -56,7 +56,7 @@ Organization → Program → Design
 **BOM participation.** Keep the existing convention: a Part with `partType: 'Software'` is the BOM node (it is what manufacturing consumes — a flashable unit with a part number and revision). Link it to the Software configuration item with a new relationship type:
 
 ```typescript
-// added to partRelationships in packages/cascadia-commons/src/lib/items/types/part.ts
+// added to partRelationships in cascadia-commons/src/lib/items/types/part.ts
 {
   type: 'Software',
   label: 'Software',
@@ -94,7 +94,7 @@ subsystem described below remains the target for Phase 3.
 
 ### 3.1 The `software` extension table
 
-Standard two-table extension (`packages/cascadia-api/src/lib/db/schema/items.ts` or a new `software.ts` schema file):
+Standard two-table extension (`cascadia-api/src/lib/db/schema/items.ts` or a new `software.ts` schema file):
 
 ```typescript
 export const software = pgTable('software', {
@@ -225,7 +225,7 @@ Note the elegant convergence: **a mirrored external repo is just a manifest**. T
 ### 3.4 Provider abstraction
 
 ```typescript
-// packages/cascadia-api/src/lib/scm/types.ts
+// cascadia-api/src/lib/scm/types.ts
 export interface ScmProvider {
   readonly name: 'github' | 'bitbucket' | 'gitlab'
   getRepo(link: RepoRef): Promise<RepoInfo>
@@ -244,7 +244,7 @@ export interface ScmProvider {
 }
 ```
 
-Implementations live in `packages/cascadia-api/src/lib/scm/providers/` (`github.ts` first — plain REST v3, no SDK dependency needed; `bitbucket.ts`, `gitlab.ts` later). All network work runs in background jobs, never in request handlers:
+Implementations live in `cascadia-api/src/lib/scm/providers/` (`github.ts` first — plain REST v3, no SDK dependency needed; `bitbucket.ts`, `gitlab.ts` later). All network work runs in background jobs, never in request handlers:
 
 | Job type                | Trigger                          | Work                                                    |
 | ----------------------- | -------------------------------- | ------------------------------------------------------- |
@@ -252,7 +252,7 @@ Implementations live in `packages/cascadia-api/src/lib/scm/providers/` (`github.
 | `software.repo.mirror`  | pin with "import source" checked | fetch tree + blobs → manifest, set `mirroredManifestId` |
 | `software.repo.sync`    | cron + webhook                   | update `upstreamHeadSha`/`aheadBy`, raise drift alerts  |
 
-These follow the existing `JobTypeRegistry` pattern verbatim (config in `definitions/`, handler in `node-handlers/`).
+These follow the existing `JobTypeRegistry` pattern verbatim (config in the api's `lib/jobs/definitions/`, handler in `cascadia-workers-job/src/handlers/`).
 
 ### 3.5 Source-level change tracking
 
@@ -305,7 +305,7 @@ This also composes with change management correctly in the hardware→software d
 
 ### 5.1 Code viewer (read-only, all contexts)
 
-Route: `packages/cascadia-web/src/routes/software/$id.tsx`, plus a "Source" tab on the Software item detail.
+Route: `cascadia-web/src/routes/software/$id.tsx`, plus a "Source" tab on the Software item detail.
 
 - **Layout**: file tree sidebar (from the manifest, folders derived from paths) + editor pane + breadcrumb showing the active version context (`Rev B` / `eco/ECO-042` / commit / tag), reusing the existing version-context URL params so time travel is uniform with the rest of the app.
 - **Editor component**: **CodeMirror 6** (`@codemirror/view`, `@codemirror/state`, `@codemirror/language` + per-language packages). Chosen over Monaco: ~10× smaller, tree-shakeable per language, no web-worker deployment complexity in the Vite SPA, and read/edit/diff are all first-class. Firmware-relevant languages first: C/C++, Python, JSON/YAML/TOML, Makefile/CMake, plain text/Markdown; hex viewer stub for small binaries.
@@ -330,7 +330,7 @@ Editing obeys the exact rules items already obey — the editor is enabled only 
 
 ## 6. API Surface (all under existing conventions)
 
-New route module `packages/cascadia-api/src/server/routes/software.ts` (`tagged('Software')`), mounted at `/api/v1/software`:
+New route module `cascadia-api/src/server/routes/software.ts` (`tagged('Software')`), mounted at `/api/v1/software`:
 
 ```
 GET    /software/:id/tree?branchId=|commitId=|tagId=      → manifest (resolved via VersionResolver)
@@ -359,7 +359,7 @@ Item CRUD itself needs **no new routes** — `ItemService` + the generic items/p
 Each phase is independently shippable and useful.
 
 **Phase 1 — Software item type + source store + viewer (read path)**
-Schema (`software`, `software_blobs`, `software_manifests`) + migration; Zod type in `packages/cascadia-commons/src/lib/items/types/software.ts`; registration in `item-type-definitions.ts` + both `registerItemTypes.*` (icon `Cpu`, table `'software'`, numbering `SW-###`, part-lifecycle); `SoftwareSourceService` (manifest CRUD, blob store, zip import, tree/file/diff reads through `VersionResolver` contexts); routes; file-tree + CodeMirror read-only viewer + Part↔Software relationship; zip/file bulk import. _Tests (three-gate: data integrity)_: manifest immutability, blob dedup, version-pinned manifest across checkout→commit→merge, release assigns revision with correct manifest.
+Schema (`software`, `software_blobs`, `software_manifests`) + migration; Zod type in `cascadia-commons/src/lib/items/types/software.ts`; registration in `item-type-definitions.ts` + both `registerItemTypes.*` (icon `Cpu`, table `'software'`, numbering `SW-###`, part-lifecycle); `SoftwareSourceService` (manifest CRUD, blob store, zip import, tree/file/diff reads through `VersionResolver` contexts); routes; file-tree + CodeMirror read-only viewer + Part↔Software relationship; zip/file bulk import. _Tests (three-gate: data integrity)_: manifest immutability, blob dedup, version-pinned manifest across checkout→commit→merge, release assigns revision with correct manifest.
 
 **Phase 2 — Editing + history (write path)**
 Checkout-gated editor, draft manifests, save/commit flow; `source` fieldCategory in `CheckoutService.computeFieldChanges()` + History tab renderer; diff views (revision compare, ECO review diff); build-artifact slot (vault); per-file `field_conflict` sharpening in `ConflictDetectionService`. _Tests_: source field-change expansion, per-file cross-ECO conflict detection, checkout gating (security gate).

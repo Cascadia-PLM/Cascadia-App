@@ -30,7 +30,7 @@ The parts that are not the feature itself:
   the `PackageNotLicensedError` a missing entitlement raises. See
   [adding-packages.md](../development/adding-packages.md).
 - The `auditing` database schema, in
-  [`packages/cascadia-api/src/lib/db/schema/auditing.ts`](../../packages/cascadia-api/src/lib/db/schema/auditing.ts).
+  [`cascadia-api/src/lib/db/schema/auditing.ts`](../../cascadia-api/src/lib/db/schema/auditing.ts).
 - The workflow approval registry the package hooks into —
   `beforeVote`/`afterVote`/`buildExtras` — described in
   [workflow-engine.md](./workflow-engine.md).

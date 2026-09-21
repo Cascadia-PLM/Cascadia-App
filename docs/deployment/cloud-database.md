@@ -141,7 +141,7 @@ Follow your cloud provider's instructions above to provision the PostgreSQL inst
 
 For a fresh database there is nothing to do here. The compose template in Step 3
 boots the app through `scripts/boot-migrate.ts`, which applies the committed
-migrations under `apps/*/drizzle/` and only then starts the server -- so an empty
+migrations under `cascadia-app*/drizzle/` and only then starts the server -- so an empty
 cloud database is brought to the current schema the first time the stack comes
 up, and every later boot applies whatever the new image added.
 

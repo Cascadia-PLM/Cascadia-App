@@ -198,7 +198,7 @@ host    cascadia    cascadia    10.0.0.0/8    scram-sha-256
 
 All Cascadia services share the same database schema, brought to the current
 version from Core App by applying the committed migrations under
-`apps/*/drizzle/`. How that happens depends on the deployment shape:
+`cascadia-app*/drizzle/`. How that happens depends on the deployment shape:
 
 ```bash
 # Docker Compose — the compose templates already do this at boot, through
@@ -230,7 +230,7 @@ alternative here; see Migration Strategy below.
 ### Migration Strategy
 
 Released installs upgrade with the committed migrations under
-`apps/*/drizzle/` — `npm run db:migrate`, which the app also runs at boot
+`cascadia-app*/drizzle/` — `npm run db:migrate`, which the app also runs at boot
 (`scripts/boot-migrate.ts`). `db:push` diff-applies the schema directly, records
 nothing, and is for dev/CI/demo databases only. A pre-v0.5 database that has
 tables but no migration journal is stamped once with `npm run db:baseline`;

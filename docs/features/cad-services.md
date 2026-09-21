@@ -17,7 +17,7 @@ downstream conversion and viewing work exactly as they do for hand-authored CAD.
 The distinction worth drawing: **CAD _conversion_ is part of this edition; CAD
 _generation_ is not.**
 
-- `workers/cad-converter/` — the Python worker that turns STEP and IGES into STL
+- `cascadia-workers-cad/` — the Python worker that turns STEP and IGES into STL
   and GLB, preserving per-face colour. Present here, and it is what makes 3D
   viewing work.
 - The file vault that stores the geometry —

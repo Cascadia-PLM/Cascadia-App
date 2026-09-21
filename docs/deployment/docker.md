@@ -1,14 +1,14 @@
 # Docker Overview
 
-Cascadia PLM ships as a set of Docker images built from a single monorepo. The app image's Dockerfile lives under `docker/`; the worker images have theirs under `workers/`.
+Cascadia PLM ships as a set of Docker images built from a single monorepo. Each image's Dockerfile lives in the workspace it builds: the app image in `cascadia-app/`, the jobs worker in `cascadia-workers-job/`, the CAD converter in `cascadia-workers-cad/`. Every build uses the repo root as its context.
 
 ## Docker Images
 
-| Image                                         | Dockerfile                         | Base Image                                                       | Purpose                         | Port |
-| --------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------- | ------------------------------- | ---- |
-| `ghcr.io/cascadia-plm/cascadia-app`           | `docker/app.Dockerfile`            | `node:22-alpine`                                                 | Core web application (UI + API) | 3000 |
-| `ghcr.io/cascadia-plm/cascadia-jobs-worker`   | `workers/node/Dockerfile`          | `node:22-alpine`                                                 | Background job workers          | 3002 |
-| `ghcr.io/cascadia-plm/cascadia-cad-converter` | `workers/cad-converter/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` (digest-pinned) | STEP/IGES to STL/GLB conversion | 3003 |
+| Image                                         | Dockerfile                        | Base Image                                                       | Purpose                         | Port |
+| --------------------------------------------- | --------------------------------- | ---------------------------------------------------------------- | ------------------------------- | ---- |
+| `ghcr.io/cascadia-plm/cascadia-app`           | `cascadia-app/Dockerfile`         | `node:22-alpine`                                                 | Core web application (UI + API) | 3000 |
+| `ghcr.io/cascadia-plm/cascadia-jobs-worker`   | `cascadia-workers-job/Dockerfile` | `node:22-alpine`                                                 | Background job workers          | 3002 |
+| `ghcr.io/cascadia-plm/cascadia-cad-converter` | `cascadia-workers-cad/Dockerfile` | `condaforge/miniforge3` + `debian:bookworm-slim` (digest-pinned) | STEP/IGES to STL/GLB conversion | 3003 |
 
 File storage (the vault) is part of the core app process — there is no
 standalone vault image. Point the app at local disk or S3 with
@@ -18,20 +18,20 @@ standalone vault image. Point the app at local disk or S3 with
 
 ```bash
 # Core app
-docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-app -f cascadia-app/Dockerfile .
 
 # Jobs server
-docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f workers/node/Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f cascadia-workers-job/Dockerfile .
 
 # CAD converter
-docker build -t ghcr.io/cascadia-plm/cascadia-cad-converter -f workers/cad-converter/Dockerfile workers/cad-converter/
+docker build -t ghcr.io/cascadia-plm/cascadia-cad-converter -f cascadia-workers-cad/Dockerfile .
 ```
 
 ## Multi-Stage Dockerfile Builds
 
 All Node.js images use a four-stage build pattern to minimize image size and separate build-time from runtime dependencies.
 
-### Core App (`docker/app.Dockerfile`)
+### Core App (`cascadia-app/Dockerfile`)
 
 **Stage 1 -- manifests**: A `FROM scratch` stage holding the root `package.json` and `package-lock.json` plus every workspace's `package.json`. Nothing runs in it; it exists so the workspace list is written once and consumed twice, by the two stages that install. CI's `Docker Build Smoke` job builds through it on every run, which is what proves each path in the list still resolves.
 
@@ -44,12 +44,12 @@ All Node.js images use a four-stage build pattern to minimize image size and sep
 Key details:
 
 - The production stage installs production dependencies only (`npm ci --omit=dev --ignore-scripts`) — the server is pre-bundled, so dev dependencies aren't needed at runtime. `tsx` and `drizzle-kit` are then added back as admin tools for running `scripts/*.ts` (seed, migrate, baseline, reset) via `docker exec`.
-- The workspace sources (`packages/`, `apps/`, `scripts/`) are copied so those tsx-run admin scripts — including `npm run db:migrate` (and the one-time `npm run db:baseline` stamp for a pre-v0.5 database) — work inside the container.
+- The workspace sources (`cascadia-*/`, `scripts/`) are copied so those tsx-run admin scripts — including `npm run db:migrate` (and the one-time `npm run db:baseline` stamp for a pre-v0.5 database) — work inside the container.
 - Storage directories `/app/storage/files` and `/app/vault` are created with correct ownership.
 - Health check hits `GET /api/v1/health` on port 3000.
 - Entrypoint uses `dumb-init` for signal forwarding; the default command is `node .output/${APP}/server/index.mjs`, where the `APP` env var (baked from the build arg) names the edition's output directory.
 
-### Jobs Server (`workers/node/Dockerfile`)
+### Jobs Server (`cascadia-workers-job/Dockerfile`)
 
 Same four-stage pattern. Differences:
 
@@ -60,7 +60,7 @@ Same four-stage pattern. Differences:
 - Health check hits `GET /health` on port 3002.
 - Default command runs `node .output/server/jobs-worker.mjs`.
 
-### CAD Converter (`workers/cad-converter/Dockerfile`)
+### CAD Converter (`cascadia-workers-cad/Dockerfile`)
 
 Uses a two-stage build with conda-pack:
 
@@ -94,14 +94,14 @@ docker compose --profile tools up -d
 
 ### Development Services
 
-| Service             | Profile      | Description                                       |
-| ------------------- | ------------ | ------------------------------------------------- |
-| `postgres`          | default      | PostgreSQL 18 database                            |
-| `app`               | default      | Core app (builds from local source)               |
-| `rabbitmq`          | default      | RabbitMQ with management UI                       |
-| `jobs-worker-dev`   | `dev`        | Jobs worker with source mount and `tsx watch`     |
-| `cad-converter-dev` | `dev`, `cad` | CAD converter built from `workers/cad-converter/` |
-| `pgadmin`           | `tools`      | pgAdmin 4 for database management                 |
+| Service             | Profile      | Description                                      |
+| ------------------- | ------------ | ------------------------------------------------ |
+| `postgres`          | default      | PostgreSQL 18 database                           |
+| `app`               | default      | Core app (builds from local source)              |
+| `rabbitmq`          | default      | RabbitMQ with management UI                      |
+| `jobs-worker-dev`   | `dev`        | Jobs worker with source mount and `tsx watch`    |
+| `cad-converter-dev` | `dev`, `cad` | CAD converter built from `cascadia-workers-cad/` |
+| `pgadmin`           | `tools`      | pgAdmin 4 for database management                |
 
 ### Development Worker Notes
 
@@ -114,7 +114,7 @@ The `jobs-worker-dev` service:
 
 The `cad-converter-dev` service:
 
-- Builds directly from the `workers/cad-converter/` Dockerfile.
+- Builds directly from the `cascadia-workers-cad/` Dockerfile.
 - Mounts the local `./vault` directory so it can read/write the same files as the host app.
 - Health check endpoint on port 3003.
 
@@ -169,8 +169,8 @@ Before deploying, push your images to a registry or build them on each host:
 
 ```bash
 # Build and tag
-docker build -t ghcr.io/cascadia-plm/cascadia-app:1.0.0 -f docker/app.Dockerfile .
-docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker:1.0.0 -f workers/node/Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-app:1.0.0 -f cascadia-app/Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker:1.0.0 -f cascadia-workers-job/Dockerfile .
 
 # Push to a private registry (substitute your own host)
 docker tag ghcr.io/cascadia-plm/cascadia-app:1.0.0 registry.example.com/cascadia-app:1.0.0

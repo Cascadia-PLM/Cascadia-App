@@ -28,7 +28,7 @@ it.
 
 ## 1. Define the payload schema and the definition
 
-`packages/cascadia-api/src/lib/events/definitions/work-orders.ts`
+`cascadia-api/src/lib/events/definitions/work-orders.ts`
 
 ```typescript
 import { z } from 'zod'
@@ -80,14 +80,14 @@ Missing the third leaves the type **silently absent** from the catalog API and
 from every wildcard consumer — including webhooks — with nothing failing.
 
 ```typescript
-// packages/cascadia-api/src/lib/events/definitions/work-orders.ts
+// cascadia-api/src/lib/events/definitions/work-orders.ts
 // (1) `defineDomainEvent` self-registers. Done in step 1.
 
-// packages/cascadia-api/src/lib/events/definitions/register.ts
+// cascadia-api/src/lib/events/definitions/register.ts
 // (2) The side-effect import. If the file is new, add it here.
 import './work-orders'
 
-// packages/cascadia-api/src/lib/events/index.ts
+// cascadia-api/src/lib/events/index.ts
 // (3) Re-export the definition and its payload type, so callers and extension
 //     authors can reach both without importing a definitions file directly.
 export { WORK_ORDER_SCRAPPED } from './definitions/work-orders'
@@ -99,7 +99,7 @@ instead — never from core's `register.ts`.
 
 ## 3. Emit inside the caller's transaction
 
-`packages/cascadia-api/src/lib/services/WorkOrderService.ts`
+`cascadia-api/src/lib/services/WorkOrderService.ts`
 
 ```typescript
 import { publishDomainEvent, WORK_ORDER_SCRAPPED } from '@/lib/events'
@@ -183,7 +183,7 @@ consumer needs is the granularity at which failure should be isolated.
 A test that reasons about committed `seq` values needs
 `ConcurrentTestDatabase`, not `TestDatabase`: the sequencing trigger assigns
 `seq` at COMMIT, and the gate harness rolls back. See
-[the harness rule](../../packages/cascadia-api/src/__tests__/README.md#choosing-a-harness).
+[the harness rule](../../cascadia-api/src/__tests__/README.md#choosing-a-harness).
 
 The emission test that earns its place is usually the **negative** one — that a
 path which should be silent stays silent. "A working-copy mint produces zero

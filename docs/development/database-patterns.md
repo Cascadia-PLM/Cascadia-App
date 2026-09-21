@@ -11,7 +11,7 @@ This guide covers the database conventions used in Cascadia, built on PostgreSQL
 
 ## Schema Conventions
 
-Schema files live in `packages/cascadia-api/src/lib/db/schema/`. Each file defines related tables.
+Schema files live in `cascadia-api/src/lib/db/schema/`. Each file defines related tables.
 
 ### The Two-Table Pattern
 
@@ -41,7 +41,7 @@ items (base fields)          parts (type-specific)
 The `items` table:
 
 ```typescript
-// packages/cascadia-api/src/lib/db/schema/items.ts
+// cascadia-api/src/lib/db/schema/items.ts
 export const items = pgTable(
   'items',
   {
@@ -326,7 +326,7 @@ return db.transaction(async (tx) => {
 
 ### Transaction Gotchas
 
-- **Compose with `withTx`, never with bare `db.transaction()` in callees**: a service method accepts an optional trailing `tx?: TransactionClient`, threads it to callees, and wraps its own writes in `withTx(tx, fn)` from `@/lib/db`. A callee that ignores the caller's `tx` and opens its own transaction commits independently on another pooled connection — the caller's rollback leaves those writes behind, and the test suite cannot show it (its single-connection pool turns the mistake into a savepoint). See the `withTx` docblock in `packages/cascadia-api/src/lib/db/index.ts`.
+- **Compose with `withTx`, never with bare `db.transaction()` in callees**: a service method accepts an optional trailing `tx?: TransactionClient`, threads it to callees, and wraps its own writes in `withTx(tx, fn)` from `@/lib/db`. A callee that ignores the caller's `tx` and opens its own transaction commits independently on another pooled connection — the caller's rollback leaves those writes behind, and the test suite cannot show it (its single-connection pool turns the mistake into a savepoint). See the `withTx` docblock in `cascadia-api/src/lib/db/index.ts`.
 - **Use `tx` consistently**: Inside a transaction callback, always use the `tx` parameter, not the global `db` instance.
 - **Keep transactions short**: Long-running transactions hold locks. Do preparation work before starting the transaction.
 
@@ -339,7 +339,7 @@ generates belongs to that composition.
 
 ### Schema Change Workflow
 
-1. **Edit schema** in `packages/cascadia-api/src/lib/db/schema/*.ts`
+1. **Edit schema** in `cascadia-api/src/lib/db/schema/*.ts`
 2. **Apply to dev database**: `npm run db:push` (pushes schema directly)
 3. **Keep seeds truthful**: if the change affects seeded data shapes, update
    `scripts/seed-minimal.ts` in the same commit — fresh databases are built
@@ -370,7 +370,7 @@ CREATE UNIQUE INDEX your_table_your_column_idx
 Edit the schema file:
 
 ```typescript
-// In packages/cascadia-api/src/lib/db/schema/items.ts
+// In cascadia-api/src/lib/db/schema/items.ts
 export const parts = pgTable('parts', {
   // ... existing columns
   newField: varchar('new_field', { length: 100 }), // Add new column

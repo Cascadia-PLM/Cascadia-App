@@ -13,7 +13,7 @@ The CAD converter is a Python microservice that converts STEP and IGES files int
 | Configuration  | pydantic-settings                                              |
 | Docker Base    | condaforge/miniforge3 (build) + debian:bookworm-slim (runtime) |
 | Default Port   | 3003 (health check only)                                       |
-| Source Path    | `workers/cad-converter/`                                       |
+| Source Path    | `cascadia-workers-cad/`                                        |
 
 ## What It Does
 
@@ -91,7 +91,7 @@ The packed conda environment is extracted into `/venv` and added to PATH.
 ### Build Command
 
 ```bash
-cd workers/cad-converter/
+cd cascadia-workers-cad/
 docker build -t ghcr.io/cascadia-plm/cascadia-cad-converter .
 ```
 
@@ -152,7 +152,7 @@ docker logs -f cascadia-cad-converter-dev
 
 The development service:
 
-- Builds from `workers/cad-converter/Dockerfile`
+- Builds from `cascadia-workers-cad/Dockerfile`
 - Mounts the local `./vault` directory into the container at `/vault`
 - Uses `host.docker.internal` for PostgreSQL when it runs on the host (set `POSTGRES_HOST=postgres` if PostgreSQL also runs in Docker)
 - Exposes health check on port 3003

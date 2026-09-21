@@ -16,17 +16,19 @@ import { apiFetch } from '@/api/client'
  */
 export function itemFilesQuery<T>(
   itemId: string,
-  context: { branchId?: string; mainBranchId?: string } = {},
+  context: { branchId?: string; mainBranchId?: string; makeCode?: string } = {},
 ) {
   const search = new URLSearchParams()
   if (context.branchId) search.set('branchId', context.branchId)
   if (context.mainBranchId) search.set('mainBranchId', context.mainBranchId)
+  if (context.makeCode) search.set('makeCode', context.makeCode)
   const suffix = search.size > 0 ? `?${search}` : ''
 
   return queryOptions({
     queryKey: qk.sub('items', itemId, 'files', {
       branchId: context.branchId,
       mainBranchId: context.mainBranchId,
+      makeCode: context.makeCode,
     }),
     queryFn: async (): Promise<Array<T>> => {
       const result = await apiFetch<{ data: { files?: Array<T> } }>(
@@ -48,18 +50,20 @@ export function itemFilesQuery<T>(
  */
 export function itemCadFilesQuery<T>(
   itemId: string | undefined,
-  context: { branchId?: string; mainBranchId?: string } = {},
+  context: { branchId?: string; mainBranchId?: string; makeCode?: string } = {},
   enabled = true,
 ) {
   const search = new URLSearchParams()
   if (context.branchId) search.set('branchId', context.branchId)
   if (context.mainBranchId) search.set('mainBranchId', context.mainBranchId)
+  if (context.makeCode) search.set('makeCode', context.makeCode)
   const suffix = search.size > 0 ? `?${search}` : ''
 
   return queryOptions({
     queryKey: qk.sub('items', itemId ?? '', 'cad-files', {
       branchId: context.branchId,
       mainBranchId: context.mainBranchId,
+      makeCode: context.makeCode,
     }),
     queryFn: async (): Promise<Array<T>> => {
       const result = await apiFetch<{ data: { files?: Array<T> } }>(

@@ -120,6 +120,8 @@ export function PartDetailSidebar({
               itemId={part.id}
               branchId={branchId}
               readOnly={!canMutateFiles}
+              optionModel={part.optionModel}
+              makes={part.makes}
               onUploadComplete={onUploaded}
               onUploadError={onUploadError}
             />
@@ -128,6 +130,8 @@ export function PartDetailSidebar({
               branchId={branchId}
               mainBranchId={mainBranchId}
               readOnly={!canMutateFiles}
+              optionModel={part.optionModel}
+              makes={part.makes}
               onViewCAD={cadViewer.showFile}
               onThumbnailChanged={cadViewer.bumpThumbnail}
             />

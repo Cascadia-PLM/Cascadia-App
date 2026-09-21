@@ -15,10 +15,10 @@
  * Everything here reads through the ordinary item and relationship services,
  * so branch context, version ownership and access rules are theirs.
  *
- * See docs/proposals/product-variants.md.
+ * See docs/features/product-variants.md.
  */
 
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import {
   conditionMatches,
@@ -30,7 +30,7 @@ import {
   validateSelectionsAgainst,
 } from '@cascadia/commons/types/variants'
 import { db } from '../db'
-import { itemRelationships, items, parts } from '../db/schema'
+import { itemRelationships, items, parts, vaultFiles } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import type {
   Make,
@@ -52,6 +52,7 @@ export interface SelectionValidation {
 export type LintCode =
   | 'no_option_model'
   | 'line_undeclared'
+  | 'file_undeclared'
   | 'value_unused'
   | 'make_invalid'
   | 'child_family_unset'
@@ -64,6 +65,8 @@ export interface LintFinding {
   relationshipId?: string
   /** The make a finding is about, when it is about one. */
   makeCode?: string
+  /** The vault file a finding is about, when it is about one. */
+  fileId?: string
   family?: string
   value?: string
 }
@@ -333,6 +336,21 @@ export class VariantService {
       : await ItemRelationshipService.getRelationshipsWithDetails(itemId, 'BOM')
 
     const conditioned = lines.filter((line) => line.option)
+    const conditionedFiles = await db
+      .select({
+        id: vaultFiles.id,
+        fileName: vaultFiles.originalFileName,
+        applicability: vaultFiles.applicability,
+      })
+      .from(vaultFiles)
+      .where(
+        and(
+          eq(vaultFiles.itemId, itemId),
+          eq(vaultFiles.isLatestVersion, true),
+          isNull(vaultFiles.deletedAt),
+          isNotNull(vaultFiles.applicability),
+        ),
+      )
 
     if (!model) {
       if (conditioned.length > 0) {
@@ -340,6 +358,14 @@ export class VariantService {
           code: 'no_option_model',
           severity: 'error',
           message: `${conditioned.length} BOM line(s) carry option conditions but the part has no option model`,
+        })
+      }
+      for (const file of conditionedFiles) {
+        findings.push({
+          code: 'file_undeclared',
+          severity: 'error',
+          message: `${file.fileName}: the file has applicability but the part has no option model`,
+          fileId: file.id,
         })
       }
       return findings
@@ -357,6 +383,19 @@ export class VariantService {
         })
       }
     }
+    for (const file of conditionedFiles) {
+      for (const condition of file.applicability!.any) {
+        const problem = findUndeclared(model, condition)
+        if (problem) {
+          findings.push({
+            code: 'file_undeclared',
+            severity: 'error',
+            message: `${file.fileName}: ${problem}`,
+            fileId: file.id,
+          })
+        }
+      }
+    }
 
     // Declared values nothing uses. A warning: harmless, but usually a typo
     // or an option that was meant to get a line.
@@ -369,6 +408,11 @@ export class VariantService {
       }
     }
     for (const line of conditioned) noteCondition(line.option!)
+    for (const file of conditionedFiles) {
+      for (const condition of file.applicability!.any) {
+        noteCondition(condition)
+      }
+    }
     for (const constraint of model.constraints) {
       noteCondition(constraint.when)
       noteCondition(constraint.require)
@@ -475,6 +519,22 @@ export class VariantService {
         ),
       )
 
+    const conditionedFiles = await executor
+      .select({
+        id: vaultFiles.id,
+        fileName: vaultFiles.originalFileName,
+        applicability: vaultFiles.applicability,
+      })
+      .from(vaultFiles)
+      .where(
+        and(
+          eq(vaultFiles.itemId, currentId),
+          eq(vaultFiles.isLatestVersion, true),
+          isNull(vaultFiles.deletedAt),
+          isNotNull(vaultFiles.applicability),
+        ),
+      )
+
     const [currentItem] = await executor
       .select({ masterId: items.masterId })
       .from(items)
@@ -515,6 +575,13 @@ export class VariantService {
           code: 'OPTION_MODEL_IN_USE',
         })
       }
+      if (conditionedFiles.length > 0) {
+        fieldErrors.push({
+          field: 'optionModel',
+          message: `Cannot remove the option model while ${conditionedFiles.length} file(s) have configuration applicability`,
+          code: 'FILE_APPLICABILITY_IN_USE',
+        })
+      }
       if (nextMakes && nextMakes.length > 0) {
         fieldErrors.push({
           field: 'makes',
@@ -531,6 +598,18 @@ export class VariantService {
             message: `BOM line ${line.childNumber} (${formatOptionText(line.option)}): ${problem}`,
             code: 'OPTION_IN_USE',
           })
+        }
+      }
+      for (const file of conditionedFiles) {
+        for (const condition of file.applicability!.any) {
+          const problem = findUndeclared(nextModel, condition)
+          if (problem) {
+            fieldErrors.push({
+              field: 'optionModel',
+              message: `File ${file.fileName}: ${problem}`,
+              code: 'FILE_APPLICABILITY_IN_USE',
+            })
+          }
         }
       }
       for (const make of nextMakes ?? []) {

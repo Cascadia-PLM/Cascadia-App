@@ -34,3 +34,4 @@ class VaultFileRecord(BaseModel):
     file_name: str
     storage_path: str
     uploaded_by: str
+    applicability: Optional[dict] = None

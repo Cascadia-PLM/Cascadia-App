@@ -177,6 +177,7 @@ app.get(
                     severity: z.enum(['error', 'warning']),
                     message: z.string(),
                     relationshipId: z.string().optional(),
+                    fileId: z.string().optional(),
                     makeCode: z.string().optional(),
                     family: z.string().optional(),
                     value: z.string().optional(),

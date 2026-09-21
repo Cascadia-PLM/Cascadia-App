@@ -384,6 +384,14 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
     vault_file = get_vault_file(payload.vaultFileId)
     if not vault_file:
         raise ValueError(f"Vault file not found: {payload.vaultFileId}")
+    # A derived file on the same Part keeps the source configuration. A
+    # conversion explicitly directed at another item cannot assume that
+    # item's option vocabulary is compatible, so it remains common there.
+    output_applicability = (
+        vault_file.applicability
+        if payload.itemId == vault_file.item_id
+        else None
+    )
 
     # Resolve the physical file path
     # Normalize backslashes from Windows-generated paths to forward slashes for Linux
@@ -490,6 +498,7 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                 uploaded_by=payload.userId,
                 file_category="cad_model",
                 cad_metadata=cad_meta,
+                applicability=output_applicability,
             )
 
             output_file_ids.append(file_id)
@@ -559,6 +568,7 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                     uploaded_by=payload.userId,
                     file_category="cad_model",
                     cad_metadata=glb_cad_meta,
+                    applicability=output_applicability,
                 )
 
                 glb_file_ids.append(glb_file_id)
@@ -600,6 +610,7 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                     storage_path=thumb_vault_path,
                     uploaded_by=payload.userId,
                     file_category="thumbnail",
+                    applicability=output_applicability,
                 )
 
                 # Do not mutate a source revision when conversion output was

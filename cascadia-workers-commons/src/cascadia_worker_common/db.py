@@ -287,7 +287,7 @@ def get_vault_file(
     where = "id = %s" if include_deleted else "id = %s AND deleted_at IS NULL"
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, item_id, branch_id, file_name, storage_path, uploaded_by "
+            "SELECT id, item_id, branch_id, file_name, storage_path, uploaded_by, applicability "
             f"FROM vault_files WHERE {where}",
             (file_id,),
         )
@@ -301,6 +301,7 @@ def get_vault_file(
             file_name=row[3],
             storage_path=row[4],
             uploaded_by=str(row[5]),
+            applicability=row[6],
         )
 
 
@@ -316,6 +317,7 @@ def insert_vault_file(
     uploaded_by: str,
     file_category: str = "cad_model",
     cad_metadata: Optional[dict] = None,
+    applicability: Optional[dict] = None,
 ) -> str:
     """Insert a new vault_files record and return the new file ID."""
     conn = get_connection()
@@ -325,8 +327,8 @@ def insert_vault_file(
             "INSERT INTO vault_files "
             "(id, item_id, branch_id, file_name, original_file_name, file_size, "
             "mime_type, file_hash, storage_type, storage_path, file_version, "
-            "is_latest_version, uploaded_by, uploaded_at, file_category, cad_metadata) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'local', %s, 1, true, %s, NOW(), %s, %s::jsonb)",
+            "is_latest_version, uploaded_by, uploaded_at, file_category, cad_metadata, applicability) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'local', %s, 1, true, %s, NOW(), %s, %s::jsonb, %s::jsonb)",
             (
                 file_id,
                 item_id,
@@ -340,6 +342,7 @@ def insert_vault_file(
                 uploaded_by,
                 file_category,
                 psycopg.types.json.Json(cad_metadata) if cad_metadata else None,
+                psycopg.types.json.Json(applicability) if applicability else None,
             ),
         )
     return file_id

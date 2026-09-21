@@ -13,7 +13,7 @@
  * selections against the BOM keeps the fixed lines plus the lines whose
  * condition the selections satisfy.
  *
- * See docs/proposals/product-variants.md.
+ * See docs/features/product-variants.md.
  */
 
 import { z } from 'zod'
@@ -171,6 +171,69 @@ export function conditionMatches(
   return condition.all.every((entry) => {
     const selected = selections[entry.family]
     return selected !== undefined && entry.values.includes(selected)
+  })
+}
+
+// ============================================================================
+// Applicability
+// ============================================================================
+
+/**
+ * Configuration applicability shared by revision-owned content such as vault
+ * files. Conditions OR together; every individual condition keeps the usual
+ * AND-between-families / OR-within-a-family semantics.
+ *
+ * `null` is deliberately not part of the shape: callers use null to mean
+ * "common to every configuration", matching a fixed BOM line.
+ */
+export interface OptionApplicability {
+  any: Array<OptionCondition>
+}
+
+/** Stable, canonical form for comparison, JSONB storage and audit output. */
+export function normalizeOptionApplicability(
+  applicability: OptionApplicability,
+): OptionApplicability {
+  const unique = new Map<string, OptionCondition>()
+  for (const raw of applicability.any) {
+    const condition = normalizeOptionCondition(raw)
+    unique.set(optionConditionKey(condition), condition)
+  }
+  return {
+    any: [...unique.entries()]
+      .sort(([a], [b]) => compareCodes(a, b))
+      .map(([, condition]) => condition),
+  }
+}
+
+export const optionApplicabilitySchema = z
+  .object({
+    any: z.array(optionConditionSchema).min(1).max(100),
+  })
+  .transform(normalizeOptionApplicability)
+
+/** A common file (null) always matches; otherwise any condition may admit it. */
+export function applicabilityMatches(
+  applicability: OptionApplicability | null | undefined,
+  selections: Record<string, string>,
+): boolean {
+  return (
+    !applicability ||
+    applicability.any.some((condition) =>
+      conditionMatches(condition, selections),
+    )
+  )
+}
+
+/** Turn one complete or partial selection map into one exact condition. */
+export function conditionFromSelections(
+  selections: Record<string, string>,
+): OptionCondition {
+  return normalizeOptionCondition({
+    all: Object.entries(selections).map(([family, value]) => ({
+      family,
+      values: [value],
+    })),
   })
 }
 

@@ -20,6 +20,7 @@ import type {
 } from '@cascadia/commons/lib/import'
 import { Badge, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { apiErrorFromResponse } from '@/lib/api/client'
 
 interface FileUploadStepProps {
   itemType?: ImportItemType
@@ -110,7 +111,12 @@ export function FileUploadStep({
     try {
       const templatePath = `/api/v1/import/templates/${config.pluralLabel.toLowerCase()}`
       const response = await fetch(templatePath)
-      if (!response.ok) throw new Error('Failed to download template')
+      if (!response.ok) {
+        throw await apiErrorFromResponse(
+          response,
+          'Failed to download template',
+        )
+      }
 
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)

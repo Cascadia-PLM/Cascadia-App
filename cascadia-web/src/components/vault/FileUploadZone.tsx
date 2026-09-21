@@ -6,6 +6,7 @@ import { FileIcon, ImageIcon, Upload, X } from 'lucide-react'
 import type { ChangeEvent, DragEvent } from 'react'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { apiErrorFromResponse } from '@/lib/api/client'
 
 /**
  * Image types accepted as an item thumbnail. Mirrors the server-side allowlist
@@ -157,8 +158,7 @@ export function FileUploadZone({
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || error.error || 'Upload failed')
+        throw await apiErrorFromResponse(response, 'Upload failed')
       }
 
       const result = await response.json()

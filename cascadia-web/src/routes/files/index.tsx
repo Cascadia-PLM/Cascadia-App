@@ -20,7 +20,7 @@ import {
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
 import { fileListQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { apiErrorFromResponse, apiFetch } from '@/lib/api/client'
 
 // Search schema for URL validation
 const filesSearchSchema = z.object({
@@ -73,7 +73,7 @@ function FilesListPage() {
       const response = await fetch(`/api/v1/files/${file.id}/download`)
 
       if (!response.ok) {
-        throw new Error('Download failed')
+        throw await apiErrorFromResponse(response, 'Download failed')
       }
 
       // Create a blob from the response

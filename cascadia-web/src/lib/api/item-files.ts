@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { apiErrorFromResponse } from './client'
+
 /**
  * Upload files to an item: the multipart counterpart of `apiFetch`, which
  * always sends JSON. Posts to the same endpoint `FileUploadZone` does.
@@ -37,31 +39,14 @@ export async function uploadItemFiles(
     body: formData,
   })
 
-  const body: unknown = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(errorMessage(body, response.status))
+    throw await apiErrorFromResponse(response, 'Upload failed')
   }
 
+  const body: unknown = await response.json().catch(() => null)
   const result = body as {
     data?: { files?: Array<UploadedItemFile> }
     files?: Array<UploadedItemFile>
   } | null
   return result?.data?.files ?? result?.files ?? []
-}
-
-/** The most specific message an error body offers, else the status. */
-function errorMessage(body: unknown, status: number): string {
-  if (body && typeof body === 'object') {
-    const record = body as Record<string, unknown>
-    const nested = record.error
-    if (nested && typeof nested === 'object') {
-      const message = (nested as Record<string, unknown>).message
-      if (typeof message === 'string' && message) return message
-    }
-    for (const key of ['details', 'message', 'error']) {
-      const value = record[key]
-      if (typeof value === 'string' && value) return value
-    }
-  }
-  return `Upload failed (HTTP ${status})`
 }

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { SessionManager } from '../../auth/session'
-import { FileService } from '../../vault/services/FileService'
-import type { JobContext, JobHandler } from '../types'
+import { SessionManager } from '@cascadia/api/lib/auth/session'
+import { FileService } from '@cascadia/api/lib/vault/services/FileService'
+import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
 import type {
   SessionCleanupPayload,
   SessionCleanupResult,
-} from '../definitions/session-cleanup/types'
+} from '@cascadia/api/lib/jobs/definitions/session-cleanup/types'
 
 /**
  * Handler for expired session cleanup jobs.

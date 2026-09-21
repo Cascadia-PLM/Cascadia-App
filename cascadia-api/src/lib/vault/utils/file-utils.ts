@@ -455,7 +455,7 @@ export function isCADViewable(filename: string): boolean {
  * Content-based extraction stops there, deliberately:
  *
  * - **No image EXIF.** Reading it needs `sharp` or `exif-parser`, neither in the
- *   tree, and both native. This module lives in `packages/cascadia-api`, the published
+ *   tree, and both native. This module lives in `cascadia-api`, the published
  *   AGPL package, so that binary would land in every community-edition install —
  *   for fields nothing in the app reads today.
  * - **No native CAD property parsing.** Converted CAD already gets units,
@@ -488,7 +488,7 @@ export async function extractFileMetadata(
   // upload time, while the extension has already passed the allowlist above.
   // The import is dynamic on purpose: this module is imported by client
   // components for `formatFileSize`, and a static pdf-lib import here would pull
-  // the PDF stack into the browser bundle. `node-handlers/watermark.ts` does the
+  // the PDF stack into the browser bundle. `cascadia-workers-job/src/handlers/watermark.ts` does the
   // same for the same reason.
   if (getFileExtension(filename) === '.pdf') {
     const { extractPdfMetadata } = await import('../pdf/metadata')

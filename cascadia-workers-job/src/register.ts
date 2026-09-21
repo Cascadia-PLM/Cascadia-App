@@ -9,18 +9,18 @@
  * app does not need handler implementations.
  *
  * Job type definitions (configs) must be registered first via
- * '../definitions/register'.
+ * '@cascadia/api/lib/jobs/definitions/register'.
  */
 
-import { JobTypeRegistry } from '../registry'
+import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
 
-import { workflowTransitionHandler } from './notification'
-import { cloneDesignHandler } from './design-clone'
-import { cacheCleanupHandler } from './cache-cleanup'
-import { eventsPruneHandler } from './events-prune'
-import { sessionCleanupHandler } from './session-cleanup'
-import { wiPartChangedHandler } from './workinstruction'
-import { watermarkPdfHandler } from './watermark'
+import { workflowTransitionHandler } from './handlers/notification'
+import { cloneDesignHandler } from './handlers/design-clone'
+import { cacheCleanupHandler } from './handlers/cache-cleanup'
+import { eventsPruneHandler } from './handlers/events-prune'
+import { sessionCleanupHandler } from './handlers/session-cleanup'
+import { wiPartChangedHandler } from './handlers/workinstruction'
+import { watermarkPdfHandler } from './handlers/watermark'
 
 JobTypeRegistry.registerHandler(workflowTransitionHandler)
 JobTypeRegistry.registerHandler(cloneDesignHandler)

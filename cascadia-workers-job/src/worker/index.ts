@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { RabbitMQClient } from '../rabbitmq/client'
-import { JobTypeRegistry } from '../registry'
-import { JobService } from '../JobService'
-import { jobMessageSchema } from '../types'
+import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
+import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
+import { JobService } from '@cascadia/api/lib/jobs/JobService'
+import { jobMessageSchema } from '@cascadia/api/lib/jobs/types'
+import { describeError } from '@cascadia/api/lib/errors/describe'
+import { workerLogger } from '@cascadia/api/lib/logging/logger'
 import type { Channel, ConsumeMessage } from 'amqplib'
-import type { Job } from '../JobService'
-import type { JobContext, JobMessage } from '../types'
-import { describeError } from '@/lib/errors/describe'
-import { workerLogger } from '@/lib/logging/logger'
+import type { Job } from '@cascadia/api/lib/jobs/JobService'
+import type { JobContext, JobMessage } from '@cascadia/api/lib/jobs/types'
 
 // ============================================================================
 // Types

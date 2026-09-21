@@ -189,10 +189,10 @@ export default [
     ? [
         {
           // Scoped to the application packages by path, so no ignore list is
-          // needed: module files simply are not under these three.
+          // needed: module files simply are not under these four.
           files: [
-            'cascadia-{api,web,commons}/src/**/*.ts',
-            'cascadia-{api,web,commons}/src/**/*.tsx',
+            'cascadia-{api,web,commons,workers-job}/src/**/*.ts',
+            'cascadia-{api,web,commons,workers-job}/src/**/*.tsx',
           ],
           rules: {
             'no-restricted-imports': [

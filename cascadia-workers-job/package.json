@@ -1,0 +1,15 @@
+{
+  "name": "@cascadia/workers-job",
+  "version": "0.6.0",
+  "description": "Cascadia PLM — the Node.js jobs worker: the RabbitMQ consumer, the retry scheduler and the job handlers.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@cascadia/api": "*",
+    "@cascadia/commons": "*"
+  }
+}

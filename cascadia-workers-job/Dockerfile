@@ -23,6 +23,7 @@ COPY package.json package-lock.json ./
 COPY cascadia-commons/package.json ./cascadia-commons/
 COPY cascadia-api/package.json ./cascadia-api/
 COPY cascadia-web/package.json ./cascadia-web/
+COPY cascadia-workers-job/package.json ./cascadia-workers-job/
 COPY cascadia-app/package.json ./cascadia-app/
 
 # =============================================================================

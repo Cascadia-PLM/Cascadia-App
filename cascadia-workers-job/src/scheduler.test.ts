@@ -33,7 +33,7 @@
  * the delivery in between. Its flip is guarded to the statuses a re-publish
  * may legitimately move, which is what keeps the claim from being undone.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/jobs/scheduler.test.ts
+ * Run: npx vitest run cascadia-workers-job/src/scheduler.test.ts
  */
 
 import {
@@ -48,24 +48,24 @@ import {
 } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { TestDatabase } from '@test/helpers/db'
+import { insertTestUser } from '@test/fixtures/users'
+import { JobService } from '@cascadia/api/lib/jobs/JobService'
+import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
+import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
+import { jobs } from '@cascadia/api/lib/db/schema/jobs'
+import { takeFirst } from '@cascadia/api/lib/db/take-first'
+import { workerLogger } from '@cascadia/api/lib/logging/logger'
+import type { JobStatus } from '@cascadia/api/lib/db/schema/jobs'
+import type { TestUser } from '@test/fixtures/users'
 import type { MockInstance } from 'vitest'
-import type { TestUser } from '@/__tests__/fixtures/users'
-import type { JobStatus } from '@/lib/db/schema/jobs'
-import { TestDatabase } from '@/__tests__/helpers/db'
-import { insertTestUser } from '@/__tests__/fixtures/users'
-import { JobService } from '@/lib/jobs/JobService'
-import { JobTypeRegistry } from '@/lib/jobs/registry'
-import { RabbitMQClient } from '@/lib/jobs/rabbitmq/client'
 import {
   clearContributedMaintenanceJobTypes,
   registerMaintenanceJobType,
   sweepMaintenanceJobs,
   sweepRetryableJobs,
   sweepStaleRunningJobs,
-} from '@/lib/jobs/scheduler'
-import { jobs } from '@/lib/db/schema/jobs'
-import { takeFirst } from '@/lib/db/take-first'
-import { workerLogger } from '@/lib/logging/logger'
+} from '@/scheduler'
 
 const TEST_TYPE = 'test.jobs.retry-sweep'
 const MAX_ATTEMPTS = 3

@@ -34,6 +34,7 @@ const PROJECTS = [
   ['cascadia-commons', 'tsconfig.json', null],
   ['cascadia-api', 'tsconfig.json', null],
   ['cascadia-web', 'tsconfig.typecheck.json', null],
+  ['cascadia-workers-job', 'tsconfig.json', null],
   ['cascadia-advanced-auditing', 'tsconfig.json', null],
   ['cascadia-design-engine', 'tsconfig.typecheck.json', null],
   ['cascadia-odoo-integration', 'tsconfig.json', null],

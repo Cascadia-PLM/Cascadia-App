@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { JobContext, JobHandler } from '../types'
+import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
 import type {
   WiPartChangedPayload,
   WiPartChangedResult,
-} from '../definitions/workinstruction/types'
+} from '@cascadia/api/lib/jobs/definitions/workinstruction/types'
 
 export const wiPartChangedHandler: JobHandler<
   WiPartChangedPayload,
@@ -28,7 +28,7 @@ export const wiPartChangedHandler: JobHandler<
 
     // Dynamic import to avoid circular dependencies
     const { WorkInstructionChangeAlertService } =
-      await import('../../services/WorkInstructionChangeAlertService')
+      await import('@cascadia/api/lib/services/WorkInstructionChangeAlertService')
 
     if (context.signal.aborted) throw new Error('Job cancelled')
 

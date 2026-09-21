@@ -4,10 +4,15 @@
 /**
  * The jobs worker itself — everything except which modules are attached.
  *
- * An app entry registers its edition's modules and then calls
- * `runJobsWorker()`. Keeping the 100-odd lines of queue-naming and shutdown
- * logic here rather than duplicating them per app is the whole reason this is a
- * function and not an entry point.
+ * An app entry (`cascadia-app/src/jobs-worker.ts`) registers its edition's
+ * modules and then calls `runJobsWorker()`. Keeping the 100-odd lines of
+ * queue-naming and shutdown logic here rather than duplicating them per app is
+ * the whole reason this is a function and not an entry point.
+ *
+ * This package sits above the api: it imports the api's services, registry and
+ * job definitions, and registers the handlers that run them. The api never
+ * imports this package — `JobService.submit` needs a job's definition, which
+ * stays in the api, never its handler.
  *
  * Environment variables:
  * - RABBITMQ_URL: RabbitMQ connection URL (default: amqp://localhost:5672)
@@ -61,28 +66,28 @@ import { createHash } from 'node:crypto'
 import {
   ensureDomainEventSequencing,
   sequenceUnsequencedEvents,
-} from './lib/events'
+} from '@cascadia/api/lib/events'
 import {
   registerCoreExtensions,
   registerRabbitMqEventRelay,
   registerWebhookDispatcher,
   startEventConsumerPolling,
-} from './lib/extensions'
-import { db } from './lib/db'
-import { startWebhookDeliveryPump } from './lib/webhooks/pump'
-import { JobWorker } from './lib/jobs/worker'
-import { RabbitMQClient } from './lib/jobs/rabbitmq/client'
-import { JobTypeRegistry } from './lib/jobs/registry'
-import { ItemTypeRegistry } from './lib/items/registry'
-import { deadLetterDepth, startRetryScheduler } from './lib/jobs/scheduler'
-import { workerLogger } from './lib/logging/logger'
-import { redactUrlCredentials } from './lib/logging/redact-url'
+} from '@cascadia/api/lib/extensions'
+import { db } from '@cascadia/api/lib/db'
+import { startWebhookDeliveryPump } from '@cascadia/api/lib/webhooks/pump'
+import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
+import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
+import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
+import { workerLogger } from '@cascadia/api/lib/logging/logger'
+import { redactUrlCredentials } from '@cascadia/api/lib/logging/redact-url'
+import { deadLetterDepth, startRetryScheduler } from './scheduler'
+import { JobWorker } from './worker'
 
 // Register job type definitions (configs + schemas)
-import './lib/jobs/definitions/register'
+import '@cascadia/api/lib/jobs/definitions/register'
 
 // Register Node.js handler implementations
-import './lib/jobs/node-handlers/register'
+import './register'
 
 // Register item type definitions.
 //
@@ -90,7 +95,7 @@ import './lib/jobs/node-handlers/register'
 // process mounts none, so without this line the registry is empty here and
 // every item type answers "no lifecycle assigned" — which is what
 // `design.clone` hit on its first item, reporting it as an unseeded database.
-import './lib/items/registerItemTypes.server'
+import '@cascadia/api/lib/items/registerItemTypes.server'
 
 /**
  * Start a simple HTTP health check server for container orchestration.

@@ -8,6 +8,7 @@
   "dependencies": {
     "@cascadia/api": "*",
     "@cascadia/commons": "*",
-    "@cascadia/web": "*"
+    "@cascadia/web": "*",
+    "@cascadia/workers-job": "*"
   }
 }

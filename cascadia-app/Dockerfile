@@ -23,6 +23,7 @@ COPY package.json package-lock.json ./
 COPY cascadia-commons/package.json ./cascadia-commons/
 COPY cascadia-api/package.json ./cascadia-api/
 COPY cascadia-web/package.json ./cascadia-web/
+COPY cascadia-workers-job/package.json ./cascadia-workers-job/
 COPY cascadia-app/package.json ./cascadia-app/
 
 # =============================================================================
@@ -172,6 +173,7 @@ COPY --from=builder /app/tsconfig.json ./
 COPY --from=builder /app/cascadia-commons ./cascadia-commons
 COPY --from=builder /app/cascadia-api ./cascadia-api
 COPY --from=builder /app/cascadia-web ./cascadia-web
+COPY --from=builder /app/cascadia-workers-job ./cascadia-workers-job
 COPY --from=builder /app/cascadia-app ./cascadia-app
 COPY --from=builder /app/scripts ./scripts
 

@@ -32,7 +32,12 @@
  * `branch_items` overlay fails the usage-copy case, and deleting its
  * commit resolution fails the MBOM ones.
  *
- * Run: npx vitest run src/server/routes/designs.derived-structure.test.ts
+ * It lives in the worker package because one of its three writers is the
+ * clone *handler*, which the api cannot reach: the api never imports the
+ * worker. The usage-copy cases ride along rather than duplicating the
+ * fixtures; the reader under test is still the api's route.
+ *
+ * Run: npx vitest run cascadia-workers-job/src/handlers/design-clone.derived-structure.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -47,26 +52,26 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import designsRoutes from './designs'
-import type { JobContext } from '@/lib/jobs/types'
-import type { TestUser } from '@/__tests__/fixtures/users'
+import designsRoutes from '@cascadia/api/server/routes/designs'
+import { TestDatabase } from '@test/helpers/db'
+import { insertTestUserWithRole } from '@test/fixtures/users'
+import { seedStandardPartLifecycle } from '@test/fixtures/lifecycles'
+import { ItemService } from '@cascadia/api/lib/items/services/ItemService'
+import { ItemRelationshipService } from '@cascadia/api/lib/items/services/ItemRelationshipService'
+import { UsageService } from '@cascadia/api/lib/services/UsageService'
+import { DesignService } from '@cascadia/api/lib/services/DesignService'
+import { ProgramService } from '@cascadia/api/lib/services/ProgramService'
+import { SessionManager } from '@cascadia/api/lib/auth/session'
+import { permissionService } from '@cascadia/api/lib/auth/permission-service'
+import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
+import { items } from '@cascadia/api/lib/db/schema'
+import { cloneDesignHandler } from './design-clone'
 import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
-import { TestDatabase } from '@/__tests__/helpers/db'
-import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
-import { UsageService } from '@/lib/services/UsageService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { cloneDesignHandler } from '@/lib/jobs/node-handlers/design-clone'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import { items } from '@/lib/db/schema'
+import type { TestUser } from '@test/fixtures/users'
+import type { JobContext } from '@cascadia/api/lib/jobs/types'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@cascadia/api/lib/items/registerItemTypes.server'
 
 /** A context that records nothing — progress and log calls are not under test. */
 function jobContext(): JobContext {

@@ -46,7 +46,6 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import { JobService } from '@/lib/jobs/JobService'
 import { JobTypeRegistry } from '@/lib/jobs/registry'
 import { RabbitMQClient } from '@/lib/jobs/rabbitmq/client'
-import { createJobContext, executeWithTimeout } from '@/lib/jobs/worker/index'
 import { ValidationError } from '@/lib/errors'
 import { jobs } from '@/lib/db/schema/jobs'
 import { takeFirst } from '@/lib/db/take-first'
@@ -348,46 +347,6 @@ describe('JobService — claim and retry invariants', () => {
       row = await rowFor(job.id)
       expect(row.progress).toBe(40)
       expect(row.progressMessage).toBe('homing')
-    })
-
-    it('a handler that ignores its signal past the timeout ends failed, and its late completion is a no-op', async () => {
-      const job = await insertJob('queued', MAX_ATTEMPTS - 1)
-      await JobService.claimJob(job.id) // attempts -> MAX_ATTEMPTS
-
-      const controller = new AbortController()
-      const ignoresItsSignal = new Promise<never>(() => {})
-
-      await expect(
-        executeWithTimeout(ignoresItsSignal, 50, controller),
-      ).rejects.toThrow(/timed out after 50ms/)
-      // The timeout aborted the controller — this is what actually stops a
-      // cooperative handler, not just the rejection.
-      expect(controller.signal.aborted).toBe(true)
-
-      await JobService.markFailed(job.id, 'Job timed out after 50ms')
-      let row = await rowFor(job.id)
-      expect(row.status).toBe('failed')
-
-      await JobService.markCompleted(job.id, { zombie: true })
-      row = await rowFor(job.id)
-      expect(row.status).toBe('failed')
-      expect(row.result).toBeNull()
-    })
-
-    it('a handler that honors its signal aborts within one progress checkpoint of cancel', async () => {
-      const job = await insertJob('queued')
-      await JobService.claimJob(job.id)
-
-      const controller = new AbortController()
-      const context = createJobContext(job.id, 1, controller)
-
-      await context.updateProgress(10, 'step 1')
-      expect(controller.signal.aborted).toBe(false)
-
-      await JobService.cancel(job.id) // another process cancels
-
-      await context.updateProgress(20, 'step 2') // next checkpoint notices
-      expect(controller.signal.aborted).toBe(true)
     })
   })
 

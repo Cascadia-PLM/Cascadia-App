@@ -66,6 +66,7 @@ const APP_PACKAGES = {
   '@cascadia/commons': 'cascadia-commons/src',
   '@cascadia/api': 'cascadia-api/src',
   '@cascadia/web': 'cascadia-web/src',
+  '@cascadia/workers-job': 'cascadia-workers-job/src',
 }
 const APP_SRC = Object.values(APP_PACKAGES)
 
@@ -374,10 +375,13 @@ for (const file of allFiles) {
 // ── Application layering ─────────────────────────────────────────────────
 //
 // Commons imports commons. The web imports web and commons. The api imports
-// api and commons. Nothing else — in particular the web never reaches the api,
-// which is the property the package split exists to hold: the client bundle
-// cannot pull `postgres` in through a type import that happened to sit beside
-// a service.
+// api and commons. The jobs worker imports itself, the api and commons — it is
+// the process that runs the handlers, so it sits above the api, and the api
+// never reaches back into it: `JobService.submit` needs a job's *definition*,
+// which stays in the api, never its handler. Nothing else — in particular the
+// web never reaches the api, which is the property the package split exists to
+// hold: the client bundle cannot pull `postgres` in through a type import that
+// happened to sit beside a service.
 //
 // The tsconfigs and the Vite alias plugin already refuse to *resolve* an
 // import that crosses the wrong way, so a violation here normally fails
@@ -393,6 +397,11 @@ const LAYERS_MAY_REACH = {
   '@cascadia/commons': new Set(['@cascadia/commons']),
   '@cascadia/web': new Set(['@cascadia/web', '@cascadia/commons']),
   '@cascadia/api': new Set(['@cascadia/api', '@cascadia/commons']),
+  '@cascadia/workers-job': new Set([
+    '@cascadia/workers-job',
+    '@cascadia/api',
+    '@cascadia/commons',
+  ]),
 }
 const isTestFile = (file) =>
   /\.test\.tsx?$/.test(file) || file.includes('/__tests__/')
@@ -507,8 +516,10 @@ if (layering.size > 0) {
   }
   console.error(
     'commons reaches only commons; web reaches web and commons; api reaches\n' +
-      'api and commons. A type the web needs from a service belongs in\n' +
-      '@cascadia/commons — declare it there and re-export it from the service.',
+      'api and commons; the jobs worker reaches itself, the api and commons.\n' +
+      'A type the web needs from a service belongs in @cascadia/commons —\n' +
+      'declare it there and re-export it from the service. A handler the api\n' +
+      'wants to run belongs to the worker: submit the job instead.',
   )
   process.exit(1)
 }

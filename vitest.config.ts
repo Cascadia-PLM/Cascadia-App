@@ -18,6 +18,7 @@ const tsconfigProjects = [
   './cascadia-commons/tsconfig.json',
   './cascadia-api/tsconfig.json',
   './cascadia-web/tsconfig.json',
+  './cascadia-workers-job/tsconfig.json',
   // Root: `scripts/` and its tests, which name the packages by import name.
   './tsconfig.json',
   './cascadia-advanced-auditing/tsconfig.json',

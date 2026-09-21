@@ -40,7 +40,7 @@ export const workspaceId = (dir) =>
  * manifest says. The app workspaces (`cascadia-app*`) are excluded by the
  * `app` prefix test below rather than listed, since an edition adds its own.
  */
-const APP_PACKAGES = new Set(['api', 'web', 'commons'])
+const APP_PACKAGES = new Set(['api', 'web', 'commons', 'workers-job'])
 
 /**
  * The proprietary module packages, by id, derived from PROPRIETARY's

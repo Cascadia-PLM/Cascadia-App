@@ -17,17 +17,17 @@
  * passive `checkQueue` wrapper — is stubbed, the way the retry-sweep suite
  * stubs `publish`. No database either, so this file needs no TestDatabase.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/jobs/dead-letter-depth.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/jobs/dead-letter-depth.test.ts
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { RabbitMQClient } from '@/lib/jobs/rabbitmq/client'
+import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
+import { workerLogger } from '@cascadia/api/lib/logging/logger'
 import {
   checkDeadLetterDepth,
   deadLetterDepth,
   resetDeadLetterDepthState,
-} from '@/lib/jobs/scheduler'
-import { workerLogger } from '@/lib/logging/logger'
+} from '@/scheduler'
 
 const WARN_DEPTH = 100
 

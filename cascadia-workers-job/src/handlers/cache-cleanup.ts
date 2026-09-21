@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { ThreadCacheService } from '../../services/ThreadCacheService'
-import type { JobContext, JobHandler } from '../types'
+import { ThreadCacheService } from '@cascadia/api/lib/services/ThreadCacheService'
+import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
 import type {
   CacheCleanupPayload,
   CacheCleanupResult,
-} from '../definitions/cache-cleanup/types'
+} from '@cascadia/api/lib/jobs/definitions/cache-cleanup/types'
 
 /**
  * Handler for thread cache cleanup jobs.

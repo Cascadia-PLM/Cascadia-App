@@ -3,24 +3,24 @@
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
-import type { JobContext, JobHandler } from '../types'
+import { db } from '@cascadia/api/lib/db'
+import { takeFirst } from '@cascadia/api/lib/db/take-first'
+import { itemRelationships, items } from '@cascadia/api/lib/db/schema/items'
+import { vaultFiles } from '@cascadia/api/lib/db/schema/vault'
+import { branchItems } from '@cascadia/api/lib/db/schema/versioning'
+import { designCrossReferences } from '@cascadia/api/lib/db/schema/crossReferences'
+import { copyTypeSpecificData } from '@cascadia/api/lib/items/type-handlers/copy'
+import { DesignService } from '@cascadia/api/lib/services/DesignService'
+import { LifecycleService } from '@cascadia/api/lib/services/LifecycleService'
+import { BranchService } from '@cascadia/api/lib/services/BranchService'
+import { CommitService } from '@cascadia/api/lib/services/CommitService'
+import { UsageService } from '@cascadia/api/lib/services/UsageService'
+import { VersionResolver } from '@cascadia/api/lib/services/VersionResolver'
 import type {
   CloneDesignPayload,
   CloneDesignResult,
-} from '../definitions/design/types'
-import { db } from '@/lib/db'
-import { takeFirst } from '@/lib/db/take-first'
-import { itemRelationships, items } from '@/lib/db/schema/items'
-import { vaultFiles } from '@/lib/db/schema/vault'
-import { branchItems } from '@/lib/db/schema/versioning'
-import { designCrossReferences } from '@/lib/db/schema/crossReferences'
-import { copyTypeSpecificData } from '@/lib/items/type-handlers/copy'
-import { DesignService } from '@/lib/services/DesignService'
-import { LifecycleService } from '@/lib/services/LifecycleService'
-import { BranchService } from '@/lib/services/BranchService'
-import { CommitService } from '@/lib/services/CommitService'
-import { UsageService } from '@/lib/services/UsageService'
-import { VersionResolver } from '@/lib/services/VersionResolver'
+} from '@cascadia/api/lib/jobs/definitions/design/types'
+import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
 
 const BATCH_SIZE = 50
 

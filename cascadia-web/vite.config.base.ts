@@ -36,11 +36,15 @@ const APP_PACKAGES = new Map([
   ['@cascadia/web', resolve(WEB_DIR, 'src')],
   ['@cascadia/commons', resolve(REPO_ROOT, 'cascadia-commons/src')],
 ])
-// The application's own workspaces: the two above, the server-only one the
-// client must never resolve, and the app composition roots.
+// The application's own workspaces: the two above, the two server-only ones
+// the client must never resolve, and the app composition roots.
 const isAppWorkspace = (dir: string) =>
-  ['cascadia-web', 'cascadia-commons', 'cascadia-api'].includes(dir) ||
-  dir.startsWith('cascadia-app')
+  [
+    'cascadia-web',
+    'cascadia-commons',
+    'cascadia-api',
+    'cascadia-workers-job',
+  ].includes(dir) || dir.startsWith('cascadia-app')
 
 // Discovered, not named: writing a module package's id here would put
 // proprietary knowledge in a core file — `boundary:check` says so, and it is

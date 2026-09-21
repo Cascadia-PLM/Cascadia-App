@@ -22,7 +22,7 @@
  * likewise a pair of spies, with `RabbitMQClient.getChannel` pointed at it so
  * the channel-identity guard in `ack`/`nack` treats it as current.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/jobs/worker/index.test.ts
+ * Run: npx vitest run cascadia-workers-job/src/worker/index.test.ts
  */
 
 import {
@@ -35,14 +35,14 @@ import {
   vi,
 } from 'vitest'
 import { z } from 'zod'
+import { JobService } from '@cascadia/api/lib/jobs/JobService'
+import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
+import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
+import { workerLogger } from '@cascadia/api/lib/logging/logger'
 import type { Channel, ConsumeMessage } from 'amqplib'
-import type { Job } from '@/lib/jobs/JobService'
-import { JobService } from '@/lib/jobs/JobService'
-import { JobTypeRegistry } from '@/lib/jobs/registry'
-import { RabbitMQClient } from '@/lib/jobs/rabbitmq/client'
-import { JobWorker } from '@/lib/jobs/worker'
-import { installProcessBackstops } from '@/jobs-worker-main'
-import { workerLogger } from '@/lib/logging/logger'
+import type { Job } from '@cascadia/api/lib/jobs/JobService'
+import { JobWorker } from '@/worker'
+import { installProcessBackstops } from '@/main'
 
 const TEST_TYPE = 'test.jobs.worker-containment'
 const JOB_ID = '11111111-1111-4111-8111-111111111111'

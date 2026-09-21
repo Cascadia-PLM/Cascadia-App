@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { JobContext, JobHandler } from '../types'
+import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
 import type {
   WatermarkPdfPayload,
   WatermarkPdfResult,
-} from '../definitions/watermark/types'
+} from '@cascadia/api/lib/jobs/definitions/watermark/types'
 
 /**
  * Stamp a mark onto PDF attachments, one new file version per file.
@@ -27,8 +27,10 @@ export const watermarkPdfHandler: JobHandler<
   ): Promise<WatermarkPdfResult> {
     // Dynamic imports keep the dispatch-side bundle free of pdf-lib and the
     // vault service, matching the other Node handlers.
-    const { FileService } = await import('@/lib/vault/services/FileService')
-    const { applyWatermark } = await import('@/lib/vault/pdf/watermark')
+    const { FileService } =
+      await import('@cascadia/api/lib/vault/services/FileService')
+    const { applyWatermark } =
+      await import('@cascadia/api/lib/vault/pdf/watermark')
     const { previewKindFor } =
       await import('@cascadia/commons/lib/vault/preview')
 
@@ -62,8 +64,8 @@ export const watermarkPdfHandler: JobHandler<
           // or its working copy is merged. Re-check at execution time so the
           // asynchronous rewrite cannot cross that protection boundary.
           const [{ requireItemAccess }, { ItemService }] = await Promise.all([
-            import('@/lib/auth/access'),
-            import('@/lib/items/services/ItemService'),
+            import('@cascadia/api/lib/auth/access'),
+            import('@cascadia/api/lib/items/services/ItemService'),
           ])
           const item = await requireItemAccess(payload.userId, file.itemId)
           await ItemService.requireContentEditable(item, payload.userId)
@@ -108,8 +110,8 @@ export const watermarkPdfHandler: JobHandler<
         // the write; automatic release stamps deliberately skip both checks.
         if (payload.requireEditable) {
           const [{ requireItemAccess }, { ItemService }] = await Promise.all([
-            import('@/lib/auth/access'),
-            import('@/lib/items/services/ItemService'),
+            import('@cascadia/api/lib/auth/access'),
+            import('@cascadia/api/lib/items/services/ItemService'),
           ])
           const item = await requireItemAccess(payload.userId, file.itemId)
           await ItemService.requireContentEditable(item, payload.userId)

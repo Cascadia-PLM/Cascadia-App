@@ -12,7 +12,7 @@
  * was missing, so every serial- or lot-tracked part came out of a clone
  * reset to `none`.
  *
- * Run: npm run test -- src/lib/jobs/node-handlers/design-clone.test.ts
+ * Run: npx vitest run cascadia-workers-job/src/handlers/design-clone.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -27,18 +27,23 @@ import {
   vi,
 } from 'vitest'
 import { and, eq } from 'drizzle-orm'
+import { TestDatabase } from '@test/helpers/db'
+import { insertTestUser } from '@test/fixtures/users'
+import {
+  itemVersions,
+  items,
+  parts,
+  programs,
+} from '@cascadia/api/lib/db/schema'
+import { takeFirst } from '@cascadia/api/lib/db/take-first'
+import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
+import { DesignService } from '@cascadia/api/lib/services/DesignService'
+import { LifecycleService } from '@cascadia/api/lib/services/LifecycleService'
 import { cloneDesignHandler } from './design-clone'
-import type { JobContext } from '../types'
-import type { TestUser } from '@/__tests__/fixtures/users'
-import { TestDatabase } from '@/__tests__/helpers/db'
-import { insertTestUser } from '@/__tests__/fixtures/users'
-import { itemVersions, items, parts, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import { DesignService } from '@/lib/services/DesignService'
-import { LifecycleService } from '@/lib/services/LifecycleService'
+import type { TestUser } from '@test/fixtures/users'
+import type { JobContext } from '@cascadia/api/lib/jobs/types'
 
-import '@/lib/items/registerItemTypes.server'
+import '@cascadia/api/lib/items/registerItemTypes.server'
 
 /** A context that records nothing — progress and log calls are not under test. */
 function jobContext(): JobContext {

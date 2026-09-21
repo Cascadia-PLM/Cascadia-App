@@ -738,9 +738,7 @@ export function DocumentDetail({
                       itemId={currentDocument.id}
                       readOnly={!canMutateFiles}
                       branchId={
-                        context.type === 'branch'
-                          ? context.branchId
-                          : undefined
+                        context.type === 'branch' ? context.branchId : undefined
                       }
                       onUploadComplete={() => {
                         showSuccess(

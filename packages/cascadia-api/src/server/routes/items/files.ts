@@ -375,11 +375,7 @@ app.put(
       async ({ body: { fileId }, params, request, user }) => {
         const { itemId } = params
 
-        const { file } = await requireFileMutation(
-          request,
-          fileId,
-          user.id,
-        )
+        const { file } = await requireFileMutation(request, fileId, user.id)
 
         if (file.itemId !== itemId) {
           throw new ValidationError('File does not belong to this item')
@@ -401,15 +397,12 @@ app.put(
 app.delete(
   '/:itemId/files/thumbnail',
   adapt(
-    apiHandler<{ itemId: string }>(
-      {},
-      async ({ params, request, user }) => {
-        await requireItemFileMutation(request, params.itemId, user.id)
-        await FileService.clearItemThumbnail(params.itemId, user.id)
+    apiHandler<{ itemId: string }>({}, async ({ params, request, user }) => {
+      await requireItemFileMutation(request, params.itemId, user.id)
+      await FileService.clearItemThumbnail(params.itemId, user.id)
 
-        return { success: true, message: 'Thumbnail cleared' }
-      },
-    ),
+      return { success: true, message: 'Thumbnail cleared' }
+    }),
   ),
 )
 

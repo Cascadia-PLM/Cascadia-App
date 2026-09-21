@@ -251,11 +251,7 @@ app.post(
         // Process each file
         for (const fileId of fileIds) {
           try {
-            const { file } = await requireFileMutation(
-              request,
-              fileId,
-              user.id,
-            )
+            const { file } = await requireFileMutation(request, fileId, user.id)
 
             // Checkout the file
             await FileService.checkOutFile(fileId, user.id)
@@ -357,20 +353,17 @@ app.get(
 app.delete(
   '/:fileId',
   adapt(
-    apiHandler<{ fileId: string }>(
-      {},
-      async ({ params, request, user }) => {
-        const { fileId } = params
+    apiHandler<{ fileId: string }>({}, async ({ params, request, user }) => {
+      const { fileId } = params
 
-        await requireFileMutation(request, fileId, user.id)
-        await FileService.deleteFile(fileId, user.id)
+      await requireFileMutation(request, fileId, user.id)
+      await FileService.deleteFile(fileId, user.id)
 
-        return {
-          success: true,
-          message: 'File deleted successfully',
-        }
-      },
-    ),
+      return {
+        success: true,
+        message: 'File deleted successfully',
+      }
+    }),
   ),
 )
 
@@ -490,20 +483,17 @@ app.post(
 app.post(
   '/:fileId/checkout',
   adapt(
-    apiHandler<{ fileId: string }>(
-      {},
-      async ({ params, request, user }) => {
-        const { fileId } = params
+    apiHandler<{ fileId: string }>({}, async ({ params, request, user }) => {
+      const { fileId } = params
 
-        await requireFileMutation(request, fileId, user.id)
-        await FileService.checkOutFile(fileId, user.id)
+      await requireFileMutation(request, fileId, user.id)
+      await FileService.checkOutFile(fileId, user.id)
 
-        return {
-          success: true,
-          message: 'File checked out successfully',
-        }
-      },
-    ),
+      return {
+        success: true,
+        message: 'File checked out successfully',
+      }
+    }),
   ),
 )
 
@@ -1038,12 +1028,9 @@ app.post(
 
         // Unlocking changes no engineering content, so it requires the
         // owner's update authority but remains possible on a protected item.
-        const { file } = await requireFileMutation(
-          request,
-          fileId,
-          user.id,
-          { requireEditable: false },
-        )
+        const { file } = await requireFileMutation(request, fileId, user.id, {
+          requireEditable: false,
+        })
 
         if (!file.isCheckedOut) {
           return { success: true, message: 'File is not checked out' }

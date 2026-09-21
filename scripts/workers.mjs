@@ -24,9 +24,9 @@ import { existsSync } from 'node:fs'
 import { resolveApp } from './edition.mjs'
 
 const CAD_WORKERS = [
-  ['workers/cad-converter', 'cad-converter-dev'],
-  ['workers/cad-generator', 'cad-generator-dev'],
-  ['workers/freecad-runner', 'freecad-runner-dev'],
+  ['cascadia-workers-cad', 'cad-converter-dev'],
+  ['cascadia-workers-cad-generator', 'cad-generator-dev'],
+  ['cascadia-workers-freecad-runner', 'freecad-runner-dev'],
 ]
 
 const services = CAD_WORKERS.filter(([dir]) => existsSync(dir)).map(
@@ -47,7 +47,7 @@ try {
       if (services.length > 0) {
         run(['compose', '--profile', 'cad', 'up', '-d', ...services, '--build'])
       }
-      execFileSync('npx', ['tsx', `apps/${resolveApp()}/src/jobs-worker.ts`], {
+      execFileSync('npx', ['tsx', `${resolveApp()}/src/jobs-worker.ts`], {
         stdio: 'inherit',
         shell: process.platform === 'win32',
       })
@@ -58,7 +58,7 @@ try {
     // Phase 2 split moved and nothing noticed — they were broken in *this*
     // tree too, not only the published one.
     case 'jobs':
-      execFileSync('npx', ['tsx', `apps/${resolveApp()}/src/jobs-worker.ts`], {
+      execFileSync('npx', ['tsx', `${resolveApp()}/src/jobs-worker.ts`], {
         stdio: 'inherit',
         shell: process.platform === 'win32',
       })

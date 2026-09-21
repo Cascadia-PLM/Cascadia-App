@@ -98,7 +98,7 @@ function readCookies(request: Request): Record<string, string> {
  * Redirect back to the login page with an error code.
  *
  * The codes are matched against OAUTH_ERROR_MESSAGES in
- * packages/cascadia-web/src/routes/login.tsx, so a new code needs a message there or
+ * cascadia-web/src/routes/login.tsx, so a new code needs a message there or
  * the page shows a generic fallback.
  */
 function loginRedirect(error: string): Response {

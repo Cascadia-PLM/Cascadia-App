@@ -7,7 +7,7 @@
  * Integration tests for lifecycle definitions: CRUD, validation, state removal and driver validation. Split from the WorkflowService suite along
  * the same seam as the service (remediation plan CM-22).
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/lifecycles/LifecycleDefinitionService.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/lifecycles/LifecycleDefinitionService.test.ts
  */
 
 import {

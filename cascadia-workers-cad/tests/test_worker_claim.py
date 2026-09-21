@@ -12,7 +12,7 @@ reached the database is acked exactly once.
 The timeout watchdog rides the same seam and is covered here too: it may only
 be armed once the claim has succeeded, and it must be called off however the
 job ends. Its own two-stage behaviour belongs to
-``workers/py-common/tests/test_watchdog.py``; what this file pins is the
+``cascadia-workers-commons/tests/test_watchdog.py``; what this file pins is the
 wiring, which has to stay identical in both workers.
 """
 

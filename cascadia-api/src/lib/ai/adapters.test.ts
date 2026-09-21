@@ -12,7 +12,7 @@
  * whole instance; no budget means the check costs nothing and blocks
  * nothing.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/adapters.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/adapters.test.ts
  */
 
 import {

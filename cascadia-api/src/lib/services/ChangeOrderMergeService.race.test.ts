@@ -31,7 +31,7 @@
  * overlap and a rollback-retry cannot be observed. These commit for real
  * through `ConcurrentTestDatabase`, and the harness cleans up after itself.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/services/ChangeOrderMergeService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/services/ChangeOrderMergeService.race.test.ts
  */
 
 import {

@@ -14,7 +14,7 @@
  * passing through; and a plaintext key stored before encryption was switched on
  * is still returned untouched.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/crypto/encryption.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/crypto/encryption.test.ts
  */
 
 import crypto from 'node:crypto'

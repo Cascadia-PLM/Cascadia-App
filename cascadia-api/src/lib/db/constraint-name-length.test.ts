@@ -21,7 +21,7 @@
  * first exists, one `db:generate` before it reaches anyone. No database and no
  * fixtures — the guard costs a file read and covers both editions.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/db/constraint-name-length.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/db/constraint-name-length.test.ts
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -70,7 +70,7 @@ const journalSchema = z.object({
 })
 
 interface Edition {
-  /** The app directory name, e.g. `cascadia-enterprise`. */
+  /** The app directory name, e.g. `cascadia-app-enterprise`. */
   app: string
   /** Absolute path to that edition's `drizzle/` directory. */
   drizzleDir: string
@@ -78,16 +78,17 @@ interface Edition {
 
 /**
  * The editions present in this checkout. The published community tree holds
- * only `apps/cascadia`, so this discovers rather than hardcodes — the same
+ * only `cascadia-app`, so this discovers rather than hardcodes — the same
  * reason `scripts/edition.mjs` exists.
  */
 function editions(): Array<Edition> {
-  const appsDir = path.join(REPO_ROOT, 'apps')
-  return readdirSync(appsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
+  return readdirSync(REPO_ROOT, { withFileTypes: true })
+    .filter(
+      (entry) => entry.isDirectory() && entry.name.startsWith('cascadia-app'),
+    )
     .map((entry) => ({
       app: entry.name,
-      drizzleDir: path.join(appsDir, entry.name, 'drizzle'),
+      drizzleDir: path.join(REPO_ROOT, entry.name, 'drizzle'),
     }))
     .filter((edition) =>
       existsSync(path.join(edition.drizzleDir, 'meta', '_journal.json')),
@@ -105,14 +106,14 @@ function headSnapshotNames(edition: Edition): Array<string> {
 
   const head = journal.entries.at(-1)
   if (!head) {
-    throw new Error(`apps/${edition.app} has an empty migration journal.`)
+    throw new Error(`${edition.app} has an empty migration journal.`)
   }
 
   const prefix = String(head.idx).padStart(4, '0')
   const snapshotFile = path.join(metaDir, `${prefix}_snapshot.json`)
   if (!existsSync(snapshotFile)) {
     throw new Error(
-      `apps/${edition.app} journal head ${head.tag} has no snapshot at ` +
+      `${edition.app} journal head ${head.tag} has no snapshot at ` +
         `${snapshotFile}.`,
     )
   }
@@ -140,7 +141,7 @@ describe('committed schema identifiers fit Postgres', () => {
   })
 
   for (const edition of found) {
-    it(`apps/${edition.app} declares no identifier over 63 bytes`, () => {
+    it(`${edition.app} declares no identifier over 63 bytes`, () => {
       const names = headSnapshotNames(edition)
       expect(names.length).toBeGreaterThan(0)
 

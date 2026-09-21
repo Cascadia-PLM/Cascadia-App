@@ -16,7 +16,7 @@
  * program a request spends against is one the caller can reach, and for an
  * existing session it is that session's own.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/chat-scope.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/chat-scope.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

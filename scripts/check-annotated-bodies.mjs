@@ -38,7 +38,7 @@ const EXEMPTION = 'documented-not-enforced:'
 function routeFiles() {
   return execFileSync(
     'git',
-    ['ls-files', 'packages/*/src/server/routes/*.ts'],
+    ['ls-files', 'cascadia-*/src/server/routes/*.ts'],
     { encoding: 'utf8' },
   )
     .split('\n')

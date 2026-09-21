@@ -25,7 +25,7 @@
  *    403/BRANCH_PROTECTED from further down. The admitted legs therefore
  *    assert on `error.code`, not on the status.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/items.detail-writes.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/items.detail-writes.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

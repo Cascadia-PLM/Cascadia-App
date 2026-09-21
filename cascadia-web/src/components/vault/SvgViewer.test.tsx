@@ -16,7 +16,7 @@
  * drawing. The `<img>` boundary is pinned alongside it, since inlining the
  * markup instead would execute the script outright.
  *
- * Run: npx vitest run packages/cascadia-web/src/components/vault/SvgViewer.test.tsx
+ * Run: npx vitest run cascadia-web/src/components/vault/SvgViewer.test.tsx
  */
 
 import { render, screen } from '@testing-library/react'

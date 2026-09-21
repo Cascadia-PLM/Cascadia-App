@@ -20,7 +20,7 @@
  * opts out by name; and a route that declares no schema is untouched by any
  * of it.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/api/handler.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/api/handler.test.ts
  */
 
 import {

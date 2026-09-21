@@ -12,7 +12,7 @@
  * why was the network tab. The first test is the ratchet that keeps any code
  * from going quiet again; the rest pin the behaviour that replaced it.
  *
- * Run: npx vitest run packages/cascadia-web/src/lib/hooks/useErrorHandler.test.tsx
+ * Run: npx vitest run cascadia-web/src/lib/hooks/useErrorHandler.test.tsx
  */
 
 import { act, renderHook } from '@testing-library/react'

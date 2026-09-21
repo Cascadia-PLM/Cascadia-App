@@ -23,7 +23,7 @@
  *    non-numeric limit are 400s, not an unbounded query and not the silent
  *    empty groups a NaN limit used to produce
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/enterprise-search.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/enterprise-search.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

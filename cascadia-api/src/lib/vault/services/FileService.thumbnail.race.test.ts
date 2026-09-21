@@ -22,7 +22,7 @@
  * so the two designations really do interleave. No storage is touched:
  * designating a thumbnail is pure database work.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/vault/services/FileService.thumbnail.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/vault/services/FileService.thumbnail.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'

@@ -21,7 +21,7 @@
  * `PUT /auth/password` is here for the same reason: a key must not be able to
  * replace its owner's interactive credential.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/api-keys.auth-method.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/api-keys.auth-method.test.ts
  */
 
 import {

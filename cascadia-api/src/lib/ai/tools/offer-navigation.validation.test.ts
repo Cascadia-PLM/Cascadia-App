@@ -18,7 +18,7 @@
  * pre-validation as a caller convention, and the point of these cases is that
  * the handler does not depend on the convention being honoured.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/tools/offer-navigation.validation.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/tools/offer-navigation.validation.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

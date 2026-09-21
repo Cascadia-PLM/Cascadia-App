@@ -18,7 +18,7 @@
  * number are instance-global master data, like the standard library. That
  * exception is asserted below so it reads as a decision rather than a miss.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/manufacturer-parts.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/manufacturer-parts.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

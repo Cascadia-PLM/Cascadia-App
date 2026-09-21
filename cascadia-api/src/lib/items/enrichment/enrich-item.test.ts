@@ -25,7 +25,7 @@
  * spy on purpose — that function swallows its own insert failures, so a spy
  * can pass while nothing lands.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/items/enrichment/enrich-item.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/items/enrichment/enrich-item.test.ts
  */
 
 import {

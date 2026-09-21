@@ -4,7 +4,7 @@
 """Fixtures for the database-backed half of the py-common suite.
 
 The suite runs against the real `jobs` schema — the one `npm run test:db:push`
-builds from packages/cascadia-api/src/lib/db/schema/jobs.ts — rather than DDL of its
+builds from cascadia-api/src/lib/db/schema/jobs.ts — rather than DDL of its
 own. Duplicating the table here would let the workers' SQL keep passing against
 a shape the application no longer has, which is the only failure this suite
 exists to catch.
@@ -41,7 +41,7 @@ def database_url() -> str:
         "TEST_DATABASE_URL is not set. Create a database for the suite, build "
         "its schema with `npm run test:db:push`, and put the URL in .env — see "
         "docs/development/testing.md. Run "
-        "`pytest workers/py-common -m 'not db'` to skip these."
+        "`pytest cascadia-workers-commons -m 'not db'` to skip these."
     )
     if os.environ.get("CI"):
         raise RuntimeError(message)

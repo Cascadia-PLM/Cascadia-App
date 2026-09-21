@@ -25,7 +25,7 @@
  * to that project, so access to one project read any branch's commit history —
  * and its exact commit count — out of a program the caller cannot reach.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/sysml.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/sysml.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

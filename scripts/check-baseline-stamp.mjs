@@ -100,7 +100,7 @@ for (const guard of ['DATABASE_URL', 'TEST_DATABASE_URL']) {
 
 const repoRoot = process.cwd()
 const app = resolveApp(repoRoot)
-const migrationsFolder = resolve(repoRoot, 'apps', app, 'drizzle')
+const migrationsFolder = resolve(repoRoot, app, 'drizzle')
 
 const journal = JSON.parse(
   readFileSync(resolve(migrationsFolder, 'meta', '_journal.json'), 'utf8'),

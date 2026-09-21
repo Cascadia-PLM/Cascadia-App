@@ -24,7 +24,7 @@
  * deleting an ECO that a commit does name keeps the commit and nulls the
  * pointer, which is only correct if the graph readers tolerate the null.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/db/versioning-fks.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/db/versioning-fks.test.ts
  */
 
 import {

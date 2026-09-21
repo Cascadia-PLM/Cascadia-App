@@ -15,7 +15,7 @@
  * stores a source URL as a `link` custom attribute, and attaches dropped
  * images to the item once it exists.
  *
- * Modeled on `packages/design-engine/src/lib/cad-generation/assessment.ts`
+ * Modeled on `cascadia-design-engine/src/lib/cad-generation/assessment.ts`
  * (prompt -> JSON -> parse).
  */
 

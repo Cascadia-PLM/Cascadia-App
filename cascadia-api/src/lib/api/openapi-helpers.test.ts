@@ -13,7 +13,7 @@
  * assert the shape of the *output*, which is the only place that bug was
  * ever visible.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/api/openapi-helpers.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/api/openapi-helpers.test.ts
  */
 
 import { describe, expect, it } from 'vitest'

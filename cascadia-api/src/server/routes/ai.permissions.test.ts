@@ -14,7 +14,7 @@
  *     membership check, which is what later `POST /chat` requests spend
  *     against.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/ai.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/ai.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

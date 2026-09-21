@@ -16,7 +16,7 @@
  *    cross-design NO ACTION would have made any Engineering design with a
  *    derived MBOM undeletable.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/db/designs-fks.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/db/designs-fks.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

@@ -23,7 +23,7 @@
  *    never forward to the caller-chosen leftmost entry
  *  - a malformed TRUSTED_PROXY_COUNT fails closed to 0
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/api/client-ip.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/api/client-ip.test.ts
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'

@@ -48,7 +48,7 @@ export interface CADModelStats {
 /**
  * glTF `extras` key the CAD converter writes a part's identity under.
  *
- * Must match `write_structured_glb` in `workers/cad-converter`. GLTFLoader
+ * Must match `write_structured_glb` in `cascadia-workers-cad`. GLTFLoader
  * copies a node's `extras` onto `object.userData` verbatim, which is the whole
  * mechanism: the converter names the parts and three.js hands the names back.
  */

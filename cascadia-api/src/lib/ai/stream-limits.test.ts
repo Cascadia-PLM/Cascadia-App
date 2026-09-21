@@ -8,7 +8,7 @@
  * unbounded number of LLM streams open. Pure unit — the counter is process
  * memory by design (streams live and die in one app process).
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/stream-limits.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/stream-limits.test.ts
  */
 
 import { afterEach, describe, expect, it } from 'vitest'

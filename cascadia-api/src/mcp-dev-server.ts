@@ -10,7 +10,7 @@
  *
  * Or register it with an MCP client (e.g. Claude Code's .mcp.json):
  *
- *   { "cascadia-dev": { "command": "npx", "args": ["tsx", "packages/cascadia-api/src/mcp-dev-server.ts"] } }
+ *   { "cascadia-dev": { "command": "npx", "args": ["tsx", "cascadia-api/src/mcp-dev-server.ts"] } }
  *
  * See docs/features/mcp.md for details.
  */

@@ -21,7 +21,7 @@
  * resolves them against the working directory instead. Invoked from the repo
  * root it therefore looked for `<root>/src/modules.schema.ts` and failed with
  * "No schema files found" — which is what `npm run db:push` has done in *both*
- * editions since the Phase 2 split moved the config under `apps/`. It went
+ * editions since the Phase 2 split moved the config into the app directory. It went
  * unnoticed because every existing database had already been pushed; the
  * published tree, having no database at all, is where it finally surfaced.
  */
@@ -35,7 +35,7 @@ import { reconcileIndexPredicates } from './reconcile-index-predicates.mjs'
 
 // drizzle-kit loads `.env` from its *working directory*, and this script runs
 // it from the app directory (see above). There is no `.env` there — the only
-// one is at the repo root — so running from `apps/` traded "No schema files
+// one is at the repo root — so running from the app directory traded "No schema files
 // found" for "DATABASE_URL is not set", and `db:push` stayed broken in both
 // editions. Load the root file here instead; the child inherits `process.env`.
 //
@@ -50,7 +50,7 @@ if (args.length === 0) {
   process.exit(2)
 }
 
-const appDir = resolve(process.cwd(), 'apps', resolveApp())
+const appDir = resolve(process.cwd(), resolveApp())
 // A full checkout has the CLI in the root dependency tree. The production
 // image keeps it in /opt/admin instead and exposes only its binary through
 // PATH, so prefer the local binary when present and otherwise let PATH resolve

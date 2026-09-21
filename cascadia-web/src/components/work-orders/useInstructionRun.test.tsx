@@ -16,7 +16,7 @@
  *
  * The invariants are about the requests and what follows them, not the markup.
  *
- * Run: npx vitest run packages/cascadia-web/src/components/work-orders/useInstructionRun.test.tsx
+ * Run: npx vitest run cascadia-web/src/components/work-orders/useInstructionRun.test.tsx
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react'

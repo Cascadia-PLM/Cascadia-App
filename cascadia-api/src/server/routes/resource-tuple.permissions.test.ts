@@ -51,7 +51,7 @@
  * The type map is asserted exhaustive against `ITEM_TYPE_RESOURCES`, so a
  * fourteenth item type fails here until it is covered.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/resource-tuple.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/resource-tuple.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

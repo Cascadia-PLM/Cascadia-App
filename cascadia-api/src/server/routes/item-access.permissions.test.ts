@@ -21,7 +21,7 @@
  * Both users hold the same RBAC role. The only difference between them is
  * program membership, which is the whole point.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/item-access.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/item-access.permissions.test.ts
  */
 
 import {

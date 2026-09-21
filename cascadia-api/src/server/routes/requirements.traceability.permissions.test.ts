@@ -20,7 +20,7 @@
  * the caller, and pinning the exact success code would pin service behaviour
  * this suite is not about.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/requirements.traceability.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/requirements.traceability.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

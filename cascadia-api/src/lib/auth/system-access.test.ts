@@ -20,7 +20,7 @@
  * whatever `db:sync-roles` last wrote, and the invariant under test belongs to
  * the code.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/auth/system-access.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/auth/system-access.test.ts
  */
 
 import {

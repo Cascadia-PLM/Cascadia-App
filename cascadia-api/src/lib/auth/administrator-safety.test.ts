@@ -25,7 +25,7 @@
  *  - none of the above blocks the same operation while a second active
  *    Administrator exists — the guard bounds the floor, it is not a freeze
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/auth/administrator-safety.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/auth/administrator-safety.test.ts
  */
 
 import {

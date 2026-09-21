@@ -9,7 +9,7 @@
  * its engine to lib/lifecycles/LifecycleInstanceService.test.ts (remediation
  * plan CM-22).
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/services/LifecycleService.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/services/LifecycleService.test.ts
  */
 
 import {

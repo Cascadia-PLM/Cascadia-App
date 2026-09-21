@@ -12,7 +12,7 @@
  * claiming one credential, and which of them authenticated came down to row
  * order.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/db/api-keys-key-hash.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/db/api-keys-key-hash.test.ts
  */
 
 import {

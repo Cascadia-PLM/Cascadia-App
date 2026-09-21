@@ -63,7 +63,7 @@
  * items/change-orders/work-orders), `enterprise-search.permissions.test.ts`,
  * `manufacturer-parts.permissions.test.ts`.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/collection-enumeration.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/collection-enumeration.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

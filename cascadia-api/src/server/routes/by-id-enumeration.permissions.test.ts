@@ -58,7 +58,7 @@
  * exceptions), `files.permissions.test.ts` (the vault, including the mixed
  * batch).
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/by-id-enumeration.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/by-id-enumeration.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

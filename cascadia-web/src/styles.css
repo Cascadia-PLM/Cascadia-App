@@ -6,19 +6,21 @@
  * Where to look for class names.
  *
  * Tailwind v4 detects sources automatically, rooted at the Vite root — which
- * the Phase 2 split moved to `apps/<app>/`. Every component lives in
- * `packages/cascadia-web/src`, outside that root, so detection found a handful of entry
- * files, no utility classes, and emitted preflight alone: ~19 KB of resets and
- * theme variables and not one `.bg-*` rule. The application rendered correctly
- * and looked like unstyled HTML, in **both** editions.
+ * the Phase 2 split moved to the app directory (`cascadia-app`). Every
+ * component lives in `cascadia-web/src`, outside that root, so detection found
+ * a handful of entry files, no utility classes, and emitted preflight alone:
+ * ~19 KB of resets and theme variables and not one `.bg-*` rule. The
+ * application rendered correctly and looked like unstyled HTML, in **both**
+ * editions.
  *
- * Paths are relative to this file, and neither names an edition: `packages`
- * covers this package plus whatever module packages this tree has, `apps` covers
- * whichever composition root is building. Declaring them explicitly is also
- * what stops this recurring the next time a root moves.
+ * The path is relative to this file and names no edition: the repo root covers
+ * this package, whatever module packages this tree has, and whichever
+ * composition root is building (every workspace is a top-level `cascadia-*`
+ * directory). Tailwind honours .gitignore, so node_modules, dist and the
+ * vault are not scanned. Declaring it explicitly is also what stops this
+ * recurring the next time a root moves.
  */
 @source '../..';
-@source '../../../apps';
 
 /* Enable class-based dark mode */
 @variant dark (.dark &);

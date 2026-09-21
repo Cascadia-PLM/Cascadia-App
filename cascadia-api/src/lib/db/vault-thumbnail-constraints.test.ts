@@ -17,7 +17,7 @@
  *    did, and a hard-deleted vault_files row would have left an item
  *    advertising a thumbnail id that resolves to nothing.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/db/vault-thumbnail-constraints.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/db/vault-thumbnail-constraints.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

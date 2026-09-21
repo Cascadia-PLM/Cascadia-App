@@ -17,7 +17,7 @@
  * handler through `toolRegistry[].invoke` with a `keyScope`, proving the gate
  * sits below both surfaces rather than in either one's plumbing.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/tools/handlers.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/tools/handlers.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

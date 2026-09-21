@@ -10,7 +10,7 @@
 
 [tool.pytest.ini_options]
 # Resolved relative to rootdir, which is this directory because this file
-# contains the section — so `pytest workers/py-common` from the repo root and
+# contains the section — so `pytest cascadia-workers-commons` from the repo root and
 # `pytest` from inside it both import `cascadia_worker_common` the same way.
 pythonpath = ["src"]
 testpaths = ["tests"]

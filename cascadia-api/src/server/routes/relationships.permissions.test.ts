@@ -13,7 +13,7 @@
  * Both users hold the same role. The only difference between them is program
  * membership, so a 403 can only come from the design gate.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/relationships.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/relationships.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

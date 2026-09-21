@@ -27,7 +27,7 @@
  * the owning item's update permission plus `system:manage` on eviction, and
  * no leg here had ever asserted that a role can actually reach it.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/files.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/files.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

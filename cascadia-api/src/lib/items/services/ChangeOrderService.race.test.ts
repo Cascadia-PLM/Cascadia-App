@@ -21,7 +21,7 @@
  * calls genuinely interleave and commit, and the harness cleans up after
  * itself.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/items/services/ChangeOrderService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/items/services/ChangeOrderService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'

@@ -16,7 +16,7 @@
  *  - a legitimate reorder lands every submitted orderIndex and reads back in
  *    ascending order
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/work-instructions.reorder-scope.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/work-instructions.reorder-scope.test.ts
  */
 
 import {

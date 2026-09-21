@@ -22,7 +22,7 @@
  * Named `.race.test.ts` by the convention the harness header describes: these
  * files must not share a process with a gate-transaction suite.
  *
- * Run: npx vitest run packages/cascadia-api/src/__tests__/helpers/concurrent-db.race.test.ts
+ * Run: npx vitest run cascadia-api/src/__tests__/helpers/concurrent-db.race.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

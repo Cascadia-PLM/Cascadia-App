@@ -28,7 +28,7 @@
  *  - a program can never lose its last admin — by removal OR demotion
  *  - a role change re-baselines the flag columns to the new role's defaults
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/programs.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/programs.permissions.test.ts
  */
 
 import {

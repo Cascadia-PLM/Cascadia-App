@@ -27,7 +27,7 @@
  *    only a row count can tell a refusal from a half-applied batch that then
  *    refused. The mixed-batch case counts rows either side.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/items.batch-create.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/items.batch-create.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

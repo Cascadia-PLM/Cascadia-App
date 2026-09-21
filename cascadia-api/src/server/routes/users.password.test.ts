@@ -24,7 +24,7 @@
  *  - plain user on either /users/:id route (own id included) → 403
  *  - admin reset → changed, ALL target sessions revoked
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/users.password.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/users.password.test.ts
  */
 
 import {

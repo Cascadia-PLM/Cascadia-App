@@ -23,7 +23,7 @@
  * a future column holding the ciphertext under a different name has to fail it
  * too.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/webhooks.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/webhooks.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

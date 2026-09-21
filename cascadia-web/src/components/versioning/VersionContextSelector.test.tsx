@@ -18,7 +18,7 @@
  * ends it at 50 nested updates with "Maximum update depth exceeded", thrown
  * from whichever library ref callback runs next rather than from here.
  *
- * Run: npx vitest run packages/cascadia-web/src/components/versioning/VersionContextSelector.test.tsx
+ * Run: npx vitest run cascadia-web/src/components/versioning/VersionContextSelector.test.tsx
  */
 
 import { render, waitFor } from '@testing-library/react'

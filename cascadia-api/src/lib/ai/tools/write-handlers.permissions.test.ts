@@ -33,7 +33,7 @@
  * name, the two item numbers and the current state back to the caller. A gate
  * on execution alone would still disclose the target.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/tools/write-handlers.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/tools/write-handlers.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -446,7 +446,7 @@ describe('AI write tools — program isolation', () => {
  * item's type: `requireItemAccess` already gates both source and target at
  * the instance level inside the handler, so only the type dimension was open.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/tools/write-handlers.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/tools/write-handlers.permissions.test.ts
  */
 describe('AI write tools — permission resource follows the target item type', () => {
   const testDb = new TestDatabase()

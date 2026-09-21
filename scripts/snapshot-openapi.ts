@@ -46,7 +46,7 @@ function flagValue(name: string): string | undefined {
 
 const edition = flagValue('--app') ?? resolveApp()
 const { registerModules } = (await import(
-  `../apps/${edition}/src/modules.server`
+  `../${edition}/src/modules.server`
 )) as { registerModules: () => void }
 registerModules()
 

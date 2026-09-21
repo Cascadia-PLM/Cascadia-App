@@ -29,7 +29,7 @@
  * minted for a read-only integration read every job on the instance here while
  * `/api/v1/admin/jobs/:id` refused the same key.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/jobs.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/jobs.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

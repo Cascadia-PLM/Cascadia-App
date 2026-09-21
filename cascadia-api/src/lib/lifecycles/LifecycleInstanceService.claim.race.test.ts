@@ -27,7 +27,7 @@
  * cascade from their item, but the definition outlives it and its name is
  * unique, so leaving one behind would poison the next run.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/lifecycles/LifecycleInstanceService.claim.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/lifecycles/LifecycleInstanceService.claim.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'

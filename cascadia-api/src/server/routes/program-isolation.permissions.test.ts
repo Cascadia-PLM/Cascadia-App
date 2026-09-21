@@ -31,7 +31,7 @@
  *    the row's own sharing rule, and editing or deleting one needs ownership
  *    rather than merely the RBAC verb
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/program-isolation.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/program-isolation.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

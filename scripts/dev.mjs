@@ -35,7 +35,7 @@ const procs = [
     name: 'client',
     color: '\x1b[34m',
     cmd: 'vite',
-    args: ['--port', CLIENT_PORT, '--config', `apps/${APP}/vite.config.ts`],
+    args: ['--port', CLIENT_PORT, '--config', `${APP}/vite.config.ts`],
   },
   // `watch` so edits to server/lib files auto-reload the API (matches Vite HMR
   // on the client side); without it the API serves stale code until restarted.
@@ -43,7 +43,7 @@ const procs = [
     name: 'api',
     color: '\x1b[32m',
     cmd: 'tsx',
-    args: ['watch', `apps/${APP}/src/server/dev.ts`],
+    args: ['watch', `${APP}/src/server/dev.ts`],
   },
 ].filter((p) => only === null || p.name === only)
 

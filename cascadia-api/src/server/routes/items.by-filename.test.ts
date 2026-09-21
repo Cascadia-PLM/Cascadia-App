@@ -15,7 +15,7 @@
  * search that matches only withheld rows is answered exactly like a search
  * that matches nothing, so existence itself does not leak.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/items.by-filename.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/items.by-filename.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

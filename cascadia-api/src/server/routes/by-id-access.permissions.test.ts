@@ -28,7 +28,7 @@
  *    `history`), which hand-rolled a design check that an ECO — whose
  *    `items.design_id` is always NULL — passed vacuously
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/by-id-access.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/by-id-access.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

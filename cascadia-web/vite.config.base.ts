@@ -13,8 +13,15 @@ import type { Plugin } from 'vite'
 import type { VirtualRootRoute } from '@tanstack/virtual-file-routes'
 
 const WEB_DIR = dirname(fileURLToPath(import.meta.url))
-const REPO_ROOT = resolve(WEB_DIR, '../..')
-const PACKAGES_DIR = resolve(REPO_ROOT, 'packages')
+const REPO_ROOT = resolve(WEB_DIR, '..')
+
+/**
+ * Every workspace is a top-level `cascadia-<id>/` directory named
+ * `@cascadia/<id>` — the same convention `scripts/edition-manifest.mjs`
+ * spells out. Restated here because this file cannot import a script: it is
+ * loaded by Vite inside the web package's own program.
+ */
+const WORKSPACE_PREFIX = 'cascadia-'
 
 /**
  * The application packages the client may import, by name.
@@ -27,13 +34,13 @@ const PACKAGES_DIR = resolve(REPO_ROOT, 'packages')
  */
 const APP_PACKAGES = new Map([
   ['@cascadia/web', resolve(WEB_DIR, 'src')],
-  ['@cascadia/commons', resolve(PACKAGES_DIR, 'cascadia-commons/src')],
+  ['@cascadia/commons', resolve(REPO_ROOT, 'cascadia-commons/src')],
 ])
-const APP_PACKAGE_DIRS = new Set([
-  'cascadia-web',
-  'cascadia-commons',
-  'cascadia-api',
-])
+// The application's own workspaces: the two above, the server-only one the
+// client must never resolve, and the app composition roots.
+const isAppWorkspace = (dir: string) =>
+  ['cascadia-web', 'cascadia-commons', 'cascadia-api'].includes(dir) ||
+  dir.startsWith('cascadia-app')
 
 // Discovered, not named: writing a module package's id here would put
 // proprietary knowledge in a core file — `boundary:check` says so, and it is
@@ -41,17 +48,21 @@ const APP_PACKAGE_DIRS = new Set([
 // exist. Presence on disk is the test instead, the same principle as
 // `scripts/workers.mjs` choosing its CAD services by `existsSync`: a directory
 // that is not there contributes nothing, with no flag to get wrong.
-const MODULE_PACKAGES = existsSync(PACKAGES_DIR)
-  ? readdirSync(PACKAGES_DIR).filter(
-      (name) =>
-        !APP_PACKAGE_DIRS.has(name) &&
-        existsSync(resolve(PACKAGES_DIR, name, 'src')),
-    )
-  : []
+//
+// A module is a `cascadia-*` directory with a `package.json` and a `src/`
+// that is not one of the application's own. The manifest test is what keeps
+// the Python workers out: they have a `src/` but are not npm workspaces.
+const MODULE_PACKAGES = readdirSync(REPO_ROOT).filter(
+  (name) =>
+    name.startsWith(WORKSPACE_PREFIX) &&
+    !isAppWorkspace(name) &&
+    existsSync(resolve(REPO_ROOT, name, 'package.json')) &&
+    existsSync(resolve(REPO_ROOT, name, 'src')),
+)
 const MODULE_SRC = new Map(
-  MODULE_PACKAGES.map((p) => [
-    `@cascadia/${p}`,
-    resolve(PACKAGES_DIR, p, 'src'),
+  MODULE_PACKAGES.map((dir) => [
+    `@cascadia/${dir.slice(WORKSPACE_PREFIX.length)}`,
+    resolve(REPO_ROOT, dir, 'src'),
   ]),
 )
 
@@ -182,7 +193,7 @@ export function createAppViteConfig({
       // pdf.js loads character maps and the Base-14 font data at runtime rather
       // than bundling them. Served from our own origin, not a CDN, so the PDF
       // viewer works in air-gapped deployments. Paths must stay in step with
-      // PDFJS_OPTIONS in packages/cascadia-web/src/components/vault/PdfViewer.tsx.
+      // PDFJS_OPTIONS in cascadia-web/src/components/vault/PdfViewer.tsx.
       viteStaticCopy({
         // stripBase flattens the node_modules/... prefix off the matched paths;
         // without it the files land under dist/pdfjs/cmaps/node_modules/...

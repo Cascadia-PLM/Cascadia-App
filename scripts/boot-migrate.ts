@@ -43,15 +43,16 @@ function asRows<T>(result: unknown): Array<T> {
 }
 
 async function main(): Promise<never> {
-  // Resolved at runtime, not imported by name: the image copies apps/, so an
+  // Resolved at runtime, not imported by name: the image copies the app directory, so an
   // enterprise image resolves cascadia-enterprise and a published community
   // image resolves cascadia.
   const app = resolveApp()
   console.log(`[boot] database: ${describeConnection()}  (edition: ${app})`)
 
-  const schema = (await import(
-    `../apps/${app}/src/modules.schema.ts`
-  )) as Record<string, unknown>
+  const schema = (await import(`../${app}/src/modules.schema.ts`)) as Record<
+    string,
+    unknown
+  >
   const expectedTables = Object.values(schema)
     .filter((value): value is PgTable => is(value, PgTable))
     .map((table) => getTableName(table))

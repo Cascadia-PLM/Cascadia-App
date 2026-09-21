@@ -13,7 +13,7 @@
  * wired: no token → preview, never a mutation; redeemed token → execution;
  * replay → fresh preview, no second mutation.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/ai/tools/confirmation-store.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/ai/tools/confirmation-store.test.ts
  */
 
 import {

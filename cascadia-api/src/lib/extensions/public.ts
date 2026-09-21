@@ -4,7 +4,7 @@
 /**
  * The published extension surface: `@cascadia/api/extensions`.
  *
- * This is what a package outside `packages/cascadia-api` may rely on. It ships now
+ * This is what a package outside `cascadia-api` may rely on. It ships now
  * rather than with a future customer story because "public" is otherwise a
  * habit rather than a boundary, and every later attempt to draw the line
  * becomes a breaking change against whatever module authors reached for in the

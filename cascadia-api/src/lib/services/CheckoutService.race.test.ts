@@ -22,7 +22,7 @@
  * `ConcurrentTestDatabase`, which is a real pool — so they commit, and the
  * harness cleans up after itself.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/services/CheckoutService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/services/CheckoutService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'

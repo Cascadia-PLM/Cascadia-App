@@ -17,7 +17,7 @@
  *  - the query count is O(depth), not O(nodes): a tenfold-wider graph at
  *    the same depth issues exactly the same number of queries
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/services/GraphService.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/services/GraphService.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

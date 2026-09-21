@@ -6,7 +6,7 @@ import { dirname } from 'node:path'
 import { physical, rootRoute } from '@tanstack/virtual-file-routes'
 // Relative, not the package alias: Vite loads this file before any path
 // resolution plugin exists, so it must resolve as a plain filesystem import.
-import { createAppViteConfig } from '../../packages/cascadia-web/vite.config.base'
+import { createAppViteConfig } from '../cascadia-web/vite.config.base'
 
 const appDir = dirname(fileURLToPath(import.meta.url))
 

@@ -23,7 +23,7 @@
  *    designId/designCode/designName must still be on the merged node, or the
  *    design columns blank out
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/versioning/graph-utils.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/versioning/graph-utils.test.ts
  */
 
 import { describe, expect, it } from 'vitest'

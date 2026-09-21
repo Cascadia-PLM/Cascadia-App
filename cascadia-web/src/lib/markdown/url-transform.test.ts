@@ -4,11 +4,11 @@
 /**
  * Security gate. Every markdown renderer of model-authored text passes this
  * as `urlTransform`; a gap here reopens the link/image egress channel in
- * every one of them at once. See `packages/cascadia-web/src/components/ai/ChatMessage.links.test.tsx`
+ * every one of them at once. See `cascadia-web/src/components/ai/ChatMessage.links.test.tsx`
  * and the design-engine renderer tests for the component-level assertions
  * that this transform is actually wired in.
  *
- * Run: npx vitest run packages/cascadia-web/src/lib/markdown/url-transform.test.ts
+ * Run: npx vitest run cascadia-web/src/lib/markdown/url-transform.test.ts
  */
 
 import { describe, expect, it } from 'vitest'

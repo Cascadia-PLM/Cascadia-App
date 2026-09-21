@@ -21,7 +21,7 @@
  * the 409 keeps carrying its field conflicts, in the `data` sibling, because
  * they are the whole answer to "what do I have to resolve".
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/branch-items.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/branch-items.test.ts
  */
 
 import {

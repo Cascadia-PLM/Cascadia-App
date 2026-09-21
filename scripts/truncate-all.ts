@@ -19,7 +19,7 @@ import { resolveApp } from './edition.mjs'
 // outright breaks a core-only tree, which is what `npm run core:standalone`
 // builds. This script serves whichever edition the tree actually contains.
 const app = resolveApp()
-const schema = (await import(`../apps/${app}/src/modules.schema.ts`)) as Record<
+const schema = (await import(`../${app}/src/modules.schema.ts`)) as Record<
   string,
   unknown
 >

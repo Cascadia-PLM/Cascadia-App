@@ -17,7 +17,7 @@
  * These tests pin the constraints from both sides: the corrupt shapes throw,
  * and every legal shape — including legacy 'DRAFT' and '' — still inserts.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/db/constraint-checks.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/db/constraint-checks.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

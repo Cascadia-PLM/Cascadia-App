@@ -11,7 +11,7 @@
  * CM-26): a stored row's kind is its column, and this helper only decides
  * what an input that may leave the kind unsaid means.
  *
- * Run: npx vitest run packages/cascadia-commons/src/lib/lifecycles/normalize.test.ts
+ * Run: npx vitest run cascadia-commons/src/lib/lifecycles/normalize.test.ts
  */
 
 import { describe, expect, it } from 'vitest'

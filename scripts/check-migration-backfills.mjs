@@ -87,7 +87,7 @@ loadEnv({ path: resolve(import.meta.dirname, '..', '.env'), quiet: true })
 
 // This script DROPs and recreates the `public` schema once per scenario. It
 // gets an explicitly named database or it does not run — the same posture, and
-// for the same reason, as packages/cascadia-api/src/__tests__/global-setup.ts. Deriving
+// for the same reason, as cascadia-api/src/__tests__/global-setup.ts. Deriving
 // a name would land in a database nobody chose.
 const url = process.env.BACKFILL_DATABASE_URL
 if (!url) {
@@ -120,7 +120,7 @@ for (const guard of ['DATABASE_URL', 'TEST_DATABASE_URL']) {
 
 const repoRoot = process.cwd()
 const app = resolveApp(repoRoot)
-const migrationsFolder = resolve(repoRoot, 'apps', app, 'drizzle')
+const migrationsFolder = resolve(repoRoot, app, 'drizzle')
 
 const journal = JSON.parse(
   readFileSync(resolve(migrationsFolder, 'meta', '_journal.json'), 'utf8'),
@@ -2675,7 +2675,7 @@ function runRatchet() {
       '',
       "✗ A migration's outcome depends on rows and no scenario exercises it:",
       ...uncovered.flatMap((m) => [
-        `     apps/${app}/drizzle/${m.tag}.sql`,
+        `     ${app}/drizzle/${m.tag}.sql`,
         `       ${m.statements.join(', ')}`,
       ]),
       '',
@@ -2704,7 +2704,7 @@ let failures = 0
 
 try {
   console.log(
-    `Replaying apps/${app}/drizzle against populated databases ` +
+    `Replaying ${app}/drizzle against populated databases ` +
       `(${SCENARIOS.length} scenarios, ${migrations.length} migrations).\n`,
   )
 
@@ -2712,7 +2712,7 @@ try {
     const target = migrations.findIndex((m) => m.tag === scenario.tag)
     if (target === -1) {
       console.error(`✗ ${scenario.tag} — ${scenario.name}`)
-      console.error(`     no such migration in apps/${app}/drizzle`)
+      console.error(`     no such migration in ${app}/drizzle`)
       failures += 1
       continue
     }

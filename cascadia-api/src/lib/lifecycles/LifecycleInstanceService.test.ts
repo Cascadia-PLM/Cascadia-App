@@ -7,7 +7,7 @@
  * Integration tests for lifecycle instances: starting, transitions, guards, actions, claims, history and flexible structure. Split from the WorkflowService suite along
  * the same seam as the service (remediation plan CM-22).
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/lifecycles/LifecycleInstanceService.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/lifecycles/LifecycleInstanceService.test.ts
  */
 
 import {

@@ -221,7 +221,7 @@ app.all('/api/*', (c) => {
 // not `dist/` — so the static root has to name the app or every asset 404s and
 // `/` with them. The API kept answering, which is what hid this: the container
 // reported healthy while serving no UI at all. `APP` is set by
-// `scripts/serve.mjs` and by `docker/app.Dockerfile`; the bare fallback keeps a
+// `scripts/serve.mjs` and by `cascadia-app/Dockerfile`; the bare fallback keeps a
 // flat build working.
 const DIST = process.env.APP ? `./dist/${process.env.APP}` : './dist'
 if (process.env.NODE_ENV === 'production') {

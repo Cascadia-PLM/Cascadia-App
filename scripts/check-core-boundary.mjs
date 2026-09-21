@@ -30,7 +30,7 @@
  * reaching the api? See "Application layering" below.
  *
  * This is a stopgap with a known replacement. Phase 2 splits the workspace, at
- * which point CI can build and test `apps/cascadia` with the proprietary
+ * which point CI can build and test `cascadia-app` with the proprietary
  * packages *deleted from the tree* — which proves the same property by
  * construction rather than by analysis. Until then, this is the gate.
  */
@@ -38,10 +38,15 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { MODULE_PACKAGES, editionOf, normalize } from './edition-manifest.mjs'
+import {
+  MODULE_PACKAGES,
+  editionOf,
+  normalize,
+  workspaceDir,
+} from './edition-manifest.mjs'
 
 // Both lists derive from the edition manifest so a new module package is
-// covered the day its packages/<name>/** pattern lands in PROPRIETARY.
+// covered the day its cascadia-<name>/** pattern lands in PROPRIETARY.
 // The old hardcoded copies here had already drifted: they omitted the
 // odoo-integration package entirely, so a core import under it — or its
 // quoted package id — passed this check silently. (No quoted ids in this
@@ -50,7 +55,7 @@ import { MODULE_PACKAGES, editionOf, normalize } from './edition-manifest.mjs'
 /** Entitlement ids that belong to a proprietary package. */
 const PROPRIETARY_PACKAGE_IDS = MODULE_PACKAGES
 
-const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src`)
+const MODULE_SRC = MODULE_PACKAGES.map((p) => `${workspaceDir(p)}/src`)
 
 /**
  * The application's own packages, by import name. `@/` inside one of them
@@ -58,9 +63,9 @@ const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src`)
  * names a package's tsconfig maps are meant to resolve at all.
  */
 const APP_PACKAGES = {
-  '@cascadia/commons': 'packages/cascadia-commons/src',
-  '@cascadia/api': 'packages/cascadia-api/src',
-  '@cascadia/web': 'packages/cascadia-web/src',
+  '@cascadia/commons': 'cascadia-commons/src',
+  '@cascadia/api': 'cascadia-api/src',
+  '@cascadia/web': 'cascadia-web/src',
 }
 const APP_SRC = Object.values(APP_PACKAGES)
 
@@ -73,7 +78,7 @@ const appPackageOf = (file) =>
 /**
  * Entry points, which are allowed to import a composition root.
  *
- * Since Phase 2 the app entry points live in `apps/`, and the enterprise app is
+ * Since Phase 2 the app entry points live in the app workspaces (`cascadia-app`, `cascadia-app-enterprise`), and the enterprise app is
  * classified proprietary in its entirety — so they are no longer core files and
  * need no exemption. What remains is root-level tooling that operates on one
  * edition's composition.
@@ -191,15 +196,15 @@ function resolveSpecifier(specifier, fromFile) {
       // still named a module, and the subpath test below reads straight past
       // it: only a trailing slash matched, so this fell through to null and
       // was never classified. Point it at the package manifest, a real file
-      // under packages/<name>/ that the edition manifest calls proprietary.
+      // under cascadia-<name>/ that the edition manifest calls proprietary.
       // The core package needs no equivalent: a core target records nothing.
       if (specifier === `@cascadia/${name}`) {
-        return tryExtensions(join('packages', name, 'package.json'))
+        return tryExtensions(join(workspaceDir(name), 'package.json'))
       }
       const prefix = `@cascadia/${name}/`
       if (specifier.startsWith(prefix)) {
         return tryExtensions(
-          join('packages', name, 'src', specifier.slice(prefix.length)),
+          join(workspaceDir(name), 'src', specifier.slice(prefix.length)),
         )
       }
     }
@@ -318,12 +323,13 @@ const collisions = [...byRelativePath].filter(([, roots]) => roots.size > 1)
 // A declared edge is fine — it is a fact recorded where npm and a human can
 // both see it. What is refused is an *undeclared* one.
 const moduleOf = (file) =>
-  MODULE_PACKAGES.find((name) => file.startsWith(`packages/${name}/`)) ?? null
+  MODULE_PACKAGES.find((name) => file.startsWith(`${workspaceDir(name)}/`)) ??
+  null
 
 /** Module package → the module packages its package.json admits to needing. */
 const declaredDeps = new Map(
   MODULE_PACKAGES.map((name) => {
-    const manifestPath = `packages/${name}/package.json`
+    const manifestPath = `${workspaceDir(name)}/package.json`
     const manifest = existsSync(manifestPath)
       ? JSON.parse(readFileSync(manifestPath, 'utf8'))
       : {}

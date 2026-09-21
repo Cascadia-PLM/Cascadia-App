@@ -19,7 +19,7 @@
  *    design nothing justifies
  *  - a WI is editable on a protected main, where an ECO-controlled type is not
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/work-instructions.output-part.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/work-instructions.output-part.test.ts
  */
 
 import {

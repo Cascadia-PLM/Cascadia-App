@@ -45,7 +45,7 @@
  * request makes that argument out loud: same caller, same item, their own
  * branch, and the answer is anything but 403.
  *
- * Run: npx vitest run packages/cascadia-api/src/server/routes/branches.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/server/routes/branches.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'

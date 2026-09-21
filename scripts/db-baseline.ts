@@ -80,7 +80,7 @@ import { resolveApp } from './edition.mjs'
 // Resolved at runtime rather than imported by name — same reasoning as
 // truncate-all.ts: this script serves whichever edition the tree contains.
 const app = resolveApp()
-const drizzleDir = resolve(import.meta.dirname, '..', 'apps', app, 'drizzle')
+const drizzleDir = resolve(import.meta.dirname, '..', app, 'drizzle')
 const checkOnly = process.argv.includes('--check')
 
 interface JournalEntry {
@@ -131,7 +131,7 @@ try {
   ) as { entries: Array<JournalEntry> }
 } catch {
   die(
-    `No migration journal at apps/${app}/drizzle/meta/_journal.json — ` +
+    `No migration journal at ${app}/drizzle/meta/_journal.json — ` +
       'nothing to stamp. Baselines are minted at release time via db:generate.',
   )
 }
@@ -228,7 +228,7 @@ const migrations = entries.map((entry) => {
       .update(readFileSync(resolve(drizzleDir, `${tag}.sql`)))
       .digest('hex')
   } catch {
-    return die(`REFUSING to stamp: cannot read apps/${app}/drizzle/${tag}.sql.`)
+    return die(`REFUSING to stamp: cannot read ${app}/drizzle/${tag}.sql.`)
   }
   let snapshot: DrizzleSnapshot
   try {
@@ -237,7 +237,7 @@ const migrations = entries.map((entry) => {
     ) as DrizzleSnapshot
   } catch {
     return die(
-      `REFUSING to stamp: cannot read apps/${app}/drizzle/meta/${snapshotName}. ` +
+      `REFUSING to stamp: cannot read ${app}/drizzle/meta/${snapshotName}. ` +
         'The snapshot is how this script knows what the schema looked like at ' +
         `${tag}; without it the database's position cannot be established.`,
     )

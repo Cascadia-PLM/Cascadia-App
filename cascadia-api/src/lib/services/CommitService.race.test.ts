@@ -25,7 +25,7 @@
  * commit for real through `ConcurrentTestDatabase`, and the harness cleans up
  * after itself.
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/services/CommitService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/services/CommitService.race.test.ts
  */
 
 import {

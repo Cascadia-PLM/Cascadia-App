@@ -11,7 +11,7 @@
  * failed to fold it in, every change order on that install would refuse to
  * be created with "no workflow configured" (remediation plan CM-25).
  *
- * Run: npx vitest run packages/cascadia-api/src/lib/config/ConfigService.test.ts
+ * Run: npx vitest run cascadia-api/src/lib/config/ConfigService.test.ts
  */
 
 import {

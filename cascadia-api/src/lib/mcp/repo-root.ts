@@ -6,8 +6,8 @@
  *
  * The dev server reads `docs/`, the root markdown files, and runs the root
  * `package.json` scripts — all of which live at the top of the checkout, not
- * inside `packages/core`. Counting `..` segments from this file's location
- * encoded the pre-monorepo layout and silently pointed at `packages/core`
+ * inside this package. Counting `..` segments from this file's location
+ * encoded the pre-monorepo layout and silently pointed at the package root
  * after the move: `search_docs` found zero files, `read_doc` returned ENOENT,
  * and the `db_*` commands would have run in the wrong directory.
  *

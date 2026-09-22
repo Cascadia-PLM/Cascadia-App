@@ -14,16 +14,18 @@
  * need the id. Its block below asserts the listing draws exactly the boundary
  * the by-id routes draw.
  *
- * Both users here hold the same role — create, read, update and delete on
- * documents, and nothing else. The only difference between them is program
- * membership, so a 403 (or an absent row) can only come from the design gate.
+ * Both users here hold the same item-level permissions. The only difference
+ * between them is program membership, so a 403 (or an absent row) can only
+ * come from the design gate. The role also carries `tools:update` because the
+ * design-less force-unlock fixture owns its file through a Tool; vault writes
+ * are charged against the owning item type.
  * The role used to carry `documents:manage` as well, which existed solely to
  * satisfy `POST /:fileId/force-unlock`'s old tuple; nothing charges that
  * action now, and keeping it made a reader think the route was covered.
  *
  * The final block covers what that grant was hiding: force-unlock is charged
- * `documents:update` plus `system:manage` on eviction, and no leg here had
- * ever asserted that a role can actually reach it.
+ * the owning item's update permission plus `system:manage` on eviction, and
+ * no leg here had ever asserted that a role can actually reach it.
  *
  * Run: npx vitest run packages/cascadia-api/src/server/routes/files.permissions.test.ts
  */
@@ -194,15 +196,16 @@ describe('file vault routes — program isolation', () => {
     await testDb.beginTransaction()
     permissionService.clearCache()
 
-    // Every documents verb and nothing else — in particular no
-    // programs:manage, which is the cross-program bypass, and no system:manage,
-    // which is what force-unlock charges to evict another holder. Unique name
-    // because `roles` is shared and suites run in parallel.
+    // Item permissions needed by the Part, Document, and Tool fixtures, but
+    // no programs:manage (the cross-program bypass) or system:manage (the
+    // force-unlock eviction override). Unique name because `roles` is shared
+    // and suites run in parallel.
     const role = await insertTestRole(
       testDb.db,
       createCustomTestRole(`Documents All ${randomUUID().slice(0, 8)}`, {
         documents: ['create', 'read', 'update', 'delete'],
         parts: ['create', 'read', 'update'],
+        tools: ['create', 'read', 'update'],
         designs: ['create', 'read'],
       }),
     )
@@ -465,9 +468,10 @@ describe('file vault routes — program isolation', () => {
     })
 
     it('refuses a caller holding no system:manage, and leaves the lock standing', async () => {
-      // On a design-less item, deliberately: `requireFileAccess` cannot refuse
-      // it (see `designLessFile` above), so the only gate left standing on
-      // this route is the eviction override. A 403 here is attributable to
+      // On a design-less item, deliberately: `requireFileAccess` admits it
+      // (see `designLessFile` above), and the shared role satisfies the Tool
+      // owner's update permission. The only gate left standing on this route
+      // is therefore the eviction override. A 403 here is attributable to
       // that charge and to nothing else.
       const jigId = await designLessFile(member)
       await checkOut(member, jigId)

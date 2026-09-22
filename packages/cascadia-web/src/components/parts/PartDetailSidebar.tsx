@@ -34,6 +34,7 @@ export function PartDetailSidebar({
   isCreateMode,
   isEditing,
   isSubmitting,
+  canMutateFiles,
   attributes,
   onAttributesChange,
   context,
@@ -47,6 +48,8 @@ export function PartDetailSidebar({
   isCreateMode: boolean
   isEditing: boolean
   isSubmitting: boolean
+  /** Whether the current user holds the editable item checkout. */
+  canMutateFiles: boolean
   attributes: Record<string, unknown>
   onAttributesChange: (attributes: Record<string, unknown>) => void
   context: VersionContext
@@ -115,7 +118,8 @@ export function PartDetailSidebar({
           <CardContent className="space-y-4">
             <FileUploadZone
               itemId={part.id}
-              branchId={branchId ?? mainBranchId}
+              branchId={branchId}
+              readOnly={!canMutateFiles}
               onUploadComplete={onUploaded}
               onUploadError={onUploadError}
             />
@@ -123,6 +127,7 @@ export function PartDetailSidebar({
               itemId={part.id}
               branchId={branchId}
               mainBranchId={mainBranchId}
+              readOnly={!canMutateFiles}
               onViewCAD={cadViewer.showFile}
               onThumbnailChanged={cadViewer.bumpThumbnail}
             />

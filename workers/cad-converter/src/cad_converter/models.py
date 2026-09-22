@@ -36,6 +36,7 @@ class CadConversionPayload(BaseModel):
 
     vaultFileId: str
     itemId: str
+    outputBranchId: Optional[str] = None
     outputFormat: str = "stl"
     meshQuality: MeshQuality = MeshQuality.STANDARD
     decompose: bool = False

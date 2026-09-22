@@ -403,6 +403,19 @@ export function PartDetail({
     editContext,
   })
 
+  // File content is part of the item revision. It may only change while this
+  // exact version is editable and checked out by the current user. In
+  // particular, released/main and historical contexts stay read-only, and a
+  // locked ECO cannot be changed even if its branch URL is still open.
+  const canMutateFiles =
+    !isCreateMode &&
+    isEditing &&
+    !isSubmitting &&
+    editContext !== null &&
+    isEditable &&
+    !editContext.isBranchLocked &&
+    editLock.heldByMe
+
   const handleEdit = async () => {
     if (needsCheckout) {
       setIsCheckoutDialogOpen(true)
@@ -882,6 +895,7 @@ export function PartDetail({
                 isCreateMode={isCreateMode}
                 isEditing={isEditing}
                 isSubmitting={isSubmitting}
+                canMutateFiles={canMutateFiles}
                 attributes={attributes}
                 onAttributesChange={setAttributes}
                 context={context}

@@ -57,6 +57,17 @@ export const watermarkPdfHandler: JobHandler<
           skipped.push({ fileId, reason: 'File no longer exists' })
           continue
         }
+        if (payload.requireEditable) {
+          // A manual request can wait in the queue while its ECO is submitted
+          // or its working copy is merged. Re-check at execution time so the
+          // asynchronous rewrite cannot cross that protection boundary.
+          const [{ requireItemAccess }, { ItemService }] = await Promise.all([
+            import('@/lib/auth/access'),
+            import('@/lib/items/services/ItemService'),
+          ])
+          const item = await requireItemAccess(payload.userId, file.itemId)
+          await ItemService.requireContentEditable(item, payload.userId)
+        }
         if (previewKindFor(file.originalFileName) !== 'pdf') {
           skipped.push({ fileId, reason: 'Not a PDF' })
           continue
@@ -91,6 +102,18 @@ export const watermarkPdfHandler: JobHandler<
           color: payload.color,
           opacity: payload.opacity,
         })
+
+        // Rendering may be slow enough for an ECO to be submitted after the
+        // first check. Close that queue/processing window immediately before
+        // the write; automatic release stamps deliberately skip both checks.
+        if (payload.requireEditable) {
+          const [{ requireItemAccess }, { ItemService }] = await Promise.all([
+            import('@/lib/auth/access'),
+            import('@/lib/items/services/ItemService'),
+          ])
+          const item = await requireItemAccess(payload.userId, file.itemId)
+          await ItemService.requireContentEditable(item, payload.userId)
+        }
 
         await FileService.replaceContent({
           fileId,

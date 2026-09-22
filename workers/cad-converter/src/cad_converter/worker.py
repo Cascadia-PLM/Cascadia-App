@@ -480,7 +480,7 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
 
             file_id = insert_vault_file(
                 item_id=payload.itemId,
-                branch_id=vault_file.branch_id,
+                branch_id=payload.outputBranchId,
                 file_name=stl_filename,
                 original_file_name=stl_filename,
                 file_size=file_size,
@@ -549,7 +549,7 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
 
                 glb_file_id = insert_vault_file(
                     item_id=payload.itemId,
-                    branch_id=vault_file.branch_id,
+                    branch_id=payload.outputBranchId,
                     file_name=glb_filename,
                     original_file_name=glb_filename,
                     file_size=glb_size,
@@ -591,7 +591,7 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
 
                 thumbnail_file_id = insert_vault_file(
                     item_id=payload.itemId,
-                    branch_id=vault_file.branch_id,
+                    branch_id=payload.outputBranchId,
                     file_name="thumbnail.png",
                     original_file_name="thumbnail.png",
                     file_size=thumb_size,
@@ -602,8 +602,12 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                     file_category="thumbnail",
                 )
 
-                # Link thumbnail to the source CAD file
-                update_vault_file_thumbnail(payload.vaultFileId, thumbnail_file_id)
+                # Do not mutate a source revision when conversion output was
+                # deliberately directed to another (possibly working-copy)
+                # item. The source only receives the generated preview when
+                # it is itself the authorized output owner.
+                if vault_file.item_id == payload.itemId:
+                    update_vault_file_thumbnail(payload.vaultFileId, thumbnail_file_id)
 
                 # Link thumbnail to all output STL files
                 for stl_file_id in output_file_ids:

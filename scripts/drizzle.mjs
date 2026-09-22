@@ -30,7 +30,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { config as loadEnv } from 'dotenv'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 import { reconcileIndexPredicates } from './reconcile-index-predicates.mjs'
 
 // drizzle-kit loads `.env` from its *working directory*, and this script runs
@@ -50,7 +50,7 @@ if (args.length === 0) {
   process.exit(2)
 }
 
-const appDir = resolve(process.cwd(), resolveApp())
+const appPath = resolve(process.cwd(), appDir(resolveApp()))
 // A full checkout has the CLI in the root dependency tree. The production
 // image keeps it in /opt/admin instead and exposes only its binary through
 // PATH, so prefer the local binary when present and otherwise let PATH resolve
@@ -66,7 +66,7 @@ const drizzleKit = existsSync(localDrizzleKit) ? localDrizzleKit : 'drizzle-kit'
 
 function runDrizzleKit() {
   execFileSync(drizzleKit, [...args, '--config', 'drizzle.config.ts'], {
-    cwd: appDir,
+    cwd: appPath,
     stdio: 'inherit',
     shell: process.platform === 'win32',
   })
@@ -82,7 +82,7 @@ try {
   if (args[0] === 'push' && process.env.DATABASE_URL) {
     await reconcileIndexPredicates({
       databaseUrl: process.env.DATABASE_URL,
-      appDir,
+      appDir: appPath,
       push: runDrizzleKit,
     })
   }

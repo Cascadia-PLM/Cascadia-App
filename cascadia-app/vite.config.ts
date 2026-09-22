@@ -12,6 +12,7 @@ const appDir = dirname(fileURLToPath(import.meta.url))
 
 export default createAppViteConfig({
   appDir,
+  appName: 'cascadia',
   // The web package's routes and nothing else. The enterprise sibling adds one
   // more line.
   virtualRouteConfig: rootRoute('__root.tsx', [physical('', '.')]),

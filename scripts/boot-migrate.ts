@@ -33,7 +33,7 @@ import { getTableName, is, sql } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 import { db, describeConnection } from '@cascadia/api/lib/db'
 import { classifyMigrationState } from './boot-migrate-state.ts'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 
 /** Same defensive unwrap as db-baseline.ts — the driver returns a RowList. */
 function asRows<T>(result: unknown): Array<T> {
@@ -49,10 +49,9 @@ async function main(): Promise<never> {
   const app = resolveApp()
   console.log(`[boot] database: ${describeConnection()}  (edition: ${app})`)
 
-  const schema = (await import(`../${app}/src/modules.schema.ts`)) as Record<
-    string,
-    unknown
-  >
+  const schema = (await import(
+    `../${appDir(app)}/src/modules.schema.ts`
+  )) as Record<string, unknown>
   const expectedTables = Object.values(schema)
     .filter((value): value is PgTable => is(value, PgTable))
     .map((table) => getTableName(table))

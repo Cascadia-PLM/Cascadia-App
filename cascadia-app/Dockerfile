@@ -56,7 +56,7 @@ COPY . .
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Which edition this image contains. This tree carries only the AGPL
 # community build.
-ARG APP=cascadia-app
+ARG APP=cascadia
 
 # Which build this is, for the stamp at the foot of the sidebar. Vite inlines
 # any VITE_-prefixed variable present at build time, so these have to be set
@@ -211,7 +211,7 @@ ENTRYPOINT ["dumb-init", "--"]
 
 # Re-declared: an ARG from an earlier stage is not in scope here. Carried into
 # the environment so the CMD below can name the edition's output directory.
-ARG APP=cascadia-app
+ARG APP=cascadia
 ENV APP=${APP}
 
 # Shell form deliberately — the exec form does not expand ${APP}.

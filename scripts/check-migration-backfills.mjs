@@ -68,7 +68,7 @@ import { config as loadEnv } from 'dotenv'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import postgres from 'postgres'
 
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 import {
   isDataOnly,
   rowDependentStatements,
@@ -120,7 +120,8 @@ for (const guard of ['DATABASE_URL', 'TEST_DATABASE_URL']) {
 
 const repoRoot = process.cwd()
 const app = resolveApp(repoRoot)
-const migrationsFolder = resolve(repoRoot, app, 'drizzle')
+const dir = appDir(app)
+const migrationsFolder = resolve(repoRoot, dir, 'drizzle')
 
 const journal = JSON.parse(
   readFileSync(resolve(migrationsFolder, 'meta', '_journal.json'), 'utf8'),
@@ -2675,7 +2676,7 @@ function runRatchet() {
       '',
       "✗ A migration's outcome depends on rows and no scenario exercises it:",
       ...uncovered.flatMap((m) => [
-        `     ${app}/drizzle/${m.tag}.sql`,
+        `     ${dir}/drizzle/${m.tag}.sql`,
         `       ${m.statements.join(', ')}`,
       ]),
       '',
@@ -2704,7 +2705,7 @@ let failures = 0
 
 try {
   console.log(
-    `Replaying ${app}/drizzle against populated databases ` +
+    `Replaying ${dir}/drizzle against populated databases ` +
       `(${SCENARIOS.length} scenarios, ${migrations.length} migrations).\n`,
   )
 
@@ -2712,7 +2713,7 @@ try {
     const target = migrations.findIndex((m) => m.tag === scenario.tag)
     if (target === -1) {
       console.error(`✗ ${scenario.tag} — ${scenario.name}`)
-      console.error(`     no such migration in ${app}/drizzle`)
+      console.error(`     no such migration in ${dir}/drizzle`)
       failures += 1
       continue
     }

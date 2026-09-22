@@ -23,16 +23,19 @@ import {
 } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { assertBundleParses, cjsInteropBanner } from './build-shared.mjs'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 import { render } from './generate-third-party-notices.mjs'
 
 // No argument means "whichever edition this tree is", so `npm run build` works
 // in both without naming an app that one of them does not have.
 const app = process.argv[2] ?? resolveApp()
 
-const appDir = resolve(process.cwd(), app)
-if (!existsSync(appDir)) {
-  console.error(`No such app: ${app}`)
+// The app's *name* namespaces the artefacts (`dist/cascadia`,
+// `.output/cascadia`, and the `APP` the server reads to find its static root);
+// its *directory* is where the sources are. See scripts/edition.mjs.
+const APP_DIR = appDir(app)
+if (!existsSync(resolve(process.cwd(), APP_DIR))) {
+  console.error(`No such app: ${app} (looked for ${APP_DIR}/)`)
   process.exit(1)
 }
 
@@ -77,7 +80,7 @@ async function bundle(entry, outfile) {
     // esbuild reads `paths` from the app's tsconfig, which is what makes
     // `@cascadia/api/`, `@cascadia/commons/` and `@cascadia/enterprise/` resolve here exactly
     // as they do for tsc and Vite.
-    tsconfig: `${app}/tsconfig.json`,
+    tsconfig: `${APP_DIR}/tsconfig.json`,
     logLevel: 'info',
   })
 
@@ -125,18 +128,25 @@ function assertStyled(edition) {
 // Client first — it generates routeTree.gen.ts, which the server bundle's
 // type-level imports and the app's typecheck both depend on.
 console.log(`\n▶ Client bundle (${app})`)
-execFileSync('npx', ['vite', 'build', '--config', `${app}/vite.config.ts`], {
-  stdio: 'inherit',
-  shell: process.platform === 'win32',
-})
+execFileSync(
+  'npx',
+  ['vite', 'build', '--config', `${APP_DIR}/vite.config.ts`],
+  {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  },
+)
 
 assertStyled(app)
 
 console.log(`\n▶ API server (${app})`)
-await bundle(`${app}/src/server/prod.ts`, `${outBase}/server/index.mjs`)
+await bundle(`${APP_DIR}/src/server/prod.ts`, `${outBase}/server/index.mjs`)
 
 console.log(`\n▶ Jobs worker (${app})`)
-await bundle(`${app}/src/jobs-worker.ts`, `${outBase}/server/jobs-worker.mjs`)
+await bundle(
+  `${APP_DIR}/src/jobs-worker.ts`,
+  `${outBase}/server/jobs-worker.mjs`,
+)
 
 /**
  * Attribution for everything we redistribute.

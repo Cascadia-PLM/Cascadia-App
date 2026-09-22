@@ -151,6 +151,10 @@ export interface AppViteOptions {
   /** Absolute path to the app directory (its `index.html` lives here). */
   appDir: string
   /**
+   * The app's name, which may differ from the app directory
+   */
+  appName: string
+  /**
    * Extra package source roots this edition includes, searched after web when
    * resolving `@/`. Empty for the community edition — which is what makes its
    * bundle unable to reach module code even by accident.
@@ -176,6 +180,7 @@ export interface AppViteOptions {
  */
 export function createAppViteConfig({
   appDir,
+  appName,
   virtualRouteConfig,
   moduleRoots = [],
 }: AppViteOptions) {
@@ -224,7 +229,7 @@ export function createAppViteConfig({
       }),
     ],
     publicDir: resolve(REPO_ROOT, 'public'),
-    build: { outDir: resolve(REPO_ROOT, 'dist', appDir.split(/[\\/]/).pop()!) },
+    build: { outDir: resolve(REPO_ROOT, 'dist', appName) },
     server: {
       port: 3000,
       // Fail if 3000 is taken instead of silently taking the next free port —

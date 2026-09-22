@@ -55,7 +55,7 @@ COPY . .
 # Build application (increase heap for large TanStack Start builds)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Which edition's job handlers this worker carries. See cascadia-app/Dockerfile.
-ARG APP=cascadia-app
+ARG APP=cascadia
 RUN npm run build:app -- "$APP"
 
 # =============================================================================
@@ -133,6 +133,6 @@ ENTRYPOINT ["dumb-init", "--"]
 # Start jobs worker
 # Re-declared: an ARG from an earlier stage is not in scope here. Shell form so
 # ${APP} expands — the exec form would pass it literally.
-ARG APP=cascadia-app
+ARG APP=cascadia
 ENV APP=${APP}
 CMD node .output/${APP}/server/jobs-worker.mjs

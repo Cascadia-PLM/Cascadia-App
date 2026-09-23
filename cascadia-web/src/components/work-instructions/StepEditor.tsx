@@ -31,6 +31,7 @@ import {
   Textarea,
 } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { apiErrorFromResponse } from '@/lib/api/client'
 
 interface StepEditorProps {
   steps: Array<WorkInstructionStep>
@@ -93,8 +94,7 @@ function StepBlockEditor({
       )
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || error.error || 'Upload failed')
+        throw await apiErrorFromResponse(response, 'Upload failed')
       }
 
       const result = await response.json()

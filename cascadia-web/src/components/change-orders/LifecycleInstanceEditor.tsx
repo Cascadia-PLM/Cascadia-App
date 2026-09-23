@@ -30,6 +30,7 @@ import { StateNode } from '@/components/lifecycles/StateNode'
 import { TransitionEdge } from '@/components/lifecycles/TransitionEdge'
 import { Button } from '@/components/ui/Button'
 import { useTheme } from '@/lib/theme'
+import { apiErrorFromResponse } from '@/lib/api/client'
 
 interface LifecycleInstanceEditorProps {
   changeOrderId: string
@@ -372,8 +373,7 @@ function WorkflowInstanceEditorInner({
       )
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to save')
+        throw await apiErrorFromResponse(response, 'Failed to save')
       }
 
       setHasChanges(false)

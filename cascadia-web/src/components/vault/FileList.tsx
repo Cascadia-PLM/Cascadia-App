@@ -38,6 +38,7 @@ import { itemFilesQuery } from '@/lib/query/options/item-files'
 import { FileCategoryMenu } from '@/components/vault/FileCategoryMenu'
 import { FilePreviewDialog } from '@/components/vault/FilePreviewDialog'
 import { Slot } from '@/lib/ui/slot-registry'
+import { apiErrorFromResponse } from '@/lib/api/client'
 
 export interface FileRecord {
   id: string
@@ -156,8 +157,7 @@ export function FileList({
           })
 
           if (!response.ok) {
-            const errData = await response.json()
-            throw new Error(errData.details || errData.error || 'Delete failed')
+            throw await apiErrorFromResponse(response, 'Delete failed')
           }
 
           await invalidate('files')
@@ -177,8 +177,7 @@ export function FileList({
       })
 
       if (!response.ok) {
-        const errData = await response.json()
-        throw new Error(errData.details || errData.error || 'Checkout failed')
+        throw await apiErrorFromResponse(response, 'Checkout failed')
       }
 
       // Reload files to get updated status
@@ -196,8 +195,7 @@ export function FileList({
       })
 
       if (!response.ok) {
-        const errData = await response.json()
-        throw new Error(errData.details || errData.error || 'Checkin failed')
+        throw await apiErrorFromResponse(response, 'Checkin failed')
       }
 
       // Reload files to get updated status
@@ -222,10 +220,7 @@ export function FileList({
           })
 
           if (!response.ok) {
-            const errData = await response.json()
-            throw new Error(
-              errData.details || errData.error || 'Force unlock failed',
-            )
+            throw await apiErrorFromResponse(response, 'Force unlock failed')
           }
 
           await loadFiles()
@@ -248,10 +243,7 @@ export function FileList({
       })
 
       if (!response.ok) {
-        const errData = await response.json()
-        throw new Error(
-          errData.details || errData.error || 'Failed to update thumbnail',
-        )
+        throw await apiErrorFromResponse(response, 'Failed to update thumbnail')
       }
 
       await invalidate('files')
@@ -274,10 +266,7 @@ export function FileList({
       })
 
       if (!response.ok) {
-        const errData = await response.json()
-        throw new Error(
-          errData.details || errData.error || 'Failed to update category',
-        )
+        throw await apiErrorFromResponse(response, 'Failed to update category')
       }
 
       await invalidate('files')

@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { apiErrorFromResponse, apiFetch } from '@/lib/api/client'
 import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
 import { fileMetadataQuery, useInvalidateResources } from '@/lib/query'
 
@@ -76,12 +76,7 @@ export function BuildArtifactCard({ software }: { software: Software }) {
         { method: 'POST', body: formData },
       )
       if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as {
-          error?: { message?: string }
-        } | null
-        throw new Error(
-          body?.error?.message ?? `Upload failed (${response.status})`,
-        )
+        throw await apiErrorFromResponse(response, 'Upload failed')
       }
       const result = (await response.json()) as {
         data: { files: Array<FileMetadata> }

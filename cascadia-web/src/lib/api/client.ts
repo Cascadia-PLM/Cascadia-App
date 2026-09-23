@@ -22,30 +22,96 @@ interface FetchOptions extends RequestInit {
   retry?: boolean | Partial<RetryConfig>
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function errorCode(value: unknown): ErrorCode {
+  // Codes this build does not know pass through: getErrorStrategy() and
+  // isRetryableError() already have fallbacks for them. Keeping the server's
+  // value also preserves the useful code in logs and diagnostics.
+  return (
+    (nonEmptyString(value) as ErrorCode | undefined) ?? ErrorCode.INTERNAL_ERROR
+  )
+}
+
+function fieldErrors(value: unknown): ErrorResponse['error']['fieldErrors'] {
+  if (!Array.isArray(value)) return undefined
+  const parsed = value.flatMap((entry) => {
+    if (!isRecord(entry)) return []
+    const message = nonEmptyString(entry.message)
+    if (!message) return []
+    // Object-level validation rules have no field path. Keep their message;
+    // describeError() renders an empty field without a prefix.
+    const field = typeof entry.field === 'string' ? entry.field : ''
+    return [{ field, message }]
+  })
+  return parsed.length > 0 ? parsed : undefined
+}
+
 /**
  * Parse an error response from the API.
  */
 async function parseErrorResponse(
   response: Response,
+  fallbackMessage: string = 'An unexpected error occurred',
 ): Promise<ErrorResponse['error']> {
   try {
-    const json = await response.json()
-    if (json.error) {
-      return json.error
-    }
-    // Legacy error format support
-    return {
-      code: ErrorCode.INTERNAL_ERROR,
-      message: json.message ?? 'An unexpected error occurred',
-      timestamp: new Date().toISOString(),
+    const json: unknown = await response.json()
+    if (isRecord(json)) {
+      const nested = json.error
+      if (isRecord(nested)) {
+        return {
+          code: errorCode(nested.code),
+          message: nonEmptyString(nested.message) ?? fallbackMessage,
+          fieldErrors: fieldErrors(nested.fieldErrors),
+          requestId: nonEmptyString(nested.requestId),
+          timestamp:
+            nonEmptyString(nested.timestamp) ?? new Date().toISOString(),
+        }
+      }
+
+      // Legacy endpoints used one of these top-level string fields. Objects
+      // are deliberately ignored: coercing them is how "[object Object]"
+      // reached dialogs and toasts.
+      const message =
+        nonEmptyString(json.message) ??
+        nonEmptyString(json.details) ??
+        nonEmptyString(json.error) ??
+        fallbackMessage
+      return {
+        code: errorCode(json.code),
+        message,
+        timestamp: new Date().toISOString(),
+      }
     }
   } catch {
-    return {
-      code: ErrorCode.INTERNAL_ERROR,
-      message: 'An unexpected error occurred',
-      timestamp: new Date().toISOString(),
-    }
+    // Non-JSON responses use the caller's operation-specific fallback.
   }
+  return {
+    code: ErrorCode.INTERNAL_ERROR,
+    message: fallbackMessage,
+    timestamp: new Date().toISOString(),
+  }
+}
+
+/**
+ * Convert a failed raw `fetch` response into the same typed error `apiFetch`
+ * throws. Use this for multipart uploads and binary downloads, where the
+ * browser must control headers or the success body is not JSON.
+ */
+export async function apiErrorFromResponse(
+  response: Response,
+  fallbackMessage: string = 'An unexpected error occurred',
+): Promise<ApiError> {
+  return ApiError.fromResponse(
+    await parseErrorResponse(response, fallbackMessage),
+    response.status,
+  )
 }
 
 /**
@@ -96,8 +162,7 @@ export async function apiFetch<T>(
       })
 
       if (!response.ok) {
-        const errorData = await parseErrorResponse(response)
-        const apiError = ApiError.fromResponse(errorData, response.status)
+        const apiError = await apiErrorFromResponse(response)
 
         // Check if we should retry
         if (

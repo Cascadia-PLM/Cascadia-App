@@ -43,7 +43,7 @@ import {
 } from '@/components/ui'
 import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { apiErrorFromResponse, apiFetch } from '@/lib/api/client'
 import {
   softwareDiffQuery,
   softwareFileQuery,
@@ -624,12 +624,7 @@ export function SourceViewer({
           body: formData,
         })
         if (!response.ok) {
-          const body = (await response.json().catch(() => null)) as {
-            error?: { message?: string }
-          } | null
-          throw new Error(
-            body?.error?.message ?? `Import failed (${response.status})`,
-          )
+          throw await apiErrorFromResponse(response, 'Import failed')
         }
         showSuccess('Source imported', successMessage)
         setSelectedPath(null)

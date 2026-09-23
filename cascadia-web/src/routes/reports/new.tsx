@@ -9,6 +9,7 @@ import { PageContainer } from '@/components/layout'
 import { ReportBuilder } from '@/components/reports/ReportBuilder'
 import { Button } from '@/components/ui'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiErrorFromResponse } from '@/lib/api/client'
 
 export const Route = createFileRoute('/reports/new')({
   component: NewReportPage,
@@ -29,8 +30,7 @@ function NewReportPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || 'Failed to create report')
+        throw await apiErrorFromResponse(response, 'Failed to create report')
       }
 
       const { report } = await response.json()

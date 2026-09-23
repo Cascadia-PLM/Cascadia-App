@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiErrorFromResponse } from '@/lib/api/client'
 
 export const Route = createFileRoute('/users/new')({
   component: NewUserPage,
@@ -35,8 +36,7 @@ function NewUserPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || 'Failed to create user')
+        throw await apiErrorFromResponse(response, 'Failed to create user')
       }
 
       // Navigate to the users list

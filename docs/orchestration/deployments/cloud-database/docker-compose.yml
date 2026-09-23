@@ -18,6 +18,13 @@ services:
 
       BASE_URL: ${BASE_URL:-http://localhost:3000}
 
+      # Reverse proxies in front of the app (0 = none); see
+      # docs/orchestration/configuration.md. Behind one that terminates TLS it
+      # must be set, or every browser write is refused as cross-origin.
+      # Declared, not inherited: a variable this file does not list never
+      # reaches the container, whatever .env says.
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-0}
+
       # Vault - local storage (or configure S3)
       VAULT_MODE: embedded
       VAULT_TYPE: ${VAULT_TYPE:-local}

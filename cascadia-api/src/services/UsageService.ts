@@ -551,11 +551,33 @@ export class UsageService {
       branchId?: string
     },
     userId: string,
+    options: {
+      /**
+       * Called with every item the copy would make a usage of — the root and
+       * its whole BOM subtree — before any of them is written or named in a
+       * refusal; throwing refuses the copy. A usage carries its definition's
+       * fields into the target design, so the copy is a read of each item,
+       * and this is where the caller charges those reads.
+       */
+      authorize?: (subtree: Array<typeof items.$inferSelect>) => Promise<void>
+    } = {},
   ): Promise<{
     items: Array<typeof items.$inferSelect>
     relationshipsCreated: number
   }> {
     const { rootItemId, targetDesignId, suffixItemNumber, branchId } = input
+
+    // Pulled in on a branch, the usages are that branch's content. Nothing
+    // below commits, so this is the only place an archived branch is refused.
+    if (branchId) {
+      const branch = await BranchService.getById(branchId)
+      if (!branch) {
+        throw new NotFoundError('Branch', branchId, {
+          operation: 'createUsageSubtree',
+        })
+      }
+      BranchService.assertNotArchived(branch, 'createUsageSubtree')
+    }
 
     const design = await db
       .select({ id: designs.id, code: designs.code })
@@ -575,17 +597,6 @@ export class UsageService {
       .then((r) => r.at(0))
     if (!rootItem) {
       throw new NotFoundError('Item', rootItemId)
-    }
-
-    // A root already present in the target design is a caller mistake, not a
-    // reuse case — reusing it would silently no-op the whole copy.
-    const existingRootUsages = await this.getUsagesOfDefinition(rootItemId, {
-      designId: targetDesignId,
-    })
-    if (existingRootUsages.length > 0) {
-      throw new ValidationError(
-        `A usage of ${rootItem.itemNumber} already exists in this design`,
-      )
     }
 
     // Step 1: collect the BOM subtree via BFS.
@@ -622,6 +633,21 @@ export class UsageService {
       subtreeItemIds.length > 0
         ? await db.select().from(items).where(inArray(items.id, subtreeItemIds))
         : []
+
+    // Charged before any of them is written, and before either check below
+    // quotes one of their item numbers back.
+    await options.authorize?.(subtreeItems)
+
+    // A root already present in the target design is a caller mistake, not a
+    // reuse case — reusing it would silently no-op the whole copy.
+    const existingRootUsages = await this.getUsagesOfDefinition(rootItemId, {
+      designId: targetDesignId,
+    })
+    if (existingRootUsages.length > 0) {
+      throw new ValidationError(
+        `A usage of ${rootItem.itemNumber} already exists in this design`,
+      )
+    }
 
     // Validate suffixed item numbers won't exceed column length.
     if (suffixItemNumber && design.code) {

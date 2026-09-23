@@ -14,6 +14,18 @@ import type {
 } from '../types.js'
 
 /**
+ * `TRUSTED_PROXY_COUNT`, listed in every app service's environment.
+ *
+ * Compose hands a container only the variables its `environment:` names, so
+ * the value `./env.ts` writes into `.env` (`TRUSTED_PROXY_BLOCK`) reached no
+ * generated deployment until this entry existed: setting it, as that file's
+ * comment tells the operator to, changed nothing. The default matches the one
+ * the app applies when the variable is unset. Not given to the jobs worker,
+ * which serves no HTTP.
+ */
+const TRUSTED_PROXY_ENV = { TRUSTED_PROXY_COUNT: '${TRUSTED_PROXY_COUNT:-0}' }
+
+/**
  * Generate docker-compose.yml for single-server deployment
  */
 export function generateSingleServerCompose(
@@ -54,6 +66,7 @@ export function generateSingleServerCompose(
           NODE_ENV: '${NODE_ENV}',
           DATABASE_URL: '${DATABASE_URL}',
           BASE_URL: '${BASE_URL}',
+          ...TRUSTED_PROXY_ENV,
           VAULT_MODE: '${VAULT_MODE:-embedded}',
           VAULT_TYPE: '${VAULT_TYPE:-local}',
           VAULT_ROOT: '${VAULT_ROOT:-/app/vault}',
@@ -250,6 +263,7 @@ export function generateDistributedCompose(
             NODE_ENV: '${NODE_ENV}',
             DATABASE_URL: '${DATABASE_URL}',
             BASE_URL: '${BASE_URL}',
+            ...TRUSTED_PROXY_ENV,
             VAULT_MODE: '${VAULT_MODE:-embedded}',
             VAULT_TYPE: '${VAULT_TYPE:-s3}',
             S3_ENDPOINT: '${S3_ENDPOINT}',
@@ -362,6 +376,7 @@ export function generateCloudDatabaseCompose(
           NODE_ENV: '${NODE_ENV}',
           DATABASE_URL: '${DATABASE_URL}',
           BASE_URL: '${BASE_URL}',
+          ...TRUSTED_PROXY_ENV,
           VAULT_MODE: '${VAULT_MODE:-embedded}',
           VAULT_TYPE: '${VAULT_TYPE:-local}',
           JOBS_MODE: '${JOBS_MODE:-embedded}',

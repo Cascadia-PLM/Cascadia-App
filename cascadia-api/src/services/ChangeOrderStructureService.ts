@@ -4,6 +4,7 @@
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
+import { withholdUnreadableNodes } from '../items/design-structure-visibility'
 import { NotFoundError } from '../errors'
 import { db } from '../db'
 import { branchItems } from '../db/schema'
@@ -27,7 +28,16 @@ export type { BOMTreeNode, OrphanItem }
 export interface ChangeOrderDesignStructure {
   roots: Array<BOMTreeNode>
   orphans: Array<OrphanItem>
+  /** The affected items this caller may see — see `hasRestricted`. */
   affectedItemIds: Array<string>
+  /**
+   * Part of the change order lies outside the caller's reach, so the markers
+   * in the tree and `affectedItemIds` are their share of it — or part of the
+   * tree does, and is withheld with everything beneath it. Deliberately a
+   * boolean, as on the affected-items list and the summary: a count would
+   * size what it is withholding.
+   */
+  hasRestricted: boolean
   ecoBranch: {
     id: string | null
     mergeStatus: string | null
@@ -167,9 +177,21 @@ export class ChangeOrderStructureService {
     })
   }
 
+  /**
+   * The tree as one caller may see it, bounded by `accessDesignIds`: their
+   * reach as `AccessControlService.getAccessibleDesignIds` answers it, `null`
+   * for cross-program authority. Required rather than defaulted, because this
+   * tree is only ever an API response and the unbounded view is the engine's.
+   *
+   * It gates nothing. Whether the caller may open the change order, and the
+   * design this is the tree of, is the route's to establish first; the bound
+   * keeps what the change order holds *elsewhere* to the caller's reach, and
+   * what the tree reaches into, at any version, to what they can read.
+   */
   static async getDesignStructure(
     changeOrderId: string,
     designId: string,
+    accessDesignIds: Array<string> | null,
     options: { expandExternal?: boolean } = {},
   ): Promise<ChangeOrderDesignStructure> {
     const { expandExternal = true } = options
@@ -186,12 +208,24 @@ export class ChangeOrderStructureService {
       .from(changeOrderDesigns)
       .where(eq(changeOrderDesigns.changeOrderId, changeOrderId))
 
-    const changeOrderDesignAssoc = allChangeOrderDesigns.find(
+    // Every vantage point the caller reaches, that is. Across a program
+    // boundary a change order's branch holds another program's unreleased
+    // drafts, which its affected-items list withholds and that design's own
+    // structure read never shows; resolved there, a BOM line or reference into
+    // it served them. Left out, the edge resolves at what that design has
+    // released, as it does for a design the change order does not touch.
+    const allowed = accessDesignIds === null ? null : new Set(accessDesignIds)
+    const reachableChangeOrderDesigns =
+      allowed === null
+        ? allChangeOrderDesigns
+        : allChangeOrderDesigns.filter((ed) => allowed.has(ed.designId))
+
+    const changeOrderDesignAssoc = reachableChangeOrderDesigns.find(
       (ed) => ed.designId === designId,
     )
 
     const changeOrderDesignContexts = this.resolveDesignContexts(
-      allChangeOrderDesigns,
+      reachableChangeOrderDesigns,
     )
     // This design's own context, resolved by the same rules
     const versionContext: VersionContext = changeOrderDesignContexts.get(
@@ -203,9 +237,14 @@ export class ChangeOrderStructureService {
 
     // Items already on the change order, matched by both id and masterId — a
     // revised item's branch version has a different id than the row recorded
-    // when it was added.
-    const affectedItems =
-      await ChangeOrderService.getAffectedItems(changeOrderId)
+    // when it was added. The caller's share of them: built from the engine's
+    // complete list, the tree listed and marked every program's affected items
+    // for anyone who could open the change order.
+    const { affectedItems, hasRestricted: hasRestrictedItems } =
+      await ChangeOrderService.getAffectedItemsForViewer(
+        changeOrderId,
+        accessDesignIds,
+      )
     const affectedItemIds = new Set(
       affectedItems
         .map((a) => a.affectedItemId)
@@ -872,10 +911,23 @@ export class ChangeOrderStructureService {
       orphans = orphans.filter((item) => item.isInEco || item.isBranchChanged)
     }
 
+    // Bounding the branch contexts keeps another program's drafts out, but a
+    // line or reference into a design the caller cannot read still resolves
+    // at what that design has released. That is withheld too, with everything
+    // beneath it, as every structure read withholds it.
+    const visible = withholdUnreadableNodes(roots, accessDesignIds)
+
     return {
-      roots,
+      roots: visible.roots,
       orphans,
       affectedItemIds: Array.from(affectedItemIds),
+      // Whether anything was withheld, never how much — by the test
+      // `getSummary` applies, so the two views agree on it, and anything the
+      // tree itself withheld.
+      hasRestricted:
+        hasRestrictedItems ||
+        reachableChangeOrderDesigns.length < allChangeOrderDesigns.length ||
+        visible.hasRestricted,
       ecoBranch: changeOrderBranch,
       design: {
         id: design.id,

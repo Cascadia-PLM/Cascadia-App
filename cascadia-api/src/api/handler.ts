@@ -9,7 +9,7 @@ import {
   loginLimiter,
   uploadLimiter,
 } from './rate-limit'
-import { applySecurityHeaders, getAllowedOrigins } from './cors'
+import { applySecurityHeaders, getAllowedOrigins, requestOrigin } from './cors'
 import { resolveClientIp } from './client-ip'
 import type { RateLimitConfig } from './rate-limit'
 import type { OpenApiMetadata } from './openapi-helpers'
@@ -37,7 +37,12 @@ import { createErrorResponse } from '@/errors/api'
 /**
  * Validate the Origin header for state-changing requests (CSRF protection).
  * For non-GET/HEAD/OPTIONS requests, the Origin (or Referer) must match
- * the request's own host or an explicitly allowed origin.
+ * the request's own origin or an explicitly allowed origin.
+ *
+ * "Own origin" is `requestOrigin`, the origin the browser addressed, which is
+ * `https://` behind a trusted TLS-terminating proxy although the proxy spoke
+ * plain HTTP to this process. The CORS grant compares against the same
+ * function, so the two cannot disagree about which origin is this one.
  */
 function validateOrigin(request: Request): boolean {
   const method = request.method.toUpperCase()
@@ -47,8 +52,6 @@ function validateOrigin(request: Request): boolean {
 
   const origin = request.headers.get('origin')
   const referer = request.headers.get('referer')
-  const requestUrl = new URL(request.url, 'http://localhost')
-  const requestOrigin = requestUrl.origin
 
   // Determine the claimed origin
   let claimedOrigin: string | null = null
@@ -68,7 +71,7 @@ function validateOrigin(request: Request): boolean {
   if (!claimedOrigin) return true
 
   // Same-origin is always allowed
-  if (claimedOrigin === requestOrigin) return true
+  if (claimedOrigin === requestOrigin(request)) return true
 
   // Check allowed origins from env
   const allowed = getAllowedOrigins()

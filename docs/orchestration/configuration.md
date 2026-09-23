@@ -50,28 +50,44 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 Adjust `script-src` and `style-src` to remove `'unsafe-inline'` if your deployment supports nonce-based or hash-based CSP.
 
-### Client IP Trust
+### Reverse Proxy Trust
 
-Rate-limit buckets, `auth_events` rows and API-key activity records are all keyed on the caller's address. `X-Forwarded-For` is a request header, so the caller writes it too — the app therefore believes only as many forwarded hops as you declare.
+`TRUSTED_PROXY_COUNT` is how a deployment tells the app that reverse proxies sit in front of it. Two headers depend on it, and a caller can write both, so the app believes them only as far as you declare.
 
-| Variable              | Default | Description                                                              |
-| --------------------- | ------- | ------------------------------------------------------------------------ |
-| `TRUSTED_PROXY_COUNT` | `0`     | How many reverse proxies in front of the app append to `X-Forwarded-For` |
+| Variable              | Default | Description                                                                                                          |
+| --------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `TRUSTED_PROXY_COUNT` | `0`     | How many reverse proxies are in front of the app. Governs `X-Forwarded-For`, and whether `X-Forwarded-Proto` is read |
 
 Set it to the number of proxies a request genuinely passes through on its way in:
 
-- `0` — nothing in front of the app, or you have not checked. Forwarded headers are ignored entirely and the TCP peer address is the answer.
-- `1` — one nginx, Traefik, ALB or ingress controller terminating for the app.
+- `0` — nothing in front of the app, or you have not checked. Forwarded headers are ignored entirely: the TCP peer address is the client, and the connection's own scheme is the scheme.
+- `1` — one nginx, Caddy, Traefik, ALB or ingress controller terminating for the app.
 - `2` — a CDN or WAF in front of that load balancer.
+
+> **Leaving this at `0` behind a proxy fails closed, and behind one that terminates TLS it breaks writes.** Every request resolves to the proxy's own address, so everyone behind it shares one rate-limit bucket and audit rows record the proxy rather than the client. Nobody can forge their way into a private bucket, but one abusive client can spend the shared login budget for everybody. And if the proxy terminates TLS, every browser write is refused as cross-origin, as described below. Set the real depth.
+
+Make sure the value reaches the app. The root `docker-compose.yml`, the templates under `docs/orchestration/deployments/` and everything the installer generates pass `TRUSTED_PROXY_COUNT` to the app container; the demo compose files, which serve `http://localhost` with nothing in front, do not. A manifest of your own must list it too: compose gives a container only the variables its `environment:` names, and a Kubernetes Deployment only its `env:` entries, so a value set in `.env` or a ConfigMap and not listed there changes nothing.
+
+#### Client address (`X-Forwarded-For`)
+
+Rate-limit buckets, `auth_events` rows and API-key activity records are all keyed on the caller's address. `X-Forwarded-For` is a request header, so the caller writes it too — the app therefore believes only as many forwarded hops as you declare.
 
 Entries are counted **from the right**, because each proxy appends the address it saw. With `TRUSTED_PROXY_COUNT=2` and `X-Forwarded-For: 192.0.2.66, 203.0.113.7, 10.0.0.4`, the app reads `203.0.113.7` — the address the outermost trusted proxy observed — and discards `192.0.2.66`, which the caller supplied. A header carrying fewer entries than the declared depth, or whose trusted entry is not an address, falls back to the peer address; it never falls forward to the leftmost, caller-chosen entry.
 
-> **Leaving this at `0` behind a proxy is safe but blunt.** Every request resolves to the proxy's own address, so everyone behind it shares one rate-limit bucket and audit rows record the proxy rather than the client. That fails closed — nobody can forge their way into a private bucket — but one abusive client can spend the shared login budget for everybody. Set the real depth.
+#### Scheme (`X-Forwarded-Proto`)
 
-Two requirements on the proxy itself:
+A proxy that terminates TLS forwards plain HTTP, so on its own the app concludes it is served from `http://` while the browser is on `https://`. The browser's `Origin` header then looks foreign, and the cross-origin check refuses every cookie-authenticated write: creating a program or saving a part answers 403 `PERMISSION_DENIED`, "Cross-origin request rejected". Sign-in and reads are unaffected, so the deployment looks healthy until its first save.
+
+With `TRUSTED_PROXY_COUNT` above `0`, the app takes the scheme from the proxy's `X-Forwarded-Proto` instead. It uses the rightmost entry, which the nearest proxy wrote, and accepts only `http` or `https`; any other value is ignored. At `0` the header is ignored entirely, because any caller can send one. The CORS grant compares against the same origin as the write check, so a preflight and the write it precedes agree — see [CSRF Protection](../architecture/security.md#csrf-protection).
+
+Listing the deployment's own public origin in `CORS_ALLOWED_ORIGINS` also gets writes through, and used to be the only way to. It is not needed once `TRUSTED_PROXY_COUNT` is set.
+
+#### Proxy requirements
 
 - It must **append** to `X-Forwarded-For`, not replace it. nginx's `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` does; a bare `$remote_addr` does not, and would leave a one-entry header where the app expects the chain.
 - `X-Real-IP` alone is not read. A proxy that sets only that header must also be configured to append `X-Forwarded-For`.
+- If it terminates TLS, it must set `X-Forwarded-Proto`. Caddy and Traefik do by default; nginx needs `proxy_set_header X-Forwarded-Proto $scheme;`. Behind more than one proxy, the innermost must pass on the scheme the outermost saw: nginx behind a CDN that connects to it over plain HTTP needs `$http_x_forwarded_proto` there rather than `$scheme`.
+- It must pass `Host` through unchanged, as nginx does with `proxy_set_header Host $host;` and Caddy and Traefik do by default. The origin's host comes from `Host`; `X-Forwarded-Host` is not read.
 
 ### Rate Limiting
 
@@ -107,17 +123,23 @@ Raise the per-minute budgets for deployments where many users share one egress a
 
 ### OAuth Providers (Optional)
 
-GitHub is the only implemented provider. Setting both variables is what enables it
--- there is no separate on/off flag -- and the callback URL is derived from `BASE_URL`
-(`{BASE_URL}/api/v1/auth/callback/github`), so it has no variable of its own.
+GitHub and Google are the implemented providers. Setting a provider's client ID
+and secret is what enables it -- there is no separate on/off flag -- and each
+callback URL is derived from `BASE_URL` (`{BASE_URL}/api/v1/auth/callback/github`,
+`{BASE_URL}/api/v1/auth/callback/google`), so it has no variable of its own.
 
-| Variable               | Description                |
-| ---------------------- | -------------------------- |
-| `GITHUB_CLIENT_ID`     | GitHub OAuth app client ID |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth app secret    |
+| Variable                 | Description                                                                                   |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| `GITHUB_CLIENT_ID`       | GitHub OAuth app client ID                                                                    |
+| `GITHUB_CLIENT_SECRET`   | GitHub OAuth app secret                                                                       |
+| `GOOGLE_CLIENT_ID`       | Google OAuth client ID                                                                        |
+| `GOOGLE_CLIENT_SECRET`   | Google OAuth client secret                                                                    |
+| `GOOGLE_ALLOWED_DOMAINS` | Comma-separated Google Workspace domains allowed to sign in. Unset admits any Google account. |
 
-No `GOOGLE_*` or `AZURE_*` variable is read by any code. Those providers are
-roadmap items, not configuration.
+`GOOGLE_ALLOWED_DOMAINS` is matched against the `hd` claim Google asserts for the
+account, so personal accounts and consumer aliases at an allowed domain are refused.
+No `AZURE_*` variable is read by any code; Azure AD is a roadmap item, not
+configuration.
 
 ### Optional Packages
 

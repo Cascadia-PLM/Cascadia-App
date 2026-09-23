@@ -2,10 +2,14 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNull, ne, or } from 'drizzle-orm'
-import { db } from '../db'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
+import { db, withTx } from '../db'
+import { AccessControlService } from '../auth/AccessControlService'
+import { notDeleted } from '../db/filters'
 import { designCrossReferences } from '../db/schema/crossReferences'
 import { items } from '../db/schema/items'
 import { designs } from '../db/schema/designs'
+import { branchItems, branches } from '../db/schema/versioning'
 import { NotFoundError, ValidationError } from '../errors'
 import { takeFirst } from '@/db/take-first'
 
@@ -41,62 +45,308 @@ export interface CrossDesignReference {
   sourceDesignName: string | null
 }
 
+/**
+ * A `design_cross_references` row naming an item, as a hard delete of that
+ * item reads it: enough to tell a reference from bookkeeping, and to name the
+ * design that holds it.
+ */
+export interface CrossDesignReferenceToItem {
+  rowId: string
+  referencedItemId: string
+  changeType: string | null
+  branchId: string | null
+  branchName: string | null
+  branchArchived: boolean | null
+  designId: string
+  designCode: string
+  designName: string
+}
+
 export class CrossDesignReferenceService {
+  /**
+   * A reference added or removed on a branch is that branch's content, and an
+   * archived branch accepts none. Neither writer commits, so nothing
+   * downstream would refuse it for them.
+   *
+   * BranchService is reached lazily: its workspace discards import this
+   * service, and a static import back would close a cycle. Resolved at call
+   * time, as CheckoutService reaches ChangeOrderService.
+   */
+  private static async assertBranchNotArchived(
+    branchId: string,
+    operation: string,
+    tx?: TransactionClient,
+  ): Promise<void> {
+    const { BranchService } = await import('./BranchService')
+    const branch = await BranchService.getById(branchId, tx)
+    if (!branch) {
+      throw new NotFoundError('Branch', branchId, { operation })
+    }
+    BranchService.assertNotArchived(branch, operation)
+  }
+
   /**
    * Create a cross-design reference.
    * If branchId is provided, marks as 'added' on that branch.
    * Otherwise creates on main (branchId=null, changeType=null).
+   *
+   * The referenced item has to be part of its design. A draft that exists
+   * only on a workspace or change-order branch is refused: a design structure
+   * shows a reference by resolving it on the source design's main, where the
+   * draft is not, so the reference would show nowhere — and could not be
+   * removed from any Structure tab — while the draft's owner stayed free to
+   * discard it. A change order's release makes it referenceable.
    */
   static async createReference(
     input: CreateReferenceInput,
     userId: string,
     tx?: TransactionClient,
   ): Promise<typeof designCrossReferences.$inferSelect> {
-    const dbClient = tx || db
+    if (input.branchId) {
+      await this.assertBranchNotArchived(input.branchId, 'createReference', tx)
+    }
 
-    // Validate the referenced item exists
-    const item = await dbClient
+    return withTx(tx, async (dbClient) => {
+      // Validate the referenced item exists, and hold it until the reference
+      // commits. `referenced_item_id` has no foreign key to take this lock,
+      // and every hard delete of an item depends on it: the delete takes FOR
+      // UPDATE on the item before it looks for references (see
+      // `releaseReferencesToDeletedItems`), which conflicts with FOR KEY
+      // SHARE. A delete that got there first leaves no row for this read to
+      // find; one that comes second waits, and then sees this reference.
+      const item = await dbClient
+        .select({
+          id: items.id,
+          masterId: items.masterId,
+          designId: items.designId,
+        })
+        .from(items)
+        .where(and(eq(items.id, input.referencedItemId), notDeleted()))
+        .limit(1)
+        .for('key share')
+        .then((r) => r.at(0))
+
+      if (!item) {
+        throw new NotFoundError('Item', input.referencedItemId)
+      }
+
+      if (!item.designId) {
+        throw new ValidationError(
+          'Referenced item does not belong to any design',
+        )
+      }
+
+      // Cannot reference items in the same design
+      if (item.designId === input.referencingDesignId) {
+        throw new ValidationError(
+          'Cannot create a cross-design reference to an item in the same design',
+        )
+      }
+
+      if (await this.isBranchOnlyDraft(item.masterId, dbClient)) {
+        throw new ValidationError(
+          'Cannot reference an item that exists only as a draft on a workspace or change-order branch: no design structure can show a reference to it. Reference it once a change order has released it.',
+        )
+      }
+
+      const ref = takeFirst(
+        await dbClient
+          .insert(designCrossReferences)
+          .values({
+            referencingDesignId: input.referencingDesignId,
+            referencedItemId: input.referencedItemId,
+            sourceDesignId: item.designId,
+            branchId: input.branchId || null,
+            changeType: input.branchId ? 'added' : null,
+            notes: input.notes || null,
+            createdBy: userId,
+            modifiedBy: userId,
+          })
+          .returning(),
+      )
+
+      return ref
+    })
+  }
+
+  /**
+   * Whether an item master exists only as a draft on a workspace or
+   * change-order branch: created there, which leaves an 'added' tracking row,
+   * and never on its design's main, where a release — or a creation on an
+   * unprotected main — leaves a main-branch tracking row. A working copy of an
+   * item already on main is not a draft, and neither is a master no branch
+   * tracks, such as an item created directly under a design.
+   */
+  private static async isBranchOnlyDraft(
+    masterId: string,
+    client: TransactionClient,
+  ): Promise<boolean> {
+    const tracking = await client
       .select({
-        id: items.id,
-        designId: items.designId,
+        branchType: branches.branchType,
+        changeType: branchItems.changeType,
       })
+      .from(branchItems)
+      .innerJoin(branches, eq(branchItems.branchId, branches.id))
+      .where(eq(branchItems.itemMasterId, masterId))
+
+    return (
+      !tracking.some((row) => row.branchType === BRANCH_TYPES.main) &&
+      tracking.some(
+        (row) =>
+          row.changeType === 'added' &&
+          (row.branchType === BRANCH_TYPES.changeOrder ||
+            row.branchType === BRANCH_TYPES.workspace),
+      )
+    )
+  }
+
+  /**
+   * Whether a reference row is one a design's structure shows: a baseline row,
+   * or an addition on a branch that is still open. A branch's 'deleted' marker
+   * only masks a baseline row, and an archived branch's work is over — released,
+   * cancelled or discarded — so neither is a claim on the item.
+   */
+  static isLive(row: CrossDesignReferenceToItem): boolean {
+    return (
+      row.changeType !== 'deleted' &&
+      (row.branchId === null || row.branchArchived !== true)
+    )
+  }
+
+  /**
+   * Every row naming one of these items rows, with what a hard delete needs to
+   * tell a reference from bookkeeping and to name the design that holds it.
+   */
+  static async referencesToItems(
+    itemIds: ReadonlyArray<string>,
+    client: TransactionClient | typeof db = db,
+  ): Promise<Array<CrossDesignReferenceToItem>> {
+    if (itemIds.length === 0) return []
+    return client
+      .select({
+        rowId: designCrossReferences.id,
+        referencedItemId: designCrossReferences.referencedItemId,
+        changeType: designCrossReferences.changeType,
+        branchId: designCrossReferences.branchId,
+        branchName: branches.name,
+        branchArchived: branches.isArchived,
+        designId: designs.id,
+        designCode: designs.code,
+        designName: designs.name,
+      })
+      .from(designCrossReferences)
+      .innerJoin(
+        designs,
+        eq(designCrossReferences.referencingDesignId, designs.id),
+      )
+      .leftJoin(branches, eq(designCrossReferences.branchId, branches.id))
+      .where(inArray(designCrossReferences.referencedItemId, [...itemIds]))
+  }
+
+  /**
+   * Keep this table consistent with a hard delete of items rows, in the
+   * deleting transaction and before it writes anything else.
+   * `ItemService.delete` and the workspace discards in `BranchService` all
+   * come through here.
+   *
+   * `referenced_item_id` carries no foreign key, so nothing cascades from an
+   * item to the rows naming it. The items are locked first: `createReference`
+   * takes FOR KEY SHARE on the item it validates, and FOR UPDATE conflicts
+   * with that, so the two serialize. A reference whose transaction locked the
+   * item first has committed by the time the read below runs; one that comes
+   * second waits for the delete, and then finds no item to reference.
+   *
+   * Live references are returned with nothing written, and the caller
+   * refuses. A reference is not taken with the item, because it belongs to
+   * the design holding it: that design's main may be protected, it may sit in
+   * a program the deleting user cannot read, and a reference removed on main
+   * records nothing. Otherwise every row naming the items is bookkeeping — a
+   * branch's 'deleted' marker, or an addition on an archived branch — and is
+   * removed, so no row outlives the item it names.
+   */
+  static async releaseReferencesToDeletedItems(
+    itemIds: ReadonlyArray<string>,
+    tx: TransactionClient,
+  ): Promise<Array<CrossDesignReferenceToItem>> {
+    if (itemIds.length === 0) return []
+
+    await tx
+      .select({ id: items.id })
       .from(items)
-      .where(eq(items.id, input.referencedItemId))
-      .limit(1)
-      .then((r) => r.at(0))
+      .where(inArray(items.id, [...itemIds]))
+      .orderBy(items.id)
+      .for('update')
 
-    if (!item) {
-      throw new NotFoundError('Item', input.referencedItemId)
+    const rows = await this.referencesToItems(itemIds, tx)
+    const live = rows.filter((row) => this.isLive(row))
+    if (live.length > 0) return live
+
+    if (rows.length > 0) {
+      await tx.delete(designCrossReferences).where(
+        inArray(
+          designCrossReferences.id,
+          rows.map((row) => row.rowId),
+        ),
+      )
+    }
+    return []
+  }
+
+  /**
+   * The designs holding these references, as a refusal names them: each one
+   * the caller can read — with its branches, where the references exist only
+   * on branches — and a count of the rest, so a refusal discloses nothing
+   * across a program boundary. It reads the caller's access scope on the
+   * pool, so call it once the transaction that found the references is over.
+   */
+  static async describeReferencingDesigns(
+    references: ReadonlyArray<CrossDesignReferenceToItem>,
+    userId: string,
+  ): Promise<{ designs: string; designCount: number }> {
+    const byDesign = new Map<
+      string,
+      { label: string; onMain: boolean; branchNames: Set<string> }
+    >()
+    for (const row of references) {
+      const design = byDesign.get(row.designId) ?? {
+        label: `${row.designCode} (${row.designName})`,
+        onMain: false,
+        branchNames: new Set<string>(),
+      }
+      if (row.branchId === null) {
+        design.onMain = true
+      } else {
+        design.branchNames.add(`"${row.branchName ?? row.branchId}"`)
+      }
+      byDesign.set(row.designId, design)
     }
 
-    if (!item.designId) {
-      throw new ValidationError('Referenced item does not belong to any design')
-    }
+    const readable = await AccessControlService.getAccessibleDesignIds(userId)
+    const readableIds = readable === null ? null : new Set(readable)
+    const list = new Intl.ListFormat('en', { type: 'conjunction' })
 
-    // Cannot reference items in the same design
-    if (item.designId === input.referencingDesignId) {
-      throw new ValidationError(
-        'Cannot create a cross-design reference to an item in the same design',
+    const named: Array<string> = []
+    let unnamed = 0
+    for (const [designId, design] of byDesign) {
+      if (readableIds !== null && !readableIds.has(designId)) {
+        unnamed++
+      } else if (design.onMain) {
+        named.push(design.label)
+      } else {
+        const branchNames = [...design.branchNames]
+        named.push(
+          `${design.label} on ${branchNames.length === 1 ? 'branch' : 'branches'} ${list.format(branchNames)}`,
+        )
+      }
+    }
+    if (unnamed > 0) {
+      named.push(
+        `${unnamed} ${named.length > 0 ? 'other ' : ''}${unnamed === 1 ? 'design' : 'designs'} you do not have access to`,
       )
     }
 
-    const ref = takeFirst(
-      await dbClient
-        .insert(designCrossReferences)
-        .values({
-          referencingDesignId: input.referencingDesignId,
-          referencedItemId: input.referencedItemId,
-          sourceDesignId: item.designId,
-          branchId: input.branchId || null,
-          changeType: input.branchId ? 'added' : null,
-          notes: input.notes || null,
-          createdBy: userId,
-          modifiedBy: userId,
-        })
-        .returning(),
-    )
-
-    return ref
+    return { designs: list.format(named), designCount: byDesign.size }
   }
 
   /**
@@ -111,6 +361,10 @@ export class CrossDesignReferenceService {
     tx?: TransactionClient,
   ): Promise<void> {
     const dbClient = tx || db
+
+    if (branchId) {
+      await this.assertBranchNotArchived(branchId, 'removeReference', tx)
+    }
 
     const ref = await dbClient
       .select()
@@ -225,6 +479,59 @@ export class CrossDesignReferenceService {
         return false
       return true
     })
+  }
+
+  /**
+   * The references a design holds, as one caller may see them — the view a
+   * response is built from. `getReferencesForDesign` above is the engine's
+   * view and stays complete: the structure tree and the release both act on
+   * every reference, whoever is asking.
+   *
+   * A row is the referencing design's own, but nearly everything on it is
+   * about the other end: the item's number, name, revision, state and type,
+   * and its design's code and name. A reference into a design the caller
+   * cannot read is withheld whole, and `hasRestricted` says one was — never
+   * how many, the rule `withholdUnreadableNodes` applies to the tree these
+   * references root. A row kept with those fields blanked would still count
+   * the references that reach into programs the caller cannot open.
+   *
+   * Both ends are charged: the source design recorded on the reference, whose
+   * code and name the row carries, and the design the item is in now, whose
+   * fields it carries. They differ only for an item that has moved since the
+   * reference was made. A reference to an item that no longer exists is
+   * charged on its source design alone.
+   */
+  static async getReferencesForViewer(
+    designId: string,
+    branchId: string | null | undefined,
+    accessDesignIds: Array<string> | null,
+  ): Promise<{
+    references: Array<CrossDesignReference>
+    hasRestricted: boolean
+  }> {
+    const all = await this.getReferencesForDesign(designId, branchId)
+    if (accessDesignIds === null) {
+      return { references: all, hasRestricted: false }
+    }
+
+    const itemDesignIds = new Map<string, string | null>()
+    const referencedIds = [...new Set(all.map((ref) => ref.referencedItemId))]
+    if (referencedIds.length > 0) {
+      const rows = await db
+        .select({ id: items.id, designId: items.designId })
+        .from(items)
+        .where(inArray(items.id, referencedIds))
+      for (const row of rows) itemDesignIds.set(row.id, row.designId)
+    }
+
+    const readable = new Set(accessDesignIds)
+    const references = all.filter((ref) => {
+      if (!readable.has(ref.sourceDesignId)) return false
+      const itemDesignId = itemDesignIds.get(ref.referencedItemId)
+      return !itemDesignId || readable.has(itemDesignId)
+    })
+
+    return { references, hasRestricted: references.length < all.length }
   }
 
   /**

@@ -18,6 +18,7 @@ import { AddPartFromDesignDialog } from './AddPartFromDesignDialog'
 import type { BOMTreeNode } from './ChangeOrderTreeTable'
 import type { OrphanItem } from '@cascadia/commons/types/bom'
 import { useTreeSelection } from '@/components/bom/useTreeSelection'
+import { RestrictedStructureNotice } from '@/components/bom/RestrictedStructureNotice'
 import { Badge, Button, Card, CardContent } from '@/components/ui'
 import {
   changeOrderDesignStructureQuery,
@@ -41,6 +42,13 @@ interface ChangeOrderDesignStructureTreeProps {
   branchId?: string | null
   changeOrderId: string
   readOnly?: boolean
+  /**
+   * The change order itself reaches past what the viewer can read, which the
+   * panel above already says once for all its designs. A structure’s
+   * `hasRestricted` counts that reach as well, so without this every tree
+   * would repeat the panel’s notice.
+   */
+  changeOrderRestricted?: boolean
   onAddToChangeOrder: (node: BOMTreeNode, designId: string) => void
   onAddChild?: (node: BOMTreeNode, designId: string) => void
   onBatchAddToChangeOrder?: (
@@ -72,6 +80,17 @@ function orphanAsCandidate(item: OrphanItem, designId: string): BOMTreeNode {
   }
 }
 
+/**
+ * One design's BOM tree as a change order sees it: which items the change
+ * order touches and what it does to them, and the design's items outside the
+ * tree.
+ *
+ * Past the ~400-line guideline. The seam is the column filters: `columnFilters`
+ * and everything derived from it — the matcher, the flattening, the filtered
+ * roots and orphans — is state only the toolbar and the table read, and is a
+ * hook; the Other Items table below the tree is a component. Split there when
+ * either next grows.
+ */
 export function ChangeOrderDesignStructureTree({
   designId,
   designName,
@@ -80,6 +99,7 @@ export function ChangeOrderDesignStructureTree({
   branchId,
   changeOrderId,
   readOnly = false,
+  changeOrderRestricted = false,
   onAddToChangeOrder: onAddToChangeOrder,
   onAddChild,
   onBatchAddToChangeOrder: onBatchAddToChangeOrder,
@@ -448,6 +468,10 @@ export function ChangeOrderDesignStructureTree({
             <div className="text-center py-4 text-red-500">{error}</div>
           ) : (
             <>
+              {structure?.hasRestricted && !changeOrderRestricted && (
+                <RestrictedStructureNotice className="mb-4" />
+              )}
+
               {/* Toolbar */}
               <div className="flex items-center justify-between gap-2 mb-4">
                 {/* Selection toolbar + filter info (left) */}

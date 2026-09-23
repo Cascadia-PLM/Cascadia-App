@@ -282,15 +282,24 @@ There are two deletes, and only one of them is history.
 
 **Branch-recorded deletion** (`CheckoutService.deleteOnBranch`) is the normal path. The item is marked deleted on the branch, the deletion rides the branch's commits, and the merge carries it to main as an `isDeleted` item. Nothing is destroyed: the item, its versions and its field changes stay readable at any earlier commit or tag, and the deletion itself appears in the history as a change like any other.
 
-**Hard deletion** (`ItemService.delete`) removes the `items` row outright. The row _is_ the version content, so the database cascades from it: `item_versions` and `item_field_changes` go with it, and so do the workflow instance, its history and approvals, a change order's affected and impacted item lists, and a work order's traveler lines and their executions. Per-item history is read from `items` (`CommitService.getItemCommits` selects on `masterId` + `designId`), so a hard-deleted item leaves no readable trace beyond the commits themselves. None of it is recoverable.
+**Hard deletion** (`ItemService.delete`) removes the `items` row outright. The row _is_ the version content, so the database cascades from it: `item_versions` and `item_field_changes` go with it, and so do the workflow instance, its history and approvals, a change order's affected and impacted item lists, and a work order's traveler lines and their executions. Per-item history is read from `items` (`CommitService.getItemCommits` selects on `masterId` + `designId`), so a hard-deleted item leaves no readable trace beyond the commits themselves. None of it is recoverable. A change order's branches are the exception to the cascade: their link to it is `SET NULL`, so the delete archives them itself and cancels the checkout locks held on them — as cancelling the change order would — rather than leave them live with no owner.
 
 Because it is unrecoverable, the hard delete is bounded to rows that do not yet carry evidence meant to outlive them. `ItemService.delete` refuses when:
 
 - the item's state is in its lifecycle's **released family** (released, revising, obsolete, superseded) — released lineage is immutable everywhere else, and this is not an exception;
 - the item's state is **final with a `finalKind` of `release` or `complete`** — the record that a release or a build happened. Against the shipped lifecycles that is an approved change order and a completed work order; `cancel` finals and finals that declare no kind (a retired tool, a scrapped physical part) stay deletable;
 - the item is governed by a **Driving** definition — a change order — and has **left its initial state**. A change order past Draft holds votes, a locked branch and an affected-item list.
+- the item is a working copy an **archived branch** made and never merged, such as a cancelled change order's draft. The branch's history records it, and deleting the row would take that record with it.
 
 Everything past those bounds is retired through its lifecycle instead: cancel the change order, obsolete the part, or delete it on a branch so the deletion is itself recorded. The rules are read from lifecycle configuration, never from state names, so a renamed or custom lifecycle follows them unchanged.
+
+The hard delete is also refused while **another design references the item**: a [cross-design reference](./programs-and-designs.md#cross-design-references) on that design's main, or one added on a change-order or workspace branch that is still open. `design_cross_references.referenced_item_id` carries no foreign key, so nothing cascades to the reference. Left behind, it would name nothing: the referencing design's structure resolves no node for it and silently loses that root, and with no node there is nothing for its Structure tab to offer Remove Reference on.
+
+The delete refuses rather than taking the reference with it, because the reference belongs to the other design. Its main may be protected, where structure changes only through a change order; it may sit in a program the deleting user cannot read; and a reference removed on main leaves no record. The refusal names the referencing designs the user can read — with the branch, where the reference exists only on one — and counts the rest without naming them. Remove those references, then delete.
+
+Rows that name the item without being a reference anyone sees go with it, in the same transaction: a branch's `deleted` marker, and an addition on a branch that has been archived. The check runs again inside that transaction, under a lock on the item row that `CrossDesignReferenceService.createReference` also takes, so a reference created while the delete runs is either seen, and the delete refused, or finds no item left to reference. References an earlier hard delete had already stranded are removed on upgrade by the data-only migration `0009_dangling_cross_references`.
+
+The same rule bounds the two other hard deletes of `items` rows, both of which discard workspace drafts: deleting a workspace (`BranchService.deleteWorkspaceBranch`) and removing a draft from one (`BranchService.removeWorkspaceItem`). Each refuses, before it writes anything, while another design references a draft it would discard, and removes the bookkeeping rows naming the drafts it does discard, under the same lock. It can meet a reference only if the reference is older than the refusal in `CrossDesignReferenceService.createReference`, which turns away an item that exists only as a draft on a workspace or change-order branch. The migration removes the references earlier workspace discards stranded too, since it matches every row whose item is gone.
 
 ---
 
@@ -387,7 +396,10 @@ nothing is copied — and registers each one in the ECO's reviewed scope
 (created items as `release`, checked-out items as `revise`). From there the
 normal ECO release machinery merges them to main and assigns revisions. Items
 whose master is already on the ECO are skipped, and a workspace emptied by
-adoption can be deleted safely.
+adoption can be deleted safely. Deleting a workspace that adoption has not
+emptied discards the drafts created on it, except those whose masters a change
+order has adopted, and is refused while another design references one of them
+— see [Deleting an Item, and What Survives](#deleting-an-item-and-what-survives).
 
 ### Branch Lifecycle
 
@@ -401,7 +413,12 @@ Created (active) --> Merged/Archived (ECO released or cancelled)
 - **Locked branches** (`isLocked`) prevent further commits. Locking is a manual
   administrative action (`PATCH /api/v1/branches/:id`); no workflow transition
   sets it.
-- **Archived branches** are retained for history but hidden from active branch lists.
+- **Archived branches** are retained for history but hidden from active branch
+  lists, and accept no further writes: checkouts, edits, commits, working
+  copies and structure changes on one are refused, and so is an edit to a
+  working copy one left behind. Releasing a lock still on an archived branch
+  stays allowed. See
+  [Change-Order Cancellation](./change-management.md#change-order-cancellation).
 
 ### Branch Protection
 

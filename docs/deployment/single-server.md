@@ -78,14 +78,15 @@ hashed in the database, so no signing key exists to configure.
 
 ### Optional Variables
 
-| Variable        | Default                 | Description                                   |
-| --------------- | ----------------------- | --------------------------------------------- |
-| `APP_PORT`      | `3000`                  | Port exposed to the host                      |
-| `BASE_URL`      | `http://localhost:3000` | Public URL (used for OAuth callbacks, emails) |
-| `NODE_ENV`      | `production`            | Environment mode                              |
-| `POSTGRES_DB`   | `cascadia`              | Database name                                 |
-| `POSTGRES_USER` | `postgres`              | Database user                                 |
-| `POSTGRES_PORT` | `5432`                  | PostgreSQL port on the host                   |
+| Variable              | Default                 | Description                                   |
+| --------------------- | ----------------------- | --------------------------------------------- |
+| `APP_PORT`            | `3000`                  | Port exposed to the host                      |
+| `BASE_URL`            | `http://localhost:3000` | Public URL (used for OAuth callbacks, emails) |
+| `TRUSTED_PROXY_COUNT` | `0`                     | Proxies in front of the app (1 behind nginx)  |
+| `NODE_ENV`            | `production`            | Environment mode                              |
+| `POSTGRES_DB`         | `cascadia`              | Database name                                 |
+| `POSTGRES_USER`       | `postgres`              | Database user                                 |
+| `POSTGRES_PORT`       | `5432`                  | PostgreSQL port on the host                   |
 
 ### Full `.env.example`
 
@@ -96,6 +97,7 @@ POSTGRES_PASSWORD=
 # APPLICATION
 APP_PORT=3000
 BASE_URL=http://localhost:3000
+TRUSTED_PROXY_COUNT=0
 NODE_ENV=production
 
 # DATABASE
@@ -155,6 +157,7 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cascadia}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-0}
       VAULT_MODE: embedded
       VAULT_TYPE: local
       FILE_STORAGE_PATH: /app/storage/files
@@ -222,11 +225,14 @@ server {
 }
 ```
 
-Update `BASE_URL` in your `.env` to match the public URL:
+Update `BASE_URL` in your `.env` to match the public URL, and set `TRUSTED_PROXY_COUNT` to declare nginx as the one proxy in front of the app:
 
 ```bash
 BASE_URL=https://plm.example.com
+TRUSTED_PROXY_COUNT=1
 ```
+
+Without `TRUSTED_PROXY_COUNT=1` the app ignores the `X-Forwarded-*` headers nginx sends. It sees nginx's plain-HTTP connection instead of the browser's `https://` one and refuses every browser write as cross-origin — 403 "Cross-origin request rejected", while sign-in and reads keep working — and every user shares one rate-limit bucket. See [Reverse Proxy Trust](../orchestration/configuration.md#reverse-proxy-trust). Run `docker compose up -d` afterwards so the app container picks up the new values.
 
 ### Persistent Storage Locations
 

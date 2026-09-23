@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db } from '../../db'
-import { branchItems, branches, users } from '../../db/schema'
+import { branchItems, branches, items, users } from '../../db/schema'
 import {
   BranchProtectionError,
   ItemCheckoutRequiredError,
@@ -13,6 +13,7 @@ import {
 } from '../../errors'
 import { BranchService } from '../../services/BranchService'
 import { LifecycleService } from '../../services/LifecycleService'
+import { RevisionService } from '../../services/RevisionService'
 import { isBranchProtectionExempt } from '../branch-protection'
 
 /**
@@ -132,6 +133,57 @@ export class ItemEditPolicy {
   }
 
   /**
+   * The archived branch a row is unmerged content of, if any.
+   *
+   * `getItemBranchInfo` ignores archived branches, and has to: a release
+   * promotes its working copies onto main in place, and the merged branch
+   * still tracks the rows it promoted. So a tracking row on an archived branch
+   * proves nothing on its own — a plain checkout, and a delete of an item the
+   * branch did not track, point at main's own row too. The row is the
+   * branch's only when the branch changed it (added it, or cut it from some
+   * other base) and it still carries a working revision, which only a merge
+   * replaces.
+   */
+  private static async findArchivedOwner(itemId: string): Promise<{
+    id: string
+    name: string
+    isArchived: boolean | null
+  } | null> {
+    const tracking = await db
+      .select({
+        id: branches.id,
+        name: branches.name,
+        isArchived: branches.isArchived,
+        changeType: branchItems.changeType,
+        baseItemId: branchItems.baseItemId,
+        revision: items.revision,
+      })
+      .from(branchItems)
+      .innerJoin(branches, eq(branchItems.branchId, branches.id))
+      .innerJoin(items, eq(branchItems.currentItemId, items.id))
+      .where(
+        and(
+          eq(branchItems.currentItemId, itemId),
+          inArray(branches.branchType, [
+            BRANCH_TYPES.changeOrder,
+            BRANCH_TYPES.workspace,
+          ]),
+          eq(branches.isArchived, true),
+          isNotNull(branchItems.changeType),
+        ),
+      )
+
+    const owner = tracking.find(
+      (row) =>
+        RevisionService.isWorkingRevision(row.revision) &&
+        (row.changeType === 'added' || row.baseItemId !== itemId),
+    )
+    return owner
+      ? { id: owner.id, name: owner.name, isArchived: owner.isArchived }
+      : null
+  }
+
+  /**
    * Enforce the edit-lock policy on an item content mutation (field updates,
    * relationship changes, work-instruction content). The checkout recorded in
    * branch_items.checkedOutBy is the server-side counterpart of the UI's Edit
@@ -143,6 +195,8 @@ export class ItemEditPolicy {
    *   else may hold a checkout on the item's main-branch row. Holding no lock
    *   is allowed here so programmatic flows keep working; a lock taken via the
    *   Edit button still excludes other users.
+   * - Working copy an archived branch left behind: never editable, whoever
+   *   asks — the branch is history (ValidationError).
    * - ChangeOrders and design-less items (Tool-pattern types) are exempt.
    *
    * Returns the branch info (as from getItemBranchInfo) so callers can reuse
@@ -217,6 +271,17 @@ export class ItemEditPolicy {
         itemId: item.id,
         branchId: branchInfo.branchId,
       })
+    }
+
+    // No live branch claims the row, but that does not make it main's. A row
+    // an archived branch made and never merged — a cancelled change order's
+    // working copy, a draft left on a deleted workspace — is on no branch
+    // anyone may still edit, and not on main at all. Main's rules let an
+    // exempt type, or anything in a design with nothing released yet, edit it
+    // in place, and recorded the edit as a commit on main.
+    const archivedOwner = await this.findArchivedOwner(item.id)
+    if (archivedOwner) {
+      BranchService.assertNotArchived(archivedOwner, 'requireContentEditable')
     }
 
     // Main context — respects branch protection, then mutual exclusion.

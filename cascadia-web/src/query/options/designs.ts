@@ -171,6 +171,13 @@ export interface DesignStructureContext {
 export interface DesignStructure<TNode, TOrphan> {
   roots: Array<TNode>
   orphans: Array<TOrphan>
+  /**
+   * Part of the tree was withheld: an item in a program the caller cannot
+   * read, reached through a cross-design reference or a BOM line, together
+   * with everything beneath it. One anonymous flag — never how much, or
+   * where — and dropping it here would turn the redaction into a silent one.
+   */
+  hasRestricted: boolean
 }
 
 /**
@@ -201,7 +208,11 @@ export function designStructureQuery<TNode, TOrphan>(
       const result = await apiFetch<{
         data: DesignStructure<TNode, TOrphan>
       }>(`/api/v1/designs/${designId}/structure${suffix}`)
-      return { roots: result.data.roots, orphans: result.data.orphans }
+      return {
+        roots: result.data.roots,
+        orphans: result.data.orphans,
+        hasRestricted: result.data.hasRestricted,
+      }
     },
     enabled: Boolean(designId),
   })

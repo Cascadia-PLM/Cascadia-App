@@ -633,8 +633,9 @@ jobs:
       # Stopping there is the deliberate trade. `builder` runs a full Vite
       # build of the edition — ten-plus minutes on top of what `Build` already
       # spends, failing for reasons `Build` reports first and faster. What
-      # stays uncovered is the production stage's copies out of the builder;
-      # those name build outputs rather than workspaces, and both files are
+      # that leaves unbuilt is the production stage's copies out of the
+      # builder, which name workspaces as well as build outputs: the app image
+      # copies each workspace's sources for its admin scripts. Both files are
       # checked statically when this tree is assembled for publication.
       #
       # No buildx, no cache action: every workflow here uses first-party

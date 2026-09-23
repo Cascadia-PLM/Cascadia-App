@@ -122,7 +122,7 @@ npm run workers:dev   # Start RabbitMQ + all workers via Docker
 
 - **TypeScript** throughout — strict mode, no `any` types.
 - **Zod** for runtime validation and type inference.
-- **Path alias**: `@/*` maps to the importing file's own package (`cascadia-<pkg>/src/*`). Other packages are imported by name: `@cascadia/commons/lib/...`. The web may not import the api; see `docs/architecture/overview.md`.
+- **Path alias**: `@/*` maps to the importing file's own package (`cascadia-<pkg>/src/*`). Other packages are imported by name: `@cascadia/commons/...`. The web may not import the api; see `docs/architecture/overview.md`.
 
 ### File Naming
 

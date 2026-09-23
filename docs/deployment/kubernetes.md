@@ -139,6 +139,7 @@ data:
   NODE_ENV: 'production'
   BASE_URL: 'https://plm.example.com'
   LOG_LEVEL: 'info'
+  TRUSTED_PROXY_COUNT: '1' # The ingress; see below
   VAULT_MODE: 'embedded'
   VAULT_TYPE: 'local' # Change to 's3' for cloud storage
   S3_BUCKET: 'cascadia-vault'
@@ -147,6 +148,8 @@ data:
   WORKER_CONCURRENCY: '5'
   JOB_TYPES: '*'
 ```
+
+`TRUSTED_PROXY_COUNT: '1'` declares the ingress (Step 6) as the one proxy in front of the app. The ingress terminates TLS, and without this the app ignores its `X-Forwarded-*` headers: it refuses every browser write as cross-origin and puts every user in one rate-limit bucket. A cloud L7 load balancer in front of the ingress makes it `'2'`, and the ingress controller must then pass that balancer's headers on (ingress-nginx: `use-forwarded-headers` and `compute-full-forwarded-for`). See [Reverse Proxy Trust](../orchestration/configuration.md#reverse-proxy-trust).
 
 Apply:
 

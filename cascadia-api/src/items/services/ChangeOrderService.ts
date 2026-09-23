@@ -331,7 +331,9 @@ export class ChangeOrderService {
       }
       await this.autoStartWorkflow(changeOrder.id, changeType.data, userId)
     } catch (error) {
-      await this.discardCreation(changeOrder.id, userId).catch(() => {
+      // Undo the creation. The design-link rows cascade with the item, and the
+      // delete archives the branches those links created in its transaction.
+      await ItemService.delete(changeOrder.id, userId).catch(() => {
         // The link or start failure is the error worth reporting; a cleanup
         // that also fails must not mask it.
       })
@@ -340,24 +342,6 @@ export class ChangeOrderService {
 
     // The workflow start stamped the state; hand back what is stored
     return (await ItemService.findById(changeOrder.id)) ?? changeOrder
-  }
-
-  /**
-   * Undo a creation that failed part-way. The design-link rows go with the
-   * item, but the branches those links created would outlive it as
-   * unarchived orphans — `branches.changeOrderItemId` is set to null on
-   * delete — so they are archived first.
-   */
-  private static async discardCreation(
-    changeOrderId: string,
-    userId: string,
-  ): Promise<void> {
-    for (const design of await this.getChangeOrderDesigns(changeOrderId)) {
-      if (design.branchId) {
-        await BranchService.archiveBranch(design.branchId, undefined, userId)
-      }
-    }
-    await ItemService.delete(changeOrderId, userId)
   }
 
   /**
@@ -1655,9 +1639,14 @@ export class ChangeOrderService {
     resolutions: Array<ConflictResolutionInput>,
     userId: string,
   ): Promise<Array<ConflictResolutionOutcome>> {
-    const branchIds = (await this.getChangeOrderDesigns(changeOrderId))
-      .map((d) => d.branchId)
-      .filter((id): id is string => id !== null)
+    // The branches conflict detection walks, and no others. Detection passes
+    // over an archived branch — finished work cannot conflict with anything —
+    // so a resolution reaching one resolved a conflict nothing had reported,
+    // on a branch that takes no more work: `skip` deleted its rows, and the
+    // rebase arms rewrote its working copies.
+    const branchIds = (
+      await BranchService.listByChangeOrder(changeOrderId)
+    ).map((branch) => branch.id)
 
     const outcomes: Array<ConflictResolutionOutcome> = []
     for (const { itemId, resolution, fieldResolutions } of resolutions) {
@@ -1690,7 +1679,8 @@ export class ChangeOrderService {
    * `skip`: the change order no longer changes this item. The scope row and
    * the branch content go together, through the path that already enforces
    * the scope lock. Branch content with no scope row — which the release
-   * would refuse to merge anyway — is simply dropped.
+   * would refuse to merge anyway — is simply dropped from the live branches
+   * it is handed, while the change order's workflow is still open.
    */
   private static async skipConflictingItem(
     changeOrderId: string,
@@ -1715,6 +1705,11 @@ export class ChangeOrderService {
       })
       return
     }
+
+    // No scope row, so none of the scope gate `removeAffectedItem` applies:
+    // this dropped branch rows for any change order at all, a cancelled one
+    // included. A completed change order takes no more changes.
+    await this.assertEditable(changeOrderId)
 
     if (branchIds.length === 0) return
     await db

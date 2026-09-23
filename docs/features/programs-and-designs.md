@@ -168,6 +168,19 @@ three tiers. A partial-reach caller who needs to advance an ECO has two
 remedies, both immediate: be added to the other program, or have someone with
 cross-program authority do it.
 
+A change order's view of one of its designs
+(`GET /api/v1/change-orders/:id/designs/:designId/structure`) is a read of
+both, so it needs reach to the change order and to that design. What the change
+order holds elsewhere follows the reading rule: the tree lists and marks only
+the affected items you can see, with the same `hasRestricted` flag, and a BOM
+line or cross-design reference into another of its designs shows that design's
+drafts on the change order's branch only if you can read that design --
+otherwise it is withheld altogether, as in any structure read (see [What a
+Viewer Cannot Read](#what-a-viewer-cannot-read)). A design that is not one of the
+change order's own answers `404`, but only once both reach checks have passed,
+so a design you cannot read is refused alike whether or not the change order
+touches it.
+
 ```
 programs:manage? ──yes──> Full access
        |
@@ -473,10 +486,13 @@ When an ECO is released, branch-specific references are merged:
 | Remove reference      | `DELETE /api/v1/designs/:id/cross-references?refId=...&branch=...` | DELETE |
 | Pull in as usage copy | `POST /api/v1/designs/:id/cross-references`                        | POST   |
 
+**Access.** A request that brings an item into a design — creating a reference, the usage copy behind `POST /api/v1/designs/:id/items`, or a pull-in — needs read access to that item, not only to the design in the path, and a usage copy needs it to every item in the BOM subtree it copies. An item the caller cannot read and an id that names no item are refused alike, so the refusal does not say which ids exist: `403`, or `404` to a caller with cross-program authority. The other ids these requests carry — a reference to remove or pull in, a BOM line to re-point, a branch — must belong to the design in the path, and another design's is treated as one that does not exist.
+
 **Creating a reference** validates that:
 
-- The referenced item exists.
+- The referenced item exists and has not been deleted.
 - The referenced item belongs to a different design.
+- The referenced item is part of its design — not a draft that exists only on a workspace or change-order branch. The structure tree resolves a reference on the source design's main, where such a draft is not, so no design could show the reference, and the draft's owner can discard the draft at any time. A change order's release makes it referenceable.
 
 **Pulling in a reference** converts a cross-design reference to a usage copy:
 
@@ -484,6 +500,10 @@ When an ECO is released, branch-specific references are merged:
 2. A usage copy is created from the referenced item.
 3. BOM relationships are remapped to the new usage copy.
 4. Supports batch chain mode (`itemIds` array) for pulling in an entire ancestor chain at once.
+
+**Deleting the referenced item** — the hard delete behind `DELETE /api/v1/parts/:id`, and `DELETE /api/v1/items/:id` without a branch — is refused while any design still references it, on that design's main or on a change-order or workspace branch that is still open. The refusal names the referencing designs the caller can read and counts the rest. `referenced_item_id` carries no foreign key, so nothing would cascade: a reference left behind would name nothing, the structure tree would resolve no node for it, and there would be no node to remove it from. Remove the references first. A branch's `deleted` marker, or an addition on a branch that has since been archived, is bookkeeping rather than a reference, and goes with the item. [Versioning](./versioning.md#deleting-an-item-and-what-survives) covers everything else that bounds a hard delete.
+
+**Discarding a workspace draft** — deleting the workspace (`DELETE /api/v1/workspaces/:id`), or removing the draft from it (`DELETE /api/v1/workspaces/:id/items/:masterId`) — is a hard delete of the draft, and follows the same rule: it is refused, and writes nothing, while a live reference names the draft, and the bookkeeping rows naming a draft it does discard go with it. Only a reference made before references to drafts were refused can name one, and no structure tree has shown it, so Remove Reference cannot reach it. Remove it through the API — `GET /api/v1/designs/:id/cross-references` lists its `id` — or keep the draft by converting the workspace to a change order, which moves the draft rather than discarding it.
 
 ### In the Design Structure Tree
 
@@ -512,6 +532,8 @@ GET /api/v1/designs/:id/structure
 | `tag`            | UUID    | (none)      | Historical view at a specific tag              |
 | `commit`         | UUID    | (none)      | Historical view at a specific commit           |
 | `expandExternal` | boolean | `true`      | Recursively expand children from other designs |
+
+**Access.** `branch`, `tag` and `commit` must each belong to the design in the path. Another design's is answered as one that does not exist (`404`) — to every caller, including one who can read both designs, because the answer would present that design's contents as this one's. `GET /api/v1/designs/:id/items` and `GET /api/v1/items?designId=...` hold `tag` and `commit` to the same rule.
 
 ### Response Structure
 
@@ -561,7 +583,8 @@ GET /api/v1/designs/:id/structure
       "itemType": "Document",
       "state": "Draft"
     }
-  ]
+  ],
+  "hasRestricted": false
 }
 ```
 
@@ -584,6 +607,18 @@ Nesting clears the designation so that removing the line later does not promote 
 
 On a change-order branch the clearing is confined to the branch: nesting a main row under a branch's working copy leaves main's row alone (main has not changed), and the release clears it when the line is merged. A child removed from an assembly's working copy on the branch therefore shows as a non-structure item on that branch, and stays one on main after the release.
 
+### Taking Something Out of a Design
+
+Every row of the Structure tab, in the tree and in Non-Structure Items, has an actions menu (⋮) that repeats its right-click menu. Three of its actions take something out, and they are not interchangeable:
+
+| Action                    | Offered on                                                 | Effect                                                                                                                                                                                                                   |
+| ------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Remove from Structure** | A root part of this design                                 | Clears the designation. The part stays in the design, listed with the non-structure items, and "Add to Structure" puts it back.                                                                                          |
+| **Remove Reference**      | A cross-design reference                                   | Removes the reference (`DELETE /api/v1/designs/:id/cross-references`), confined to the branch when the page is viewing one. The part it names, in its own design, is untouched.                                          |
+| **Delete Part**           | A part of this design, while the design has no release yet | Deletes the part (`DELETE /api/v1/parts/:id`) and its BOM lines with it: assemblies that used it lose the line, and parts under it stay in the design — as non-structure items, unless another assembly still uses them. |
+
+Delete Part is offered only where the delete behind it can succeed: the page on main, main unprotected because nothing in the design is released, and a user holding `parts:delete`. It is the hard delete described in [Versioning](./versioning.md#deleting-an-item-and-what-survives), which refuses a released item and a protected main, and a part another design still references — the menu cannot tell that from this design, so the refusal arrives as an error naming the referencing designs, and Remove Reference on those designs clears the way. Once a design has a release behind it, a part leaves it on a change-order branch, where the deletion is recorded and the release carries it to main.
+
 ### ECO Branch Resolution
 
 When viewing the structure on an ECO branch:
@@ -599,6 +634,19 @@ With `expandExternal=true` (default), the structure endpoint:
 1. Finds BOM children that point to items in other designs.
 2. Recursively follows those items' BOM trees (up to depth 10).
 3. Marks external items with `isExternal: true` and includes the source design's code and name.
+
+### What a Viewer Cannot Read
+
+A design's structure reaches into other designs through its cross-design references and through BOM lines whose child lives elsewhere, and those designs can sit in programs the viewer is not a member of. Being able to open a design does not extend to everything it points at, so each read that follows those pointers — `GET /api/v1/designs/:id/structure`, `GET /api/v1/designs/:id/cross-references`, and a change order's `GET /api/v1/change-orders/:id/designs/:designId/structure` — is filtered for the viewer:
+
+- An item in a design the viewer cannot read is left out, together with everything beneath it. Its BOM is its own to disclose, so a child goes with it even when that child sits in a design the viewer could open.
+- A reference is left out of the references list when its item, or the source design recorded on it, is out of the viewer's reach.
+- What was left out is reported with one `hasRestricted` flag, never with a count or a placeholder, either of which would say how much of the design reaches outside the viewer's programs, and where. It is the rule a change order spanning programs follows (see [A change order spans designs](#a-change-order-spans-designs-so-its-reach-rule-has-three-tiers)). The Structure tab and a change order's design trees show a notice while it is set.
+- Designs with no program (Library and Unassigned) are readable by everyone, and cross-program authority is shown everything.
+
+On a change order's view of a design the flag also covers what the change order withholds elsewhere — affected items the viewer cannot read, or a linked design out of their reach — by the rule its summary follows (see the paragraph after the table in [A change order spans designs](#a-change-order-spans-designs-so-its-reach-rule-has-three-tiers)). The change order's page already says that once, above its designs, so there the design trees and the graph show their own notice only while that one is not showing.
+
+A reference into a program the viewer cannot read is left out of their Structure tab, so they cannot remove it there. Someone who can read both designs, or an administrator, can.
 
 ---
 

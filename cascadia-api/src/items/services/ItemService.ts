@@ -46,6 +46,8 @@ import {
 } from '../../services/CheckoutService'
 import { BranchService } from '../../services/BranchService'
 import { parseBaselineReleaseRevision } from '../../import/baseline-revision'
+import { CrossDesignReferenceService } from '../../services/CrossDesignReferenceService'
+import { releaseBranchLocks } from '../../services/checkout-locks'
 // Imported directly rather than through auth/access.ts, whose static
 // FileService import would recreate the ItemService <-> FileService cycle that
 // the dynamic import further down this file exists to break.
@@ -59,6 +61,7 @@ import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
 import type { OptionCondition } from '@cascadia/commons/types/variants'
 import type { Part } from '@cascadia/commons/items/types/part'
+import type { CrossDesignReferenceToItem } from '../../services/CrossDesignReferenceService'
 import type { AccessScope } from '../../db/filters'
 import type { TypeHandlerContext } from '../type-handlers'
 import type { SQL } from 'drizzle-orm'
@@ -979,6 +982,61 @@ export class ItemService {
   }
 
   /**
+   * Refuse a hard delete while another design still references the item.
+   *
+   * `design_cross_references.referenced_item_id` carries no foreign key, so
+   * nothing cascades from the item, and a reference left behind names
+   * nothing: the referencing design's structure resolves no node for it and
+   * silently loses that root, and with no node there is nothing to offer
+   * Remove Reference on, so its owners cannot clear it either.
+   *
+   * Refused rather than removed, because the reference belongs to the other
+   * design. Its main may be protected, where structure changes only through a
+   * change order; it may sit in a program the deleting user cannot read; and
+   * a reference removed on main records nothing. Its owners take the
+   * reference out, or the item is retired through its lifecycle instead.
+   *
+   * Checked here, before the transaction, so this refusal comes ahead of the
+   * guard as the evidence check's does — and again inside the transaction
+   * under a row lock, which is what makes it hold. See
+   * `CrossDesignReferenceService.releaseReferencesToDeletedItems`.
+   */
+  private static async requireNoCrossDesignReferences(
+    item: BaseItem,
+    id: string,
+    userId: string,
+  ): Promise<void> {
+    const referenced = (
+      await CrossDesignReferenceService.referencesToItems([id])
+    ).filter((row) => CrossDesignReferenceService.isLive(row))
+    if (referenced.length > 0) {
+      throw await this.crossDesignReferenceRefusal(item, id, userId, referenced)
+    }
+  }
+
+  /**
+   * The refusal for an item other designs still reference, naming the
+   * referencing designs the caller can read and counting the rest — see
+   * `CrossDesignReferenceService.describeReferencingDesigns`.
+   */
+  private static async crossDesignReferenceRefusal(
+    item: BaseItem,
+    id: string,
+    userId: string,
+    references: Array<CrossDesignReferenceToItem>,
+  ): Promise<ValidationError> {
+    const { designs: referencing, designCount } =
+      await CrossDesignReferenceService.describeReferencingDesigns(
+        references,
+        userId,
+      )
+    const several = designCount > 1
+    return new ValidationError(
+      `'${item.itemNumber || id}' is referenced by ${referencing}, so it cannot be deleted — it would silently drop out of ${several ? "those designs' structures" : "that design's structure"}. Remove the ${several ? 'references' : 'reference'} there first.`,
+    )
+  }
+
+  /**
    * Delete an item
    *
    * Idempotent for missing items (no error). Enforces the same edit-lock
@@ -987,7 +1045,9 @@ export class ItemService {
    * deleteOnBranch instead, so the deletion is recorded on the branch; the
    * tracking rows that are not a live claim (main's, and an archived
    * branch's) are repointed or dropped alongside the item — see
-   * `releaseBranchTracking`.
+   * `releaseBranchTracking`. A change order's branches are archived, and
+   * their locks released, in the same transaction — see
+   * `retireOwnedBranches`.
    *
    * This is a hard delete, and the schema cascades from `items.id`: the
    * item_versions and item_field_changes rows go with it (the items row IS
@@ -996,9 +1056,10 @@ export class ItemService {
    * order's traveler lines and their executions. None of that is recoverable,
    * so the operation is bounded to rows that do not yet carry evidence meant
    * to outlive them — see `requireNoRetainedEvidence` and
-   * docs/features/versioning.md. Anything past that point is retired through
-   * its lifecycle, or deleted on a branch where the deletion is itself
-   * history.
+   * docs/features/versioning.md — and to rows no other design still
+   * references, see `requireNoCrossDesignReferences`. Anything past that
+   * point is retired through its lifecycle, or deleted on a branch where the
+   * deletion is itself history.
    */
   static async delete(
     id: string,
@@ -1029,10 +1090,11 @@ export class ItemService {
     }
 
     await this.requireNoRetainedEvidence(item, id)
+    await this.requireNoCrossDesignReferences(item, id, userId)
 
-    // The `item.delete` guard: after the evidence check, before the
-    // transaction. A refusal here leaves no row of any kind — nothing has been
-    // written yet.
+    // The `item.delete` guard: after the evidence and reference checks, before
+    // the transaction. A refusal here leaves no row of any kind — nothing has
+    // been written yet.
     if (!isInternalMachinery(options) && hasGuardExtensions(ITEM_DELETE)) {
       await guardOrThrow(ITEM_DELETE, await itemDeleteIntent(item), {
         db,
@@ -1040,25 +1102,92 @@ export class ItemService {
       })
     }
 
-    await db.transaction(async (tx) => {
-      await this.releaseBranchTracking(item, id, tx)
-      await tx.delete(items).where(eq(items.id, id))
-      await publishDomainEvent(tx, ITEM_DELETED, {
-        actorId: userId,
-        subject: { id, masterId: item.masterId },
-        context: { designId: item.designId ?? undefined },
-        payload: {
-          itemId: id,
-          masterId: item.masterId,
-          itemType: item.itemType,
-          itemNumber: item.itemNumber,
-          name: item.name ?? null,
-          designId: item.designId ?? null,
-          revision: item.revision,
-          state: item.state,
-        },
-      })
-    })
+    const referencedMeanwhile = await db.transaction(
+      async (tx): Promise<Array<CrossDesignReferenceToItem>> => {
+        // First, and before anything else writes: a refusal here returns and
+        // the transaction commits, so nothing may have been written by then —
+        // retiring the branches below included.
+        const referenced =
+          await CrossDesignReferenceService.releaseReferencesToDeletedItems(
+            [id],
+            tx,
+          )
+        if (referenced.length > 0) return referenced
+
+        await this.retireOwnedBranches(id, userId, tx)
+        await this.releaseBranchTracking(item, id, tx)
+        await tx.delete(items).where(eq(items.id, id))
+        await publishDomainEvent(tx, ITEM_DELETED, {
+          actorId: userId,
+          subject: { id, masterId: item.masterId },
+          context: { designId: item.designId ?? undefined },
+          payload: {
+            itemId: id,
+            masterId: item.masterId,
+            itemType: item.itemType,
+            itemNumber: item.itemNumber,
+            name: item.name ?? null,
+            designId: item.designId ?? null,
+            revision: item.revision,
+            state: item.state,
+          },
+        })
+        return []
+      },
+    )
+
+    // A reference committed after the check above, and the transaction wrote
+    // nothing. The refusal is raised out here because naming the designs reads
+    // the caller's access scope on the pool, which must not wait for a
+    // connection while the transaction still holds one.
+    if (referencedMeanwhile.length > 0) {
+      throw await this.crossDesignReferenceRefusal(
+        item,
+        id,
+        userId,
+        referencedMeanwhile,
+      )
+    }
+  }
+
+  /**
+   * Archive the branches this item owns as a change order, and release the
+   * checkout locks held on them, in the deleting transaction.
+   *
+   * `branches.change_order_item_id` is SET NULL on delete, which is what lets
+   * a draft change order be deleted at all — but it meant the row going took
+   * none of its branches with it. Every branch a deleted change order had
+   * opened stayed live with no owner: still offered in the version picker of
+   * each item it touched, still holding its locks, with no change order left
+   * to cancel.
+   *
+   * They end the way `ChangeOrderService.cancel` ends them: each lock released
+   * as a cancellation, since the edits under it are discarded, then the branch
+   * archived. The working copies stay behind on the archived branch, inert, as
+   * a cancel leaves them. Keyed on the column the delete clears rather than on
+   * the item's type or its design links, so nothing that column links can be
+   * orphaned by it.
+   */
+  private static async retireOwnedBranches(
+    id: string,
+    userId: string,
+    tx: TransactionClient,
+  ): Promise<void> {
+    const owned = await tx
+      .select({ id: branches.id, designId: branches.designId })
+      .from(branches)
+      .where(
+        and(eq(branches.changeOrderItemId, id), eq(branches.isArchived, false)),
+      )
+
+    for (const branch of owned) {
+      await releaseBranchLocks(
+        tx,
+        { branchId: branch.id, designId: branch.designId },
+        'checkout_cancelled',
+      )
+      await BranchService.archiveBranch(branch.id, tx, userId)
+    }
   }
 
   /**

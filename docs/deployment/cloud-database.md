@@ -182,6 +182,7 @@ DATABASE_URL=postgresql://cascadia:PASSWORD@<cloud-db-host>:5432/cascadia?sslmod
 # APPLICATION
 APP_PORT=3000
 BASE_URL=https://plm.example.com
+TRUSTED_PROXY_COUNT=1
 NODE_ENV=production
 APP_VERSION=latest
 
@@ -196,6 +197,8 @@ VAULT_TYPE=local
 # S3_ACCESS_KEY=AKIA...
 # S3_SECRET_KEY=...
 ```
+
+The app does not terminate TLS itself, so an `https://` `BASE_URL` means a load balancer or reverse proxy in front of it does, and `TRUSTED_PROXY_COUNT=1` declares it. Without it the app ignores that proxy's `X-Forwarded-*` headers: it refuses every browser write as cross-origin and puts every user in one rate-limit bucket. Set `0` only if nothing sits in front of the app, and see [Reverse Proxy Trust](../orchestration/configuration.md#reverse-proxy-trust) for what the proxy must send.
 
 Start the application:
 

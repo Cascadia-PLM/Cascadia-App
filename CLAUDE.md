@@ -650,7 +650,7 @@ const job = await JobService.submit(
 - Strict mode enabled, avoid `any` types
 - Use Zod schemas for validation and type inference
 - Prefer interfaces for object types, type for unions
-- Path alias: `@/*` means _the importing file's own package_ (`cascadia-<pkg>/src/*`). Reach another package by name — `@cascadia/commons/lib/...` from api or web; `@cascadia/api/...` and `@cascadia/web/...` only from apps and scripts. Commons imports itself relatively (it is compiled inside the other two programs, where `@/` means something else). In an app's Vite build, `@/` searches web first, then this edition's module package
+- Path alias: `@/*` means _the importing file's own package_ (`cascadia-<pkg>/src/*`). Reach another package by name — `@cascadia/commons/...` from api or web; `@cascadia/api/...` and `@cascadia/web/...` only from apps and scripts. Commons imports itself relatively (it is compiled inside the other two programs, where `@/` means something else). In an app's Vite build, `@/` searches web first, then this edition's module package
 
 ### Database Queries
 
@@ -953,7 +953,7 @@ at build time, or not at all when it was `import type`.
 
 3. **Pure logic both sides run** (a parser, a formatter): it belongs in
    commons — provided it imports no `node:*` module and no server-only
-   package. `formatFileSize` lives in `commons/lib/vault/format-file-size.ts`
+   package. `formatFileSize` lives in `commons/vault/format-file-size.ts`
    for exactly this reason, apart from the `node:crypto`-using `file-utils`.
 
 **Prevention:**

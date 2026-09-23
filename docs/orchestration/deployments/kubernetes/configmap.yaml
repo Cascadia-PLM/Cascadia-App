@@ -9,6 +9,14 @@ data:
   BASE_URL: 'https://plm.example.com'
   LOG_LEVEL: 'info'
 
+  # Reverse proxies in front of the app. The ingress is the one hop: it
+  # terminates TLS, and without this the app refuses every browser write as
+  # cross-origin. A cloud L7 load balancer in front of the ingress makes it 2,
+  # and the ingress must then append to that balancer's X-Forwarded-For and
+  # pass its X-Forwarded-Proto on (ingress-nginx: use-forwarded-headers and
+  # compute-full-forwarded-for). See docs/orchestration/configuration.md.
+  TRUSTED_PROXY_COUNT: '1'
+
   # Vault configuration
   VAULT_MODE: 'embedded'
   VAULT_TYPE: 'local' # Change to "s3" for cloud storage

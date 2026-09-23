@@ -19,9 +19,10 @@ import {
   expect,
   it,
 } from 'vitest'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, notInArray } from 'drizzle-orm'
 import { ItemService } from '../items/services/ItemService'
 import { BranchService } from './BranchService'
+import { CheckoutService } from './CheckoutService'
 import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -31,6 +32,8 @@ import {
   branchItems,
   changeOrderAffectedItems,
   commits,
+  designCrossReferences,
+  items,
   programs,
 } from '@/db/schema'
 import { takeFirst } from '@/db/take-first'
@@ -991,6 +994,212 @@ describe('BranchService', () => {
           user.id,
         ),
       ).rejects.toThrow(NotFoundError)
+    })
+  })
+
+  // Deleting a workspace, or removing a draft from one, hard-deletes the
+  // drafts that exist only there, and `design_cross_references` has no foreign
+  // key to the item. The invariant, whichever way a discard goes: no reference
+  // row outlives the item it names. Refused, the draft and its references
+  // survive with nothing written; done, no row names the draft.
+  //
+  // The references are inserted directly. `createReference` refuses a draft,
+  // so these are the rows a reference made before that refusal leaves.
+  describe('discarding a draft another design references', () => {
+    let unique: string
+    let referencingDesignId: string
+
+    beforeEach(async () => {
+      unique = `${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+      const referencing = await DesignService.create(
+        {
+          programId,
+          name: 'Referencing Design',
+          code: `XREF-${unique}`,
+          designType: 'Engineering',
+        },
+        user.id,
+      )
+      referencingDesignId = referencing.id
+    })
+
+    async function workspaceWithDraft(suffix: string) {
+      const workspace = await BranchService.createWorkspaceBranch(
+        designId,
+        user.id,
+        `xref-${suffix}-${unique}`,
+      )
+      const { item: draft } = await CheckoutService.createOnBranch(
+        {
+          designId,
+          itemNumber: `PN-XREF-${suffix}-${unique}`,
+          itemType: 'Part',
+          name: `Workspace draft ${suffix}`,
+        },
+        workspace.id,
+        'Drafted on workspace',
+        user.id,
+      )
+      return { workspace, draft }
+    }
+
+    /** A change order's branch on the referencing design, archived on request as a cancel leaves it. */
+    async function referencingBranch(options: { archived?: boolean } = {}) {
+      const changeOrder = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateChangeOrderBranch(
+        referencingDesignId,
+        changeOrder.id,
+        user.id,
+      )
+      if (options.archived) {
+        await BranchService.archiveBranch(branch.id)
+      }
+      return branch
+    }
+
+    async function referenceTo(
+      itemId: string,
+      onBranch?: { branchId: string; changeType: 'added' | 'deleted' },
+    ) {
+      await testDb.db.insert(designCrossReferences).values({
+        referencingDesignId,
+        referencedItemId: itemId,
+        sourceDesignId: designId,
+        branchId: onBranch?.branchId ?? null,
+        changeType: onBranch?.changeType ?? null,
+        createdBy: user.id,
+        modifiedBy: user.id,
+      })
+    }
+
+    async function referencesNaming(itemId: string) {
+      return testDb.db
+        .select({ id: designCrossReferences.id })
+        .from(designCrossReferences)
+        .where(eq(designCrossReferences.referencedItemId, itemId))
+    }
+
+    /** The invariant, asked of the database: rows naming an item that is gone. */
+    async function referencesNamingNothing() {
+      return testDb.db
+        .select({ id: designCrossReferences.id })
+        .from(designCrossReferences)
+        .where(
+          and(
+            eq(designCrossReferences.referencingDesignId, referencingDesignId),
+            notInArray(
+              designCrossReferences.referencedItemId,
+              testDb.db.select({ id: items.id }).from(items),
+            ),
+          ),
+        )
+    }
+
+    async function trackingRow(workspaceId: string, masterId: string) {
+      return (
+        await testDb.db
+          .select()
+          .from(branchItems)
+          .where(
+            and(
+              eq(branchItems.branchId, workspaceId),
+              eq(branchItems.itemMasterId, masterId),
+            ),
+          )
+      ).at(0)
+    }
+
+    /** Hold the draft's lock, so a refusal that released it would show. */
+    async function holdLock(workspaceId: string, masterId: string) {
+      await testDb.db
+        .update(branchItems)
+        .set({ checkedOutBy: user.id, checkedOutAt: new Date() })
+        .where(
+          and(
+            eq(branchItems.branchId, workspaceId),
+            eq(branchItems.itemMasterId, masterId),
+          ),
+        )
+    }
+
+    it("refuses to delete a workspace whose draft another design's main references, and writes nothing", async () => {
+      const { workspace, draft } = await workspaceWithDraft('refused')
+      await holdLock(workspace.id, draft.masterId)
+      await referenceTo(draft.id)
+
+      await expect(
+        BranchService.deleteWorkspaceBranch(workspace.id, user.id),
+      ).rejects.toThrow(ValidationError)
+
+      expect((await BranchService.getById(workspace.id))?.isArchived).toBe(
+        false,
+      )
+      expect(await ItemService.findById(draft.id)).not.toBeNull()
+      expect(
+        (await trackingRow(workspace.id, draft.masterId))?.checkedOutBy,
+      ).toBe(user.id)
+      expect(await referencesNaming(draft.id)).toHaveLength(1)
+      expect(await referencesNamingNothing()).toHaveLength(0)
+    })
+
+    it('deletes a workspace whose draft only bookkeeping rows name, and leaves no row naming it', async () => {
+      const { workspace, draft } = await workspaceWithDraft('residue')
+      // A 'deleted' marker whose baseline row main has since removed, so it
+      // masks nothing.
+      const open = await referencingBranch()
+      await referenceTo(draft.id, { branchId: open.id, changeType: 'deleted' })
+      // An addition on a branch a cancelled change order archived.
+      const cancelled = await referencingBranch({ archived: true })
+      await referenceTo(draft.id, {
+        branchId: cancelled.id,
+        changeType: 'added',
+      })
+
+      await BranchService.deleteWorkspaceBranch(workspace.id, user.id)
+
+      expect(await ItemService.findById(draft.id)).toBeNull()
+      expect(await referencesNamingNothing()).toHaveLength(0)
+    })
+
+    it("refuses to remove a draft another design's open branch references, and writes nothing", async () => {
+      const { workspace, draft } = await workspaceWithDraft('rm-refused')
+      await holdLock(workspace.id, draft.masterId)
+      const open = await referencingBranch()
+      await referenceTo(draft.id, { branchId: open.id, changeType: 'added' })
+
+      await expect(
+        BranchService.removeWorkspaceItem(
+          workspace.id,
+          draft.masterId,
+          user.id,
+        ),
+      ).rejects.toThrow(ValidationError)
+
+      expect(await ItemService.findById(draft.id)).not.toBeNull()
+      expect(
+        (await trackingRow(workspace.id, draft.masterId))?.checkedOutBy,
+      ).toBe(user.id)
+      expect(await referencesNaming(draft.id)).toHaveLength(1)
+      expect(await referencesNamingNothing()).toHaveLength(0)
+    })
+
+    it('removes a draft only bookkeeping rows name, and leaves no row naming it', async () => {
+      const { workspace, draft } = await workspaceWithDraft('rm-residue')
+      const cancelled = await referencingBranch({ archived: true })
+      await referenceTo(draft.id, {
+        branchId: cancelled.id,
+        changeType: 'added',
+      })
+
+      await BranchService.removeWorkspaceItem(
+        workspace.id,
+        draft.masterId,
+        user.id,
+      )
+
+      expect(await trackingRow(workspace.id, draft.masterId)).toBeUndefined()
+      expect(await ItemService.findById(draft.id)).toBeNull()
+      expect(await referencesNamingNothing()).toHaveLength(0)
     })
   })
 

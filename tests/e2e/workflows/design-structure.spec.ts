@@ -6,22 +6,22 @@
  *
  * One journey, end to end, in the design-management.spec.ts style: seed a
  * design and its parts over the API, open the design detail page (Structure
- * is the default tab), and drive the tab's five write paths through the UI —
+ * is the default tab), and drive the tab's write paths through the UI —
  * create a part in place, add a part from another design, add a BOM child,
- * create a child in place, remove a root from the structure.
+ * create a child in place, remove a root from the structure, delete a part,
+ * and add then remove a cross-design reference.
  *
  * Every assertion here is about the tree restaging *without a page reload*.
  * The Structure tab reads `designStructureQuery` from the shared cache, and
  * its dialogs refresh it by naming the resource they wrote: design membership
  * writes invalidate 'designs' directly, the BOM-child add invalidates
  * 'relationships' and reaches the tree through the RESOURCE_DEPENDENTS
- * fan-out, and the in-place creates invalidate 'parts' and reach it through
- * 'relationships' — three different wires, each pinned by its own phase
- * below. If that
- * wiring is dropped, the writes still succeed and the page still renders; the
- * only observable failure is the tree not changing until a reload, which is
- * exactly what these expects wait on. The window marker at the end proves no
- * reload happened behind their back.
+ * fan-out, and the in-place creates and the delete invalidate 'parts' and
+ * reach it through 'relationships' — three different wires, each pinned by a
+ * phase below. If that wiring is dropped, the writes still succeed and the
+ * page still renders; the only observable failure is the tree not changing
+ * until a reload, which is exactly what these expects wait on. The window
+ * marker at the end proves no reload happened behind their back.
  */
 
 import { expect, test } from '../fixtures'
@@ -33,7 +33,7 @@ import { seedPart } from '../helpers/test-data'
 type MarkedWindow = Window & { __structureJourneyMarker?: true }
 
 test.describe('Design Structure Journey', () => {
-  test('structure edits restage the BOM tree in place — add part, add BOM child, remove from structure', async ({
+  test('structure edits restage the BOM tree in place — add, nest, remove, delete, reference', async ({
     authenticatedPage: page,
   }) => {
     const ts = Date.now()
@@ -41,7 +41,7 @@ test.describe('Design Structure Journey', () => {
     // The design under test holds two root parts. The donor design exists
     // because the Add Part dialog's Use Existing step only offers parts from
     // *other* designs — its usage-copy mode copies the part in, keeping the
-    // item number.
+    // item number, and its reference mode links one without copying it.
     const design = await seedFreshDesign(page, 'E2E Structure Journey')
     const parent = await seedPart(page, design.id, {
       itemNumber: `PN-E2E-ST-PARENT-${ts}`,
@@ -55,6 +55,10 @@ test.describe('Design Structure Journey', () => {
     const donor = await seedPart(page, donorDesign.id, {
       itemNumber: `PN-E2E-ST-DONOR-${ts}`,
       name: `E2E Structure Donor ${ts}`,
+    })
+    const referenced = await seedPart(page, donorDesign.id, {
+      itemNumber: `PN-E2E-ST-REF-${ts}`,
+      name: `E2E Structure Referenced ${ts}`,
     })
 
     // ---- Open the design; Structure is the default tab ----
@@ -101,6 +105,7 @@ test.describe('Design Structure Journey', () => {
       `create part failed: ${await createResponse.text()}`,
     ).toBe(true)
     const created = (await createResponse.json()).data.item as {
+      id: string
       itemNumber: string
     }
     await expect(createDialog).toBeHidden({ timeout: 15000 })
@@ -288,6 +293,106 @@ test.describe('Design Structure Journey', () => {
     await expect(page.getByText(donor.itemNumber, { exact: true })).toHaveCount(
       1,
     )
+
+    // ---- Delete a part (writes an item) ----
+    // Through the row's visible menu rather than a right-click, since the menu
+    // is how the action gets found. The part created in place at the start is
+    // a root of a design with nothing released, viewed on main, which is where
+    // Delete Part is offered. It leaves the page altogether — the tree and
+    // Non-Structure Items both — through the third wire.
+    await page
+      .getByRole('button', { name: `Actions for ${created.itemNumber}` })
+      .click()
+    await page.getByRole('menuitem', { name: 'Delete Part' }).click()
+    const deleteDialog = page.getByRole('alertdialog')
+    await expect(deleteDialog).toBeVisible()
+    const [deleteResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          new URL(r.url()).pathname === `/api/v1/parts/${created.id}` &&
+          r.request().method() === 'DELETE',
+        { timeout: 15000 },
+      ),
+      deleteDialog.getByRole('button', { name: 'Delete' }).click(),
+    ])
+    expect(
+      deleteResponse.ok(),
+      `delete part failed: ${await deleteResponse.text()}`,
+    ).toBe(true)
+    await expect(
+      page.getByText(created.itemNumber, { exact: true }),
+    ).toHaveCount(0, { timeout: 15000 })
+    const deletedRead = await page.request.get(`/api/v1/parts/${created.id}`)
+    expect(deletedRead.status(), 'the deleted part is still readable').toBe(404)
+
+    // ---- Reference a part, then remove the reference (writes design membership) ----
+    // Use Existing's other mode links the donor design's part instead of
+    // copying it in, and the tree shows it as a reference root. Remove
+    // Reference drops the link: the root leaves the tree, and the part is
+    // still there in its own design.
+    await page.getByRole('button', { name: 'Add Part' }).click()
+    const referenceDialog = page.getByRole('dialog')
+    await expect(referenceDialog).toBeVisible()
+    await referenceDialog.getByRole('button', { name: 'Use Existing' }).click()
+    await referenceDialog
+      .getByRole('button', { name: 'Cross-Design Reference' })
+      .click()
+    await referenceDialog
+      .getByPlaceholder('Search by part number or name...')
+      .fill(referenced.itemNumber)
+    const referencedRow = referenceDialog
+      .locator('label')
+      .filter({ hasText: referenced.itemNumber })
+      .first()
+    await expect(referencedRow).toBeVisible()
+    await referencedRow.getByRole('checkbox').click()
+    const [referenceResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes(`/designs/${design.id}/items`) &&
+          r.request().method() === 'POST',
+        { timeout: 15000 },
+      ),
+      referenceDialog.getByRole('button', { name: 'Add (1)' }).click(),
+    ])
+    expect(
+      referenceResponse.ok(),
+      `add reference failed: ${await referenceResponse.text()}`,
+    ).toBe(true)
+    await expect(referenceDialog).toBeHidden({ timeout: 15000 })
+    await expect(
+      page.getByText(referenced.itemNumber, { exact: true }),
+    ).toBeVisible({ timeout: 15000 })
+
+    await page
+      .getByRole('button', { name: `Actions for ${referenced.itemNumber}` })
+      .click()
+    await page.getByRole('menuitem', { name: 'Remove Reference' }).click()
+    const unreferenceDialog = page.getByRole('alertdialog')
+    await expect(unreferenceDialog).toBeVisible()
+    const [unreferenceResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes(`/designs/${design.id}/cross-references`) &&
+          r.request().method() === 'DELETE',
+        { timeout: 15000 },
+      ),
+      unreferenceDialog.getByRole('button', { name: 'Remove' }).click(),
+    ])
+    expect(
+      unreferenceResponse.ok(),
+      `remove reference failed: ${await unreferenceResponse.text()}`,
+    ).toBe(true)
+    await expect(
+      page.getByText(referenced.itemNumber, { exact: true }),
+    ).toHaveCount(0, { timeout: 15000 })
+    const referencedRead = await page.request.get(
+      `/api/v1/parts/${referenced.id}`,
+    )
+    expect(
+      referencedRead.ok(),
+      'removing the reference touched the part it named',
+    ).toBe(true)
 
     // Every restage above happened on the page loaded at the start — had the
     // page reloaded, the fresh loads would have painted the same end states

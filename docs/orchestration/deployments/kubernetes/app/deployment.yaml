@@ -44,6 +44,13 @@ spec:
                 configMapKeyRef:
                   name: cascadia-config
                   key: BASE_URL
+            # Not optional: a ConfigMap without it should stop the rollout,
+            # not start pods that refuse every browser write behind the ingress.
+            - name: TRUSTED_PROXY_COUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: cascadia-config
+                  key: TRUSTED_PROXY_COUNT
             - name: VAULT_MODE
               valueFrom:
                 configMapKeyRef:

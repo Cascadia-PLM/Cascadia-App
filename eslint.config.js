@@ -435,6 +435,31 @@ export default [
       ],
     },
   },
+  // A Drizzle config is loaded inside the production image, where drizzle-kit
+  // lives only in /opt/admin, outside the app's module tree
+  // (cascadia-app/Dockerfile). Its types cost nothing, but a value import is
+  // resolved from the config's own directory under /app, finds nothing there,
+  // and the schema push fails with "Cannot find module 'drizzle-kit'". Every
+  // app's config must stay type-only. Cascadia-App#101 fixed this once; this
+  // rule is what keeps it fixed.
+  {
+    files: ['cascadia-app*/drizzle.config.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'drizzle-kit',
+              allowTypeImports: true,
+              message:
+                "Import only drizzle-kit's types here (`import type { Config }`, then `satisfies Config`). The production image keeps drizzle-kit in /opt/admin, where a config loaded from /app cannot resolve it.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // The webhook dispatcher runs inside a consumer transaction holding its
   // cursor row FOR UPDATE, so two things are banned in its directory and
   // neither ban is stylistic.

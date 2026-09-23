@@ -43,6 +43,7 @@ import {
   GRAPH_EDGE_COLORS,
   directionalMarker,
 } from '@/components/graph/edgeStyles'
+import { RestrictedStructureNotice } from '@/components/bom/RestrictedStructureNotice'
 import { getItemDetailPath } from '@/items/item-type-ui'
 import {
   authSessionQuery,
@@ -133,6 +134,18 @@ const getLayoutedElements = (
   return { nodes: layoutedNodes, edges }
 }
 
+/**
+ * The designs a change order touches and the items it affects in them: a tree
+ * per design, one graph across them, and a table.
+ *
+ * Past the ~400-line guideline. The seam is the Graph View: `buildGraph`, its
+ * state and the effect that builds it are read by nothing else here, and are a
+ * hook. It has not moved because it fetches from that effect, which lint
+ * allows only in the files `local/no-indirect-effect-fetch` already lists, and
+ * a new file may not join that list — so the move starts with converting it to
+ * `changeOrderDesignStructureQuery`. The Table View (`affectedItemRows`,
+ * `affectedItemColumns`) is the other seam.
+ */
 export function ChangeOrderAffectedItemsPanel({
   changeOrderId,
   changeOrderState,
@@ -176,6 +189,10 @@ export function ChangeOrderAffectedItemsPanel({
   const [graphNodes, setGraphNodes, onNodesChange] = useNodesState<Node>([])
   const [graphEdges, setGraphEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [graphLoading, setGraphLoading] = useState(false)
+  // Whether any design’s structure withheld something the viewer cannot read.
+  // A graph cannot show where, so the view says that it did — unless the
+  // change order’s own notice above already does.
+  const [graphHasRestricted, setGraphHasRestricted] = useState(false)
 
   const nodeTypes = useMemo(
     () => ({ ecoItemNode: ChangeOrderGraphItemNode }),
@@ -196,6 +213,7 @@ export function ChangeOrderAffectedItemsPanel({
     if (designs.length === 0) {
       setGraphNodes([])
       setGraphEdges([])
+      setGraphHasRestricted(false)
       return
     }
 
@@ -207,6 +225,7 @@ export function ChangeOrderAffectedItemsPanel({
       // Track added nodes by masterId (stable across revisions) to prevent duplicates
       // Maps masterId -> nodeId (the actual node ID used in the graph)
       const addedMasterIds = new Map<string, string>()
+      let restricted = false
 
       // Add ECO node at top
       nodes.push({
@@ -232,12 +251,14 @@ export function ChangeOrderAffectedItemsPanel({
             data: {
               roots: Array<BOMTreeNode>
               affectedItemIds: Array<string>
+              hasRestricted: boolean
             }
           }>(
             `/api/v1/change-orders/${changeOrderId}/designs/${design.designId}/structure`,
           )
 
           const { roots } = response.data
+          if (response.data.hasRestricted) restricted = true
 
           // Recursive function to add nodes and edges from BOM tree
           const processNode = (node: BOMTreeNode, parentId: string | null) => {
@@ -341,6 +362,7 @@ export function ChangeOrderAffectedItemsPanel({
         getLayoutedElements(nodes, edges)
       setGraphNodes(layoutedNodes)
       setGraphEdges(layoutedEdges)
+      setGraphHasRestricted(restricted)
     } catch {
       // Graph build failed - will show empty graph
     } finally {
@@ -805,6 +827,7 @@ export function ChangeOrderAffectedItemsPanel({
                   designType={design.designType}
                   branchId={design.branchId}
                   changeOrderId={changeOrderId}
+                  changeOrderRestricted={hasRestricted}
                   readOnly={!isEditable}
                   onAddToChangeOrder={handleAddToChangeOrder}
                   onAddChild={isEditable ? handleAddChild : undefined}
@@ -839,6 +862,9 @@ export function ChangeOrderAffectedItemsPanel({
 
         {/* Graph View Tab */}
         <TabsContent value="graph" className="mt-4">
+          {graphHasRestricted && !hasRestricted && (
+            <RestrictedStructureNotice className="mb-4" />
+          )}
           <Card>
             <CardContent className="pt-6">
               {graphLoading ? (

@@ -51,8 +51,9 @@ export const branches = pgTable(
 
     // For ECO branches - links to Change Order item. SET NULL: deleting a
     // draft ECO is a real flow and its branch must survive as history —
-    // NO ACTION would block ECO deletion outright. (A service-level branch
-    // cleanup on ECO delete is the better long-term fix; out of scope here.)
+    // NO ACTION would block ECO deletion outright. ItemService.delete archives
+    // the branches and cancels their locks before the row goes, so the null
+    // never leaves a live branch without its change order.
     changeOrderItemId: uuid('change_order_item_id').references(
       (): AnyPgColumn => items.id,
       { onDelete: 'set null' },

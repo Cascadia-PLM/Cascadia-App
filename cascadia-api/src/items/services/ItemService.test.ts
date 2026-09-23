@@ -40,15 +40,18 @@ import {
   branches,
   changeOrders,
   commits,
+  designCrossReferences,
   designs,
   lifecycleHistory,
   lifecycleInstances,
+  programs,
   requirements,
   tasks,
   workOrderInstructions,
 } from '@/db/schema'
 import { itemUpdateSchemaFor } from '@/api/schemas'
 import { takeFirst } from '@/db/take-first'
+import { CrossDesignReferenceService } from '@/services/CrossDesignReferenceService'
 import { DesignService } from '@/services/DesignService'
 import { ProgramService } from '@/services/ProgramService'
 import { permissionService } from '@/auth/permission-service'
@@ -1379,6 +1382,184 @@ describe('ItemService', () => {
             .from(workOrderInstructions)
             .where(eq(workOrderInstructions.id, line.id)),
         ).toHaveLength(1)
+      })
+    })
+
+    // `design_cross_references.referenced_item_id` has no foreign key, so
+    // nothing cascades from the item to the references naming it. A reference
+    // used to outlive its item naming nothing: the referencing design's tree
+    // silently lost that root, and nothing in the UI could remove it. The
+    // invariant, whichever way the delete goes: no reference row outlives the
+    // item it names. Refused, both rows survive; done, none is left.
+    describe('cross-design references the delete must not strand', () => {
+      /** Another design, optionally in a program `user` is not a member of. */
+      async function otherDesign(suffix: string, programId?: string) {
+        return takeFirst(
+          await testDb.db
+            .insert(designs)
+            .values({
+              name: `Referencing ${suffix}`,
+              code: `REF-${uniquePrefix}-${suffix}`,
+              designType: 'Engineering',
+              programId,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
+      }
+
+      async function ecoBranchOn(branchDesignId: string, suffix: string) {
+        return takeFirst(
+          await testDb.db
+            .insert(branches)
+            .values({
+              designId: branchDesignId,
+              name: `eco/${uniquePrefix}-${suffix}`,
+              branchType: 'eco',
+              createdBy: user.id,
+            })
+            .returning(),
+        )
+      }
+
+      async function referencedPart(suffix: string) {
+        return ItemService.create(
+          'Part',
+          {
+            itemNumber: `PN-${uniquePrefix}-XREF-${suffix}`,
+            revision: 'A',
+            name: 'Referenced Part',
+            designId,
+          } as any,
+          user.id,
+        )
+      }
+
+      async function rowsNaming(itemId: string) {
+        return testDb.db
+          .select()
+          .from(designCrossReferences)
+          .where(eq(designCrossReferences.referencedItemId, itemId))
+      }
+
+      it('refuses while another design references the item on main, and keeps both rows', async () => {
+        const part = await referencedPart('MAIN')
+        const referencing = await otherDesign('MAIN')
+        await CrossDesignReferenceService.createReference(
+          { referencingDesignId: referencing.id, referencedItemId: part.id },
+          user.id,
+        )
+
+        await expect(ItemService.delete(part.id, user.id)).rejects.toThrow(
+          ValidationError,
+        )
+
+        expect(await ItemService.findById(part.id)).not.toBeNull()
+        expect(await rowsNaming(part.id)).toHaveLength(1)
+      })
+
+      it('refuses while an open branch of another design has added a reference', async () => {
+        const part = await referencedPart('BRANCH')
+        const referencing = await otherDesign('BRANCH')
+        const eco = await ecoBranchOn(referencing.id, 'OPEN')
+        await CrossDesignReferenceService.createReference(
+          {
+            referencingDesignId: referencing.id,
+            referencedItemId: part.id,
+            branchId: eco.id,
+          },
+          user.id,
+        )
+
+        await expect(ItemService.delete(part.id, user.id)).rejects.toThrow(
+          ValidationError,
+        )
+
+        expect(await ItemService.findById(part.id)).not.toBeNull()
+        expect(await rowsNaming(part.id)).toHaveLength(1)
+      })
+
+      // The refusal names the designs holding the references, so it must not
+      // become a way to learn what exists in a program the user cannot read.
+      // Asserted on the design codes, not on the wording around them.
+      it('names the referencing designs the user can read, and only those', async () => {
+        const part = await referencedPart('SCOPE')
+        const visible = await otherDesign('VISIBLE')
+        // A bare program row enrols nobody, so `user` is outside it.
+        const closedProgram = takeFirst(
+          await testDb.db
+            .insert(programs)
+            .values({
+              name: 'Closed Program',
+              code: `CLOSED-${uniquePrefix}`,
+              createdBy: user.id,
+            })
+            .returning(),
+        )
+        const hidden = await otherDesign('HIDDEN', closedProgram.id)
+        for (const referencing of [visible, hidden]) {
+          await CrossDesignReferenceService.createReference(
+            { referencingDesignId: referencing.id, referencedItemId: part.id },
+            user.id,
+          )
+        }
+
+        const refusal = await ItemService.delete(part.id, user.id).then(
+          () => null,
+          (error: unknown) => error,
+        )
+
+        expect(refusal).toBeInstanceOf(ValidationError)
+        const message = (refusal as ValidationError).message
+        expect(message).toContain(visible.code)
+        expect(message).not.toContain(hidden.code)
+        expect(await rowsNaming(part.id)).toHaveLength(2)
+      })
+
+      it('deletes the item when the only rows naming it are bookkeeping, and leaves none behind', async () => {
+        const part = await referencedPart('RESIDUE')
+        const referencing = await otherDesign('RESIDUE')
+
+        // A 'deleted' marker whose baseline row main has since removed, so it
+        // masks nothing.
+        const open = await ecoBranchOn(referencing.id, 'OPEN')
+        const baseline = await CrossDesignReferenceService.createReference(
+          { referencingDesignId: referencing.id, referencedItemId: part.id },
+          user.id,
+        )
+        await CrossDesignReferenceService.removeReference(
+          baseline.id,
+          open.id,
+          user.id,
+        )
+        await CrossDesignReferenceService.removeReference(
+          baseline.id,
+          null,
+          user.id,
+        )
+
+        // An addition on a change order that was cancelled, which archived its
+        // branch.
+        const cancelled = await ecoBranchOn(referencing.id, 'CANCELLED')
+        await CrossDesignReferenceService.createReference(
+          {
+            referencingDesignId: referencing.id,
+            referencedItemId: part.id,
+            branchId: cancelled.id,
+          },
+          user.id,
+        )
+        await testDb.db
+          .update(branches)
+          .set({ isArchived: true })
+          .where(eq(branches.id, cancelled.id))
+
+        expect(await rowsNaming(part.id)).toHaveLength(2)
+
+        await ItemService.delete(part.id, user.id)
+
+        expect(await ItemService.findById(part.id)).toBeNull()
+        expect(await rowsNaming(part.id)).toHaveLength(0)
       })
     })
   })

@@ -418,6 +418,7 @@ describe('design structure: top-level parts are the designated ones', () => {
     const onChangeOrder = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
     expect(rootNumbers(onChangeOrder)).toEqual([assembly.itemNumber])
     expect(flatten(onChangeOrder.roots).map((n) => n.itemNumber)).not.toContain(

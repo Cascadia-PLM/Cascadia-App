@@ -1004,6 +1004,15 @@ export class ConflictDetectionService {
       }
     }
 
+    // A rebase rewrites the branch's working copy, and it neither commits nor
+    // checks out, so nothing downstream would refuse an archived branch for
+    // it. Thrown rather than returned as a failed result: it is not a
+    // conflict anyone can resolve.
+    const branch = await BranchService.getById(bi.branchId)
+    if (branch) {
+      BranchService.assertNotArchived(branch, 'rebaseItem')
+    }
+
     // Get current working copy, old base, and new base
     const [ourItem, oldBase, newBase] = await Promise.all([
       bi.currentItemId ? ItemService.findById(bi.currentItemId) : null,
@@ -1213,6 +1222,13 @@ export class ConflictDetectionService {
         itemMasterId: '',
         error: 'Branch item not found',
       }
+    }
+
+    // Same reason as `rebaseItem`: a pull rewrites the working copy, and
+    // neither commits nor checks out
+    const branch = await BranchService.getById(bi.branchId)
+    if (branch) {
+      BranchService.assertNotArchived(branch, 'pullChangesFromMain')
     }
 
     // Get our current working copy and main's item

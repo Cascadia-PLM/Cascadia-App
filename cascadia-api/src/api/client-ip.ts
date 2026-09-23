@@ -80,8 +80,14 @@ let warnedValue: string | null = null
  * Anything that is not a non-negative integer is treated as 0 and warned about:
  * a typo in a deployment env must not silently widen trust, and the fail-closed
  * direction is to believe no header at all.
+ *
+ * Exported because it is the deployment's one statement that a proxy is in
+ * front, and `X-Forwarded-For` is not the only header that statement vouches
+ * for: `requestOrigin` in `./cors` believes `X-Forwarded-Proto` only when this
+ * is above zero. Keeping both on one setting means an operator cannot declare
+ * a proxy for the address and forget to declare it for the scheme.
  */
-function trustedProxyCount(): number {
+export function trustedProxyCount(): number {
   const raw = process.env.TRUSTED_PROXY_COUNT
   if (!raw) return 0
 

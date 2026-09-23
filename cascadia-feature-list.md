@@ -210,7 +210,8 @@ Enterprise authentication with flexible identity options.
 | Email/password login | ✅     | Oslo.js crypto for password hashing        |
 | Session management   | ✅     | Secure session tokens, SameSite=Strict     |
 | Session expiration   | ✅     | Configurable timeouts                      |
-| GitHub OAuth login   | ✅     | Arctic; only implemented provider          |
+| GitHub OAuth login   | ✅     | Arctic                                     |
+| Google OAuth login   | ✅     | Arctic; optional Workspace domain limit    |
 | Account lockout      | ✅     | Brute-force protection after failed logins |
 
 ### Security Hardening ✅
@@ -897,7 +898,6 @@ subscriptions are rows. See
 | Mobile app               | Low      | iOS/Android               |
 | ITAR compliance tools    | Low      | Defense customer features |
 | Azure AD SSO             | Low      | Enterprise identity       |
-| Google OAuth             | Low      | Consumer identity         |
 
 ---
 

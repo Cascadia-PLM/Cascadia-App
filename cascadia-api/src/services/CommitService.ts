@@ -226,6 +226,14 @@ export class CommitService {
         throw new ValidationError('Cannot commit to a locked branch')
       }
 
+      // Every writer refuses an archived branch before it starts, but only
+      // this check holds against an archive landing in between: the row lock
+      // above waits for the archive's update and then reads it (a REPEATABLE
+      // READ caller fails to serialize instead), so a write that raced the
+      // archive still cannot record its commit — and the writes that commit
+      // in the same transaction roll back with it.
+      BranchService.assertNotArchived(branch, 'createCommit')
+
       // 1. Create the commit
       const commitRows = await tx
         .insert(commits)

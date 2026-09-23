@@ -190,7 +190,10 @@ S3_ENDPOINT=http://<infra-host>:9000
 S3_ACCESS_KEY=cascadia
 S3_SECRET_KEY=<minio-password>
 BASE_URL=https://plm.example.com
+TRUSTED_PROXY_COUNT=1
 ```
+
+`TRUSTED_PROXY_COUNT=1` declares the load balancer in Step 6 as the one proxy in front of each app server. Without it the app ignores the balancer's `X-Forwarded-*` headers: it refuses every browser write as cross-origin, because it sees the balancer's plain-HTTP connection rather than the browser's `https://` one, and every user shares one rate-limit bucket.
 
 Sessions are opaque random tokens stored hashed in the shared database, so they
 are portable across all app servers behind the load balancer with no shared
@@ -265,6 +268,8 @@ server {
     }
 }
 ```
+
+The app servers trust this balancer through `TRUSTED_PROXY_COUNT=1` (Step 4). If something else sits in front of it, such as a CDN, raise that to the real number of proxies. Whatever balancer you use must set `X-Forwarded-Proto`, append to `X-Forwarded-For` and pass `Host` through unchanged; see [Reverse Proxy Trust](../orchestration/configuration.md#reverse-proxy-trust).
 
 ## Worker Specialization
 

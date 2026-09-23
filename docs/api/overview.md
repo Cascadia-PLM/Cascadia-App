@@ -365,6 +365,12 @@ Allowed CORS headers: `Content-Type`, `Authorization`
 Allowed methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`
 Max age: 86400 seconds (24 hours)
 
+### Behind a reverse proxy
+
+Same-origin means the origin the browser addressed. A reverse proxy that terminates TLS talks plain HTTP to the app, so unless the app is told otherwise it takes its own origin to be `http://…` and treats the browser's `https://…` as foreign. Reads and sign-in still work, but every cookie-authenticated write is rejected with 403 `PERMISSION_DENIED`, "Cross-origin request rejected".
+
+Set `TRUSTED_PROXY_COUNT` to the number of proxies in front of the app — `1` for a single nginx, Caddy or Traefik — and the app takes the scheme from the proxy's `X-Forwarded-Proto` header. It is ignored while `TRUSTED_PROXY_COUNT` is `0`, the default, because any client can send it. Your own public origin does not need to be listed in `CORS_ALLOWED_ORIGINS`. See [Reverse Proxy Trust](../orchestration/configuration.md#reverse-proxy-trust) for what the proxy must send.
+
 ## Client-Side Utilities
 
 The `@/api/client` module provides typed fetch wrappers with automatic retry:

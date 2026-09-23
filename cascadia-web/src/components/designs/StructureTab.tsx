@@ -3,23 +3,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ArrowDownToLine,
-  Download,
-  ExternalLink,
-  Loader2,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
+import { ArrowDownToLine, Download, Loader2, Plus, X } from 'lucide-react'
 import { AddPartToDesignDialog } from './AddPartToDesignDialog'
 import { AddPartToStructureDialog } from './AddPartToStructureDialog'
 import { useStructureColumns } from './StructureTabColumns'
+import { useStructureRowActions } from './useStructureRowActions'
+import type { NonStructureItem } from './useStructureRowActions'
 import type { VersionContext } from '@/hooks/useVersionContext'
 import type { BOMTreeNode } from '@/components/bom/types'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
-import type { Row } from '@tanstack/react-table'
 import {
   Badge,
   Button,
@@ -44,12 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog'
-import {
-  ContextMenuItem,
-  ContextMenuSeparator,
-} from '@/components/ui/ContextMenu'
 import { apiFetch } from '@/api/client'
-import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   designStructureQuery,
@@ -60,20 +47,10 @@ import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { useTreeSelection } from '@/components/bom/useTreeSelection'
 import { getStateBadgeVariant } from '@/components/bom/helpers'
+import { RestrictedStructureNotice } from '@/components/bom/RestrictedStructureNotice'
 import { ItemLink } from '@/components/items/ItemLink'
 import { getItemDetailPath } from '@/items/item-type-ui'
 import { DataGrid } from '@/components/ui/DataGrid'
-
-// Items that belong to the design but sit outside the BOM hierarchy —
-// documents, requirements, and parts removed from the structure.
-interface NonStructureItem {
-  id: string
-  itemNumber: string
-  name: string
-  revision: string
-  state: string
-  itemType: string
-}
 
 interface PullInChainInfo {
   targetNode: BOMTreeNode
@@ -109,6 +86,8 @@ interface StructureTabProps {
  * else in the file reads their state. Split there when either the single or
  * the batch flow next grows. The tree, its filter and its column definitions
  * stay behind; the non-structure grid is the second-cheapest cut after that.
+ * What each row offers — both of its menus, and the writes behind them — was
+ * cut out first, and lives in `useStructureRowActions`.
  */
 export function StructureTab({
   designId,
@@ -117,8 +96,6 @@ export function StructureTab({
   versionContext,
   isHistoricalView,
 }: StructureTabProps) {
-  const navigate = useNavigate()
-  const { confirm } = useAlertDialog()
   const { handleError } = useErrorHandler()
   const invalidate = useInvalidateResources()
 
@@ -256,66 +233,20 @@ export function StructureTab({
     clearSelection()
   }, [dataUpdatedAt, nonStructureItems, clearSelection])
 
-  // Remove a root part from the design structure (moves it to Non-Structure
-  // Items). Only root parts (no relationshipId) get here; child parts are
-  // managed through their parent.
-  const removeFromStructure = useResourceMutation({
-    // Set inDesignStructure=false, keeping the designId association
-    mutationFn: (itemId: string) =>
-      apiFetch(`/api/v1/designs/${designId}/items?itemId=${itemId}`, {
-        method: 'DELETE',
-      }),
-    invalidates: ['designs'],
-    onError: (error: Error) =>
-      handleError(error, { title: 'Failed to remove from structure' }),
+  // What each row offers: both of its menus, and the writes behind them.
+  // Pull-in goes in as a closure because its machinery is declared further
+  // down; nothing calls it before a row is clicked.
+  const rowActions = useStructureRowActions({
+    designId,
+    designCode,
+    versionContext,
+    isHistoricalView,
+    onAddChild: (node) => {
+      setParentForAddChild({ id: node.itemId, number: node.itemNumber })
+      setAddChildDialogOpen(true)
+    },
+    onPullIn: (node) => handlePullInReference(node),
   })
-
-  const handleRemoveFromStructure = (itemId: string, itemNumber: string) => {
-    confirm({
-      title: 'Remove from Structure',
-      description: `Are you sure you want to remove ${itemNumber} from the design structure? The part will move to Non-Structure Items but will still belong to this design.`,
-      actionLabel: 'Remove',
-      cancelLabel: 'Cancel',
-      variant: 'destructive',
-      onConfirm: () => {
-        removeFromStructure.mutate(itemId)
-      },
-    })
-  }
-
-  // Add a non-structure part back to the design structure as a root part.
-  const addToStructure = useResourceMutation({
-    // Set inDesignStructure=true
-    mutationFn: (itemId: string) =>
-      apiFetch(`/api/v1/designs/${designId}/items`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemId }),
-      }),
-    invalidates: ['designs'],
-    onError: (error: Error) =>
-      handleError(error, { title: 'Failed to add to structure' }),
-  })
-
-  // Which non-structure row is mid-write, for its own button's spinner label.
-  // The mutation's own `variables` replaces the `removingItemId` state this
-  // used to keep, and stays set until invalidation settles rather than being
-  // dropped in a `finally` while the re-read was still in flight.
-  const addingItemId = addToStructure.isPending
-    ? addToStructure.variables
-    : null
-
-  const handleAddToStructure = (itemId: string, itemNumber: string) => {
-    confirm({
-      title: 'Add to Structure',
-      description: `Add ${itemNumber} to the design structure as a top-level part?`,
-      actionLabel: 'Add',
-      cancelLabel: 'Cancel',
-      onConfirm: () => {
-        addToStructure.mutate(itemId)
-      },
-    })
-  }
 
   // Toggle node expansion
   const toggleNode = (itemId: string) => {
@@ -439,40 +370,6 @@ export function StructureTab({
     ],
     [nonStructureTypeOptions, nonStructureStateOptions],
   )
-
-  // Only parts can rejoin the BOM — documents and requirements stay out of it
-  const canAddToStructure = (item: NonStructureItem) =>
-    !isHistoricalView && item.itemType === 'Part'
-
-  const renderNonStructureRowActions = (row: Row<NonStructureItem>) => {
-    const item = row.original
-    if (!canAddToStructure(item)) return null
-    return (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 px-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
-        onClick={() => handleAddToStructure(item.id, item.itemNumber)}
-        disabled={addingItemId === item.id}
-      >
-        <Plus className="h-3 w-3 mr-1" />
-        {addingItemId === item.id ? 'Adding...' : 'Add to Structure'}
-      </Button>
-    )
-  }
-
-  const renderNonStructureContextMenu = (row: Row<NonStructureItem>) => {
-    const item = row.original
-    if (!canAddToStructure(item)) return null
-    return (
-      <ContextMenuItem
-        onClick={() => handleAddToStructure(item.id, item.itemNumber)}
-      >
-        <Plus className="mr-1.5 h-3.5 w-3.5" />
-        Add to Structure
-      </ContextMenuItem>
-    )
-  }
 
   // Build a parent map from the tree: node -> parent
   const buildParentMap = (
@@ -773,68 +670,6 @@ export function StructureTab({
     await invalidate('relationships')
   }
 
-  // Right-click context menu for tree rows
-  const renderContextMenu = (node: BOMTreeNode) => {
-    const route = getItemDetailPath(node.itemType, node.itemId)
-    const showAddChild =
-      !isHistoricalView &&
-      node.itemType === 'Part' &&
-      !node.isExternal &&
-      !node.isCrossDesignRef
-    const showRemove =
-      !isHistoricalView &&
-      !node.relationshipId &&
-      !node.isExternal &&
-      !node.isCrossDesignRef
-    const showPullIn =
-      !isHistoricalView && (node.isExternal || node.isCrossDesignRef)
-
-    return (
-      <>
-        {route && (
-          <ContextMenuItem onClick={() => navigate({ to: route })}>
-            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-            {node.isExternal || node.isCrossDesignRef
-              ? 'View in Home Design'
-              : 'View'}
-          </ContextMenuItem>
-        )}
-        {(showAddChild || showRemove || showPullIn) && <ContextMenuSeparator />}
-        {showPullIn && (
-          <ContextMenuItem onClick={() => handlePullInReference(node)}>
-            <ArrowDownToLine className="mr-1.5 h-3.5 w-3.5" />
-            Pull In as Usage Copy
-          </ContextMenuItem>
-        )}
-        {showAddChild && (
-          <ContextMenuItem
-            onClick={() => {
-              setParentForAddChild({
-                id: node.itemId,
-                number: node.itemNumber,
-              })
-              setAddChildDialogOpen(true)
-            }}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add Child
-          </ContextMenuItem>
-        )}
-        {showRemove && (
-          <ContextMenuItem
-            onClick={() =>
-              handleRemoveFromStructure(node.itemId, node.itemNumber)
-            }
-            className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
-          >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            Remove from Structure
-          </ContextMenuItem>
-        )}
-      </>
-    )
-  }
-
   // Only the first load of a version context blanks the tab. A refetch after a
   // write keeps the tree on screen and swaps it when the new answer lands,
   // where the old fetch-in-an-effect flashed the whole tab back to a spinner.
@@ -863,6 +698,8 @@ export function StructureTab({
           </CardContent>
         </Card>
       )}
+
+      {structure?.hasRestricted && <RestrictedStructureNotice />}
 
       {/* BOM Tree */}
       <Card>
@@ -941,8 +778,8 @@ export function StructureTab({
               expandedNodes={expandedNodes}
               onToggle={toggleNode}
               layout="grid"
-              columns={structureColumns}
-              renderContextMenu={renderContextMenu}
+              columns={[...structureColumns, rowActions.menuColumn]}
+              renderContextMenu={rowActions.renderNodeContextMenu}
               {...(!isHistoricalView && {
                 showCheckboxes: true,
                 selectedIds: selection.selectedIds,
@@ -998,9 +835,11 @@ export function StructureTab({
                   getRowUrl={(row) =>
                     getItemDetailPath(row.itemType, row.id) ?? undefined
                   }
-                  renderContextMenuItems={renderNonStructureContextMenu}
+                  renderContextMenuItems={
+                    rowActions.renderNonStructureContextMenu
+                  }
                   enableRowActions={!isHistoricalView}
-                  renderRowActions={renderNonStructureRowActions}
+                  renderRowActions={rowActions.renderNonStructureRowActions}
                   exportFilename={`${designCode}-non-structure-items`}
                   emptyMessage="No items match the filter"
                   emptyDescription="Try adjusting your search or filters"

@@ -17,6 +17,7 @@ import {
   tagCreateSchema,
 } from '@/services/DesignService'
 import { CommitGraphService } from '@/services/CommitGraphService'
+import { CommitService } from '@/services/CommitService'
 import { ProgramService } from '@/services/ProgramService'
 import { BranchService } from '@/services/BranchService'
 import { ItemService } from '@/items/services/ItemService'
@@ -32,7 +33,7 @@ import {
 import { JobService } from '@/jobs/JobService'
 import { requirePermission } from '@/auth/server'
 import { likeContains } from '@/db/like-pattern'
-import { requireDesignAccess } from '@/auth/access'
+import { requireDesignAccess, requireItemAccess } from '@/auth/access'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
 import { apiHandler, created, jsonResponse, parseQuery } from '@/api/handler'
@@ -50,6 +51,7 @@ import { serviceLogger } from '@/logging/logger'
 import { db } from '@/db'
 import { RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED } from '@/events'
 import { publishStructureEdges } from '@/items/structure-events'
+import { withholdUnreadableNodes } from '@/items/design-structure-visibility'
 import { paginatedOrderBy } from '@/db/paginated-order'
 import {
   changeOrderAffectedItems,
@@ -60,6 +62,7 @@ import {
 import { branchItems, branches } from '@/db/schema/versioning'
 import { users } from '@/db/schema/users'
 import { designs } from '@/db/schema/designs'
+import { designCrossReferences } from '@/db/schema/crossReferences'
 import { notDeleted, notWorkingRevision } from '@/db/filters'
 import '@/items/registerItemTypes.server'
 
@@ -123,6 +126,129 @@ async function requireDesignManageOrPermission(
     if (member?.canManageDesigns) return
   }
   await requirePermission(request, 'designs', action)
+}
+
+/**
+ * Assert the caller may read every item a request brings into a design — as a
+ * cross-design reference, a usage copy or a pulled-in chain.
+ *
+ * Bringing an item in is a read of it. The references list serves back its
+ * number, name, revision and state and its design's code and name, the
+ * structure expands its BOM, and a usage copy carries its fields. So the item
+ * is charged, and not only the design in the path.
+ *
+ * `requireItemsAccess` is the gate for items named in a body, with one
+ * difference that matters here: it answers an unknown id with 404, and a 404
+ * beside the 403 an unreadable item gets says which ids exist in programs the
+ * caller cannot open. Here an id naming nothing is refused exactly as an
+ * unreadable item is — the rule an unknown change-order id and
+ * `requireBranchAccess` already follow — except to cross-program authority,
+ * which could read the item if it existed and so learns nothing from a 404.
+ */
+async function requireReadableItems(userId: string, itemIds: Array<string>) {
+  const uniqueIds = [...new Set(itemIds)]
+  if (uniqueIds.length === 0) return
+
+  const rows = await db.select().from(items).where(inArray(items.id, uniqueIds))
+  if (rows.length < uniqueIds.length) {
+    if (await AccessControlService.hasCrossProgramAccess(userId)) {
+      const found = new Set(rows.map((row) => row.id))
+      throw new NotFoundError(
+        'Item',
+        uniqueIds.find((id) => !found.has(id)),
+      )
+    }
+    throw new PermissionDeniedError('item', 'read')
+  }
+
+  for (const row of rows) {
+    await requireItemAccess(userId, row)
+  }
+}
+
+/**
+ * Assert a branch a request names is one of the design in its path.
+ *
+ * A branch belongs to one design, and a request naming one reads that
+ * design's contents on it or writes onto it. Another design's branch would
+ * carry the request past the design the path was checked against, so it is
+ * answered as one that does not exist, and the refusal does not say which
+ * branch ids are real.
+ */
+async function requireBranchOfDesign(designId: string, branchId: string) {
+  const branch = await BranchService.getById(branchId)
+  if (branch?.designId !== designId) {
+    throw new NotFoundError('Branch', branchId)
+  }
+}
+
+/**
+ * The cross-design reference `refId` names, when it is one this design holds.
+ *
+ * A reference belongs to the design holding it, and removing one is an edit
+ * of that design. Another design's reference is `null` here exactly as a
+ * missing one is, so neither removing nor pulling in a reference reaches past
+ * the design in the path.
+ */
+async function findReferenceOfDesign(designId: string, refId: string) {
+  return db
+    .select()
+    .from(designCrossReferences)
+    .where(
+      and(
+        eq(designCrossReferences.id, refId),
+        eq(designCrossReferences.referencingDesignId, designId),
+      ),
+    )
+    .limit(1)
+    .then((r) => r.at(0) ?? null)
+}
+
+/**
+ * Assert a BOM line a pull-in would re-point is a line of this design's
+ * structure: its parent is one of this design's items. Another design's line
+ * is answered as one that does not exist.
+ */
+async function requireBomLineOfDesign(
+  designId: string,
+  relationshipId: string,
+) {
+  const line = await db
+    .select({ id: itemRelationships.id })
+    .from(itemRelationships)
+    .innerJoin(items, eq(itemRelationships.sourceId, items.id))
+    .where(
+      and(
+        eq(itemRelationships.id, relationshipId),
+        eq(itemRelationships.relationshipType, 'BOM'),
+        eq(items.designId, designId),
+      ),
+    )
+    .limit(1)
+    .then((r) => r.at(0))
+  if (!line) throw new NotFoundError('ItemRelationship', relationshipId)
+}
+
+/**
+ * `requireBranchOfDesign` for a tag. A tag names a commit of its own design,
+ * so resolving at another design's tag reads that design's contents.
+ */
+async function requireTagOfDesign(designId: string, tagId: string) {
+  const tag = await DesignService.getTag(tagId)
+  if (tag?.designId !== designId) {
+    throw new NotFoundError('Tag', tagId)
+  }
+}
+
+/**
+ * `requireBranchOfDesign` for a commit. Resolving at a commit reads the
+ * contents of whichever design it belongs to, as of that commit.
+ */
+async function requireCommitOfDesign(designId: string, commitId: string) {
+  const commit = await CommitService.getById(commitId)
+  if (commit?.designId !== designId) {
+    throw new NotFoundError('Commit', commitId)
+  }
 }
 
 /**
@@ -892,13 +1018,17 @@ app.get(
       const url = new URL(request.url, 'http://localhost')
       const branchId = url.searchParams.get('branch')
 
-      const references =
-        await CrossDesignReferenceService.getReferencesForDesign(
+      // A reference names another design's item and that design, so the
+      // list is the caller's view of it: one into a design they cannot read
+      // is withheld, and flagged.
+      const { references, hasRestricted } =
+        await CrossDesignReferenceService.getReferencesForViewer(
           designId,
           branchId,
+          await AccessControlService.getAccessibleDesignIds(user.id),
         )
 
-      return { references }
+      return { references, hasRestricted }
     }),
   ),
 )
@@ -926,36 +1056,32 @@ app.post(
           parentBomRelationshipId,
         } = body
 
-        // If branchId is provided, validate it exists
+        // Everything is checked before anything is written, the reference's
+        // removal included, so a refused pull-in leaves the design as it was.
         if (branchId) {
-          const branch = await BranchService.getById(branchId)
-          if (!branch) {
-            throw new NotFoundError('Branch', branchId)
-          }
+          await requireBranchOfDesign(designId, branchId)
         }
 
-        // If refId provided, pull in the XREF record (remove cross-design reference)
-        // pullInReference returns null if the reference was already removed (idempotent)
-        let referencedItemId: string | undefined
-        if (refId) {
-          const pullInResult =
-            await CrossDesignReferenceService.pullInReference(
-              refId,
-              branchId || null,
-              user.id,
-            )
-          referencedItemId = pullInResult?.referencedItemId
-        }
+        // A reference this design does not hold — absent, or another
+        // design's — is the idempotent case: already removed, perhaps by an
+        // earlier call of the same batch.
+        const reference = refId
+          ? await findReferenceOfDesign(designId, refId)
+          : null
 
         // Determine the list of items to pull in
         // Chain mode: itemIds provided (topmost ancestor first, target last)
         // Legacy mode: just the single referenced item
         const chainItemIds: Array<string> =
-          itemIds ?? (referencedItemId ? [referencedItemId] : [])
+          itemIds ?? (reference ? [reference.referencedItemId] : [])
 
         if (chainItemIds.length === 0) {
           throw new ValidationError('No items to pull in')
         }
+
+        // Each chain item becomes a usage copy carrying its fields, so each
+        // one is read.
+        await requireReadableItems(user.id, chainItemIds)
 
         // Fetch all chain items and assert IDs exist (items from DB always have IDs)
         const chainItems = await Promise.all(
@@ -965,6 +1091,18 @@ app.post(
             return item
           }),
         )
+
+        if (parentBomRelationshipId) {
+          await requireBomLineOfDesign(designId, parentBomRelationshipId)
+        }
+
+        if (reference) {
+          await CrossDesignReferenceService.pullInReference(
+            reference.id,
+            branchId || null,
+            user.id,
+          )
+        }
 
         const result = await db.transaction(async (tx) => {
           const targetMainBranch = await BranchService.getMainBranch(designId)
@@ -1187,6 +1325,11 @@ app.put(
 
         const { referencedItemId, branchId: inputBranchId, notes } = body
 
+        if (inputBranchId) {
+          await requireBranchOfDesign(designId, inputBranchId)
+        }
+        await requireReadableItems(user.id, [referencedItemId])
+
         const ref = await CrossDesignReferenceService.createReference(
           {
             referencingDesignId: designId,
@@ -1222,6 +1365,13 @@ app.delete(
 
       if (!refId) {
         throw new ValidationError('refId query parameter is required')
+      }
+
+      if (branchId) {
+        await requireBranchOfDesign(designId, branchId)
+      }
+      if (!(await findReferenceOfDesign(designId, refId))) {
+        throw new NotFoundError('CrossDesignReference', refId)
       }
 
       await CrossDesignReferenceService.removeReference(
@@ -1438,6 +1588,10 @@ app.get(
       const commitId = url.searchParams.get('commit')
       // Note: branch param available via url.searchParams.get('branch') for future use
 
+      // Resolved below without asking whose they are, as on GET /:id/structure.
+      if (tagId) await requireTagOfDesign(designId, tagId)
+      if (commitId) await requireCommitOfDesign(designId, commitId)
+
       // Check if this is a historical view (tag or commit)
       const isHistoricalView = tagId || commitId
 
@@ -1564,6 +1718,13 @@ app.post(
 
         const { itemId, suffixItemNumber, mode, branchId } = body
 
+        if (branchId) {
+          await requireBranchOfDesign(designId, branchId)
+        }
+        // Ahead of the existence lookup, so an unknown id is answered as an
+        // unreadable one is.
+        await requireReadableItems(user.id, [itemId])
+
         // Verify the root item exists
         const rootItem = await ItemService.findById(itemId)
         if (!rootItem) {
@@ -1600,6 +1761,15 @@ app.post(
             branchId,
           },
           user.id,
+          {
+            // The body names the root; the copy takes its whole BOM subtree,
+            // and every item in it becomes a usage carrying its fields.
+            authorize: async (subtree) => {
+              for (const item of subtree) {
+                await requireItemAccess(user.id, item)
+              }
+            },
+          },
         )
 
         return {
@@ -1883,6 +2053,15 @@ app.get(
       const tagId = url.searchParams.get('tag')
       const commitId = url.searchParams.get('commit')
       const expandExternal = url.searchParams.get('expandExternal') !== 'false' // default true
+
+      // The context is the query string's word, and the design check above
+      // says nothing about it. Everything below resolves the design at it —
+      // the branch's own rows, the commit's ancestry, the tag's commit —
+      // without asking whose it is, so another design's context served that
+      // design's contents as this one's structure.
+      if (branchId) await requireBranchOfDesign(designId, branchId)
+      if (tagId) await requireTagOfDesign(designId, tagId)
+      if (commitId) await requireCommitOfDesign(designId, commitId)
 
       // Get main branch for this design
       const mainBranch = await BranchService.getMainBranch(designId)
@@ -2697,7 +2876,20 @@ app.get(
         }))
         .sort((a, b) => a.itemNumber.localeCompare(b.itemNumber))
 
-      return { roots, orphans }
+      // The tree above follows references and BOM lines into whichever
+      // designs they lead to, and this request was charged for the design in
+      // its path alone. What the caller cannot read is withheld, with
+      // everything beneath it, and flagged.
+      const visible = withholdUnreadableNodes(
+        roots,
+        await AccessControlService.getAccessibleDesignIds(user.id),
+      )
+
+      return {
+        roots: visible.roots,
+        orphans,
+        hasRestricted: visible.hasRestricted,
+      }
     }),
   ),
 )

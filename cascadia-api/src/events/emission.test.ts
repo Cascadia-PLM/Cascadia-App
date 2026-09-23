@@ -901,6 +901,43 @@ describe('domain event emission', () => {
       expect((await BranchService.getById(branch.id))?.isArchived).toBe(true)
     })
 
+    it('deleting a change order cancels the locks on its branches and archives them', async () => {
+      const branch = await branchFor('DeleteLocks')
+      const part = await lockedOn(branch.id, 'deletelock')
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: branch.changeOrderItemId!,
+        designId,
+        branchId: branch.id,
+        mergeStatus: 'pending',
+      })
+
+      await ItemService.delete(branch.changeOrderItemId!, user.id)
+
+      // The delete nulls the branch's owner, so a branch it left live stayed
+      // live for good — offered in the version picker of every item it
+      // touched, still holding its locks, with no change order left to
+      // cancel. It ends the way a cancellation ends it.
+      const cancelled = await eventsForMaster(
+        'item.checkout_cancelled',
+        part.masterId,
+      )
+      expect(cancelled).toHaveLength(1)
+      expect(cancelled[0]!.actorId).toBe(user.id)
+      expect(cancelled[0]!.branchId).toBe(branch.id)
+
+      const archived = await testDb.db
+        .select()
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, 'branch.archived'),
+            eq(domainEvents.subjectId, branch.id),
+          ),
+        )
+      expect(archived).toHaveLength(1)
+      expect((await BranchService.getById(branch.id))?.isArchived).toBe(true)
+    })
+
     /** A workspace holding one draft, its lock held by the test user. */
     async function lockedWorkspaceDraft(label: string) {
       const workspace = await BranchService.createWorkspaceBranch(

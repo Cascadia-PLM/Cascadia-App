@@ -1179,15 +1179,29 @@ app.get(
     apiHandler<{ id: string; designId: string }>(
       { permission: ['change_orders', 'read'] },
       async ({ request, params, user }) => {
-        // The design comes straight off the URL, so this is the whole gate:
-        // without it a caller who reaches one of the ECO's designs could ask
-        // for any other design's structure and get its full BOM tree back.
+        // Both ids come straight off the URL, so both are charged. The change
+        // order first, as on every other read under /:id: the design gate
+        // alone let any change-order id through, so naming a design of your
+        // own was enough to read a change order reaching none of your designs.
+        const { linked } = await requireChangeOrderAccess(user.id, params.id)
+        // Then the design, whose full BOM tree this answers with.
         await requireDesignAccess(user.id, params.designId)
+        // Only then whether it is one of this change order's designs — never
+        // before both. For a design the caller cannot read, a 404 here beside
+        // a linked design's 403 would say which of an unreadable program's
+        // designs the change order touches.
+        if (!linked.includes(params.designId)) {
+          throw new NotFoundError(
+            'Design on this change order',
+            params.designId,
+          )
+        }
 
         const url = new URL(request.url, 'http://localhost')
         return ChangeOrderStructureService.getDesignStructure(
           params.id,
           params.designId,
+          await AccessControlService.getAccessibleDesignIds(user.id),
           {
             expandExternal: url.searchParams.get('expandExternal') !== 'false',
           },

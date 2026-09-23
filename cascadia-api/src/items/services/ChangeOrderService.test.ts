@@ -29,6 +29,7 @@ import type { Part } from '@cascadia/commons/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import type { ChangeOrderReleasedPayload } from '@/events'
 import { RevisionService } from '@/services/RevisionService'
+import { BranchService } from '@/services/BranchService'
 import { CommitService } from '@/services/CommitService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
@@ -55,6 +56,7 @@ import {
 } from '@/db/schema/lifecycles'
 import { ConflictDetectionService } from '@/services/ConflictDetectionService'
 import { LifecycleService } from '@/services/LifecycleService'
+import { VersionResolver } from '@/services/VersionResolver'
 import { ItemTypeRegistry } from '@/items/registry'
 import {
   SYSTEM_USER_ID,
@@ -611,6 +613,62 @@ describe('ChangeOrderService', () => {
         .from(itemsTable)
         .where(eq(itemsTable.name, 'Bogus change type'))
       expect(rows).toHaveLength(0)
+    })
+  })
+
+  describe('delete', () => {
+    // A draft change order that has revised a part is deleted. Its branch's
+    // link to it is SET NULL, so the schema alone leaves the branch live — and
+    // the part's version picker went on offering the deleted change order's
+    // branch, with the working copy's lock still held on it.
+    it('stops offering its branch on a part it revised, and releases the lock held there', async () => {
+      const changeOrder = await createChangeOrder()
+      const part = await createPart({ state: 'Released' })
+      await ChangeOrderService.addAffectedItem(
+        changeOrder.id,
+        { affectedItemId: part.id, changeAction: 'revise' },
+        user.id,
+      )
+      // An engineer holds the working copy's lock when the change order goes.
+      await testDb.db
+        .update(branchItemsTable)
+        .set({ checkedOutBy: user.id, checkedOutAt: new Date() })
+        .where(
+          and(
+            eq(branchItemsTable.itemMasterId, part.masterId),
+            isNotNull(branchItemsTable.changeType),
+          ),
+        )
+      const branchIds = (
+        await ChangeOrderService.getChangeOrderDesigns(changeOrder.id)
+      )
+        .map((d) => d.branchId)
+        .filter((id): id is string => id !== null)
+      expect(branchIds).toHaveLength(1)
+
+      // The contexts the part's version picker offers.
+      const offered = async () =>
+        (
+          await VersionResolver.getAvailableContextsForItem(
+            part.masterId,
+            designId,
+          )
+        ).branches.filter((b) => b.exists && branchIds.includes(b.id))
+      expect(await offered()).toHaveLength(1)
+
+      await ItemService.delete(changeOrder.id, user.id)
+
+      expect(await offered()).toHaveLength(0)
+      const held = await testDb.db
+        .select()
+        .from(branchItemsTable)
+        .where(
+          and(
+            inArray(branchItemsTable.branchId, branchIds),
+            isNotNull(branchItemsTable.checkedOutBy),
+          ),
+        )
+      expect(held).toHaveLength(0)
     })
   })
 
@@ -2275,6 +2333,141 @@ describe('ChangeOrderService', () => {
         user.id,
       )
       expect(outcome?.success).toBe(false)
+    })
+
+    it('refuses to skip an unlisted change once the workflow has completed, and changes nothing', async () => {
+      const { part, ours } = await branchBehindMain({
+        ours: { name: 'Our name' },
+        theirs: { name: 'Their name' },
+      })
+      // Listed nowhere, so skip drops it straight from the branch rather than
+      // going through removeAffectedItem and its scope gate
+      await testDb.db
+        .delete(changeOrderAffectedItems)
+        .where(
+          and(
+            eq(changeOrderAffectedItems.changeOrderId, ours.id),
+            eq(changeOrderAffectedItems.affectedItemMasterId, part.masterId),
+          ),
+        )
+      // The workflow completes while the branch stays live
+      await testDb.db
+        .update(lifecycleInstances)
+        .set({ completedAt: new Date() })
+        .where(eq(lifecycleInstances.itemId, ours.id))
+      const tracked = () =>
+        testDb.db
+          .select()
+          .from(branchItemsTable)
+          .where(eq(branchItemsTable.itemMasterId, part.masterId))
+          .orderBy(branchItemsTable.id)
+      const before = await tracked()
+
+      const [outcome] = await ChangeOrderService.resolveConflicts(
+        ours.id,
+        [{ itemId: part.masterId, resolution: 'skip' }],
+        user.id,
+      )
+
+      expect(outcome?.success).toBe(false)
+      expect(await tracked()).toEqual(before)
+    })
+
+    // Detection passes over archived branches — finished work cannot
+    // conflict with anything — so no resolution may land on one. Every arm is
+    // driven at a change an archived branch still carries, in both ways a
+    // change order is left holding one, and the branch must read back exactly
+    // as it was.
+    describe('on an archived branch', () => {
+      const ARCHIVES: Array<
+        [label: string, archive: (changeOrderId: string) => Promise<void>]
+      > = [
+        [
+          'whose change order was cancelled',
+          (changeOrderId) => transitionTo(changeOrderId, 'Cancelled'),
+        ],
+        [
+          // What the branch update route did before it refused a branch an
+          // open change order owns
+          'archived by hand while its change order stayed open',
+          async (changeOrderId) => {
+            const linked =
+              await ChangeOrderService.getChangeOrderDesigns(changeOrderId)
+            for (const { branchId } of linked) {
+              if (branchId) {
+                await BranchService.archiveBranch(branchId, undefined, user.id)
+              }
+            }
+          },
+        ],
+      ]
+
+      /** Everything a resolution writes: the branch, its rows, its commits, and item versions. */
+      async function snapshot(branchId: string) {
+        return {
+          branch: takeFirst(
+            await testDb.db
+              .select()
+              .from(branches)
+              .where(eq(branches.id, branchId)),
+          ),
+          tracking: await testDb.db
+            .select()
+            .from(branchItemsTable)
+            .where(eq(branchItemsTable.branchId, branchId))
+            .orderBy(branchItemsTable.id),
+          history: await testDb.db
+            .select()
+            .from(commits)
+            .where(eq(commits.branchId, branchId))
+            .orderBy(commits.id),
+          versions: await testDb.db
+            .select()
+            .from(itemsTable)
+            .where(eq(itemsTable.designId, designId))
+            .orderBy(itemsTable.id),
+        }
+      }
+
+      describe.each(ARCHIVES)('a branch %s', (_label, archive) => {
+        it.each(['skip', 'keep_ours', 'keep_theirs'] as const)(
+          'is left as it was by %s',
+          async (resolution) => {
+            // A change main has moved under, which is what keep_ours and
+            // keep_theirs rebase, with no scope row, which is what skip drops
+            // straight from the branch
+            const { part, ours } = await branchBehindMain({
+              ours: { name: 'Our name' },
+              theirs: { name: 'Their name' },
+            })
+            await testDb.db
+              .delete(changeOrderAffectedItems)
+              .where(
+                and(
+                  eq(changeOrderAffectedItems.changeOrderId, ours.id),
+                  eq(
+                    changeOrderAffectedItems.affectedItemMasterId,
+                    part.masterId,
+                  ),
+                ),
+              )
+            const [linked] = await ChangeOrderService.getChangeOrderDesigns(
+              ours.id,
+            )
+            const branchId = linked!.branchId!
+            await archive(ours.id)
+
+            const before = await snapshot(branchId)
+            await ChangeOrderService.resolveConflicts(
+              ours.id,
+              [{ itemId: part.masterId, resolution }],
+              user.id,
+            )
+
+            expect(await snapshot(branchId)).toEqual(before)
+          },
+        )
+      })
     })
   })
 

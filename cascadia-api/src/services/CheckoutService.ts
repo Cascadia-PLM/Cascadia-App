@@ -292,6 +292,11 @@ async function getChangeOrderService() {
  * Deliberately narrow: this blocks NEW items only. Editing working copies
  * that are already in scope stays open during review, which is the whole
  * point of separating scope from content.
+ *
+ * Nor is it the archived-branch check, which every caller has already made
+ * (`BranchService.assertNotArchived`). It could not be: it asks the owning
+ * change order's workflow, and a workspace, or a branch whose change order
+ * was deleted, has no workflow to ask.
  */
 async function assertBranchAcceptsNewItems(
   branch: typeof branches.$inferSelect,
@@ -466,6 +471,10 @@ export class CheckoutService {
       })
     }
 
+    // Nothing is checked out on an archived branch, whether or not it already
+    // tracks the item: the claim path below writes a lock and commits nothing
+    BranchService.assertNotArchived(branch, 'checkout')
+
     // Checkout on main is only possible in the pre-release phase. Once main
     // is protected (released items exist) all changes flow through ECO or
     // workspace branches. While unprotected, the checkout row on main is the
@@ -630,6 +639,10 @@ export class CheckoutService {
     const branch = await BranchService.getById(branchId)
     if (!branch || branch.branchType === 'main') return
 
+    // Refused even when there is nothing left to mint: the checkout routes
+    // take the lock straight after, and that is a write too
+    BranchService.assertNotArchived(branch, 'ensureRevisionWorkingCopy')
+
     // "Released" is whatever state the lifecycle revises from, not the
     // literal name — inferChangeAction reads the mappings.
     const ChangeOrderService = await getChangeOrderService()
@@ -717,6 +730,10 @@ export class CheckoutService {
 
   /**
    * Cancel checkout (release without saving changes)
+   *
+   * Allowed on an archived branch, deliberately: it writes no content and no
+   * commit, and a lock can outlive its branch. See
+   * `BranchService.assertNotArchived`.
    */
   static async cancelCheckout(
     itemMasterId: string,
@@ -893,6 +910,10 @@ export class CheckoutService {
         operation: 'saveChanges',
       })
     }
+
+    // Before the checkout checks below: a lock left on an archived branch is
+    // no licence to save to it
+    BranchService.assertNotArchived(branch, 'saveChanges')
 
     // Check if branch is locked
     if (branch.isLocked) {
@@ -1350,6 +1371,8 @@ export class CheckoutService {
       })
     }
 
+    BranchService.assertNotArchived(branch, 'createOnBranch')
+
     if (branch.branchType === 'main') {
       const isProtected = await BranchService.isMainBranchProtected(
         branch.designId,
@@ -1528,6 +1551,10 @@ export class CheckoutService {
         operation: 'deleteOnBranch',
       })
     }
+
+    // Before the checkout guard inside the transaction: an archived branch is
+    // refused as such, whoever holds a lock the archive left on the item
+    BranchService.assertNotArchived(branch, 'deleteOnBranch')
 
     if (branch.branchType === 'main') {
       throw new ValidationError(
@@ -1821,6 +1848,8 @@ export class CheckoutService {
 
   /**
    * Check in an item (release checkout but keep changes)
+   *
+   * Allowed on an archived branch for the reason `cancelCheckout` gives.
    */
   static async checkin(
     itemMasterId: string,

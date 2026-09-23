@@ -31,6 +31,7 @@ import {
   enrichmentImageSchema,
 } from '@/items/enrichment/enrich-item'
 import { BranchService } from '@/services/BranchService'
+import { CommitService } from '@/services/CommitService'
 import { DesignService } from '@/services/DesignService'
 import { ProgramService } from '@/services/ProgramService'
 import { VersionResolver } from '@/services/VersionResolver'
@@ -519,6 +520,25 @@ app.get(
         const design = await DesignService.getById(designId)
         if (!design) throw new NotFoundError('Design', designId)
         await requireDesignAccess(user.id, designId)
+
+        // `commit` and `tag` are ids, and each resolves at whichever design it
+        // belongs to, while only `designId` was checked above: another
+        // design's served that design's items, with its commit message or tag
+        // name as the context. Answered as one that does not exist, as the
+        // design routes answer it. `branch` is a name looked up within the
+        // design, so it cannot name another design's.
+        if (commitId) {
+          const commit = await CommitService.getById(commitId)
+          if (commit?.designId !== designId) {
+            throw new NotFoundError('Commit', commitId)
+          }
+        }
+        if (tagId) {
+          const tag = await DesignService.getTag(tagId)
+          if (tag?.designId !== designId) {
+            throw new NotFoundError('Tag', tagId)
+          }
+        }
 
         let context = VersionResolver.parseContext({
           designId,

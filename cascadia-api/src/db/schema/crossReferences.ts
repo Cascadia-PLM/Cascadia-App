@@ -39,7 +39,11 @@ export const designCrossReferences = pgTable(
       .references(() => designs.id, { onDelete: 'cascade' }),
 
     // The item being referenced (from another design)
-    // References items.id — no FK to avoid circular import
+    // References items.id — no FK to avoid circular import. Nothing cascades
+    // from the item, so every hard delete of one — ItemService.delete, and
+    // BranchService's workspace discards — refuses while a live reference
+    // names it, and removes the bookkeeping rows that do
+    // (CrossDesignReferenceService.releaseReferencesToDeletedItems).
     referencedItemId: uuid('referenced_item_id').notNull(),
 
     // The design that owns the referenced item (denormalized for efficient queries)

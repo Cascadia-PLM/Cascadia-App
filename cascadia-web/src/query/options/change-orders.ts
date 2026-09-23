@@ -240,6 +240,8 @@ export interface ChangeOrderDesignStructure<TNode, TOrphan, TBranch> {
   roots: Array<TNode>
   orphans: Array<TOrphan>
   ecoBranch: TBranch | null
+  /** Part of the tree was withheld — see `DesignStructure.hasRestricted`. */
+  hasRestricted: boolean
 }
 
 /**
@@ -271,6 +273,7 @@ export function changeOrderDesignStructureQuery<TNode, TOrphan, TBranch>(
         roots: result.data.roots,
         orphans: result.data.orphans,
         ecoBranch: result.data.ecoBranch,
+        hasRestricted: result.data.hasRestricted,
       }
     },
   })

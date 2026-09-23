@@ -16,7 +16,16 @@
  * This lives beside `handler.ts` rather than inside it because the preflight
  * has to be mounted on the server, and mounting it from `handler.ts` would
  * make the route composition root import the request wrapper.
+ *
+ * It also decides what "same origin" means. `requestOrigin` is this server's
+ * own origin as the browser sees it, and `validateOrigin` in `handler.ts`
+ * compares against the same function, so the CSRF check and the CORS grant
+ * cannot disagree about which origin is this one. A proxy fix applied to one
+ * and not the other would have the browser send a write the server then
+ * refuses, or grant an origin the write check turns away.
  */
+
+import { trustedProxyCount } from './client-ip'
 
 /**
  * Security headers applied to all API responses as defense-in-depth.
@@ -61,6 +70,74 @@ function allowOrigin(origin: string): Record<string, string> {
 }
 
 /**
+ * The scheme the deployment's proxy says the browser used, or `null` when
+ * there is no answer worth believing.
+ *
+ * `X-Forwarded-Proto` is a request header, so a caller can send one: it is
+ * exactly as forgeable as `X-Forwarded-For`. It is therefore read only when
+ * `TRUSTED_PROXY_COUNT` declares a proxy in front (see `./client-ip`). A
+ * deployment that has not declared one ignores it and keeps the scheme of its
+ * own connection, which is all it had before this header was read.
+ *
+ * The rightmost entry is taken because the proxy this process talks to wrote
+ * it. Anything to its left arrived from further out, which is where the
+ * client is. That is also why it is the rightmost entry and not, as with
+ * `X-Forwarded-For`, the one `TRUSTED_PROXY_COUNT` hops from the right: nginx's
+ * `proxy_set_header`, Caddy and Traefik all *set* this header rather than
+ * append to it, so a chain of any depth normally delivers a single entry,
+ * written by the innermost hop, and indexing by depth would read past it.
+ *
+ * Only `http` and `https` are accepted. Anything else is ignored rather than
+ * interpolated, because the result becomes part of the origin a CSRF check
+ * compares against: `https://evil.example/` spliced in front of a host parses
+ * as the origin `https://evil.example`.
+ */
+function forwardedScheme(request: Request): 'http' | 'https' | null {
+  if (trustedProxyCount() === 0) return null
+
+  const header = request.headers.get('x-forwarded-proto')
+  if (header === null) return null
+
+  // lastIndexOf is -1 for a single entry, so the slice takes the whole value.
+  const scheme = header
+    .slice(header.lastIndexOf(',') + 1)
+    .trim()
+    .toLowerCase()
+  return scheme === 'http' || scheme === 'https' ? scheme : null
+}
+
+/**
+ * The origin this request was addressed to: what a same-origin browser puts
+ * in `Origin`, and the one origin both the CSRF check and the CORS grant treat
+ * as this server's own.
+ *
+ * `request.url` alone is not that. `@hono/node-server` rebuilds it from the
+ * `Host` header and the scheme of the socket the request arrived on, and a
+ * TLS-terminating reverse proxy speaks plain HTTP to the app. Behind one, the
+ * browser sends `Origin: https://plm.example.com` while `request.url` says
+ * `http://plm.example.com`; the two differ by scheme alone, and every
+ * cookie-authenticated write was refused as cross-origin. Only writes: safe
+ * methods skip the check and login is a public route, so the deployment
+ * looked healthy right up to its first save.
+ *
+ * The scheme comes from `X-Forwarded-Proto` when a trusted proxy supplied one
+ * (`forwardedScheme`). The host still comes from `Host`, so the proxy must
+ * pass it through unchanged, as nginx does with `proxy_set_header Host $host`
+ * and Caddy does by default. `X-Forwarded-Host` is deliberately not read: the
+ * host is the part of an origin that names the site, the common proxies can
+ * all preserve `Host`, and believing a second header for it would widen what
+ * `TRUSTED_PROXY_COUNT` vouches for with no deployment needing it.
+ */
+export function requestOrigin(request: Request): string {
+  const url = new URL(request.url, 'http://localhost')
+  const scheme = forwardedScheme(request)
+  if (scheme === null) return url.origin
+  // Rebuilt through URL rather than concatenated, so a default port drops out
+  // the way a browser writes it: `host:443` under https is plain `host`.
+  return new URL(`${scheme}://${url.host}`).origin
+}
+
+/**
  * Build CORS headers for a request. Same-origin only by default;
  * set CORS_ALLOWED_ORIGINS env var to allow specific external origins.
  */
@@ -68,10 +145,8 @@ export function getCorsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('origin')
   if (!origin) return {}
 
-  const requestUrl = new URL(request.url, 'http://localhost')
-
   // Same-origin always allowed
-  if (origin === requestUrl.origin) return allowOrigin(origin)
+  if (origin === requestOrigin(request)) return allowOrigin(origin)
 
   // Check env-configured allowed origins
   const allowed = getAllowedOrigins()

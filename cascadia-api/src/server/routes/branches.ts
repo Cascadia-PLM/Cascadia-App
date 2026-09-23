@@ -67,14 +67,18 @@ app.put(
         const branch = await BranchService.getById(id)
         if (!branch) throw new NotFoundError('Branch', id)
 
+        // Archiving first: it is the flag that can be refused — a branch an
+        // open change order owns — and a refused request should leave the
+        // lock flag as it found it. `retireBranch` also releases the locks
+        // still held on the branch, as every other archive does.
+        if (data.isArchived === true) {
+          await BranchService.retireBranch(id, user.id)
+        }
+
         if (data.isLocked === true) {
           await BranchService.lockBranch(id)
         } else if (data.isLocked === false) {
           await BranchService.unlockBranch(id)
-        }
-
-        if (data.isArchived === true) {
-          await BranchService.archiveBranch(id, undefined, user.id)
         }
 
         const updatedBranch = await BranchService.getById(id)

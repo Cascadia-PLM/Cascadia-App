@@ -289,17 +289,32 @@ function validateOrigin(request: Request): boolean {
 
   const origin = request.headers.get('origin')
   const referer = request.headers.get('referer')
-  // ... validate against request origin and allowed origins
+  // ... validate against requestOrigin(request) and allowed origins
 }
 ```
+
+### Behind a TLS-terminating proxy
+
+**File**: `cascadia-api/src/api/cors.ts` (`requestOrigin()`)
+
+The request's own origin is not simply `request.url`. The server rebuilds that URL from the `Host` header and the scheme of the connection it arrived on, and a reverse proxy that terminates TLS connects over plain HTTP — so behind one, the app's view of itself is `http://plm.example.com` while the browser's `Origin` is `https://plm.example.com`. Compared directly, the two differ by scheme alone, and every cookie-authenticated write is rejected with 403 `PERMISSION_DENIED`. Safe methods skip the check and login is a public route that never reaches it, so the failure first shows at the first save, not at sign-in.
+
+`requestOrigin()` takes the scheme from the proxy's `X-Forwarded-Proto` header instead, under the same trust rule as `X-Forwarded-For`:
+
+- The header is read only when `TRUSTED_PROXY_COUNT` is above `0`. Any caller can send it, so a deployment that has not declared a proxy ignores it and keeps its connection's scheme — exactly the behavior before the header was read.
+- The rightmost entry of a comma-separated value is used: the nearest proxy wrote it, and anything to its left came from further out.
+- Only `http` and `https` are accepted. Anything else is ignored rather than spliced into the origin, where a value like `https://evil.example/` would otherwise name a different site.
+- The host still comes from `Host`, which the proxy must pass through unchanged. `X-Forwarded-Host` is not read.
+
+The CORS grant below compares against the same function, so the write check and the grant cannot disagree about which origin is this server's own. Deployment requirements — the proxy depth to set, and what the proxy must send — are in [Reverse Proxy Trust](../orchestration/configuration.md#reverse-proxy-trust).
 
 ---
 
 ## CORS Configuration
 
-**File**: `cascadia-api/src/api/handler.ts` (`getCorsHeaders()`)
+**File**: `cascadia-api/src/api/cors.ts` (`getCorsHeaders()`)
 
-CORS is same-origin only by default. To allow external origins, set:
+CORS is same-origin only by default — the server's own origin, as `requestOrigin()` above computes it, always gets the grant. To allow external origins, set:
 
 ```
 CORS_ALLOWED_ORIGINS=https://admin.example.com,https://monitoring.example.com
@@ -321,7 +336,7 @@ For origins not in the allowlist, CORS headers are omitted entirely -- the brows
 
 ## Security Headers
 
-**File**: `cascadia-api/src/api/handler.ts`
+**File**: `cascadia-api/src/api/cors.ts`
 
 Applied to all API responses via `applySecurityHeaders()`:
 
@@ -453,9 +468,11 @@ Files are stored in an isolated path structure that prevents path traversal:
 
 The system supports OAuth authentication via the **Arctic** library (`arctic` package). The `users` table includes `provider` and `providerId` fields for OAuth-authenticated accounts.
 
-**GitHub is the only implemented provider.** The authorization hop (`GET /api/v1/auth/github`) issues a random state token in an HttpOnly, `SameSite=Lax`, 10-minute cookie; the callback (`GET /api/v1/auth/callback/github`) rejects the exchange unless the returned `state` matches that cookie, then clears it. Accounts are matched on `provider` + `providerId`, or linked to an existing user by verified email -- an account with no verified email is refused rather than admitted without one. The redirect URI is derived from `BASE_URL` and is not separately configurable, so it cannot drift from the route the callback is mounted on.
+**GitHub and Google are the implemented providers.** Each authorization hop (`GET /api/v1/auth/github`, `GET /api/v1/auth/google`) issues a random state token in an HttpOnly, `SameSite=Lax`, 10-minute cookie; the callback (`GET /api/v1/auth/callback/github`, `GET /api/v1/auth/callback/google`) rejects the exchange unless the returned `state` matches that cookie, then clears it. Google's flow also carries a PKCE code verifier in a second cookie of the same kind. Accounts are matched on `provider` + `providerId`, or linked to an existing user by verified email -- an account with no verified email is refused rather than admitted without one. The redirect URI is derived from `BASE_URL` and is not separately configurable, so it cannot drift from the route the callback is mounted on.
 
-Configuration is limited to `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`; the `azure` and `google` provider values are reserved in the schema but have no client or callback route. See [user management](../admin/user-management.md#oauth-providers).
+Google sign-in admits any Google account with a verified email unless `GOOGLE_ALLOWED_DOMAINS` names the Google Workspace domains allowed in. The check reads the `hd` claim Google asserts for the account, not the domain of its email address, so a personal account or a consumer alias at an allowed domain is refused. It runs before the account is created or linked, and each refusal is recorded as a `login_failed` auth event. The ID token is decoded without verifying its signature, which is sound here only because it comes straight back from Google's token endpoint over TLS rather than from the browser.
+
+Configuration is `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`, and `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `GOOGLE_ALLOWED_DOMAINS`; the `azure` provider value is reserved in the schema but has no client or callback route. See [user management](../admin/user-management.md#oauth-providers).
 
 ---
 
@@ -560,5 +577,7 @@ implying a check it did not perform.
 | `cascadia-api/src/auth/access.ts`               | `requireDesignAccess()`, `requireBranchAccess()`                  |
 | `cascadia-api/src/auth/UserService.ts`          | User CRUD, role assignment, password change                       |
 | `cascadia-api/src/api/handler.ts`               | `apiHandler()` with CSRF, CORS, security headers                  |
+| `cascadia-api/src/api/cors.ts`                  | `requestOrigin()`, the CORS grant and preflight, security headers |
+| `cascadia-api/src/api/client-ip.ts`             | Client address resolution; `TRUSTED_PROXY_COUNT`                  |
 | `cascadia-api/src/vault/utils/file-utils.ts`    | File validation, sanitization, allowlist                          |
 | `cascadia-api/src/packages/guard.ts`            | `requirePackage()` entitlement gate for optional packages         |

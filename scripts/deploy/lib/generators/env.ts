@@ -16,23 +16,30 @@ import type {
 
 /**
  * Emitted into every app-serving .env so the operator sees the variable before
- * they need it.
+ * they need it. Every generated compose app service lists it too
+ * (`TRUSTED_PROXY_ENV` in ./docker-compose.ts): compose hands a container only
+ * the variables its `environment:` names, so without that entry this value
+ * never reached the app, whatever it was set to.
  *
- * The app keys rate-limit buckets and audit rows on the caller's address, and
- * `X-Forwarded-For` is a header the caller can write — so it believes only as
- * many forwarded hops as this declares. Zero is the safe default (no header is
- * trusted at all) but it collapses everyone behind a proxy into one bucket,
- * and the generator cannot know how many proxies a deployment will have.
+ * The app believes two forwarded headers only as far as this declares, because
+ * a caller can write both. `X-Forwarded-For` keys rate-limit buckets and audit
+ * rows on the caller's address; `X-Forwarded-Proto` tells the cross-origin
+ * check that the browser is on https when a proxy terminated TLS. Zero is the
+ * safe default (no header is trusted at all), but behind a proxy it collapses
+ * everyone into one bucket, and behind one that terminates TLS the app refuses
+ * every browser write as cross-origin. The generator cannot know how many
+ * proxies a deployment will have, so the comment below says what 0 costs.
  *
  * Not emitted into the jobs worker's .env: it consumes queue messages and
- * serves no HTTP, so there is no caller address to resolve.
+ * serves no HTTP, so there is no caller to resolve.
  */
 const TRUSTED_PROXY_BLOCK = `
-# Number of reverse proxies in front of this app that append to
-# X-Forwarded-For (0 = none; ignore the header entirely and use the peer
-# address). Set this to your real hop depth — leaving it at 0 behind a proxy
-# puts every user in one shared rate-limit bucket. See
-# docs/orchestration/configuration.md.
+# Number of reverse proxies in front of this app (0 = none: forwarded headers
+# are ignored, and the peer address and the connection's own scheme are used).
+# Set this to your real hop depth. Left at 0 behind a proxy, every user shares
+# one rate-limit bucket, and if that proxy terminates TLS the app refuses every
+# browser write as cross-origin: X-Forwarded-Proto is believed only when this
+# is set. See docs/orchestration/configuration.md.
 TRUSTED_PROXY_COUNT=0
 `
 

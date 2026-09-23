@@ -21,13 +21,20 @@
  *    (fail closed: the browser blocks the real request)
  *  - what the preflight advertises is exactly what the real response carries,
  *    because both are `applySecurityHeaders` over the same request
+ *  - behind a TLS-terminating proxy the browser's `https://` origin is this
+ *    server's own only when `TRUSTED_PROXY_COUNT` declares the proxy that
+ *    reported it; the header alone, which any caller can send, earns nothing
  *
  * Run: npx vitest run cascadia-api/src/api/cors.test.ts
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { Hono } from 'hono'
-import { applySecurityHeaders, buildPreflightResponse } from './cors'
+import {
+  applySecurityHeaders,
+  buildPreflightResponse,
+  requestOrigin,
+} from './cors'
 
 const HOST = 'http://localhost:3000'
 const LISTED = 'https://plm.partner.example'
@@ -180,6 +187,200 @@ describe('CORS preflight', () => {
       )
 
       expect(advertised).toEqual(corsHeadersOf(real))
+    })
+  }
+})
+
+/**
+ * A TLS-terminating proxy speaks plain HTTP to the app, so the app's own view
+ * of its origin is `http://` while the browser's is `https://`. The grant has
+ * to recognise the browser's origin as this server's own, from the proxy's
+ * `X-Forwarded-Proto`, and only once `TRUSTED_PROXY_COUNT` says a proxy is
+ * there to have written that header. The write check in `handler.ts` compares
+ * against the same `requestOrigin`, so these are its cases too.
+ */
+describe('CORS behind a TLS-terminating proxy', () => {
+  const PUBLIC_ORIGIN = 'https://plm.example.com'
+  const originalDepth = process.env.TRUSTED_PROXY_COUNT
+  const originalAllowed = process.env.CORS_ALLOWED_ORIGINS
+
+  beforeEach(() => {
+    process.env.TRUSTED_PROXY_COUNT = '1'
+    delete process.env.CORS_ALLOWED_ORIGINS
+  })
+
+  afterEach(() => {
+    if (originalDepth === undefined) {
+      delete process.env.TRUSTED_PROXY_COUNT
+    } else {
+      process.env.TRUSTED_PROXY_COUNT = originalDepth
+    }
+    if (originalAllowed === undefined) {
+      delete process.env.CORS_ALLOWED_ORIGINS
+    } else {
+      process.env.CORS_ALLOWED_ORIGINS = originalAllowed
+    }
+  })
+
+  /** A preflight as the proxy passes it on: plain HTTP, the Host kept. */
+  function proxiedPreflight(origin: string, forwardedProto: string) {
+    return scratchApp().request('http://plm.example.com/api/v1/things/abc', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: origin,
+        'Access-Control-Request-Method': 'POST',
+        'X-Forwarded-Proto': forwardedProto,
+      },
+    })
+  }
+
+  it('grants the public https origin once the proxy is declared', async () => {
+    const response = await proxiedPreflight(PUBLIC_ORIGIN, 'https')
+
+    expect(response.status).toBe(204)
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+      PUBLIC_ORIGIN,
+    )
+    expect(response.headers.get('Access-Control-Allow-Credentials')).toBe(
+      'true',
+    )
+  })
+
+  it('grants nothing on the header alone when no proxy is declared', async () => {
+    delete process.env.TRUSTED_PROXY_COUNT
+
+    const response = await proxiedPreflight(PUBLIC_ORIGIN, 'https')
+
+    expect(corsHeadersOf(response)).toEqual({})
+  })
+
+  it('grants a foreign origin nothing with the proxy declared', async () => {
+    const response = await proxiedPreflight(UNLISTED, 'https')
+
+    expect(corsHeadersOf(response)).toEqual({})
+  })
+})
+
+/**
+ * What `requestOrigin` makes of the connection and the forwarded scheme. The
+ * grant and the write check both compare against it, so each row is a
+ * decision both of them inherit.
+ */
+describe('requestOrigin', () => {
+  const originalDepth = process.env.TRUSTED_PROXY_COUNT
+
+  afterEach(() => {
+    if (originalDepth === undefined) {
+      delete process.env.TRUSTED_PROXY_COUNT
+    } else {
+      process.env.TRUSTED_PROXY_COUNT = originalDepth
+    }
+  })
+
+  const PROXIED = 'http://plm.example.com/api/v1/things'
+
+  const CASES: Array<{
+    label: string
+    depth: string | null
+    url?: string
+    forwardedProto?: string
+    expected: string
+  }> = [
+    {
+      label: 'keeps the connection scheme when no proxy is declared',
+      depth: null,
+      forwardedProto: 'https',
+      expected: 'http://plm.example.com',
+    },
+    {
+      label: 'takes https from a declared proxy',
+      depth: '1',
+      forwardedProto: 'https',
+      expected: 'https://plm.example.com',
+    },
+    {
+      label: 'keeps the connection scheme when the proxy reports none',
+      depth: '1',
+      expected: 'http://plm.example.com',
+    },
+    {
+      label: 'takes the rightmost entry of a list',
+      depth: '1',
+      forwardedProto: 'https, http',
+      expected: 'http://plm.example.com',
+    },
+    {
+      label: 'takes the rightmost entry whatever precedes it',
+      depth: '1',
+      forwardedProto: 'http, https',
+      expected: 'https://plm.example.com',
+    },
+    {
+      // Proxies set this header rather than append to it, so two hops still
+      // deliver one entry. Counting two from the right would find nothing.
+      label: 'reads the single entry a two-proxy chain delivers',
+      depth: '2',
+      forwardedProto: 'https',
+      expected: 'https://plm.example.com',
+    },
+    {
+      label: 'accepts the scheme in any case',
+      depth: '1',
+      forwardedProto: 'HTTPS',
+      expected: 'https://plm.example.com',
+    },
+    {
+      label: 'ignores a value that is not http or https',
+      depth: '1',
+      forwardedProto: 'wss',
+      expected: 'http://plm.example.com',
+    },
+    {
+      label: 'ignores a value that would name another host',
+      depth: '1',
+      forwardedProto: 'https://evil.example/',
+      expected: 'http://plm.example.com',
+    },
+    {
+      // The proxy's own entry is the empty one, so nothing it wrote is usable.
+      label: 'ignores the list when its rightmost entry is empty',
+      depth: '1',
+      forwardedProto: 'https,',
+      expected: 'http://plm.example.com',
+    },
+    {
+      label: 'keeps a port the browser would have written',
+      depth: '1',
+      url: 'http://plm.example.com:8443/api/v1/things',
+      forwardedProto: 'https',
+      expected: 'https://plm.example.com:8443',
+    },
+    {
+      // A Host carrying :443 explicitly must still match the browser's
+      // `Origin`, which never writes a scheme's default port.
+      label: "drops a port that is https's default",
+      depth: '1',
+      url: 'http://plm.example.com:443/api/v1/things',
+      forwardedProto: 'https',
+      expected: 'https://plm.example.com',
+    },
+  ]
+
+  for (const { label, depth, url, forwardedProto, expected } of CASES) {
+    it(label, () => {
+      if (depth === null) {
+        delete process.env.TRUSTED_PROXY_COUNT
+      } else {
+        process.env.TRUSTED_PROXY_COUNT = depth
+      }
+      const headers = new Headers()
+      if (forwardedProto !== undefined) {
+        headers.set('X-Forwarded-Proto', forwardedProto)
+      }
+
+      expect(requestOrigin(new Request(url ?? PROXIED, { headers }))).toBe(
+        expected,
+      )
     })
   }
 })

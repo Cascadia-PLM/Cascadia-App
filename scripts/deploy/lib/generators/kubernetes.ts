@@ -84,6 +84,11 @@ function generateConfigMap(config: KubernetesConfig): GeneratedFile {
     data: {
       NODE_ENV: config.nodeEnv,
       BASE_URL: config.baseUrl,
+      // The generated Ingress is the one proxy in front of the app. At 0 the
+      // app would ignore the X-Forwarded-* headers it sets, so every client
+      // would share one rate-limit bucket, and with TLS on the ingress every
+      // browser write would be refused as cross-origin.
+      TRUSTED_PROXY_COUNT: '1',
       APP_PORT: String(config.appPort),
       VAULT_MODE: config.vaultMode,
       VAULT_TYPE: config.vaultType,
@@ -260,6 +265,15 @@ function generateDeployment(config: KubernetesConfig): GeneratedFile {
       name: 'BASE_URL',
       valueFrom: {
         configMapKeyRef: { name: 'cascadia-config', key: 'BASE_URL' },
+      },
+    },
+    {
+      name: 'TRUSTED_PROXY_COUNT',
+      valueFrom: {
+        configMapKeyRef: {
+          name: 'cascadia-config',
+          key: 'TRUSTED_PROXY_COUNT',
+        },
       },
     },
     {
@@ -613,6 +627,7 @@ probes will not.
 - **Namespace**: ${config.namespace}
 - **Ingress Host**: ${config.ingressHost}
 - **TLS**: ${config.enableTls ? 'Enabled' : 'Disabled'}
+- **Trusted proxies**: 1, the ingress (\`TRUSTED_PROXY_COUNT\` in \`configmap.yaml\`). Raise it if a load balancer sits in front of the ingress, which must then pass that balancer's \`X-Forwarded-*\` headers on — see \`docs/orchestration/configuration.md\` in the Cascadia repository
 - **Replicas**: ${config.replicas} (autoscales to ${Math.max(config.replicas * 3, 10)})
 
 ## Files

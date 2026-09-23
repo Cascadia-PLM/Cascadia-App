@@ -26,7 +26,7 @@
 # pins when publish-demo-images rebuilds `:latest`, so bump all four together,
 # each to the digest `:latest` resolves to, and run the stack end to end before
 # committing (docs/deployment/quickstart-smoke-test.md). A lone stale pin is
-# how an app image predating its own boot fix shipped here (#115).
+# how an app image predating its own boot fix shipped here (Cascadia-App#115).
 #
 # Notes:
 #   * Credentials below (Postgres, RabbitMQ, admin login) are hardcoded demo

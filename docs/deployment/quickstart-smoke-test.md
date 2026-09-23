@@ -3,12 +3,11 @@
 Manual procedure for verifying the public demo flow (`docker-compose.demo.yml`)
 end-to-end, on a clean Docker host with no clone of the repo.
 
-> **This repo publishes no images.** The demo images this procedure pulls are built
-> and pushed by the public `Cascadia-PLM/Cascadia-App` repo. The inherited
-> `publish-demo-images.yml` workflow was deleted here because it targeted the
-> shared org-level GHCR packages backing the public demo. Do not reintroduce a
-> publishing workflow in this repo. Running the smoke test from here validates the
-> compose file and seed against images someone else published.
+> **The images this procedure pulls are built in this repository.**
+> `publish-demo-images.yml` rebuilds the ones a push to `main` changed and pushes
+> them as `:latest`. `docker-compose.demo.yml` also pins each image by digest, and
+> the digest wins, so a rebuild reaches the quickstart only once the pins are
+> bumped. Bump all four together, then run this procedure against them.
 
 Run this after any change to:
 

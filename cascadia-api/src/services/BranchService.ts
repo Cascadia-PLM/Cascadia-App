@@ -24,8 +24,10 @@ import {
   PermissionDeniedError,
   ValidationError,
 } from '../errors'
+import { CrossDesignReferenceService } from './CrossDesignReferenceService'
 import { DesignService } from './DesignService'
 import { releaseBranchLocks } from './checkout-locks'
+import type { CrossDesignReferenceToItem } from './CrossDesignReferenceService'
 import type { TransactionClient } from '../db'
 import type { BranchType } from '@cascadia/commons/versioning/branch-types'
 import { takeFirst } from '@/db/take-first'
@@ -365,6 +367,13 @@ export class BranchService {
    * data that referenced workspace content before adoption existed — and as
    * a backstop against any future path that references first, moves later.)
    *
+   * A draft another design still references is not deleted, and neither is
+   * the workspace: the delete is refused with nothing written, naming the
+   * referencing designs the owner can read. `design_cross_references` has no
+   * foreign key to the item, so the reference would be left naming nothing.
+   * The rows that only record branch bookkeeping about a draft go with it —
+   * see `CrossDesignReferenceService.releaseReferencesToDeletedItems`.
+   *
    * Everything it does is recorded, in its one transaction: a
    * `branch.archived` with the owner as actor, an `item.deleted` per draft it
    * discards, and an `item.checkout_cancelled` per lock it releases.
@@ -390,82 +399,107 @@ export class BranchService {
       throw new PermissionDeniedError('workspace', 'delete')
     }
 
-    await db.transaction(async (tx) => {
-      // Every lock on the workspace goes with it, recorded as a cancellation:
-      // the workspace's edits are being discarded.
-      await releaseBranchLocks(
-        tx,
-        { branchId, designId: branch.designId },
-        'checkout_cancelled',
-      )
-
-      // Find all items that were created on this workspace (changeType: 'added')
-      // These items exist only on this branch and should be deleted
-      const workspaceOnlyItems = await tx
-        .select({
-          currentItemId: branchItems.currentItemId,
-          itemMasterId: branchItems.itemMasterId,
-        })
-        .from(branchItems)
-        .where(
-          and(
-            eq(branchItems.branchId, branchId),
-            eq(branchItems.changeType, 'added'),
-          ),
-        )
-
-      // Masters some change order has adopted as affected items — their item
-      // rows must survive the workspace
-      const masterIds = workspaceOnlyItems.map((bi) => bi.itemMasterId)
-      const referencedMasters = new Set(
-        masterIds.length > 0
-          ? (
-              await tx
-                .select({
-                  masterId: changeOrderAffectedItems.affectedItemMasterId,
-                })
-                .from(changeOrderAffectedItems)
-                .where(
-                  inArray(
-                    changeOrderAffectedItems.affectedItemMasterId,
-                    masterIds,
-                  ),
-                )
-            ).map((r) => r.masterId)
-          : [],
-      )
-
-      // Delete the actual items — tracking rows first, then the rows they
-      // point at, the order removeWorkspaceItem already keeps. Deleting the
-      // items first left branch_items rows on the archived branch pointing
-      // at nothing (the danglers DBI-6's FKs now reject outright).
-      const itemIds = workspaceOnlyItems
-        .filter((bi) => !referencedMasters.has(bi.itemMasterId))
-        .map((bi) => bi.currentItemId)
-        .filter((id): id is string => id !== null)
-
-      if (itemIds.length > 0) {
-        await tx
-          .delete(branchItems)
+    const referencesToDrafts = await db.transaction(
+      async (tx): Promise<Array<CrossDesignReferenceToItem>> => {
+        // Find all items that were created on this workspace (changeType: 'added')
+        // These items exist only on this branch and should be deleted. Locked,
+        // ahead of the items below as `CheckoutService.deleteOnBranch` takes
+        // them, and so adoption cannot move a row off the workspace between
+        // the reference check and the delete.
+        const workspaceOnlyItems = await tx
+          .select({
+            currentItemId: branchItems.currentItemId,
+            itemMasterId: branchItems.itemMasterId,
+          })
+          .from(branchItems)
           .where(
             and(
               eq(branchItems.branchId, branchId),
-              inArray(branchItems.currentItemId, itemIds),
+              eq(branchItems.changeType, 'added'),
             ),
           )
-        const discarded = await tx
-          .delete(items)
-          .where(inArray(items.id, itemIds))
-          .returning()
-        for (const draft of discarded) {
-          await this.recordDraftDeleted(tx, draft, userId, branchId)
-        }
-      }
+          .for('update')
 
-      // Archived through `archiveBranch`, so the archive records its own fact
-      // with the owner as its actor. A raw update used to archive it silently.
-      await this.archiveBranch(branchId, tx, userId)
-    })
+        // Masters some change order has adopted as affected items — their item
+        // rows must survive the workspace
+        const masterIds = workspaceOnlyItems.map((bi) => bi.itemMasterId)
+        const referencedMasters = new Set(
+          masterIds.length > 0
+            ? (
+                await tx
+                  .select({
+                    masterId: changeOrderAffectedItems.affectedItemMasterId,
+                  })
+                  .from(changeOrderAffectedItems)
+                  .where(
+                    inArray(
+                      changeOrderAffectedItems.affectedItemMasterId,
+                      masterIds,
+                    ),
+                  )
+              ).map((r) => r.masterId)
+            : [],
+        )
+
+        const itemIds = workspaceOnlyItems
+          .filter((bi) => !referencedMasters.has(bi.itemMasterId))
+          .map((bi) => bi.currentItemId)
+          .filter((id): id is string => id !== null)
+
+        // Before anything writes: a refusal returns and the transaction
+        // commits, so nothing may have been written by then — releasing the
+        // locks below included.
+        const references =
+          await CrossDesignReferenceService.releaseReferencesToDeletedItems(
+            itemIds,
+            tx,
+          )
+        if (references.length > 0) return references
+
+        // Every lock on the workspace goes with it, recorded as a cancellation:
+        // the workspace's edits are being discarded.
+        await releaseBranchLocks(
+          tx,
+          { branchId, designId: branch.designId },
+          'checkout_cancelled',
+        )
+
+        // Delete the actual items — tracking rows first, then the rows they
+        // point at, the order removeWorkspaceItem already keeps. Deleting the
+        // items first left branch_items rows on the archived branch pointing
+        // at nothing (the danglers DBI-6's FKs now reject outright).
+        if (itemIds.length > 0) {
+          await tx
+            .delete(branchItems)
+            .where(
+              and(
+                eq(branchItems.branchId, branchId),
+                inArray(branchItems.currentItemId, itemIds),
+              ),
+            )
+          const discarded = await tx
+            .delete(items)
+            .where(inArray(items.id, itemIds))
+            .returning()
+          for (const draft of discarded) {
+            await this.recordDraftDeleted(tx, draft, userId, branchId)
+          }
+        }
+
+        // Archived through `archiveBranch`, so the archive records its own fact
+        // with the owner as its actor. A raw update used to archive it silently.
+        await this.archiveBranch(branchId, tx, userId)
+        return []
+      },
+    )
+
+    if (referencesToDrafts.length > 0) {
+      throw await this.draftReferenceRefusal(
+        referencesToDrafts,
+        userId,
+        'workspace',
+      )
+    }
   }
 
   /**
@@ -516,6 +550,10 @@ export class BranchService {
    * version again. A modified row's working copy is left behind unreferenced,
    * exactly as deleteWorkspaceBranch leaves it; working revisions never
    * resolve outside their branch, so it is inert.
+   *
+   * A draft another design still references is not removed: the removal is
+   * refused with nothing written, as deleteWorkspaceBranch refuses, and the
+   * rows that only record branch bookkeeping about a removed draft go with it.
    */
   static async removeWorkspaceItem(
     branchId: string,
@@ -537,57 +575,133 @@ export class BranchService {
       throw new PermissionDeniedError('workspace', 'modify')
     }
 
-    const row = (
-      await db
-        .select()
-        .from(branchItems)
-        .where(
-          and(
-            eq(branchItems.branchId, branchId),
-            eq(branchItems.itemMasterId, itemMasterId),
-          ),
-        )
-        .limit(1)
-    ).at(0)
-
-    if (!row) {
-      throw new NotFoundError('Workspace item', itemMasterId, {
-        operation: 'removeWorkspaceItem',
-      })
-    }
-
-    await db.transaction(async (tx) => {
-      // The holder's claim goes with the row, recorded as a cancellation: the
-      // workspace's edits to this item are being discarded.
-      await releaseBranchLocks(
-        tx,
-        { branchId, designId: branch.designId, itemMasterIds: [itemMasterId] },
-        'checkout_cancelled',
-      )
-      await tx.delete(branchItems).where(eq(branchItems.id, row.id))
-
-      if (row.changeType === 'added' && row.currentItemId) {
-        const referenced = (
+    const referencesToDraft = await db.transaction(
+      async (tx): Promise<Array<CrossDesignReferenceToItem>> => {
+        // Read under a lock in the transaction that removes it, and ahead of
+        // the draft's own row — the order `CheckoutService.deleteOnBranch`
+        // takes the two in.
+        const row = (
           await tx
-            .select({ id: changeOrderAffectedItems.id })
-            .from(changeOrderAffectedItems)
+            .select()
+            .from(branchItems)
             .where(
-              eq(changeOrderAffectedItems.affectedItemMasterId, itemMasterId),
+              and(
+                eq(branchItems.branchId, branchId),
+                eq(branchItems.itemMasterId, itemMasterId),
+              ),
             )
             .limit(1)
+            .for('update')
         ).at(0)
 
-        if (!referenced) {
+        if (!row) {
+          throw new NotFoundError('Workspace item', itemMasterId, {
+            operation: 'removeWorkspaceItem',
+          })
+        }
+
+        const adopted =
+          row.changeType === 'added' &&
+          (
+            await tx
+              .select({ id: changeOrderAffectedItems.id })
+              .from(changeOrderAffectedItems)
+              .where(
+                eq(changeOrderAffectedItems.affectedItemMasterId, itemMasterId),
+              )
+              .limit(1)
+          ).length > 0
+        const draftId =
+          row.changeType === 'added' && !adopted ? row.currentItemId : null
+
+        // Before anything writes: a refusal returns and the transaction
+        // commits, so nothing may have been written by then.
+        if (draftId) {
+          const references =
+            await CrossDesignReferenceService.releaseReferencesToDeletedItems(
+              [draftId],
+              tx,
+            )
+          if (references.length > 0) return references
+        }
+
+        // The holder's claim goes with the row, recorded as a cancellation: the
+        // workspace's edits to this item are being discarded.
+        await releaseBranchLocks(
+          tx,
+          {
+            branchId,
+            designId: branch.designId,
+            itemMasterIds: [itemMasterId],
+          },
+          'checkout_cancelled',
+        )
+        await tx.delete(branchItems).where(eq(branchItems.id, row.id))
+
+        if (draftId) {
           const [draft] = await tx
             .delete(items)
-            .where(eq(items.id, row.currentItemId))
+            .where(eq(items.id, draftId))
             .returning()
           if (draft) {
             await this.recordDraftDeleted(tx, draft, userId, branchId)
           }
         }
-      }
-    })
+        return []
+      },
+    )
+
+    if (referencesToDraft.length > 0) {
+      throw await this.draftReferenceRefusal(referencesToDraft, userId, 'draft')
+    }
+  }
+
+  /**
+   * The refusal for discarding drafts other designs still reference, raised
+   * once the transaction that found the references is over. That transaction
+   * wrote nothing, and naming the designs reads the caller's access scope on
+   * the pool, which must not wait for a connection while a transaction still
+   * holds one.
+   *
+   * `createReference` refuses a draft, so the reference was made before it
+   * did, and no design's structure has shown it: a structure resolves a
+   * reference on the source design's main, where a draft never was. So the
+   * message does not send the owner to a Structure tab to remove it, and
+   * names the way to keep the draft instead.
+   */
+  private static async draftReferenceRefusal(
+    references: Array<CrossDesignReferenceToItem>,
+    userId: string,
+    discarding: 'workspace' | 'draft',
+  ): Promise<ValidationError> {
+    const drafts = await db
+      .select({ itemNumber: items.itemNumber })
+      .from(items)
+      .where(
+        inArray(
+          items.id,
+          references.map((row) => row.referencedItemId),
+        ),
+      )
+      .orderBy(items.itemNumber)
+    const list = new Intl.ListFormat('en', { type: 'conjunction' })
+    const numbers = list.format(drafts.map((draft) => `'${draft.itemNumber}'`))
+    const { designs: referencing } =
+      await CrossDesignReferenceService.describeReferencingDesigns(
+        references,
+        userId,
+      )
+
+    const severalDrafts = drafts.length > 1
+    const severalReferences = references.length > 1
+    const consequence = `leave ${severalReferences ? 'those references' : 'that reference'} naming nothing`
+    const remedy = `A reference to a draft is not shown in the referencing design's structure, so remove ${severalReferences ? 'them' : 'it'} through the cross-design references API — or keep the ${severalDrafts ? 'drafts' : 'draft'} by converting the workspace to a change order.`
+
+    return new ValidationError(
+      discarding === 'workspace'
+        ? `This workspace cannot be deleted: ${severalDrafts ? `its drafts ${numbers} are` : `its draft ${numbers} is`} referenced by ${referencing}, and deleting the workspace would discard ${severalDrafts ? 'them' : 'it'} and ${consequence}. ${remedy}`
+        : `${numbers} cannot be removed from this workspace: it is referenced by ${referencing}, and removing it would discard the draft and ${consequence}. ${remedy}`,
+    )
   }
 
   /**
@@ -656,6 +770,81 @@ export class BranchService {
   }
 
   /**
+   * Archive a branch on its own: the branch update route's `isArchived`.
+   *
+   * Every other archive ends a branch as part of ending what it belongs to —
+   * a release, a cancellation, a deleted change order or workspace — and
+   * releases the checkout locks still held on the branch in the transaction
+   * that archives it, recording each release. The route called
+   * `archiveBranch` alone, so every lock outlived its branch, still recorded
+   * as held. They are released here as cancellations: nothing on a branch
+   * archived this way is merged anywhere.
+   *
+   * A branch an open change order owns is refused. Archiving one left the
+   * change order open on a branch that takes no more work, while its affected
+   * items still listed the content there and its release still merged it. Its
+   * branches end with the change order: cancelling it archives every one and
+   * releases their locks. Open means its workflow has not completed, and a
+   * change order with no workflow instance counts as open, as it does to the
+   * scope gate.
+   *
+   * A branch already archived keeps its `archivedAt` and records no second
+   * `branch.archived`; only the locks an earlier archive left on it are
+   * released.
+   */
+  static async retireBranch(branchId: string, userId: string): Promise<void> {
+    const branch = await this.getById(branchId)
+    if (!branch) {
+      throw new NotFoundError('Branch', branchId, { operation: 'retireBranch' })
+    }
+    if (branch.branchType === BRANCH_TYPES.main) {
+      throw new ValidationError('Cannot archive main branch')
+    }
+
+    // On the pool, before the transaction opens: a workflow that completes
+    // meanwhile only makes the archive allowable, and a completed one never
+    // reopens.
+    if (branch.changeOrderItemId) {
+      const { LifecycleInstanceService } =
+        await import('../lifecycles/LifecycleInstanceService')
+      const instance = await LifecycleInstanceService.getInstanceByItemId(
+        branch.changeOrderItemId,
+      )
+      if (!instance?.completedAt) {
+        throw new ValidationError(
+          `Cannot archive branch "${branch.name}": its change order is still open. Cancel the change order to archive its branches.`,
+          undefined,
+          {
+            operation: 'retireBranch',
+            branchId: branch.id,
+            changeOrderItemId: branch.changeOrderItemId,
+          },
+        )
+      }
+    }
+
+    await db.transaction(async (tx) => {
+      // Held to the end, so a second retire racing this one waits and then
+      // finds the branch archived rather than archiving it again
+      const current = await this.getByIdForUpdate(branchId, tx)
+      if (!current) {
+        throw new NotFoundError('Branch', branchId, {
+          operation: 'retireBranch',
+        })
+      }
+
+      await releaseBranchLocks(
+        tx,
+        { branchId, designId: current.designId },
+        'checkout_cancelled',
+      )
+      if (!current.isArchived) {
+        await this.archiveBranch(branchId, tx, userId)
+      }
+    })
+  }
+
+  /**
    * Archive a branch
    * Used after ECO is merged or workspace is abandoned
    */
@@ -711,6 +900,45 @@ export class BranchService {
         },
       })
     })
+  }
+
+  /**
+   * Refuse a write to an archived branch.
+   *
+   * Archiving is how a branch ends — its change order released, was cancelled
+   * or was deleted, its workspace was deleted, or someone archived it by hand
+   * — and what is on it from then on is history: the record of what a release
+   * merged, or of what a cancellation abandoned. `getBranchStatus` has always
+   * called an archived branch uneditable; this is where the writers are held
+   * to it, so the refusal is the same whichever of them asks. The checkout,
+   * save, create, delete and working-copy writers ask before they read
+   * anything else; `CommitService.create` asks again under the branch row
+   * lock, which an archive landing in between has to wait for; the conflict
+   * and structure writers that neither commit nor check out ask for
+   * themselves; and `ItemEditPolicy` asks for an edit addressed to a row the
+   * branch made rather than to the branch.
+   *
+   * It comes before a change order's scope gate, which cannot stand in for it:
+   * that gate reads the owning change order's workflow, and a workspace, or a
+   * branch whose change order was deleted, has none to read.
+   *
+   * Releasing a lock is deliberately not held to it. `checkin` and
+   * `cancelCheckout` change no content and record no commit, and a lock can
+   * outlive its branch — the branch update route archived without releasing
+   * any until `retireBranch` — so refusing them would leave a holder's lock
+   * on the item for good.
+   */
+  static assertNotArchived(
+    branch: Pick<typeof branches.$inferSelect, 'id' | 'name' | 'isArchived'>,
+    operation: string,
+  ): void {
+    if (branch.isArchived) {
+      throw new ValidationError(
+        `Branch "${branch.name}" is archived and accepts no further changes`,
+        undefined,
+        { operation, branchId: branch.id },
+      )
+    }
   }
 
   /**

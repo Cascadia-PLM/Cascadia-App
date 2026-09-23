@@ -31,6 +31,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -586,6 +587,117 @@ describe('apiHandler cross-origin rejection', () => {
     })
 
     expect(response.status).toBe(200)
+  })
+
+  /**
+   * Behind a TLS-terminating reverse proxy, which is where this was hit in
+   * production, with Caddy in front of the app. The proxy speaks plain HTTP
+   * to the app, so the URL `@hono/node-server` rebuilds says `http://` while
+   * the browser's `Origin` says `https://`. Sign-in and reads worked and every
+   * cookie-authenticated write was refused as cross-origin. The proxy reports
+   * the real scheme in `X-Forwarded-Proto`, but any caller can send that
+   * header too, so it counts only once `TRUSTED_PROXY_COUNT` declares a proxy.
+   */
+  describe('behind a TLS-terminating proxy', () => {
+    const PUBLIC_ORIGIN = 'https://plm.example.com'
+    const originalDepth = process.env.TRUSTED_PROXY_COUNT
+    const originalAllowed = process.env.CORS_ALLOWED_ORIGINS
+
+    beforeEach(() => {
+      process.env.TRUSTED_PROXY_COUNT = '1'
+      // Nothing listed, so a write accepted here was accepted as same-origin.
+      delete process.env.CORS_ALLOWED_ORIGINS
+    })
+
+    afterEach(() => {
+      if (originalDepth === undefined) {
+        delete process.env.TRUSTED_PROXY_COUNT
+      } else {
+        process.env.TRUSTED_PROXY_COUNT = originalDepth
+      }
+      if (originalAllowed === undefined) {
+        delete process.env.CORS_ALLOWED_ORIGINS
+      } else {
+        process.env.CORS_ALLOWED_ORIGINS = originalAllowed
+      }
+    })
+
+    /** A write as the proxy passes it on: plain HTTP, the browser's Host kept. */
+    const proxiedWrite = (origin: string, forwardedProto: string) =>
+      app().request('http://plm.example.com/thing', {
+        method: 'POST',
+        headers: { cookie, origin, 'x-forwarded-proto': forwardedProto },
+      })
+
+    it('accepts a same-origin write once the deployment declares the proxy', async () => {
+      const response = await proxiedWrite(PUBLIC_ORIGIN, 'https')
+
+      expect(response.status).toBe(200)
+      // The CORS grant on the same response agrees. There is one rule for
+      // which origin is this server's own, not one per check.
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe(
+        PUBLIC_ORIGIN,
+      )
+    })
+
+    const UNDECLARED: Array<[string, string | null]> = [
+      ['unset', null],
+      ['0', '0'],
+      // Express's `trust proxy` takes a boolean. This setting does not, and
+      // must not read one as a hop count.
+      ['"true"', 'true'],
+    ]
+
+    for (const [label, depth] of UNDECLARED) {
+      it(`still rejects that write with TRUSTED_PROXY_COUNT ${label}`, async () => {
+        // The malformed value is warned about; keep the log clean.
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+        if (depth === null) {
+          delete process.env.TRUSTED_PROXY_COUNT
+        } else {
+          process.env.TRUSTED_PROXY_COUNT = depth
+        }
+
+        const response = await proxiedWrite(PUBLIC_ORIGIN, 'https')
+
+        // No free pass from a header the caller could have written: without a
+        // declared proxy this is the refusal such a deployment always gave.
+        expect(response.status).toBe(403)
+        const payload = await response.json()
+        expect(() => errorResponseSchema.parse(payload)).not.toThrow()
+        expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull()
+      })
+    }
+
+    it('still rejects a foreign origin with the proxy declared', async () => {
+      const response = await proxiedWrite('https://evil.example', 'https')
+
+      expect(response.status).toBe(403)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull()
+    })
+
+    it('reads the rightmost X-Forwarded-Proto entry, the one the proxy wrote', async () => {
+      // Entries to its left arrived from further out. A client that prepends
+      // `https` does not outvote the proxy that reported `http`...
+      const outvoted = await proxiedWrite(PUBLIC_ORIGIN, 'https, http')
+      expect(outvoted.status).toBe(403)
+
+      // ...and whatever a client prepended does not hide the proxy's `https`.
+      const honoured = await proxiedWrite(PUBLIC_ORIGIN, 'http, https')
+      expect(honoured.status).toBe(200)
+    })
+
+    it('never splices a forwarded value that is not a scheme into the origin', async () => {
+      // `https://evil.example/` followed by `://plm.example.com` parses as the
+      // origin https://evil.example, so a header believed whatever it held
+      // could name the origin it wanted accepted.
+      const response = await proxiedWrite(
+        'https://evil.example',
+        'https://evil.example/',
+      )
+
+      expect(response.status).toBe(403)
+    })
   })
 })
 

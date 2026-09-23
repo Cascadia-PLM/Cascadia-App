@@ -8,6 +8,11 @@
  * version-resolved items — the third gate. It had no tests while it lived
  * inside a route handler, because there was no seam to call.
  *
+ * Every call passes `null` for the caller's reach — cross-program authority —
+ * because what these pin is the traversal. How reach bounds the tree is a
+ * security question, pinned through the route in
+ * `server/routes/change-orders.design-structure.permissions.test.ts`.
+ *
  * Run: npm run test -- src/services/ChangeOrderStructureService.test.ts
  */
 
@@ -259,6 +264,7 @@ describe('ChangeOrderStructureService', () => {
       ChangeOrderStructureService.getDesignStructure(
         changeOrder.id,
         '00000000-0000-4000-8000-0000000000ff',
+        null,
       ),
     ).rejects.toThrow(NotFoundError)
   })
@@ -275,6 +281,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
 
     // Only the assembly is a root — the children have a parent
@@ -305,6 +312,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
 
     expect(result.roots.map((r) => r.itemNumber)).toEqual([root.itemNumber])
@@ -330,6 +338,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
 
     expect(result.roots.map((r) => r.itemNumber)).toEqual([
@@ -360,6 +369,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
 
     const affectedNode = findNode(result.roots, affected.itemNumber)
@@ -418,6 +428,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       libraryId,
+      null,
     )
 
     expect(result.roots.map((r) => r.itemNumber)).toEqual([
@@ -451,6 +462,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
 
     expect(result.versionContext.type).toBe('branch')
@@ -502,6 +514,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       (await createChangeOrder()).id,
       designId,
+      null,
     )
 
     const node = findNode(result.roots, assembly.itemNumber)
@@ -529,6 +542,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
 
     const node = findNode(result.roots, assembly.itemNumber)
@@ -542,6 +556,7 @@ describe('ChangeOrderStructureService', () => {
     const result = await ChangeOrderStructureService.getDesignStructure(
       changeOrder.id,
       designId,
+      null,
     )
 
     expect(result.versionContext.type).toBe('released')

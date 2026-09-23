@@ -1593,6 +1593,55 @@ const SCENARIOS = [
     },
   },
 
+  {
+    tag: DANGLING_CROSS_REFERENCES_TAG(),
+    name: 'a cross-design reference naming a deleted item is removed in every shape; one naming a live item is kept',
+    async seed(sql) {
+      await exec(sql, danglingCrossReferencesSeed())
+    },
+    async assert(sql) {
+      // One line per shape of row. A statement keyed on anything but the
+      // item's existence — the branch, the change type, the branch being
+      // archived — shows up here as the wrong row surviving, not as a count
+      // that still happens to be right.
+      const expected = {
+        [id(1006)]: true,
+        [id(1007)]: true,
+        [id(1008)]: false,
+        [id(1009)]: false,
+        [id(1010)]: false,
+        [id(1011)]: false,
+      }
+      const why = {
+        [id(1006)]: 'a baseline reference to an item that exists is kept',
+        [id(1007)]: 'so is a branch addition naming that item',
+        [id(1008)]: 'a baseline reference naming a deleted item is removed',
+        [id(1009)]: 'a branch addition naming one is removed',
+        [id(1010)]: "a branch's deleted marker naming one is removed",
+        [id(1011)]: 'an addition on an archived branch naming one is removed',
+      }
+      for (const [row, survives] of Object.entries(expected)) {
+        const found = await one(
+          sql,
+          `select count(*)::int as n from design_cross_references where id = '${row}'`,
+        )
+        expectEqual(found.n, survives ? 1 : 0, why[row])
+      }
+
+      // Nothing outside design_cross_references may move.
+      const item = await one(
+        sql,
+        `select count(*)::int as n from items where id = '${id(1004)}'`,
+      )
+      expectEqual(item.n, 1, 'the referenced item is left as it was')
+      const branchRows = await one(
+        sql,
+        `select count(*)::int as n from branches where design_id = '${id(1000)}'`,
+      )
+      expectEqual(branchRows.n, 2, 'both branches are left as they were')
+    },
+  },
+
   ...snapshotSeqScenarios(),
   ...signingCredentialScenarios(),
 
@@ -1944,6 +1993,64 @@ function designStructureSeed() {
       ('${id(922)}', '${id(920)}', 'BOM', '${U1}'),
       ('${id(922)}', '${id(924)}', 'BOM', '${U1}'),
       ('${id(910)}', '${id(928)}', 'BOM', '${U1}');
+  `
+}
+
+/**
+ * The dangling cross-reference cleanup, named by the table it deletes from
+ * for the reason the helpers above give: a later fold moves the statement to
+ * another file, and the scenario has to follow it there.
+ */
+function DANGLING_CROSS_REFERENCES_TAG() {
+  const found = migrations.find((m) =>
+    m.sql.some((s) => s.includes('DELETE FROM "design_cross_references"')),
+  )
+  if (!found) {
+    throw new Error(
+      'No migration deletes dangling design_cross_references rows — that scenario names a file that no longer exists.',
+    )
+  }
+  return found.tag
+}
+
+/**
+ * One referencing design with an open and an archived branch, a source design
+ * holding the one item that still exists, and a reference row of every shape —
+ * baseline, branch addition, deleted marker, addition on an archived branch —
+ * naming either that item or an id a hard delete removed.
+ */
+function danglingCrossReferencesSeed() {
+  const REFERENCING = id(1000)
+  const SOURCE = id(1001)
+  const OPEN = id(1002)
+  const ARCHIVED = id(1003)
+  const LIVE_ITEM = id(1004)
+  const ref = (n, item, branch, change) =>
+    `('${id(n)}', '${REFERENCING}', '${item}', '${SOURCE}', ${branch ? `'${branch}'` : 'null'}, ${change ? `'${change}'` : 'null'})`
+  return `
+    ${USERS}
+    insert into designs (id, name, code, created_by) values
+      ('${REFERENCING}', 'Referencing Design', 'FIX-XREF', '${U1}'),
+      ('${SOURCE}', 'Source Design', 'FIX-XREF-SRC', '${U1}');
+    insert into branches (id, design_id, name, branch_type, is_archived) values
+      ('${OPEN}', '${REFERENCING}', 'eco/FIX-OPEN', 'eco', false),
+      ('${ARCHIVED}', '${REFERENCING}', 'eco/FIX-CANCELLED', 'eco', true);
+    insert into items
+      (id, master_id, item_number, revision, item_type, state, design_id,
+       is_current, created_by, modified_by)
+    values
+      ('${LIVE_ITEM}', '${id(1005)}', 'FIX-XREF-PART', 'A', 'Part', 'Draft', '${SOURCE}', true, '${U1}', '${U1}');
+    insert into design_cross_references
+      (id, referencing_design_id, referenced_item_id, source_design_id, branch_id, change_type)
+    values
+      -- references to the item that still exists
+      ${ref(1006, LIVE_ITEM, null, null)},
+      ${ref(1007, LIVE_ITEM, OPEN, 'added')},
+      -- every shape of row naming an item a hard delete removed
+      ${ref(1008, gone(1008), null, null)},
+      ${ref(1009, gone(1009), OPEN, 'added')},
+      ${ref(1010, gone(1010), OPEN, 'deleted')},
+      ${ref(1011, gone(1011), ARCHIVED, 'added')};
   `
 }
 

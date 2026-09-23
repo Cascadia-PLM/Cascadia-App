@@ -206,6 +206,7 @@ The BOM tree is built server-side in the `GET /api/v1/designs/:id/structure` end
 5. **Recursively build tree nodes** with cycle detection (visited set)
 6. **Add cross-design references** as additional root nodes
 7. **Identify orphan items** -- non-Part items, and Parts that are neither a root nor a child of one
+8. **Withhold what the viewer cannot read** -- an item in a design outside the viewer's programs, reached through a cross-design reference or a BOM line, is removed together with everything beneath it, and the response's `hasRestricted` flag is set (see [What a Viewer Cannot Read](./programs-and-designs.md#what-a-viewer-cannot-read))
 
 ### Features
 
@@ -216,7 +217,7 @@ The BOM tree is built server-side in the `GET /api/v1/designs/:id/structure` end
 - **Context menus**: Right-click for actions (add child, remove, open detail page, etc.)
 - **Add Part**: Opens on a choice. _Create New_ makes a part in this design, on the branch the page is viewing, and it appears as a top-level part of the structure; _Use Existing_ copies or references a part from the standard library or another design
 - **Add Child** (context menu): Opens on the same choice. _Create New_ makes the part and places it under the node with the quantity and find number given; _Use Existing_ adds a part from this design or the standard library
-- **CSV export**: Export the full indented BOM to a CSV file
+- **CSV export**: Export the indented BOM to a CSV file. Like the tree, it leaves out anything the viewer cannot read
 - **External badges**: Items from other designs show an amber badge with the source design code
 
 ---
@@ -380,6 +381,7 @@ In the BOM tree:
 - They show an amber badge with the source design code (e.g., "STD-LIB")
 - Their subtree is expanded recursively (children from the source design are shown read-only)
 - The `crossReferenceId` field links back to the `design_cross_references` row for management operations
+- A reference into a design the viewer cannot read is left out, with its subtree, and the response's `hasRestricted` flag is set instead (see [What a Viewer Cannot Read](./programs-and-designs.md#what-a-viewer-cannot-read))
 
 ### Service
 

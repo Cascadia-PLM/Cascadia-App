@@ -13,9 +13,11 @@
  *
  * What this suite pins:
  *
- *  - `createReference` refuses the three inputs that would write a meaningless
- *    row (missing item, design-less item, self-reference) and stamps
- *    branchId/'added' on a branch versus null/null on main;
+ *  - `createReference` refuses the inputs that would write a meaningless row
+ *    (a missing or deleted item, a design-less item, a self-reference, and a
+ *    draft that exists only on a workspace or change-order branch, which no
+ *    structure could show) and stamps branchId/'added' on a branch versus
+ *    null/null on main;
  *  - `removeReference`'s three-way semantics, each test named for its case: a
  *    row added on a branch and removed on that same branch is physically
  *    deleted, a baseline row removed on a branch gets exactly one idempotent
@@ -52,6 +54,7 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
+  branchItems,
   branches,
   designCrossReferences,
   designs,
@@ -262,6 +265,114 @@ describe('CrossDesignReferenceService', () => {
       expect(ref.branchId).toBeNull()
       expect(ref.changeType).toBeNull()
       expect(ref.sourceDesignId).toBe(sourceDesignId)
+    })
+
+    /**
+     * A draft as `CheckoutService.createOnBranch` leaves one: an items row
+     * under a branch working revision, and an 'added' tracking row on a
+     * branch of the source design.
+     */
+    async function insertDraftOn(branchType: 'workspace' | 'eco') {
+      const branch = takeFirst(
+        await testDb.db
+          .insert(branches)
+          .values({
+            designId: sourceDesignId,
+            name: `${branchType}/${uniquePrefix}-DRAFT`,
+            branchType,
+            createdBy: user.id,
+          })
+          .returning(),
+      )
+      const masterId = randomUUID()
+      const draft = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            itemNumber: `PN-${uniquePrefix}-DRAFT-${branchType}`,
+            itemType: 'Part',
+            revision: `-${branch.id.slice(0, 8)}`,
+            name: 'Draft',
+            state: 'Draft',
+            masterId,
+            designId: sourceDesignId,
+            createdBy: user.id,
+            modifiedBy: user.id,
+          })
+          .returning(),
+      )
+      await testDb.db.insert(branchItems).values({
+        branchId: branch.id,
+        itemMasterId: masterId,
+        currentItemId: draft.id,
+        changeType: 'added',
+      })
+      return { itemId: draft.id, masterId }
+    }
+
+    // A structure shows a reference by resolving it on the source design's
+    // main. A draft that exists only on a branch is not there, so a reference
+    // to it would show nowhere — while the draft's owner could still discard
+    // it, leaving the reference naming nothing.
+    it('refuses an item that exists only as a draft on a workspace or change-order branch', async () => {
+      for (const branchType of ['workspace', 'eco'] as const) {
+        const draft = await insertDraftOn(branchType)
+
+        await expect(
+          CrossDesignReferenceService.createReference(
+            { referencingDesignId, referencedItemId: draft.itemId },
+            user.id,
+          ),
+        ).rejects.toThrow(ValidationError)
+      }
+
+      expect(await storedRows()).toHaveLength(0)
+    })
+
+    it('accepts a draft once a release has put its master on main', async () => {
+      const draft = await insertDraftOn('eco')
+      // What a release leaves behind: a main-branch tracking row for the master.
+      const main = takeFirst(
+        await testDb.db
+          .insert(branches)
+          .values({
+            designId: sourceDesignId,
+            name: 'main',
+            branchType: 'main',
+            createdBy: user.id,
+          })
+          .returning(),
+      )
+      await testDb.db.insert(branchItems).values({
+        branchId: main.id,
+        itemMasterId: draft.masterId,
+        currentItemId: draft.itemId,
+        baseItemId: draft.itemId,
+      })
+
+      const ref = await CrossDesignReferenceService.createReference(
+        { referencingDesignId, referencedItemId: draft.itemId },
+        user.id,
+      )
+
+      expect(ref.referencedItemId).toBe(draft.itemId)
+    })
+
+    it('refuses a deleted item as missing', async () => {
+      const target = await insertItemRow(sourceDesignId, 'DELETED')
+      await testDb.db
+        .update(items)
+        .set({ isDeleted: true, deletedAt: new Date() })
+        .where(eq(items.id, target))
+
+      await expect(
+        CrossDesignReferenceService.createReference(
+          { referencingDesignId, referencedItemId: target },
+          user.id,
+        ),
+      ).rejects.toThrow(NotFoundError)
+
+      expect(await storedRows()).toHaveLength(0)
     })
   })
 

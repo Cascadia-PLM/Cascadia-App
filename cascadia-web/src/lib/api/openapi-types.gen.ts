@@ -2241,7 +2241,7 @@ export interface paths {
         put?: never;
         /**
          * Release a file checkout lock held by another user
-         * @description Requires documents:update, plus system:manage when the lock belongs to someone else. Releasing a lock you hold yourself is an ordinary check-in and needs no override.
+         * @description Requires update permission for the file's owning item type, plus system:manage when the lock belongs to someone else. Releasing a lock you hold yourself is an ordinary check-in and needs no override.
          */
         post: operations["postApiV1FilesByFileIdForceUnlock"];
         delete?: never;

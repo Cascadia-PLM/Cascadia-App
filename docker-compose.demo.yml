@@ -92,7 +92,7 @@ services:
   # a few seconds per `up`, and it is also what lets a newer demo-data image
   # refresh files an older one left.
   demo-data-loader:
-    image: ghcr.io/cascadia-plm/cascadia-demo-data:latest@sha256:91b4e226c4f84e5e8d4718c6601d82a50d72666a5bd866bcf59b42e719543a63
+    image: ghcr.io/cascadia-plm/cascadia-demo-data:latest@sha256:8d7db0dc53dbe6a161fe03f7f7a0df8e0b116c07f83a80b7db862885da728777
     container_name: cascadia-demo-data-loader
     volumes:
       - cascadia_demo_app_data:/out

@@ -16,9 +16,17 @@
 #
 #   docker compose -f docker-compose.demo.yml down -v
 #
-# Pin to a specific image version (recommended for stable demos):
-#   replace `:latest` below with `:sha-<short>` from the GitHub Actions
-#   "publish-demo-images" workflow run output.
+# Upgrading from a demo stack that booted with `drizzle push` (every version
+# of this file before the migration switch): run the reset above first. That
+# database has tables but no migration journal, and the app refuses to boot on
+# one rather than guess what it contains — see scripts/boot-migrate.ts.
+#
+# Image pins: every Cascadia image below is `:latest@sha256:<digest>`, and the
+# digest is what Docker pulls — the tag is only a label. Nothing updates these
+# pins when publish-demo-images rebuilds `:latest`, so bump all four together,
+# each to the digest `:latest` resolves to, and run the stack end to end before
+# committing (docs/deployment/quickstart-smoke-test.md). A lone stale pin is
+# how an app image predating its own boot fix shipped here (#115).
 #
 # Notes:
 #   * Credentials below (Postgres, RabbitMQ, admin login) are hardcoded demo
@@ -73,20 +81,26 @@ services:
       start_period: 30s
     networks: [cascadia-demo]
 
-  # One-shot init container: copies the bundled demo dataset (~592 MB of
-  # STEPs/GLBs/thumbnails) from the cascadia-demo-data image into a named
-  # volume the app reads from. `cp -rn` is no-op on rerun, so restarts are
-  # cheap. The app depends on this completing successfully before booting.
+  # One-shot init container: copies the bundled demo datasets (~420 MB of
+  # GLBs, thumbnails and baked tables) from the cascadia-demo-data image into a
+  # named volume the app reads from. The app depends on this completing
+  # successfully before booting.
+  #
+  # Plain `cp -r`, deliberately not `cp -rn`. In this image's BusyBox (1.36),
+  # `cp -rn /demo-data/. /out/` copies nothing at all and still exits 0, so the
+  # volume stayed empty and the demo seed found no datasets. Overwriting costs
+  # a few seconds per `up`, and it is also what lets a newer demo-data image
+  # refresh files an older one left.
   demo-data-loader:
-    image: ghcr.io/cascadia-plm/cascadia-demo-data:latest@sha256:2b1535e5a5f7c4a3ba66f02b67ef7adfd16092cba7674570ddb3e93d313ddffd
+    image: ghcr.io/cascadia-plm/cascadia-demo-data:latest@sha256:91b4e226c4f84e5e8d4718c6601d82a50d72666a5bd866bcf59b42e719543a63
     container_name: cascadia-demo-data-loader
     volumes:
       - cascadia_demo_app_data:/out
-    command: sh -c "cp -rn /demo-data/. /out/ && echo 'demo data loaded'"
+    command: sh -c "cp -r /demo-data/. /out/ && echo 'demo data loaded'"
     networks: [cascadia-demo]
 
   app:
-    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:a9d8d50e9713e6d748d25213e1d795fe766c10ed858d6d86f8a24bfa22b7d881
+    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:0539b882d95812ecd0ff692e87d1aab05596b0ee768422eba95007236f0f2f0f
     container_name: cascadia-demo-app
     restart: unless-stopped
     depends_on:
@@ -109,8 +123,8 @@ services:
       - cascadia_demo_app_storage:/app/storage
       - cascadia_demo_app_vault:/app/vault
       - cascadia_demo_app_data:/app/demo-data:ro
-    # First-boot seed (drizzle push + minimal seed + demo seed with vault
-    # ingest) takes 60-120s before the HTTP server starts. Override the
+    # First boot (migrations + minimal seed + demo seed with vault ingest)
+    # takes 60-120s before the HTTP server starts on a slow host. Override the
     # Dockerfile HEALTHCHECK's start_period accordingly.
     healthcheck:
       test:
@@ -123,16 +137,26 @@ services:
       retries: 3
       start_period: 180s
     networks: [cascadia-demo]
-    # First boot: push schema → minimal seed → demo seed → serve.
+    # First boot: migrate → minimal seed → demo seed → serve.
     # All steps are idempotent so reboots are safe.
+    #
+    # Migrations, not `drizzle.mjs push --force`, for the same reason as
+    # docker-compose.yml. Push re-diffs the live database on every boot, and
+    # drizzle-kit reads composite unique constraints back with their columns in
+    # a different order than the schema declares (10 of 19 here). So once the
+    # demo seed has put rows in those tables, every later boot wants to drop and
+    # re-add them, stops to ask whether to truncate the table — a prompt
+    # `--force` does not answer — and dies without a TTY: the first boot works,
+    # and every boot after the demo seed loops. boot-migrate.ts applies the
+    # committed SQL instead, and is a no-op once the journal is current.
     command: >
-      sh -c "node scripts/drizzle.mjs push --force
+      sh -c "tsx scripts/boot-migrate.ts
       && tsx scripts/seed-minimal.ts
       && tsx scripts/seed-demo.ts
       && npm run serve"
 
   cad-converter:
-    image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest@sha256:5f781382ed95faec947d0b49f31d228f4fb91f47a374ef1d47e409857edb248e
+    image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest@sha256:17a3ec33f4cdbd4b55d0c40b8c0f65d48ae92e957ed45c869fca72ee9cc1a4da
     container_name: cascadia-demo-cad-converter
     restart: unless-stopped
     depends_on:
@@ -151,7 +175,7 @@ services:
     networks: [cascadia-demo]
 
   jobs-worker:
-    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest@sha256:0be3d3020d25fce60ca4a3136de17751cd864251c1d75f7a57a87d8690119e75
+    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest@sha256:37f08364bbb68ac1fafd865f463a4f41b6118895dde91537d9b3c3812af51c4e
     container_name: cascadia-demo-jobs-worker
     restart: unless-stopped
     depends_on:

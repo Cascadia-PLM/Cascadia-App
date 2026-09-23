@@ -43,7 +43,8 @@ docker compose -f docker-compose.demo.yml up -d
 # 3. Watch the app boot. Expect:
 #    - postgres and rabbitmq healthy within ~30s
 #    - demo-data-loader exits with "demo data loaded" after ~5-10s
-#    - app runs drizzle push, minimal seed, demo seed, then starts serving
+#    - app applies migrations, runs the minimal seed and the demo seed, then
+#      starts serving
 #    - first-boot total: 60-180s before HTTP responds
 docker compose -f docker-compose.demo.yml logs -f app
 ```
@@ -74,8 +75,12 @@ docker compose -f docker-compose.demo.yml restart app
 docker compose -f docker-compose.demo.yml logs --tail=50 app
 ```
 
-Should see "ROBOT-ARM program already exists, skipping demo seed" or similar
-fast-path message; second boot should be ready within 30s.
+Should see `[boot] journal has N applied migration(s)` and each dataset
+reported `already present`; second boot should be ready within 30s.
+
+Do not skip this step. It is the one that catches a boot which only works once:
+a boot command that re-diffs the schema (`push`) passes a fresh `up` and then
+loops on every restart after the demo seed has written rows.
 
 ## Reset check
 
@@ -89,14 +94,19 @@ Same acceptance checks should pass.
 
 ## Failure triage
 
-| Symptom                                        | Likely cause                                                                                                                                                 |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `unauthorized` on image pull                   | GHCR package visibility is still Private — flip to Public in org Packages settings                                                                           |
-| Viewer shows gray model                        | `cadMetadata.hasColors` not set — check the seed script in the published `cascadia-app` image is up to date                                                  |
-| `demo-data-loader` keeps restarting            | Wrong image tag, or `cascadia-demo-data` image has the wrong directory layout — should be `/demo-data/robot-arm/...`                                         |
-| App healthcheck fails before serving           | Bump `start_period` further (currently 180s) if the host is slow on first-boot ingest                                                                        |
-| `STEP file pill` missing on a part             | Expected. The published image ships GLB + thumbnails only; STEPs are build-time inputs that live in the private archive. The 3D viewer is driven by the GLB. |
-| Demo seed exits 1 with "Dataset is incomplete" | The `cascadia-demo-data` image is stale or partially copied. `docker compose down -v` to drop the volume, then `up` to re-run `demo-data-loader`.            |
+| Symptom                                                                                     | Likely cause                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `unauthorized` on image pull                                                                | GHCR package visibility is still Private — flip to Public in org Packages settings                                                                           |
+| Viewer shows gray model                                                                     | `cadMetadata.hasColors` not set — check the seed script in the published `cascadia-app` image is up to date                                                  |
+| `demo-data-loader` keeps restarting                                                         | Wrong image tag, or `cascadia-demo-data` image has the wrong directory layout — should be `/demo-data/robot-arm/...`                                         |
+| App healthcheck fails before serving                                                        | Bump `start_period` further (currently 180s) if the host is slow on first-boot ingest                                                                        |
+| `STEP file pill` missing on a part                                                          | Expected. The published image ships GLB + thumbnails only; STEPs are build-time inputs that live in the private archive. The 3D viewer is driven by the GLB. |
+| Demo seed exits 1 with "Dataset is incomplete"                                              | The `cascadia-demo-data` image is stale or partially copied. `docker compose down -v` to drop the volume, then `up` to re-run `demo-data-loader`.            |
+| App logs `Cannot find module 'drizzle-kit'`                                                 | The pinned `cascadia-app` digest predates the fix for its own boot. Bump all four Cascadia image pins to what `:latest` resolves to, together.               |
+| Demo seed reports every dataset missing on a fresh volume                                   | `demo-data-loader` copied nothing. Its command must be `cp -r`, not `cp -rn`: BusyBox's `cp -rn /demo-data/. /out/` skips the whole tree and exits 0.        |
+| Demo seed exits 1 with "No Standard Parts Library dataset"                                  | The `cascadia-demo-data` image predates the Dockerfile `COPY standard-library` (Cascadia-PLM/Demo-Data#2). Pin a newer digest.                               |
+| Restart loops with "Do you want to truncate … table?" / "Interactive prompts require a TTY" | The boot command runs `drizzle.mjs push`. It must run `tsx scripts/boot-migrate.ts`.                                                                         |
+| App logs `[boot] REFUSING to start: this database has tables but no migration journal`      | The volume holds a database from a push-era boot. For the demo, `down -v` and `up` again; the `db:baseline` advice in the message is for real deployments.   |
 
 ## Cleanup
 

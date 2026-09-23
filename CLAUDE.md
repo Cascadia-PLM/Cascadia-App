@@ -153,6 +153,7 @@ cascadia-app/          Composition root
 ├── vite.config.ts     Route composition for this edition
 ├── drizzle/           This edition's committed migrations
 ├── src/{main.tsx,router.tsx,server/,jobs-worker.ts}   Thin entry points
+├── public/            Static assets (favicon, logo) — copied into the build
 └── Dockerfile         → ghcr.io/cascadia-plm/cascadia-app
 
 tests/

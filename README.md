@@ -132,7 +132,7 @@ cascadia-web/src/           # The Vite + TanStack Router SPA
 cascadia-workers-job/src/   # The Node.js jobs worker: consumer, scheduler, handlers
 cascadia-workers-cad/       # Python worker: STEP/IGES → STL/GLB (pythonocc-core)
 cascadia-workers-commons/   # Python: jobs/vault DB layer shared by the Python workers
-cascadia-app/               # Composition root: entry points, build config, Dockerfile
+cascadia-app/               # Composition root: entry points, build config, static assets, Dockerfile
 tests/
 ├── e2e/              # Playwright E2E tests
 │   ├── pages/        # Page object models

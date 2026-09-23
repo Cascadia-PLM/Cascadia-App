@@ -73,7 +73,7 @@ app.get(
 )
 ```
 
-The shared error envelope (400/401/403/404/500) is added automatically by `metadataToSpec` in `cascadia-api/src/lib/api/openapi-helpers.ts`. Success payloads are wrapped in the standard `{ data: ... }` envelope.
+The shared error envelope (400/401/403/404/500) is added automatically by `metadataToSpec` in `cascadia-api/src/api/openapi-helpers.ts`. Success payloads are wrapped in the standard `{ data: ... }` envelope.
 
 ## Documenting a request body
 
@@ -107,14 +107,14 @@ document, and is the cheapest way to explain a field an integrator cannot guess.
 Note that the schemas are converted here rather than handed to hono-openapi's
 `resolver()`: that returns a proxy the generator only awaits for _responses_, so
 a resolver in a body position serialises as the literal `{ "vendor": "zod" }`.
-`cascadia-api/src/lib/api/openapi-helpers.test.ts` guards against that
+`cascadia-api/src/api/openapi-helpers.test.ts` guards against that
 regressing — it is invisible in every other check.
 
 ## CI gate
 
 `npm run openapi:check` regenerates the spec and diffs it against `docs/api/openapi.v1.json`; run it locally to see whether a change moves the contract. Pull requests are **not** gated on it: contributors leave the snapshot out, so adding or changing a route without touching `docs/api/openapi.v1.json` is expected, and nothing in a contributor's PR turns red because of it.
 
-On every push to `main`, the **OpenAPI Snapshot** job in `.github/workflows/ci.yml` regenerates the snapshot and `cascadia-web/src/lib/api/openapi-types.gen.ts` from the merged tree and, when they differ, commits them back as `github-actions[bot]`. The job refuses to do that when the regenerated spec removes an operation: that is a breaking change to v1, so it fails and leaves the snapshot for a person to handle.
+On every push to `main`, the **OpenAPI Snapshot** job in `.github/workflows/ci.yml` regenerates the snapshot and `cascadia-web/src/api/openapi-types.gen.ts` from the merged tree and, when they differ, commits them back as `github-actions[bot]`. The job refuses to do that when the regenerated spec removes an operation: that is a breaking change to v1, so it fails and leaves the snapshot for a person to handle.
 
 ## Generating a typed client
 
@@ -130,7 +130,7 @@ Or use any OpenAPI-compatible toolchain (Kiota, openapi-generator, Stoplight, et
 
 v1 is frozen, so every rename in the change-management remediation is additive on the wire: new paths mount beside the old ones, response keys are never removed, and persisted values that appear in responses keep their spelling. What could not be done additively is collected here, to be taken up together when v2 is cut — after the lifecycle consolidation, as its own project.
 
-- **Persisted values that appear in responses.** `branchType: 'eco'` and `tagType: 'eco-release'`; the code reads them as `BRANCH_TYPES.changeOrder` and `TAG_TYPES.changeOrderRelease` (`cascadia-commons/src/lib/versioning/branch-types.ts`), and the `eco/` branch-name prefix goes with them.
+- **Persisted values that appear in responses.** `branchType: 'eco'` and `tagType: 'eco-release'`; the code reads them as `BRANCH_TYPES.changeOrder` and `TAG_TYPES.changeOrderRelease` (`cascadia-commons/src/versioning/branch-types.ts`), and the `eco/` branch-name prefix goes with them.
 - **Columns and the properties that mirror them.** `program_members.can_create_eco` / `can_approve_eco` (`canCreateEco`, `canApproveEco`); `conflict_reviews.their_eco_id` (`theirEcoId`, with `theirEcoNumber`); `work_instruction_change_alerts.eco_id`; `upstream_changes.source_eco_id` / `response_eco_id`.
 - **Request and response properties.** `ecoId`, `ecoTitle`, `ecoDescription`, `ecoNumber`, `ecoName`, `ecoBranches`, `ecoBranch`, `ecoDesign`, `ecos`, `isInEco`.
 - **Path aliases kept for v1.** `/designs/{id}/ecos` (now `/designs/{id}/change-orders`), `/workspaces/{id}/convert-to-eco` and `/merge-to-eco` (now `-change-order`), and `/workflows*`, now mounted canonically at `/lifecycles*` (whose responses keep the `lifecycles` / `workflow` keys for the same reason).

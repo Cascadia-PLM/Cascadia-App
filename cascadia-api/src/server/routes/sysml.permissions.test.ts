@@ -49,22 +49,18 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { BranchService } from '@/lib/services/BranchService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ErrorCode } from '@/lib/errors'
-import {
-  generateApiKey,
-  getKeyPrefix,
-  hashApiKey,
-} from '@/lib/auth/api-key-utils'
-import { apiKeys } from '@/lib/db/schema/api-keys'
-import { items } from '@/lib/db/schema'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { BranchService } from '@/services/BranchService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { ErrorCode } from '@/errors'
+import { generateApiKey, getKeyPrefix, hashApiKey } from '@/auth/api-key-utils'
+import { apiKeys } from '@/db/schema/api-keys'
+import { items } from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('SysML element-create — item-type RBAC and key scope', () => {
   const testDb = new TestDatabase()

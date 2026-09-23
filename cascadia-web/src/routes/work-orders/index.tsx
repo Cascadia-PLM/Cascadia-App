@@ -4,7 +4,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Wrench } from 'lucide-react'
-import type { WorkOrder } from '@cascadia/commons/lib/items/types/work-order'
+import type { WorkOrder } from '@cascadia/commons/items/types/work-order'
 import { PageContainer } from '@/components/layout'
 import { WorkOrderTable } from '@/components/work-orders/WorkOrderTable'
 import {
@@ -15,10 +15,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useInvalidateResources, workOrderListQuery } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useInvalidateResources, workOrderListQuery } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/work-orders/')({
   component: WorkOrdersListPage,

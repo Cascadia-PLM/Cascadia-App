@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { LifecycleState } from '@cascadia/commons/lib/lifecycles/types'
+import type { LifecycleState } from '@cascadia/commons/lifecycles/types'
 import { Badge } from '@/components/ui'
 import { getStateBadgeVariant } from '@/components/bom/helpers'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface StateBadgeProps {
   itemType?: string

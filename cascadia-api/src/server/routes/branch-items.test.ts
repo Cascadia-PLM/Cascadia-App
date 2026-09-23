@@ -35,32 +35,32 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import { ApiError } from '@cascadia/commons/lib/errors/api-error'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ApiError } from '@cascadia/commons/errors/api-error'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import branchItemsRoutes from './branch-items'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { ErrorResponse } from '@/lib/errors/api'
-import type { FieldConflict } from '@/lib/services/ConflictDetectionService'
+import type { ErrorResponse } from '@/errors/api'
+import type { FieldConflict } from '@/services/ConflictDetectionService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { errorResponseSchema } from '@/lib/api/openapi-helpers'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { BranchService } from '@/lib/services/BranchService'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
+import { errorResponseSchema } from '@/api/openapi-helpers'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { BranchService } from '@/services/BranchService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
 import {
   branchItems,
   itemVersions,
   items,
   programMembers,
   programs,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 /** A UUID the body schema accepts and no row will ever carry. */
 const ABSENT_ITEM_ID = '00000000-0000-4000-8000-00000000dead'

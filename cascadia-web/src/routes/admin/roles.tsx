@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Shield, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { roleListQuery } from '@/lib/query'
+import { roleListQuery } from '@/query'
 
 export const Route = createFileRoute('/admin/roles')({
   component: RolesPage,

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { BACKGROUND_PRESETS, MATERIAL_PRESETS } from './CADViewerTypes'
 import type { BackgroundPreset, MaterialPreset } from './CADViewerTypes'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import {
   Button,
   DropdownMenu,

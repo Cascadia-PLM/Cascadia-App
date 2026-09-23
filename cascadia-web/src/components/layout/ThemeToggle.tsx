@@ -3,8 +3,8 @@
 
 import { Moon, Sun } from 'lucide-react'
 import type { ThemeToggleProps } from './types'
-import { useTheme } from '@/lib/theme'
-import { cn } from '@/lib/utils'
+import { useTheme } from '@/theme'
+import { cn } from '@/utils'
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme()

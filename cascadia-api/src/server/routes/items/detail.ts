@@ -7,30 +7,30 @@ import { z } from 'zod'
 import {
   makeCodeSchema,
   optionConditionSchema,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { tagged } from '../../adapter'
-import { requirePermission } from '@/lib/auth/server'
-import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { getResourceType } from '@/lib/items/item-type-resources'
-import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
-import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
-import { BranchService } from '@/lib/services/BranchService'
-import { VersionResolver } from '@/lib/services/VersionResolver'
-import { RequirementService } from '@/lib/services/RequirementService'
+import { requirePermission } from '@/auth/server'
+import { NotFoundError, PermissionDeniedError } from '@/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { getResourceType } from '@/items/item-type-resources'
+import { ItemRelationshipService } from '@/items/services/ItemRelationshipService'
+import { ImpactAssessmentService } from '@/items/services/ImpactAssessmentService'
+import { BranchService } from '@/services/BranchService'
+import { VersionResolver } from '@/services/VersionResolver'
+import { RequirementService } from '@/services/RequirementService'
 import {
   ImpactAnalysisService,
   impactAnalysisRequestSchema,
-} from '@/lib/services/ImpactAnalysisService'
-import { apiHandler, created } from '@/lib/api/handler'
-import { requireItemAccess, requireItemsAccess } from '@/lib/auth/access'
+} from '@/services/ImpactAnalysisService'
+import { apiHandler, created } from '@/api/handler'
+import { requireItemAccess, requireItemsAccess } from '@/auth/access'
 import {
   calculateLockDuration,
   createLockedStatus,
   createUnlockedStatus,
-} from '@/lib/api'
-import { FileService } from '@/lib/vault/services/FileService'
-import { db } from '@/lib/db'
+} from '@/api'
+import { FileService } from '@/vault/services/FileService'
+import { db } from '@/db'
 import {
   changeOrders,
   documents,
@@ -39,7 +39,7 @@ import {
   requirements,
   tasks,
   users,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 const adapt = tagged('Items')
 
@@ -349,7 +349,7 @@ app.get(
         untilCommitId = commitId
       } else if (tagId) {
         // Get the commit ID from the tag
-        const { tags } = await import('@/lib/db/schema')
+        const { tags } = await import('@/db/schema')
         const [tag] = await db
           .select({ commitId: tags.commitId })
           .from(tags)
@@ -554,7 +554,7 @@ app.post(
 
           // If locked by another user and not forcing, return conflict
           if (!force) {
-            const { ConflictError } = await import('@/lib/errors')
+            const { ConflictError } = await import('@/errors')
             throw new ConflictError('Item is already locked by another user')
           }
 

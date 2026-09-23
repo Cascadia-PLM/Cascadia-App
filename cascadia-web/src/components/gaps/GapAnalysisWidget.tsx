@@ -13,7 +13,7 @@ import type {
   Gap,
   GapAnalysisResult,
   GapSeverity,
-} from '@cascadia/commons/lib/services/types/gap-analysis'
+} from '@cascadia/commons/services/types/gap-analysis'
 import {
   Badge,
   Button,
@@ -23,8 +23,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { designGapAnalysisQuery } from '@/lib/query'
-import { cn } from '@/lib/utils'
+import { designGapAnalysisQuery } from '@/query'
+import { cn } from '@/utils'
 import { ItemLink } from '@/components/items/ItemLink'
 
 interface GapAnalysisWidgetProps {

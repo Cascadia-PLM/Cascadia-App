@@ -4,8 +4,8 @@
 import { useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, ChevronDown, Clock, GitBranch, Tag } from 'lucide-react'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import {
   Select,
   SelectContent,
@@ -28,7 +28,7 @@ import {
   designBranchesQuery,
   designTagsQuery,
   itemAvailableContextsQuery,
-} from '@/lib/query'
+} from '@/query'
 
 interface Branch {
   id: string

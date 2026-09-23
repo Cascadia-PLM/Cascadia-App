@@ -92,7 +92,7 @@ Cascadia takes the opposite approach:
 
 - **Item types are TypeScript interfaces** registered via `ItemTypeRegistry`. Adding a field means adding a Drizzle column and a Zod property.
 - **Workflows are code-defined state machines** stored in `workflow_definitions` with transitions validated by `LifecycleDefinitionService` and run by `LifecycleInstanceService`.
-- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `cascadia-commons/src/lib/auth/permissions.ts`) and enforced via `apiHandler()`.
+- **Permissions are declared in code** (`ROLE_DEFINITIONS` in `cascadia-commons/src/auth/permissions.ts`) and enforced via `apiHandler()`.
 - **All customization lives in the Git repository**, reviewed through PRs, tested with Vitest/Playwright.
 
 A two-tier configuration pattern allows runtime overrides from the database (labels, icons, lifecycle assignment) while keeping schemas, validation, and components strictly in code. See [two-table-pattern.md](./two-table-pattern.md) for details.
@@ -152,13 +152,13 @@ cascadia-web   cascadia-commons   cascadia-api
 | `@cascadia/web`     | The Vite SPA: routes, components, hooks, the query layer, the API client, styles                                                             | commons      |
 
 `npm run boundary:check` helps enforce the dependency graph. A type the client needs from a service is declared in commons
-and re-exported from the service (`lib/thread/types.ts`,
-`lib/services/types/*.ts`); a row type inferred from a Drizzle table is written
+and re-exported from the service (`thread/types.ts`,
+`services/types/*.ts`); a row type inferred from a Drizzle table is written
 out in commons and pinned to the table with `Expect<Equal<…>>`
-(`lib/db/schema/designs.ts`).
+(`db/schema/designs.ts`).
 
 Inside a package, `@/` means that package. Across packages, imports are by
-name: `@cascadia/commons/lib/...`. Commons imports itself relatively, because
+name: `@cascadia/commons/...`. Commons imports itself relatively, because
 its files are compiled inside the api's and the web's programs as well as its
 own. Directory layouts were preserved across the split, so a path under
 `src/` identifies a file regardless of which package it landed in, and
@@ -187,12 +187,12 @@ components/
 └── forms/               # Item-type-specific form components (PartForm, DocumentForm, etc.)
 ```
 
-### `cascadia-api/src/lib/`
+### `cascadia-api/src/`
 
 All business logic, organized by concern.
 
 ```
-lib/
+cascadia-api/src/
 ├── api/                 # apiHandler(), parseQuery(), response builders
 ├── auth/                # AuthService, SessionManager, PermissionService, AccessControlService
 ├── db/                  # Drizzle schema definitions, database connection, filters

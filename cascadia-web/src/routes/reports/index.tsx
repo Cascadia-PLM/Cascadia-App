@@ -4,7 +4,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { BarChart3, Plus } from 'lucide-react'
-import type { Report } from '@cascadia/commons/lib/reports/types'
+import type { Report } from '@cascadia/commons/reports/types'
 import { PageContainer } from '@/components/layout'
 import {
   Button,
@@ -14,10 +14,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { reportListQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { reportListQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 import { ReportTable } from '@/components/reports/ReportTable'
 
 export const Route = createFileRoute('/reports/')({

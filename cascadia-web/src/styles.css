@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import './lib/tour/tour-styles.css';
+@import './tour/tour-styles.css';
 @import './components/versioning/graph-animations.css';
 
 /*

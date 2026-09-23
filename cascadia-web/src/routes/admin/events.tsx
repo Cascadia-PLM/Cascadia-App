@@ -5,19 +5,19 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Radio, RefreshCw } from 'lucide-react'
-import type { EventConsumerStatus } from '@/lib/query'
+import type { EventConsumerStatus } from '@/query'
 import { Button } from '@/components/ui'
 import { ConsumerErrorDialog } from '@/components/events/ConsumerErrorDialog'
 import { EventConsumersTable } from '@/components/events/EventConsumersTable'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useToast } from '@/lib/hooks/useToast'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useToast } from '@/hooks/useToast'
 import {
   eventConsumersQuery,
   eventTypesQuery,
   useResourceMutation,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/events')({
   component: EventsPage,

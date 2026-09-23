@@ -7,7 +7,7 @@ import { Link } from '@tanstack/react-router'
 import type { ExpandDirection } from '@/components/graph/GraphExpandButton'
 import { GraphExpandButton } from '@/components/graph/GraphExpandButton'
 import { useLifecycleState } from '@/components/items/StateBadge'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 
 interface GraphItemNodeProps {
   data: {

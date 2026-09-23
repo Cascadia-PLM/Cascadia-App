@@ -5,9 +5,9 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, X } from 'lucide-react'
 import { Badge, Button, FormField, Input } from '@/components/ui'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
-import { itemTextSearchQuery } from '@/lib/query/options/item-search'
-import { cn } from '@/lib/utils'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { itemTextSearchQuery } from '@/query/options/item-search'
+import { cn } from '@/utils'
 
 interface PartSearchResult {
   id: string

@@ -27,8 +27,8 @@ import {
   parallelEdgeOffsets,
   withEdgeDirectionLabels,
 } from '@/components/graph/edgeStyles'
-import { itemGraphQuery, itemRelationshipsQuery } from '@/lib/query'
-import { useTheme } from '@/lib/theme'
+import { itemGraphQuery, itemRelationshipsQuery } from '@/query'
+import { useTheme } from '@/theme'
 
 interface GraphNavigatorProps {
   itemId: string

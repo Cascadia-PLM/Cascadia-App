@@ -69,7 +69,7 @@ spec:
           env:
             # Not decoration: with no `?sslmode=` in the URL, NODE_ENV is what
             # decides whether the connection requires TLS (see resolveSslOption
-            # in cascadia-api/src/lib/db/index.ts). Omit it here and the Job
+            # in cascadia-api/src/db/index.ts). Omit it here and the Job
             # would connect in cleartext while the app pods, which read the
             # same key from this ConfigMap, require TLS — so against a managed
             # database the migration fails where the app works.

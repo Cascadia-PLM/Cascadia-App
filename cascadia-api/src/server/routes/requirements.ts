@@ -4,20 +4,20 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { RequirementService } from '@/lib/services/RequirementService'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import type { Requirement } from '@cascadia/commons/items/types/requirement'
+import { ItemService } from '@/items/services/ItemService'
+import { RequirementService } from '@/services/RequirementService'
+import { NotFoundError, ValidationError } from '@/errors'
 import {
   requireBranchAccess,
   requireDesignAccess,
   requireItemAccess,
   requireItemsAccess,
-} from '@/lib/auth/access'
-import { apiHandler, created } from '@/lib/api/handler'
-import { requirementUpdateSchema } from '@/lib/api/schemas'
+} from '@/auth/access'
+import { apiHandler, created } from '@/api/handler'
+import { requirementUpdateSchema } from '@/api/schemas'
 // Register item types (server-side version)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Requirements')
 

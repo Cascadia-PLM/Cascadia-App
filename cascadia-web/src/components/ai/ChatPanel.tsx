@@ -22,14 +22,14 @@ import {
   CHAT_PANEL_MAX_WIDTH,
   CHAT_PANEL_MIN_WIDTH,
   useChatPanel,
-} from '@/lib/ai/chat-context'
-import { apiFetch } from '@/lib/api/client'
+} from '@/ai/chat-context'
+import { apiFetch } from '@/api/client'
 import {
   aiSessionMessagesQuery,
   aiSessionsQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { cn } from '@/lib/utils'
+} from '@/query'
+import { cn } from '@/utils'
 
 export function ChatPanel() {
   const {

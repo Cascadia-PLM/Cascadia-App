@@ -5,7 +5,7 @@ import { useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import type { DesignDetailsSectionHandle } from '@/components/designs/DesignDetailsSection'
 import type { Branch, TagItem } from '@/components/designs/DesignPageHeader'
 import { DesignPageHeader } from '@/components/designs/DesignPageHeader'
@@ -33,17 +33,17 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useVersionContext } from '@/hooks/useVersionContext'
 import {
   designBranchesQuery,
   designDetailQuery,
   designTagsQuery,
   programListQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 /** The tabs the design page renders; the search schema derives from this list. */
 const DESIGN_DETAIL_TABS = [

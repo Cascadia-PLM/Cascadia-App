@@ -35,12 +35,12 @@ import {
   vi,
 } from 'vitest'
 import { z } from 'zod'
-import { JobService } from '@cascadia/api/lib/jobs/JobService'
-import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
-import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
-import { workerLogger } from '@cascadia/api/lib/logging/logger'
+import { JobService } from '@cascadia/api/jobs/JobService'
+import { JobTypeRegistry } from '@cascadia/api/jobs/registry'
+import { RabbitMQClient } from '@cascadia/api/jobs/rabbitmq/client'
+import { workerLogger } from '@cascadia/api/logging/logger'
 import type { Channel, ConsumeMessage } from 'amqplib'
-import type { Job } from '@cascadia/api/lib/jobs/JobService'
+import type { Job } from '@cascadia/api/jobs/JobService'
 import { JobWorker } from '@/worker'
 import { installProcessBackstops } from '@/main'
 

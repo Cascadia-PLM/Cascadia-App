@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { APP_VERSION } from '@cascadia/commons/lib/version'
+import { APP_VERSION } from '@cascadia/commons/version'
 import { tagged } from '../adapter'
-import { apiHandler } from '@/lib/api/handler'
+import { apiHandler } from '@/api/handler'
 
 const adapt = tagged('Health')
 

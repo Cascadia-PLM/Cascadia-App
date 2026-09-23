@@ -6,8 +6,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
-import type { Design } from '@cascadia/commons/lib/types/design'
-import type { GridParams } from '@/lib/query'
+import type { Design } from '@cascadia/commons/types/design'
+import type { GridParams } from '@/query'
 import { PageContainer } from '@/components/layout'
 import { DesignTable } from '@/components/designs/DesignTable'
 import {
@@ -18,17 +18,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useServerDataGrid } from '@/lib/hooks/useServerDataGrid'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useServerDataGrid } from '@/hooks/useServerDataGrid'
 import {
   designCountsQuery,
   designGridQuery,
   gridParamsFromSearch,
   programListQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 // Search schema for URL validation
 const designsSearchSchema = z.object({

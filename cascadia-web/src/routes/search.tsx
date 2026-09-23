@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { z } from 'zod'
 import type { DataGridColumn } from '@/components/ui'
-import type { SearchResultRow } from '@/lib/query'
+import type { SearchResultRow } from '@/query'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,
@@ -23,15 +23,15 @@ import {
   getItemDetailPath,
   getItemTypeIcon,
   getItemTypeLabel,
-} from '@/lib/items/item-type-ui'
-import { useItemStateOptions } from '@/lib/hooks/useItemStateOptions'
-import { useServerDataGrid } from '@/lib/hooks/useServerDataGrid'
+} from '@/items/item-type-ui'
+import { useItemStateOptions } from '@/hooks/useItemStateOptions'
+import { useServerDataGrid } from '@/hooks/useServerDataGrid'
 import {
   designListQuery,
   gridParamsFromSearch,
   programListQuery,
   searchResultsGridQuery,
-} from '@/lib/query'
+} from '@/query'
 
 // Search schema for URL validation. `search` doubles as the search term the
 // header search box hands off (and the grid's global filter input).

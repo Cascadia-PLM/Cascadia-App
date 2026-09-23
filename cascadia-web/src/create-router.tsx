@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { createRouter } from '@tanstack/react-router'
-import { queryClient } from './lib/query/client'
+import { queryClient } from './query/client'
 import type { AnyRoute } from '@tanstack/react-router'
 
 /**

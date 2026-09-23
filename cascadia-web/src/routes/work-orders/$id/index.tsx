@@ -25,7 +25,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import { workOrderDetailQuery } from '@/lib/query'
+import { workOrderDetailQuery } from '@/query'
 
 const searchSchema = z.object({
   tab: z

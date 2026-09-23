@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
-import { cn } from '@/lib/utils'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
+import { cn } from '@/utils'
 
 interface PhaseBadgeProps {
   itemType: string

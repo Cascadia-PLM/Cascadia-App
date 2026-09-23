@@ -11,12 +11,12 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import type { UpstreamChange } from '@/lib/query'
+import type { UpstreamChange } from '@/query'
 import { Button } from '@/components/ui/Button'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { upstreamChangesQuery, useResourceMutation } from '@/lib/query'
-import { cn } from '@/lib/utils'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { upstreamChangesQuery, useResourceMutation } from '@/query'
+import { cn } from '@/utils'
 
 interface UpstreamChangesBannerProps {
   designId: string

@@ -39,7 +39,7 @@ All of them are lifecycle definitions in the `workflow_definitions` table, with 
 
 ### Key Principles
 
-- **No state name appears in application logic.** A state has exactly three machine-readable properties — `isInitial`, `isFinal` (+ `finalKind`), and the roles it plays in change-action mappings (`release`/`revise`/`obsolete`/`promote`). Everything else about a state, including its name, belongs to whoever configures the lifecycle. Services derive "is this released lineage", "is this the initial state", "has the flow ended" from those flags and mappings through `LifecycleService` (see [Deriving from flags and mappings](#deriving-from-flags-and-mappings)); the UI renders names and colours from the lifecycle definition (`StateBadge`). The shipped defaults in `cascadia-api/src/lib/items/default-lifecycles.ts` are configuration, not logic.
+- **No state name appears in application logic.** A state has exactly three machine-readable properties — `isInitial`, `isFinal` (+ `finalKind`), and the roles it plays in change-action mappings (`release`/`revise`/`obsolete`/`promote`). Everything else about a state, including its name, belongs to whoever configures the lifecycle. Services derive "is this released lineage", "is this the initial state", "has the flow ended" from those flags and mappings through `LifecycleService` (see [Deriving from flags and mappings](#deriving-from-flags-and-mappings)); the UI renders names and colours from the lifecycle definition (`StateBadge`). The shipped defaults in `cascadia-api/src/items/default-lifecycles.ts` are configuration, not logic.
 - **Item state changes are lifecycle-enforced by the server.** Released lineage (the states the release mappings produce) is entered and left only through change-order release. Everything else moves through `POST /api/v1/items/:id/transition`, validated against the lifecycle's declared transitions: all of a Free lifecycle's edges, and a Driven lifecycle's declared pre-release edges (review progress such as Draft → Proposed → Approved on the default Requirement lifecycle). The generic item-update API rejects attempts to change `state`, `revision`, or `isCurrent` outright.
 - **Lifecycle definitions are JSON-based.** States, transitions, guards, and actions are stored as JSONB in PostgreSQL. No code changes are required to create new lifecycles.
 - **Guard evaluation is pluggable.** Two guard types are supported out of the box: `field_value` and `user_role`. (Approval gating is not a guard — the transition path enforces it directly, from state approvers and the transition's `requiredCount`.)
@@ -48,7 +48,7 @@ All of them are lifecycle definitions in the `workflow_definitions` table, with 
 ### Architecture
 
 ```
-cascadia-api/src/lib/lifecycles/
+cascadia-api/src/lifecycles/
   LifecycleDefinitionService.ts  # Definition CRUD and validation
   LifecycleInstanceService.ts    # Instances, transitions, claims, history
   ApprovalService.ts             # Approval voting and tracking
@@ -56,10 +56,10 @@ cascadia-api/src/lib/lifecycles/
   types.ts                    # TypeScript interfaces
   index.ts                    # Public exports
 
-cascadia-api/src/lib/services/
+cascadia-api/src/services/
   LifecycleService.ts         # Lifecycle-specific operations (phases, revisions)
 
-cascadia-commons/src/lib/types/
+cascadia-commons/src/types/
   lifecycle.ts                # Revision schemes, phases, change action mappings
 ```
 
@@ -241,7 +241,7 @@ Each item type is assigned a lifecycle definition via the `item_type_configs` ta
 
 ### Default Lifecycle Assignments
 
-The shipped defaults live in `cascadia-api/src/lib/items/default-lifecycles.ts` as data, seeded by `scripts/seed-minimal.ts`, by the test global-setup (once per run) and by the test fixtures, with version-gated upgrade-only upserts: a default that changes shape bumps its `version`, and an existing row is replaced only when its stored version is lower — so admin edits (which bump the version through `LifecycleDefinitionService`) and suite overrides are left alone. `scripts/seed-minimal.ts` writes no lifecycle of its own: it calls the module and then sets the shipped Driven lifecycles' `drivers` allow-list to the two shipped change-order lifecycles, only where nothing has chosen yet. The module also ships each state's editor position and the descriptions the lifecycle editor shows, so a fresh database opens every default laid out.
+The shipped defaults live in `cascadia-api/src/items/default-lifecycles.ts` as data, seeded by `scripts/seed-minimal.ts`, by the test global-setup (once per run) and by the test fixtures, with version-gated upgrade-only upserts: a default that changes shape bumps its `version`, and an existing row is replaced only when its stored version is lower — so admin edits (which bump the version through `LifecycleDefinitionService`) and suite overrides are left alone. `scripts/seed-minimal.ts` writes no lifecycle of its own: it calls the module and then sets the shipped Driven lifecycles' `drivers` allow-list to the two shipped change-order lifecycles, only where nothing has chosen yet. The module also ships each state's editor position and the descriptions the lifecycle editor shows, so a fresh database opens every default laid out.
 
 | Item Type       | Lifecycle                            | Type    | Lifecycle ID                    |
 | --------------- | ------------------------------------ | ------- | ------------------------------- |
@@ -259,7 +259,7 @@ The shipped defaults live in `cascadia-api/src/lib/items/default-lifecycles.ts` 
 | PhysicalPart    | Physical Part - Default Lifecycle    | Free    | `LIFECYCLE_IDS.physicalPart`    |
 | WorkOrder       | Work Order - Default Lifecycle       | Free    | `LIFECYCLE_IDS.workOrder`       |
 
-The `LIFECYCLE_IDS` constants are defined in `cascadia-commons/src/lib/items/lifecycle-ids.ts` as well-known UUIDs to ensure consistent linkage between seed scripts and code.
+The `LIFECYCLE_IDS` constants are defined in `cascadia-commons/src/items/lifecycle-ids.ts` as well-known UUIDs to ensure consistent linkage between seed scripts and code.
 
 ### Deriving from flags and mappings
 
@@ -354,7 +354,7 @@ Revision schemes control how revision identifiers are generated when items are r
 ### `none` is a released revision, not the absence of one
 
 A released item still carries a revision under `none` -- the fixed marker
-`N/A` (`NO_REVISION_MARKER` in `lib/types/lifecycle.ts`, re-exported as
+`N/A` (`NO_REVISION_MARKER` in `types/lifecycle.ts`, re-exported as
 `RevisionService.NO_REVISION`). It simply never advances.
 
 The marker has to be non-empty. `''` is a working marker to both
@@ -509,7 +509,7 @@ approvers plus the transition's `requiredCount`.)
 The `GuardPresets` utility provides factory functions for common guard patterns:
 
 ```typescript
-import { GuardPresets } from '@/lib/lifecycles'
+import { GuardPresets } from '@/lifecycles'
 
 GuardPresets.requiredField('reasonForChange') // Field must not be empty
 GuardPresets.fieldEquals('priority', 'High') // Field must equal value
@@ -1029,8 +1029,8 @@ import {
   LifecycleInstanceService,
   ApprovalService,
   GuardEvaluator,
-} from '@/lib/lifecycles'
-import { LifecycleService } from '@/lib/services/LifecycleService'
+} from '@/lifecycles'
+import { LifecycleService } from '@/services/LifecycleService'
 
 // CRUD
 const definition = await LifecycleDefinitionService.create(input)

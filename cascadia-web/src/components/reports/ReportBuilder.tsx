@@ -8,14 +8,14 @@ import {
   filterOperators,
   formatTypes,
   reportSchema,
-} from '@cascadia/commons/lib/reports/types'
+} from '@cascadia/commons/reports/types'
 import type {
   FieldDefinition,
   ReportColumn,
   ReportCreateInput,
   ReportFilter,
   ReportSort,
-} from '@cascadia/commons/lib/reports/types'
+} from '@cascadia/commons/reports/types'
 import {
   Button,
   Card,

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { WorkOrderStatus } from '@cascadia/commons/lib/items/types/work-order'
+import type { WorkOrderStatus } from '@cascadia/commons/items/types/work-order'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query'
 
 interface WorkOrderStatusActionsProps {
   workOrderId: string

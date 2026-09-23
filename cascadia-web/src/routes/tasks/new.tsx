@@ -3,10 +3,10 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import type { Task } from '@cascadia/commons/lib/items/types/task'
+import type { Task } from '@cascadia/commons/items/types/task'
 import { TaskDetail } from '@/components/tasks/TaskDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/tasks/new')({
   component: NewTaskPage,

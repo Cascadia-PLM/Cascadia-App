@@ -4,19 +4,19 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../../adapter'
-import { requirePermission } from '@/lib/auth/server'
-import { ValidationError } from '@/lib/errors'
-import { getResourceType } from '@/lib/items/item-type-resources'
-import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
-import { ModelVersionService } from '@/lib/services/ModelVersionService'
-import { apiHandler, created } from '@/lib/api/handler'
-import { requireItemAccess } from '@/lib/auth/access'
-import { FileService } from '@/lib/vault/services/FileService'
+import { requirePermission } from '@/auth/server'
+import { ValidationError } from '@/errors'
+import { getResourceType } from '@/items/item-type-resources'
+import { ItemRelationshipService } from '@/items/services/ItemRelationshipService'
+import { ModelVersionService } from '@/services/ModelVersionService'
+import { apiHandler, created } from '@/api/handler'
+import { requireItemAccess } from '@/auth/access'
+import { FileService } from '@/vault/services/FileService'
 import {
   requireFileMutation,
   requireItemFileMutation,
   requireUploadBranchContext,
-} from '@/lib/vault/file-mutation-policy'
+} from '@/vault/file-mutation-policy'
 
 const adapt = tagged('Items')
 

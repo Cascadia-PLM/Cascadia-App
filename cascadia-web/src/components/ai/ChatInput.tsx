@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Search, Send, Square } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface ChatInputProps {
   onSend: (message: string) => void

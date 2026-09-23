@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Rows3,
 } from 'lucide-react'
-import type { Report, ReportColumn } from '@cascadia/commons/lib/reports/types'
+import type { Report, ReportColumn } from '@cascadia/commons/reports/types'
 import {
   Badge,
   Button,
@@ -25,8 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
-import { reportExecutionQuery } from '@/lib/query'
-import { apiErrorFromResponse } from '@/lib/api/client'
+import { reportExecutionQuery } from '@/query'
+import { apiErrorFromResponse } from '@/api/client'
 
 interface ReportViewerProps {
   report: Report

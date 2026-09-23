@@ -5,9 +5,9 @@ import { useForm } from '@tanstack/react-form'
 import {
   workInstructionEditSchema,
   workInstructionSchema,
-} from '@cascadia/commons/lib/items/types/work-instruction'
+} from '@cascadia/commons/items/types/work-instruction'
 import { OutputPartField } from './OutputPartField'
-import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
+import type { WorkInstruction } from '@cascadia/commons/items/types/work-instruction'
 import {
   Button,
   FormField,

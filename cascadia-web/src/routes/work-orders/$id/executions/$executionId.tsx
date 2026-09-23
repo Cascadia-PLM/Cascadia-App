@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, ClipboardCheck } from 'lucide-react'
-import type { InstructionExecution } from '@cascadia/commons/lib/items/types/work-order'
+import type { InstructionExecution } from '@cascadia/commons/items/types/work-order'
 import { PageContainer } from '@/components/layout'
 import { ExecutionDetailView } from '@/components/work-instructions/ExecutionDetailView'
 import { SignOffPanel } from '@/components/work-orders/SignOffPanel'
@@ -16,12 +16,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 import {
   useInvalidateResources,
   workOrderExecutionQuery,
   workOrderInstructionQuery,
-} from '@/lib/query'
+} from '@/query'
 
 export const Route = createFileRoute(
   '/work-orders/$id/executions/$executionId',

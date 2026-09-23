@@ -1,6 +1,6 @@
 # Security Architecture
 
-This document describes Cascadia's security model: authentication, authorization, request protection, and input hardening. All security code lives in `cascadia-api/src/lib/auth/` and `cascadia-api/src/lib/api/handler.ts`.
+This document describes Cascadia's security model: authentication, authorization, request protection, and input hardening. All security code lives in `cascadia-api/src/auth/` and `cascadia-api/src/api/handler.ts`.
 
 ---
 
@@ -31,7 +31,7 @@ This document describes Cascadia's security model: authentication, authorization
                           └─────────────────────────────┘
 ```
 
-Every API route is wrapped by `apiHandler()` from `cascadia-api/src/lib/api/handler.ts`, which enforces security before the route handler executes.
+Every API route is wrapped by `apiHandler()` from `cascadia-api/src/api/handler.ts`, which enforces security before the route handler executes.
 
 ---
 
@@ -39,7 +39,7 @@ Every API route is wrapped by `apiHandler()` from `cascadia-api/src/lib/api/hand
 
 ### Password Hashing
 
-**File**: `cascadia-api/src/lib/auth/password.ts`
+**File**: `cascadia-api/src/auth/password.ts`
 
 Passwords are hashed with **Argon2id** (via `@node-rs/argon2`), the current OWASP-recommended algorithm:
 
@@ -70,7 +70,7 @@ Password verification uses constant-time comparison to prevent timing attacks.
 
 ### Session Management
 
-**File**: `cascadia-api/src/lib/auth/session.ts`
+**File**: `cascadia-api/src/auth/session.ts`
 
 Sessions are database-backed (not JWTs), stored in the `sessions` table.
 
@@ -94,7 +94,7 @@ The session token is generated using `@oslojs/encoding` and cryptographically ra
 
 ### Account Lockout
 
-**File**: `cascadia-api/src/lib/auth/AuthService.ts`
+**File**: `cascadia-api/src/auth/AuthService.ts`
 
 After **10 consecutive failed password attempts**, the account is locked for
 **15 minutes**:
@@ -121,7 +121,7 @@ login endpoint has always carried. The `auth_events` metadata records a
 
 ### Session Cookie Security
 
-**File**: `cascadia-api/src/lib/auth/cookie.ts`
+**File**: `cascadia-api/src/auth/cookie.ts`
 
 ```typescript
 export function buildSessionCookie(token: string): string {
@@ -159,7 +159,7 @@ All authentication events are recorded in the `authEvents` table:
 
 ### Role-Based Access Control (RBAC)
 
-**File**: `cascadia-commons/src/lib/auth/permissions.ts`
+**File**: `cascadia-commons/src/auth/permissions.ts`
 
 Six predefined roles with hierarchical permissions:
 
@@ -197,7 +197,7 @@ type PermissionAction =
 
 ### Permission Checking
 
-**File**: `cascadia-api/src/lib/auth/permission-service.ts`
+**File**: `cascadia-api/src/auth/permission-service.ts`
 
 `PermissionService` is a singleton with a 5-minute in-memory cache. On each check:
 
@@ -209,7 +209,7 @@ The cache is keyed by `userId:resource:action` and invalidated when roles are ch
 
 ### Program-Based Access Control (PBAC)
 
-**File**: `cascadia-api/src/lib/auth/AccessControlService.ts`
+**File**: `cascadia-api/src/auth/AccessControlService.ts`
 
 Programs are the permission boundary. Users can only access designs within their assigned programs, with exceptions:
 
@@ -258,7 +258,7 @@ POST: apiHandler({ permission: ['change_orders', 'create'] }, async (ctx) => { .
 For fine-grained access (design-specific, branch-specific), services call:
 
 ```typescript
-import { requireDesignAccess, requireBranchAccess } from '@/lib/auth/access'
+import { requireDesignAccess, requireBranchAccess } from '@/auth/access'
 
 // Throws PermissionDeniedError if user cannot access this design
 await requireDesignAccess(userId, designId)
@@ -271,7 +271,7 @@ const { branch, designId } = await requireBranchAccess(userId, branchId)
 
 ## CSRF Protection
 
-**File**: `cascadia-api/src/lib/api/handler.ts` (`validateOrigin()`)
+**File**: `cascadia-api/src/api/handler.ts` (`validateOrigin()`)
 
 For state-changing requests (POST, PUT, PATCH, DELETE), the `Origin` or `Referer` header must match:
 
@@ -297,7 +297,7 @@ function validateOrigin(request: Request): boolean {
 
 ## CORS Configuration
 
-**File**: `cascadia-api/src/lib/api/handler.ts` (`getCorsHeaders()`)
+**File**: `cascadia-api/src/api/handler.ts` (`getCorsHeaders()`)
 
 CORS is same-origin only by default. To allow external origins, set:
 
@@ -321,7 +321,7 @@ For origins not in the allowlist, CORS headers are omitted entirely -- the brows
 
 ## Security Headers
 
-**File**: `cascadia-api/src/lib/api/handler.ts`
+**File**: `cascadia-api/src/api/handler.ts`
 
 Applied to all API responses via `applySecurityHeaders()`:
 
@@ -345,7 +345,7 @@ CSP (Content-Security-Policy) and HSTS (Strict-Transport-Security) are intention
 Every API route validates input with Zod schemas before passing data to the service layer. Query parameters use `parseQuery()`:
 
 ```typescript
-import { parseQuery } from '@/lib/api/handler'
+import { parseQuery } from '@/api/handler'
 
 const query = parseQuery(
   request,
@@ -366,7 +366,7 @@ Zod errors are caught by `handleApiError()` and converted to structured field-le
 Each item type has a Zod schema that validates both base fields and type-specific fields:
 
 ```typescript
-// cascadia-commons/src/lib/items/types/part.ts
+// cascadia-commons/src/items/types/part.ts
 export const partSchema = baseItemSchema.extend({
   itemType: z.literal('Part'),
   designId: z.string().uuid({ message: 'Design is required' }),
@@ -383,7 +383,7 @@ export const partSchema = baseItemSchema.extend({
 
 ## File Upload Hardening
 
-**Files**: `cascadia-api/src/lib/vault/services/FileService.ts`, `cascadia-api/src/lib/vault/utils/file-utils.ts`
+**Files**: `cascadia-api/src/vault/services/FileService.ts`, `cascadia-api/src/vault/utils/file-utils.ts`
 
 ### Size Limits
 
@@ -547,18 +547,18 @@ implying a check it did not perform.
 
 ## Key Files
 
-| File                                                | Purpose                                                           |
-| --------------------------------------------------- | ----------------------------------------------------------------- |
-| `cascadia-api/src/lib/auth/AuthService.ts`          | Login/logout with lockout logic                                   |
-| `cascadia-api/src/lib/auth/session.ts`              | SessionManager: create, validate, extend, delete                  |
-| `cascadia-api/src/lib/auth/password.ts`             | Argon2id hashing, PBKDF2 legacy support, session token generation |
-| `cascadia-api/src/lib/auth/cookie.ts`               | Session cookie builders with conditional Secure flag              |
-| `cascadia-api/src/lib/auth/server.ts`               | `requireAuth()`, `requirePermission()`, `requireRole()`           |
-| `cascadia-commons/src/lib/auth/permissions.ts`      | Role definitions and permission checking                          |
-| `cascadia-api/src/lib/auth/permission-service.ts`   | `PermissionService` singleton with caching                        |
-| `cascadia-api/src/lib/auth/AccessControlService.ts` | Program-based access control                                      |
-| `cascadia-api/src/lib/auth/access.ts`               | `requireDesignAccess()`, `requireBranchAccess()`                  |
-| `cascadia-api/src/lib/auth/UserService.ts`          | User CRUD, role assignment, password change                       |
-| `cascadia-api/src/lib/api/handler.ts`               | `apiHandler()` with CSRF, CORS, security headers                  |
-| `cascadia-api/src/lib/vault/utils/file-utils.ts`    | File validation, sanitization, allowlist                          |
-| `cascadia-api/src/lib/packages/guard.ts`            | `requirePackage()` entitlement gate for optional packages         |
+| File                                            | Purpose                                                           |
+| ----------------------------------------------- | ----------------------------------------------------------------- |
+| `cascadia-api/src/auth/AuthService.ts`          | Login/logout with lockout logic                                   |
+| `cascadia-api/src/auth/session.ts`              | SessionManager: create, validate, extend, delete                  |
+| `cascadia-api/src/auth/password.ts`             | Argon2id hashing, PBKDF2 legacy support, session token generation |
+| `cascadia-api/src/auth/cookie.ts`               | Session cookie builders with conditional Secure flag              |
+| `cascadia-api/src/auth/server.ts`               | `requireAuth()`, `requirePermission()`, `requireRole()`           |
+| `cascadia-commons/src/auth/permissions.ts`      | Role definitions and permission checking                          |
+| `cascadia-api/src/auth/permission-service.ts`   | `PermissionService` singleton with caching                        |
+| `cascadia-api/src/auth/AccessControlService.ts` | Program-based access control                                      |
+| `cascadia-api/src/auth/access.ts`               | `requireDesignAccess()`, `requireBranchAccess()`                  |
+| `cascadia-api/src/auth/UserService.ts`          | User CRUD, role assignment, password change                       |
+| `cascadia-api/src/api/handler.ts`               | `apiHandler()` with CSRF, CORS, security headers                  |
+| `cascadia-api/src/vault/utils/file-utils.ts`    | File validation, sanitization, allowlist                          |
+| `cascadia-api/src/packages/guard.ts`            | `requirePackage()` entitlement gate for optional packages         |

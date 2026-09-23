@@ -15,15 +15,15 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { TestPlan } from '@cascadia/commons/lib/items/types/testplan'
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { TestPlan } from '@cascadia/commons/items/types/testplan'
+import type { Design } from '@cascadia/commons/types/design'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { RelationshipSection } from '@/components/items/RelationshipSection'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { useEditLock, useItemEditContext } from '@/lib/hooks/useEditLock'
+import { useVersionContext } from '@/hooks/useVersionContext'
+import { useEditLock, useItemEditContext } from '@/hooks/useEditLock'
 import { WorkspaceContextBanner } from '@/components/workspaces/WorkspaceContextBanner'
 import {
   Badge,
@@ -47,17 +47,17 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   branchDetailQuery,
   designStatusQuery,
   testPlanTestCasesQuery,
-} from '@/lib/query'
-import { itemAtContextQuery } from '@/lib/query/options/items'
+} from '@/query'
+import { itemAtContextQuery } from '@/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
-import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { useReleasedFamily } from '@/hooks/useReleasedFamily'
 import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 
 const createEmptyTestPlan = (): TestPlan => ({

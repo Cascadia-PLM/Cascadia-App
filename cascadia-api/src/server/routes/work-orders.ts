@@ -11,26 +11,22 @@ import {
   updateInstructionSchema,
   workOrderCreateSchema,
   workOrderUpdateSchema,
-} from '@cascadia/commons/lib/items/types/work-order'
+} from '@cascadia/commons/items/types/work-order'
 import { tagged } from '../adapter'
-import { WorkOrderService } from '@/lib/services/WorkOrderService'
-import { WorkOrderInstructionService } from '@/lib/services/WorkOrderInstructionService'
-import { InstructionExecutionService } from '@/lib/services/InstructionExecutionService'
-import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
+import { WorkOrderService } from '@/services/WorkOrderService'
+import { WorkOrderInstructionService } from '@/services/WorkOrderInstructionService'
+import { InstructionExecutionService } from '@/services/InstructionExecutionService'
+import { ParametricResolutionService } from '@/services/ParametricResolutionService'
 import {
   WorkOrderMaterialService,
   consumeMaterialSchema,
   produceUnitsSchema,
-} from '@/lib/services/WorkOrderMaterialService'
-import { QualificationService } from '@/lib/services/QualificationService'
-import {
-  NotFoundError,
-  PermissionDeniedError,
-  ValidationError,
-} from '@/lib/errors'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { apiHandler } from '@/lib/api/handler'
-import { requireItemAccess, requireWorkOrderAccess } from '@/lib/auth/access'
+} from '@/services/WorkOrderMaterialService'
+import { QualificationService } from '@/services/QualificationService'
+import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { apiHandler } from '@/api/handler'
+import { requireItemAccess, requireWorkOrderAccess } from '@/auth/access'
 
 /** Step data or progress for a run in flight; either half may be sent alone. */
 const executionProgressSchema = z.object({

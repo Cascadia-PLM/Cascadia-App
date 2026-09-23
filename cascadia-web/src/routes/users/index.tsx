@@ -5,7 +5,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
-import type { UserWithRoles } from '@cascadia/commons/lib/auth/types'
+import type { UserWithRoles } from '@cascadia/commons/auth/types'
 import { PageContainer } from '@/components/layout'
 import { UserTable } from '@/components/users/UserTable'
 import { RoleAssignmentDialog } from '@/components/users/RoleAssignmentDialog'
@@ -18,14 +18,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import {
-  roleListQuery,
-  useInvalidateResources,
-  userListQuery,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { roleListQuery, useInvalidateResources, userListQuery } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/users/')({
   component: UsersListPage,

@@ -32,12 +32,12 @@ import type {
   ComparisonTargets,
   ThreadComparison,
   ThreadDomain,
-} from '@cascadia/commons/lib/thread/types'
-import type { VersionContext } from '@cascadia/commons/lib/versioning/version-context'
-import { apiFetch } from '@/lib/api/client'
-import { threadComparisonTargetsQuery } from '@/lib/query'
-import { cn } from '@/lib/utils'
-import { useTheme } from '@/lib/theme'
+} from '@cascadia/commons/thread/types'
+import type { VersionContext } from '@cascadia/commons/versioning/version-context'
+import { apiFetch } from '@/api/client'
+import { threadComparisonTargetsQuery } from '@/query'
+import { cn } from '@/utils'
+import { useTheme } from '@/theme'
 import {
   Button,
   Checkbox,

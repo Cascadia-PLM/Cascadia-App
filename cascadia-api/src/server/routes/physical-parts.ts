@@ -7,23 +7,23 @@ import { tagged } from '../adapter'
 import {
   PhysicalPartService,
   physicalPartRegisterSchema,
-} from '@/lib/services/PhysicalPartService'
-import { GenealogyService } from '@/lib/services/GenealogyService'
+} from '@/services/PhysicalPartService'
+import { GenealogyService } from '@/services/GenealogyService'
 import {
   QualificationService,
   addEvidenceSchema,
-} from '@/lib/services/QualificationService'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ThreadComparisonService } from '@/lib/services/ThreadComparisonService'
-import { NotFoundError } from '@/lib/errors'
-import { apiHandler, created } from '@/lib/api/handler'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
+} from '@/services/QualificationService'
+import { ItemService } from '@/items/services/ItemService'
+import { ThreadComparisonService } from '@/services/ThreadComparisonService'
+import { NotFoundError } from '@/errors'
+import { apiHandler, created } from '@/api/handler'
+import { AccessControlService } from '@/auth/AccessControlService'
 import {
   requirePartMasterAccess,
   requirePhysicalPartAccess,
-} from '@/lib/auth/access'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
-import '@/lib/items/registerItemTypes.server'
+} from '@/auth/access'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('PhysicalParts')
 

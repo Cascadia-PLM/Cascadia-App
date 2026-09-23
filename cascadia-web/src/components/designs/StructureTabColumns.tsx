@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react'
 import { Link2 } from 'lucide-react'
-import { formatPartDesignation } from '@cascadia/commons/lib/types/variants'
+import { formatPartDesignation } from '@cascadia/commons/types/variants'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import type { BOMTreeNode } from '@/components/bom/types'
 import { Badge } from '@/components/ui'

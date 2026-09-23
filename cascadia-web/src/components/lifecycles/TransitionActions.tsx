@@ -5,15 +5,15 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, ChevronRight, RotateCcw, Send, X } from 'lucide-react'
 import { TransitionDialog } from './TransitionDialog'
-import type { AvailableTransition } from '@cascadia/commons/lib/lifecycles/types'
+import type { AvailableTransition } from '@cascadia/commons/lifecycles/types'
 import { Button } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useInvalidateResources } from '@/lib/query'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useInvalidateResources } from '@/query'
 import {
   changeOrderLifecycleQuery,
   changeOrderTransitionsQuery,
-} from '@/lib/query/options/lifecycles'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query/options/lifecycles'
+import { apiFetch } from '@/api/client'
 
 interface TransitionResultResponse {
   data: {

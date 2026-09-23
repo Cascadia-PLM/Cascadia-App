@@ -2,17 +2,17 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback, useRef, useState } from 'react'
-import { MAX_ENRICHMENT_IMAGES } from '@cascadia/commons/lib/items/enrichment/limits'
+import { MAX_ENRICHMENT_IMAGES } from '@cascadia/commons/items/enrichment/limits'
 import { readTransferSources, transferHasSources } from './enrichment-sources'
 import { prepareImageForAi } from './image-payload'
 import type { EnrichmentSources } from './enrichment-sources'
-import type { EnrichmentImage } from '@cascadia/commons/lib/items/enrichment/limits'
-import { apiPost } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import type { EnrichmentImage } from '@cascadia/commons/items/enrichment/limits'
+import { apiPost } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 /**
  * `POST /api/v1/items/enrich` response. Mirrors `ItemEnrichmentResult` in
- * `lib/items/enrichment/enrich-item.ts`.
+ * `items/enrichment/enrich-item.ts`.
  */
 export interface EnrichmentResult {
   aiEnabled: boolean

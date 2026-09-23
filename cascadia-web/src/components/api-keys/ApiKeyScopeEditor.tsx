@@ -4,11 +4,11 @@
 import {
   PERMISSION_ACTIONS,
   RESOURCE_TYPES,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 import type {
   PermissionAction,
   ResourceType,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 import { Checkbox, Label, Switch } from '@/components/ui'
 
 export interface ScopeState {

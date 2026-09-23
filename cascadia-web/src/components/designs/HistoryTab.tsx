@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import { CommitGraphView } from '@/components/versioning/CommitGraphView'
 
 interface HistoryTabProps {

@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { ApiKeyManager } from '@/components/api-keys'
-import { myApiKeysQuery } from '@/lib/query'
+import { myApiKeysQuery } from '@/query'
 
 export const Route = createFileRoute('/profile/api-keys')({
   component: MyApiKeysPage,

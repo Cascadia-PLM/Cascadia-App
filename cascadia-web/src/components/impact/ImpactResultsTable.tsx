@@ -14,11 +14,11 @@ import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type {
   ImpactSeverity,
   ImpactedItem,
-} from '@cascadia/commons/lib/services/types/impact-analysis'
-import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
+} from '@cascadia/commons/services/types/impact-analysis'
+import type { ThreadDomain } from '@cascadia/commons/thread/types'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { Badge, Checkbox } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import { ItemLink } from '@/components/items/ItemLink'
 
 interface ImpactResultsTableProps {

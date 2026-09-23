@@ -4,7 +4,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Loader2, Plus } from 'lucide-react'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import {
   Badge,
   Button,
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { designItemsQuery } from '@/lib/query'
+import { designItemsQuery } from '@/query'
 import { ItemLink } from '@/components/items/ItemLink'
 import { StateBadge } from '@/components/items/StateBadge'
 

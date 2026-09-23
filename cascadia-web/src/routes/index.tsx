@@ -12,8 +12,8 @@ import {
   Package,
   Plus,
 } from 'lucide-react'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import { useTour } from '@/lib/tour'
+import type { Part } from '@cascadia/commons/items/types/part'
+import { useTour } from '@/tour'
 import { PageContainer } from '@/components/layout'
 import {
   Button,
@@ -27,7 +27,7 @@ import {
   dashboardChartsQuery,
   dashboardStatsQuery,
   itemCollectionQuery,
-} from '@/lib/query'
+} from '@/query'
 import { DashboardCharts } from '@/components/dashboard'
 import { StateBadge } from '@/components/items/StateBadge'
 

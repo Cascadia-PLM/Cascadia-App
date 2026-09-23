@@ -3,11 +3,12 @@
   // `@/` is this package, falling back to the api: the api's own files are
   // compiled inside this program (every `@cascadia/api/*` import pulls them
   // in) and they name their package as `@/`. Safe because the two keep
-  // disjoint layouts — this package has no `lib/` or `server/` — which
-  // `boundary:check` enforces. The api and commons are reachable by name; this
-  // is the process that runs the handlers, so it sits above the api. The web
-  // is not: no path for `@cascadia/web`. `@test/` is the api's database-backed
-  // test helpers, which the worker suites share rather than duplicate.
+  // disjoint layouts — no relative path exists under both `src/` roots — which
+  // `boundary:check`'s alias-collision pass enforces. The api and commons are
+  // reachable by name; this is the process that runs the handlers, so it sits
+  // above the api. The web is not: no path for `@cascadia/web`. `@test/` is
+  // the api's database-backed test helpers, which the worker suites share
+  // rather than duplicate.
   "include": ["src/**/*.ts"],
   "compilerOptions": {
     "baseUrl": ".",

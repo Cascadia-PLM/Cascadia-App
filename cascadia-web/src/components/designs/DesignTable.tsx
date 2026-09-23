@@ -12,7 +12,7 @@ import {
   MoreVertical,
   Package,
 } from 'lucide-react'
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Design } from '@cascadia/commons/types/design'
 import type {
   ColumnFiltersState,
   DataGridColumn,

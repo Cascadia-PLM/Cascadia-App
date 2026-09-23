@@ -34,18 +34,18 @@ import {
   insertTestUser,
   insertTestUserWithRole,
 } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { BranchService } from '@/lib/services/BranchService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { programMembers, programs } from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { BranchService } from '@/services/BranchService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { programMembers, programs } from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('workspaces routes — authorization gates', () => {
   const testDb = new TestDatabase()

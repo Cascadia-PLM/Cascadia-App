@@ -6,16 +6,16 @@ import { z } from 'zod'
 import {
   userCreateSchema,
   userUpdateSchema,
-} from '@cascadia/commons/lib/auth/types'
+} from '@cascadia/commons/auth/types'
 import { tagged } from '../adapter'
-import { UserService } from '@/lib/auth/UserService'
-import { NotFoundError } from '@/lib/errors'
-import { hashSessionToken } from '@/lib/auth/password'
-import { AuthService } from '@/lib/auth/AuthService'
-import { apiHandler, created } from '@/lib/api/handler'
-import { resolveClientIp } from '@/lib/api/client-ip'
-import { db } from '@/lib/db'
-import { authEvents } from '@/lib/db/schema/users'
+import { UserService } from '@/auth/UserService'
+import { NotFoundError } from '@/errors'
+import { hashSessionToken } from '@/auth/password'
+import { AuthService } from '@/auth/AuthService'
+import { apiHandler, created } from '@/api/handler'
+import { resolveClientIp } from '@/api/client-ip'
+import { db } from '@/db'
+import { authEvents } from '@/db/schema/users'
 
 /**
  * Password bodies.

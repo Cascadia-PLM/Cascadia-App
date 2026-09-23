@@ -3,7 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Info } from 'lucide-react'
-import type { ApiKeyEvent, ApiKeyRecord } from '@/lib/query'
+import type { ApiKeyEvent, ApiKeyRecord } from '@/query'
 import { Badge } from '@/components/ui'
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog'
-import { adminApiKeyActivityQuery, myApiKeyActivityQuery } from '@/lib/query'
+import { adminApiKeyActivityQuery, myApiKeyActivityQuery } from '@/query'
 
 interface ApiKeyActivityDialogProps {
   apiKey: Pick<ApiKeyRecord, 'id' | 'name' | 'keyPrefix'> | null

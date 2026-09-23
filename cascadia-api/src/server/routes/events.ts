@@ -5,17 +5,17 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { and, desc, eq, isNotNull, lt, max } from 'drizzle-orm'
 import { tagged } from '../adapter'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { db } from '@/lib/db'
-import { domainEvents, eventConsumers } from '@/lib/db/schema'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { db } from '@/db'
+import { domainEvents, eventConsumers } from '@/db/schema'
 import {
   EventTypeRegistry,
   forgetEventConsumer,
   resumeEventConsumer,
   skipPoisonEvent,
-} from '@/lib/events'
-import { NotFoundError } from '@/lib/errors'
-import { ExtensionRegistry } from '@/lib/extensions'
+} from '@/events'
+import { NotFoundError } from '@/errors'
+import { ExtensionRegistry } from '@/extensions'
 
 const adapt = tagged('Events')
 

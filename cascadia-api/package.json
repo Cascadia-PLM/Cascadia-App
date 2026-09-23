@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./extensions": "./src/lib/extensions/public.ts",
+    "./extensions": "./src/extensions/public.ts",
     "./*": "./src/*.ts",
     "./*.tsx": "./src/*.tsx"
   },

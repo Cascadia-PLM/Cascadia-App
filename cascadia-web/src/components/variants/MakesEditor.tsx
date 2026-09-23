@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Plus, Trash2 } from 'lucide-react'
-import { formatPartDesignation } from '@cascadia/commons/lib/types/variants'
-import type { Make, OptionModel } from '@cascadia/commons/lib/types/variants'
+import { formatPartDesignation } from '@cascadia/commons/types/variants'
+import type { Make, OptionModel } from '@cascadia/commons/types/variants'
 import {
   Badge,
   Button,

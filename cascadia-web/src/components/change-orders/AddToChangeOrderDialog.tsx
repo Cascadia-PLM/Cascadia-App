@@ -4,10 +4,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
-import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import { formatRevision } from '@cascadia/commons/types/lifecycle'
 import type { BOMTreeNode } from './ChangeOrderTreeTable'
-import type { ChangeAction } from '@cascadia/commons/lib/types/lifecycle'
-import { changeActionOptionsQuery } from '@/lib/query'
+import type { ChangeAction } from '@cascadia/commons/types/lifecycle'
+import { changeActionOptionsQuery } from '@/query'
 import {
   Badge,
   Button,
@@ -25,9 +25,9 @@ import {
   SelectValue,
   Textarea,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 interface AddToChangeOrderDialogProps {
   open: boolean

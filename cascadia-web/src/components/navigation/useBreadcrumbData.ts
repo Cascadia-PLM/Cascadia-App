@@ -2,16 +2,16 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useQuery } from '@tanstack/react-query'
-import type { Design } from '@cascadia/commons/lib/types/design'
-import type { Program } from '@cascadia/commons/lib/types/program'
+import type { Design } from '@cascadia/commons/types/design'
+import type { Program } from '@cascadia/commons/types/program'
 import type {
   BreadcrumbData,
   BreadcrumbRouteInfo,
   UseBreadcrumbDataResult,
 } from './breadcrumb-types'
-import { entityQuery } from '@/lib/query'
-import { designListQuery } from '@/lib/query/options/designs'
-import { programListQuery } from '@/lib/query/options/programs'
+import { entityQuery } from '@/query'
+import { designListQuery } from '@/query/options/designs'
+import { programListQuery } from '@/query/options/programs'
 
 type BreadcrumbItem = NonNullable<BreadcrumbData['item']>
 

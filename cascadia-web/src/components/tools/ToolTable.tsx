@@ -4,11 +4,8 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import { TOOL_SUBTYPES } from '@cascadia/commons/lib/items/types/tool'
-import type {
-  KnownToolSubtype,
-  Tool,
-} from '@cascadia/commons/lib/items/types/tool'
+import { TOOL_SUBTYPES } from '@cascadia/commons/items/types/tool'
+import type { KnownToolSubtype, Tool } from '@cascadia/commons/items/types/tool'
 import type {
   ColumnFiltersState,
   DataGridColumn,

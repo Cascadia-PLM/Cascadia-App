@@ -19,10 +19,10 @@ import type {
   GapAnalysisResult,
   GapSeverity,
   GapType,
-} from '@cascadia/commons/lib/services/types/gap-analysis'
-import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
-import { apiFetch } from '@/lib/api/client'
-import { cn } from '@/lib/utils'
+} from '@cascadia/commons/services/types/gap-analysis'
+import type { ThreadDomain } from '@cascadia/commons/thread/types'
+import { apiFetch } from '@/api/client'
+import { cn } from '@/utils'
 import {
   Button,
   Checkbox,

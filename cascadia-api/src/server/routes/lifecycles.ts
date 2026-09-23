@@ -4,8 +4,8 @@
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
 import { lifecycleDefinitionRoutes } from './lifecycle-definitions'
-import { apiHandler } from '@/lib/api/handler'
-import { LifecycleService } from '@/lib/services/LifecycleService'
+import { apiHandler } from '@/api/handler'
+import { LifecycleService } from '@/services/LifecycleService'
 
 const adapt = tagged('Lifecycles')
 

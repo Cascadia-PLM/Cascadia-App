@@ -7,18 +7,18 @@ import { z } from 'zod'
 import {
   makeCodeSchema,
   optionConditionSchema,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { tagged } from '../adapter'
-import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
-import { db } from '@/lib/db'
-import { itemRelationships, items } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { requireDesignAccess, requireItemsAccess } from '@/lib/auth/access'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
-import { apiHandler, jsonResponse } from '@/lib/api/handler'
+import type { OptionCondition } from '@cascadia/commons/types/variants'
+import { db } from '@/db'
+import { itemRelationships, items } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { requireDesignAccess, requireItemsAccess } from '@/auth/access'
+import { ItemService } from '@/items/services/ItemService'
+import { ItemRelationshipService } from '@/items/services/ItemRelationshipService'
+import { apiHandler, jsonResponse } from '@/api/handler'
 // Register item types (server-side version)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Relationships')
 

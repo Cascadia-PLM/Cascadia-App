@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { FormInput, Trash2 } from 'lucide-react'
-import type { StepContentBlock } from '@cascadia/commons/lib/items/types/work-instruction'
+import type { StepContentBlock } from '@cascadia/commons/items/types/work-instruction'
 import { Button, Input } from '@/components/ui'
 
 interface DataFieldBlockEditorProps {

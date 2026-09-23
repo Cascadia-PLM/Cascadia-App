@@ -5,13 +5,13 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { z } from 'zod'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import type { PartSaveOptions } from '@/components/parts/PartDetail'
 import { PartDetail } from '@/components/parts/PartDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { designListQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
-import { uploadItemFiles } from '@/lib/api/item-files'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { designListQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
+import { uploadItemFiles } from '@/api/item-files'
 
 // Search schema to accept default designId
 const newPartSearchSchema = z.object({

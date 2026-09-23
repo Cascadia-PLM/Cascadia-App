@@ -4,16 +4,12 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { Issue } from '@cascadia/commons/lib/items/types/issue'
+import type { Issue } from '@cascadia/commons/items/types/issue'
 import type { IssueDetailTab } from '@/components/issues/IssueDetail'
 import { ISSUE_DETAIL_TABS, IssueDetail } from '@/components/issues/IssueDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import {
-  designListQuery,
-  entityQuery,
-  useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { designListQuery, entityQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 const issueDetailSearchSchema = z.object({
   tab: z.enum(ISSUE_DETAIL_TABS).optional().default('details'),

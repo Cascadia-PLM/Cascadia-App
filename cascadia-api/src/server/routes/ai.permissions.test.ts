@@ -28,7 +28,7 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import aiRoutes from './ai'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -38,10 +38,10 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { aiSettings } from '@/lib/db/schema/ai'
+import { ProgramService } from '@/services/ProgramService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { aiSettings } from '@/db/schema/ai'
 
 interface ErrorEnvelope {
   error: { code: string }

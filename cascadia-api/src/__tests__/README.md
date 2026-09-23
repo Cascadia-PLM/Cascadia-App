@@ -199,7 +199,7 @@ with distinct state transitions), keep it inline in that test file. Two rules:
 
 1. **Use a unique UUID** for the definition ID — otherwise you race with
    other test files' seed data. Any UUID ending in a value not listed in
-   `src/lib/items/lifecycle-ids.ts` is safe.
+   `src/items/lifecycle-ids.ts` is safe.
 2. **Seed in `beforeAll`, not `beforeEach`** — inserts there auto-commit and
    hold locks for ~1ms. `beforeEach` sits inside the gate transaction and
    holds locks for the full test duration, which deadlocks under parallelism.
@@ -278,7 +278,7 @@ production. The pattern
 (`src/server/routes/designs.post-merge-structure.test.ts`):
 
 ```typescript
-import { SessionManager } from '@/lib/auth/session'
+import { SessionManager } from '@/auth/session'
 
 const cookie = `session=${(await SessionManager.createSession(user.id)).sessionToken}`
 const res = await app.request('/api/v1/designs/...', {
@@ -294,7 +294,7 @@ StrictMode double-mount coverage passes
 `renderHook(..., { reactStrictMode: true })`; a hand-rolled
 `<React.StrictMode>` wrapper double-renders but does **not** double-fire
 effects, and misses duplicate mount-effect bugs. Golden examples:
-`src/lib/hooks/useListSelection.test.tsx`,
+`src/hooks/useListSelection.test.tsx`,
 `src/components/work-orders/useInstructionRun.test.tsx`.
 
 ## A new test file needs `npm run typecheck`, not just vitest and eslint
@@ -315,6 +315,6 @@ implement non-obvious algorithms. Skip everything else.
 
 Golden examples to pattern-match:
 
-- `src/lib/services/BranchService.test.ts` — branching invariants
-- `src/lib/services/ChangeOrderMergeService.test.ts` — ECO release invariants
-- `src/lib/services/VersionResolver.test.ts` — version resolution correctness
+- `src/services/BranchService.test.ts` — branching invariants
+- `src/services/ChangeOrderMergeService.test.ts` — ECO release invariants
+- `src/services/VersionResolver.test.ts` — version resolution correctness

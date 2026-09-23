@@ -5,34 +5,34 @@ import { randomUUID } from 'node:crypto'
 import { Hono } from 'hono'
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { stepContentSchema } from '@cascadia/commons/lib/items/types/work-instruction'
+import { stepContentSchema } from '@cascadia/commons/items/types/work-instruction'
 import { tagged } from '../adapter'
-import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
-import type { StepContent } from '@/lib/db/schema/items'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { WorkOrderInstructionService } from '@/lib/services/WorkOrderInstructionService'
-import { WorkInstructionChangeAlertService } from '@/lib/services/WorkInstructionChangeAlertService'
-import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { apiHandler } from '@/lib/api/handler'
-import { workInstructionUpdateSchema } from '@/lib/api/schemas'
-import { requireItemAccess } from '@/lib/auth/access'
-import { db } from '@/lib/db'
-import { takeFirst } from '@/lib/db/take-first'
+import type { WorkInstruction } from '@cascadia/commons/items/types/work-instruction'
+import type { StepContent } from '@/db/schema/items'
+import { ItemService } from '@/items/services/ItemService'
+import { WorkOrderInstructionService } from '@/services/WorkOrderInstructionService'
+import { WorkInstructionChangeAlertService } from '@/services/WorkInstructionChangeAlertService'
+import { ParametricResolutionService } from '@/services/ParametricResolutionService'
+import { NotFoundError, ValidationError } from '@/errors'
+import { apiHandler } from '@/api/handler'
+import { workInstructionUpdateSchema } from '@/api/schemas'
+import { requireItemAccess } from '@/auth/access'
+import { db } from '@/db'
+import { takeFirst } from '@/db/take-first'
 import {
   items,
   workInstructionOperations,
   workInstructionPartAttachments,
   workInstructionSteps,
   workInstructions,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 // Register item types (server-side version)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 /**
  * Bodies for this file's own sub-resources. Operations, steps and part
  * attachments are rows the editor writes directly rather than items, so their
- * shapes live here rather than in `lib/items/types`.
+ * shapes live here rather than in `items/types`.
  */
 
 /** Acknowledge or dismiss one change alert. */

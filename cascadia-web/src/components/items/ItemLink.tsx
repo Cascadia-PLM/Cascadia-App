@@ -3,7 +3,7 @@
 
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 
 interface ItemLinkProps {
   itemType: string

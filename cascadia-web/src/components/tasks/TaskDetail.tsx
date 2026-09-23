@@ -5,10 +5,10 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Edit, Save, Tag, Trash2, X } from 'lucide-react'
-import type { Task } from '@cascadia/commons/lib/items/types/task'
+import type { Task } from '@cascadia/commons/items/types/task'
 import { PageContainer } from '@/components/layout'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
+import { useVersionContext } from '@/hooks/useVersionContext'
 import {
   Badge,
   Button,
@@ -29,8 +29,8 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { itemAtContextQuery } from '@/lib/query/options/items'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { itemAtContextQuery } from '@/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 

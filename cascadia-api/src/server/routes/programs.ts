@@ -5,23 +5,23 @@ import { Hono } from 'hono'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import type { ScopeGraphEdge, ScopeGraphNode } from '@/lib/api/scope-graph'
+import type { ScopeGraphEdge, ScopeGraphNode } from '@/api/scope-graph'
 import {
   ProgramService,
   memberAddSchema,
   memberUpdateSchema,
   programCreateSchema,
   programUpdateSchema,
-} from '@/lib/services/ProgramService'
-import { CommitGraphService } from '@/lib/services/CommitGraphService'
-import { DesignService } from '@/lib/services/DesignService'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { requirePermission } from '@/lib/auth/server'
-import { NotFoundError, PermissionDeniedError } from '@/lib/errors'
-import { db } from '@/lib/db'
-import { items } from '@/lib/db/schema/items'
-import { notDeleted } from '@/lib/db/filters'
-import { apiHandler, created } from '@/lib/api/handler'
+} from '@/services/ProgramService'
+import { CommitGraphService } from '@/services/CommitGraphService'
+import { DesignService } from '@/services/DesignService'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { requirePermission } from '@/auth/server'
+import { NotFoundError, PermissionDeniedError } from '@/errors'
+import { db } from '@/db'
+import { items } from '@/db/schema/items'
+import { notDeleted } from '@/db/filters'
+import { apiHandler, created } from '@/api/handler'
 import {
   designNodeId,
   makeDesignNode,
@@ -29,7 +29,7 @@ import {
   makeScopeEdge,
   programNodeId,
   scopeGraphResponseSchema,
-} from '@/lib/api/scope-graph'
+} from '@/api/scope-graph'
 
 const adapt = tagged('Programs')
 

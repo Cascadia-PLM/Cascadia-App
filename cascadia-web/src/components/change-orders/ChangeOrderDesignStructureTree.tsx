@@ -12,18 +12,18 @@ import {
   X,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import { formatRevision } from '@cascadia/commons/types/lifecycle'
 import { ChangeOrderTreeTable } from './ChangeOrderTreeTable'
 import { AddPartFromDesignDialog } from './AddPartFromDesignDialog'
 import type { BOMTreeNode } from './ChangeOrderTreeTable'
-import type { OrphanItem } from '@cascadia/commons/lib/types/bom'
+import type { OrphanItem } from '@cascadia/commons/types/bom'
 import { useTreeSelection } from '@/components/bom/useTreeSelection'
 import { Badge, Button, Card, CardContent } from '@/components/ui'
 import {
   changeOrderDesignStructureQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+} from '@/query'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface ChangeOrderBranch {
   id: string

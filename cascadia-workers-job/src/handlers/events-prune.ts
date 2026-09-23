@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { db } from '@cascadia/api/lib/db'
+import { db } from '@cascadia/api/db'
 import {
   abandonLongParkedConsumers,
   computeRetentionHorizon,
   pruneDomainEvents,
-} from '@cascadia/api/lib/events/retention'
+} from '@cascadia/api/events/retention'
 import {
   DEFAULT_DELIVERY_RETENTION_DAYS,
   pruneWebhookDeliveries,
-} from '@cascadia/api/lib/webhooks/retention'
+} from '@cascadia/api/webhooks/retention'
 import type {
   EventsPrunePayload,
   EventsPruneResult,
-} from '@cascadia/api/lib/jobs/definitions/events-prune/types'
-import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
+} from '@cascadia/api/jobs/definitions/events-prune/types'
+import type { JobContext, JobHandler } from '@cascadia/api/jobs/types'
 
 /** Days of history kept (`EVENT_RETENTION_DAYS`, default 90). */
 const DEFAULT_RETENTION_DAYS = 90

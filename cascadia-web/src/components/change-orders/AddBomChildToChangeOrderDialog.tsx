@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Info, Link2, Search } from 'lucide-react'
-import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import { formatRevision } from '@cascadia/commons/types/lifecycle'
 import {
   Dialog,
   DialogContent,
@@ -18,11 +18,11 @@ import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Badge } from '@/components/ui/Badge'
 import { isValidQuantity } from '@/components/items/bom-quantity'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
-import { itemTextSearchQuery } from '@/lib/query/options/item-search'
-import { cn } from '@/lib/utils'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { itemTextSearchQuery } from '@/query/options/item-search'
+import { cn } from '@/utils'
 import { StateBadge } from '@/components/items/StateBadge'
 
 type DesignScope = 'current' | 'library'

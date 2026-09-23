@@ -275,16 +275,16 @@ for (const file of allFiles) {
 //
 // The `@/` alias in an app's Vite build resolves the web package first, then
 // the module packages, and modules deliberately contribute files in
-// application-owned namespaces (server/routes, lib/jobs/definitions, ...).
+// application-owned namespaces (server/routes, jobs/definitions, ...).
 // That ordering means an application file later created at the same
 // relative path silently SHADOWS the module file everywhere it is imported —
 // no error, the module's contribution just stops loading. So the same
 // relative path may exist under at most one alias root. The three application
 // packages count as roots too: they preserve core's layout, and a module file
-// at `lib/x.ts` collides with any of them.
+// at `x.ts` collides with any of them.
 //
 // Comparison is extension- and index-stripped, because both resolvers try
-// the extension candidates: core lib/x.ts shadows module lib/x.tsx too.
+// the extension candidates: core x.ts shadows module x.tsx too.
 //
 // The composition-root filenames are the one structural exception: every
 // module package has them by convention, and they are only ever imported

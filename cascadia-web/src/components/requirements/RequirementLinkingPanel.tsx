@@ -22,16 +22,16 @@ import {
   DialogTitle,
   Input,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 import {
   entitySubQuery,
   itemSearchQuery,
   itemTextSearchQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
+} from '@/query'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 
 interface SatisfiedRequirement {
   id: string

@@ -3,13 +3,13 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import type { Tool } from '@cascadia/commons/lib/items/types/tool'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { NotFoundError } from '@/lib/errors'
-import { apiHandler } from '@/lib/api/handler'
-import { toolUpdateSchema } from '@/lib/api/schemas'
-import { requireItemAccess } from '@/lib/auth/access'
-import '@/lib/items/registerItemTypes.server'
+import type { Tool } from '@cascadia/commons/items/types/tool'
+import { ItemService } from '@/items/services/ItemService'
+import { NotFoundError } from '@/errors'
+import { apiHandler } from '@/api/handler'
+import { toolUpdateSchema } from '@/api/schemas'
+import { requireItemAccess } from '@/auth/access'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Tools')
 

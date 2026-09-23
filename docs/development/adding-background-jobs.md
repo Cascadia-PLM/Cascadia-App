@@ -23,10 +23,10 @@ Service Code                    RabbitMQ                  Worker Process
 
 ## Step 1: Define Payload and Result Schemas
 
-Create a `types.ts` file in `cascadia-api/src/lib/jobs/definitions/yourjob/`:
+Create a `types.ts` file in `cascadia-api/src/jobs/definitions/yourjob/`:
 
 ```typescript
-// cascadia-api/src/lib/jobs/definitions/yourjob/types.ts
+// cascadia-api/src/jobs/definitions/yourjob/types.ts
 import { z } from 'zod'
 
 /**
@@ -66,7 +66,7 @@ export type WidgetProcessingResult = z.infer<
 Create a `config.ts` file with the job type configuration:
 
 ```typescript
-// cascadia-api/src/lib/jobs/definitions/yourjob/config.ts
+// cascadia-api/src/jobs/definitions/yourjob/config.ts
 import type { JobTypeConfig } from '../../types'
 import {
   widgetProcessingPayloadSchema,
@@ -137,11 +137,11 @@ Create a handler file at `cascadia-workers-job/src/handlers/yourjob.ts`:
 // Handlers live in the worker package, not the api: the api submits jobs and
 // never runs them, so it imports a job's definition and never its handler.
 // The worker sits above the api and reaches it by name.
-import type { JobHandler, JobContext } from '@cascadia/api/lib/jobs/types'
+import type { JobHandler, JobContext } from '@cascadia/api/jobs/types'
 import type {
   WidgetProcessingPayload,
   WidgetProcessingResult,
-} from '@cascadia/api/lib/jobs/definitions/yourjob/types'
+} from '@cascadia/api/jobs/definitions/yourjob/types'
 
 export const widgetProcessingHandler: JobHandler<
   WidgetProcessingPayload,
@@ -251,10 +251,10 @@ scheduler the difference between a slow job and a lost one.
 
 Registration is split into two files:
 
-**Config registration** in `cascadia-api/src/lib/jobs/definitions/register.ts`:
+**Config registration** in `cascadia-api/src/jobs/definitions/register.ts`:
 
 ```typescript
-// cascadia-api/src/lib/jobs/definitions/register.ts
+// cascadia-api/src/jobs/definitions/register.ts
 import { JobTypeRegistry } from '../registry'
 
 // ... existing registrations ...
@@ -269,7 +269,7 @@ JobTypeRegistry.register(widgetProcessingConfig)
 
 ```typescript
 // cascadia-workers-job/src/register.ts
-import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
+import { JobTypeRegistry } from '@cascadia/api/jobs/registry'
 
 // ... existing registrations ...
 
@@ -311,7 +311,7 @@ Submit jobs from services or API routes using `JobService.submit()`:
 > once connected marks its row failed, as above.
 
 ```typescript
-import { JobService } from '@/lib/jobs'
+import { JobService } from '@/jobs'
 
 // Basic submission
 const job = await JobService.submit(
@@ -345,7 +345,7 @@ const job = await JobService.getById(jobId)
 ## Directory Structure
 
 ```
-cascadia-api/src/lib/jobs/
+cascadia-api/src/jobs/
 ├── JobService.ts              # Submit, query, cancel jobs
 ├── registry.ts                # JobTypeRegistry (mirrors ItemTypeRegistry)
 ├── types.ts                   # Core interfaces (JobTypeConfig, JobHandler, JobContext)
@@ -419,7 +419,7 @@ The worker uses plain `tsx` (not watch mode), so you must restart it to pick up 
    A row written before the column existed, or one whose type declares
    `retryDelays: []`, falls back to the executor's own 30s/60s/120s default.
 3. **Sweep.** Every Node jobs worker runs a DB sweep
-   (`lib/jobs/scheduler.ts`, interval `JOB_RETRY_SWEEP_MS`, default 15s) that
+   (`jobs/scheduler.ts`, interval `JOB_RETRY_SWEEP_MS`, default 15s) that
    re-publishes parked rows whose backoff has elapsed. The sweep also
    recovers **submit-crash orphans**: `JobService.submit` inserts the row,
    publishes, then flips it to `queued`, and a crash between insert and
@@ -468,12 +468,12 @@ never retries a parked CAD job, and never reaps a stale running one either.
 
 The loop above assumes the delivery itself is answered correctly, and there are
 exactly three answers a worker can give one. The Node worker
-(`lib/jobs/worker/index.ts`) and the two Python workers give the same three at
+(`jobs/worker/index.ts`) and the two Python workers give the same three at
 the same three points, deliberately: the delivery is the job's only wake-up, so
 answering wrongly loses the job silently.
 
 1. **Decode.** The body is parsed as JSON and checked against `jobMessageSchema`
-   (`lib/jobs/types.ts`). A body that fails either is a poison message — no
+   (`jobs/types.ts`). A body that fails either is a poison message — no
    amount of retrying fixes it — so it is nacked **without requeue**, which
    routes it to the queue's dead-letter exchange. It gets there without opening
    a database connection: validating at the boundary is what stops a garbage

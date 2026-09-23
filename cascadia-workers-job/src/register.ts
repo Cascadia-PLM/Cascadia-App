@@ -9,10 +9,10 @@
  * app does not need handler implementations.
  *
  * Job type definitions (configs) must be registered first via
- * '@cascadia/api/lib/jobs/definitions/register'.
+ * '@cascadia/api/jobs/definitions/register'.
  */
 
-import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
+import { JobTypeRegistry } from '@cascadia/api/jobs/registry'
 
 import { workflowTransitionHandler } from './handlers/notification'
 import { cloneDesignHandler } from './handlers/design-clone'

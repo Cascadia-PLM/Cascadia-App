@@ -9,4 +9,4 @@
  * schema file beneath this same line.
  */
 
-export * from '@cascadia/api/lib/db/schema'
+export * from '@cascadia/api/db/schema'

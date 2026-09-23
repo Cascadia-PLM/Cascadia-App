@@ -5,7 +5,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { KeyRound, Search, ShieldAlert } from 'lucide-react'
-import type { ApiKeyStatus } from '@cascadia/commons/lib/auth/api-key-types'
+import type { ApiKeyStatus } from '@cascadia/commons/auth/api-key-types'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,
@@ -18,7 +18,7 @@ import {
   Input,
 } from '@/components/ui'
 import { ApiKeyManager, ApiKeyPolicyCard } from '@/components/api-keys'
-import { adminApiKeysQuery, myApiKeysQuery } from '@/lib/query'
+import { adminApiKeysQuery, myApiKeysQuery } from '@/query'
 
 export const Route = createFileRoute('/admin/api-keys')({
   component: AdminApiKeysPage,

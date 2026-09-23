@@ -161,7 +161,6 @@ FROM runtime-deps AS production
 # Copy bundled server + SPA build
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/public ./public
 
 # Admin scripts (seed, migrate, reset) run via tsx and import from the
 # workspace packages. The server itself reads none of this at runtime — only

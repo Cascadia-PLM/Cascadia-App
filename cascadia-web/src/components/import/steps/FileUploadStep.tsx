@@ -11,16 +11,16 @@ import {
   autoDetectMappings,
   getImportConfig,
   parseFile,
-} from '@cascadia/commons/lib/import'
+} from '@cascadia/commons/import'
 import type { ChangeEvent, DragEvent } from 'react'
 import type {
   ColumnMapping,
   ImportItemType,
   ParsedFile,
-} from '@cascadia/commons/lib/import'
+} from '@cascadia/commons/import'
 import { Badge, Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { apiErrorFromResponse } from '@/lib/api/client'
+import { cn } from '@/utils'
+import { apiErrorFromResponse } from '@/api/client'
 
 interface FileUploadStepProps {
   itemType?: ImportItemType

@@ -10,8 +10,8 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
-import type { ThreadComparisonStats } from '@cascadia/commons/lib/thread/types'
-import { cn } from '@/lib/utils'
+import type { ThreadComparisonStats } from '@cascadia/commons/thread/types'
+import { cn } from '@/utils'
 
 interface ComparisonSummaryCardsProps {
   stats: ThreadComparisonStats

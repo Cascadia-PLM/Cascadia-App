@@ -11,7 +11,7 @@ import {
   computeVisibleThreadIds,
   swimLaneLayout,
 } from './swimLaneLayout'
-import type { ThreadEdge, ThreadNode } from '@cascadia/commons/lib/thread/types'
+import type { ThreadEdge, ThreadNode } from '@cascadia/commons/thread/types'
 
 function node(
   id: string,

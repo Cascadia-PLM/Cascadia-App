@@ -3,7 +3,7 @@
 
 import { ArrowUpDown, Eye, EyeOff, Loader2, X } from 'lucide-react'
 import type { CADCompareSlot } from './CADViewer'
-import type { ModelVersionEntry, ModelVersionFile } from '@/lib/query'
+import type { ModelVersionEntry, ModelVersionFile } from '@/query'
 import {
   Button,
   Popover,

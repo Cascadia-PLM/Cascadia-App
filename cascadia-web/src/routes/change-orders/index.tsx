@@ -4,11 +4,11 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
-import type { ItemFilters } from '@/lib/query'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
+import type { ItemFilters } from '@/query'
 import { PageContainer } from '@/components/layout'
 import { ChangeOrderTable } from '@/components/change-orders/ChangeOrderTable'
-import { useServerDataGrid } from '@/lib/hooks/useServerDataGrid'
+import { useServerDataGrid } from '@/hooks/useServerDataGrid'
 import {
   Button,
   Card,
@@ -17,8 +17,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   gridParamsFromSearch,
   itemCountsQuery,
@@ -26,8 +26,8 @@ import {
   itemListQuery,
   lifecycleByItemTypeQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // The states behind the stat cards, counted in one request rather than one

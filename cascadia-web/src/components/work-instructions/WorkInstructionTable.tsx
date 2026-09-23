@@ -3,7 +3,7 @@
 
 import { Link } from '@tanstack/react-router'
 import { Edit, Eye, MoreVertical, PlayCircle, Trash2 } from 'lucide-react'
-import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
+import type { WorkInstruction } from '@cascadia/commons/items/types/work-instruction'
 import type { DataGridColumn } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface WorkInstructionTableProps {
   items: Array<WorkInstruction>

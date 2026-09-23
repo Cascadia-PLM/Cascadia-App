@@ -14,9 +14,9 @@ import {
   X,
 } from 'lucide-react'
 import { QuickJumpPills } from './QuickJumpPills'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
-import type { Design } from '@cascadia/commons/lib/types/design'
-import type { Program } from '@cascadia/commons/lib/types/program'
+import type { VersionContext } from '@/hooks/useVersionContext'
+import type { Design } from '@cascadia/commons/types/design'
+import type { Program } from '@cascadia/commons/types/program'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { VersionContextSelector } from '@/components/versioning/VersionContextSelector'
 import { Badge, Button } from '@/components/ui'

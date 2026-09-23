@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { CheckCircle, Edit2, Trash2, XCircle } from 'lucide-react'
-import type { LifecycleDefinition } from '@cascadia/commons/lib/lifecycles/types'
+import type { LifecycleDefinition } from '@cascadia/commons/lifecycles/types'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {

@@ -85,7 +85,7 @@ describe('collect', () => {
   })
 
   it('ignores a tuple written in a comment', () => {
-    // Both of these are live in the tree: `lib/api/handler.ts` documents the
+    // Both of these are live in the tree: `api/handler.ts` documents the
     // option in an @example block, and the route that used to charge
     // documents:manage explains itself by quoting the tuple. A grep counts
     // both and reports offenders that do not exist.

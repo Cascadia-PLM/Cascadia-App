@@ -5,7 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
 import { PartThumbnail } from './PartThumbnail'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import type {
   ColumnFiltersState,
   DataGridColumn,
@@ -27,7 +27,7 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface PartTableProps {
   items: Array<Part>

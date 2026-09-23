@@ -4,21 +4,17 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { eq, sql } from 'drizzle-orm'
-import { changeOrderTypeSchema } from '@cascadia/commons/lib/items/types/change-order'
+import { changeOrderTypeSchema } from '@cascadia/commons/items/types/change-order'
 import { tagged } from '../adapter'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
-import { db } from '@/lib/db'
-import { branchItems, designs, items } from '@/lib/db/schema'
-import { BranchService } from '@/lib/services/BranchService'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { apiHandler, created } from '@/lib/api/handler'
-import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
-import {
-  NotFoundError,
-  PermissionDeniedError,
-  ValidationError,
-} from '@/lib/errors'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
+import { db } from '@/db'
+import { branchItems, designs, items } from '@/db/schema'
+import { BranchService } from '@/services/BranchService'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { apiHandler, created } from '@/api/handler'
+import { requireBranchAccess, requireDesignAccess } from '@/auth/access'
+import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
 
 const adapt = tagged('Workspaces')
 

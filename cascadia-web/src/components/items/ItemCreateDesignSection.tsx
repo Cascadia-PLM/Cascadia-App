@@ -3,11 +3,11 @@
 
 import { Info } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Design } from '@cascadia/commons/types/design'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { ViewEditSelect } from '@/components/ui'
-import { designStatusQuery } from '@/lib/query'
+import { designStatusQuery } from '@/query'
 
 interface ItemCreateDesignSectionProps {
   designs: Array<Design>

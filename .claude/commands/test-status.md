@@ -37,10 +37,10 @@ Categorize each changed source file (skip test files):
 
 ### Files that typically pass a gate
 
-- `src/lib/services/` — likely data-integrity services (BranchService, CommitService, CheckoutService, ChangeOrderMergeService, ConflictDetectionService, VersionResolver)
-- `src/lib/auth/` — security services (AuthService, AccessControlService)
-- `src/lib/items/services/` — core item services if touching state mutation (ItemService, ChangeOrderService)
-- `src/lib/workflows/` — workflow engine state machines
+- `src/services/` — likely data-integrity services (BranchService, CommitService, CheckoutService, ChangeOrderMergeService, ConflictDetectionService, VersionResolver)
+- `src/auth/` — security services (AuthService, AccessControlService)
+- `src/items/services/` — core item services if touching state mutation (ItemService, ChangeOrderService)
+- `src/workflows/` — workflow engine state machines
 
 For files in these directories, still ask: does this particular change mutate multi-entity state, gate access, or implement non-obvious logic? If it's a trivial query/getter tweak, no gate applies.
 
@@ -50,7 +50,7 @@ For files that pass a gate, check if a co-located test exists: `ServiceName.test
 
 - `src/server/routes/` — API routes (service tests cover the logic)
 - `src/components/` — UI components (E2E covers them)
-- `src/lib/utils/`, `src/lib/config/`, `src/lib/errors/` — utilities, types
+- `src/utils/`, `src/config/`, `src/errors/` — utilities, types
 - Query-only services / CRUD wrappers / glue code
 - Styling, config, type definitions, schemas
 
@@ -58,7 +58,7 @@ For files that pass a gate, check if a co-located test exists: `ServiceName.test
 
 | File                                | Gate           | Needs Tests?                            |
 | ----------------------------------- | -------------- | --------------------------------------- |
-| `src/lib/services/BranchService.ts` | Data integrity | Yes — check existing test covers change |
+| `src/services/BranchService.ts`     | Data integrity | Yes — check existing test covers change |
 | `src/components/parts/PartForm.tsx` | None           | No — E2E covers UI                      |
 | `src/server/routes/parts.ts`        | None           | No — service tests cover logic          |
 

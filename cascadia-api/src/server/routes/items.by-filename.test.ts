@@ -32,8 +32,8 @@ import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { Document } from '@cascadia/commons/lib/items/types/document'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { Document } from '@cascadia/commons/items/types/document'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -42,16 +42,16 @@ import {
   insertTestUser,
   insertTestUserWithRole,
 } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { items, vaultFiles } from '@/lib/db/schema'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { items, vaultFiles } from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const FILENAME = 'housing.step'
 

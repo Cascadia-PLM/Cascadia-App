@@ -6,21 +6,21 @@ import { chat, toServerSentEventsResponse } from '@tanstack/ai'
 import { eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import { UsageAccumulator, recordLlmUsage } from '@/lib/ai/usage'
-import { apiHandler, created } from '@/lib/api/handler'
-import { aiSettingsUpdateSchema } from '@/lib/api/schemas'
+import { UsageAccumulator, recordLlmUsage } from '@/ai/usage'
+import { apiHandler, created } from '@/api/handler'
+import { aiSettingsUpdateSchema } from '@/api/schemas'
 import {
   getAdapter,
   getAvailableProviders,
   isAIEnabled,
   loadProviderConfig,
-} from '@/lib/ai/adapters'
-import { knowledgeService } from '@/lib/ai/KnowledgeService'
-import { sessionService } from '@/lib/ai/SessionService'
-import { resolveChatScope } from '@/lib/ai/chat-scope'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { acquireStreamSlot, releaseStreamSlot } from '@/lib/ai/stream-limits'
-import { createSearchTools, createServerTools } from '@/lib/ai/tools'
+} from '@/ai/adapters'
+import { knowledgeService } from '@/ai/KnowledgeService'
+import { sessionService } from '@/ai/SessionService'
+import { resolveChatScope } from '@/ai/chat-scope'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { acquireStreamSlot, releaseStreamSlot } from '@/ai/stream-limits'
+import { createSearchTools, createServerTools } from '@/ai/tools'
 import {
   AlreadyExistsError,
   AppError,
@@ -28,13 +28,13 @@ import {
   NotFoundError,
   PermissionDeniedError,
   ValidationError,
-} from '@/lib/errors'
-import { aiSettings } from '@/lib/db/schema/ai'
-import { userRoles } from '@/lib/db/schema/users'
-import { db } from '@/lib/db'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/errors'
+import { aiSettings } from '@/db/schema/ai'
+import { userRoles } from '@/db/schema/users'
+import { db } from '@/db'
+import { takeFirst } from '@/db/take-first'
 // Register item types for KnowledgeService
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('AI')
 

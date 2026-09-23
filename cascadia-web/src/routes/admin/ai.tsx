@@ -22,12 +22,12 @@ import {
   DEFAULT_OLLAMA_BASE_URL,
   PROVIDER_LABELS,
   isAiProviderType,
-} from '@cascadia/commons/lib/ai/model-catalog'
-import type { AiProviderSettings, AiSettingsEnvVars } from '@/lib/query'
-import type { AiProviderType } from '@cascadia/commons/lib/ai/model-catalog'
-import { useAiModels, withSelectedModel } from '@/lib/hooks/useAiModels'
+} from '@cascadia/commons/ai/model-catalog'
+import type { AiProviderSettings, AiSettingsEnvVars } from '@/query'
+import type { AiProviderType } from '@cascadia/commons/ai/model-catalog'
+import { useAiModels, withSelectedModel } from '@/hooks/useAiModels'
 import { PageContainer } from '@/components/layout'
-import { Slot } from '@/lib/ui/slot-registry'
+import { Slot } from '@/ui/slot-registry'
 import {
   Badge,
   Button,
@@ -45,8 +45,8 @@ import {
   SelectValue,
   Switch,
 } from '@/components/ui'
-import { aiSettingsQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { aiSettingsQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/ai')({
   component: AISettingsPage,

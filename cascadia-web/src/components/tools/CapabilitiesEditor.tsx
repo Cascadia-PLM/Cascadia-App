@@ -14,7 +14,7 @@ import {
   formatCapabilityText,
   humanizeCapabilityKey,
   parseCapabilityText,
-} from '@/lib/items/capability-text'
+} from '@/items/capability-text'
 import {
   FormField,
   Input,

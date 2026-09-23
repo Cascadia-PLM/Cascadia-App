@@ -10,8 +10,8 @@ import {
   RefreshCw,
   ShieldAlert,
 } from 'lucide-react'
-import type { AdminApiKeyRecord, ApiKeyRecord } from '@/lib/query'
-import type { ApiKeyStatus } from '@cascadia/commons/lib/auth/api-key-types'
+import type { AdminApiKeyRecord, ApiKeyRecord } from '@/query'
+import type { ApiKeyStatus } from '@cascadia/commons/auth/api-key-types'
 import { Badge, Button } from '@/components/ui'
 import {
   DropdownMenu,

@@ -15,11 +15,11 @@ import type {
   Gap,
   GapSeverity,
   GapType,
-} from '@cascadia/commons/lib/services/types/gap-analysis'
-import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
+} from '@cascadia/commons/services/types/gap-analysis'
+import type { ThreadDomain } from '@cascadia/commons/thread/types'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { Badge, Checkbox } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import { ItemLink } from '@/components/items/ItemLink'
 
 interface GapResultsTableProps {

@@ -12,7 +12,7 @@
  */
 import { getTableName, is, sql } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
-import { db, describeConnection } from '@cascadia/api/lib/db'
+import { db, describeConnection } from '@cascadia/api/db'
 import { appDir, resolveApp } from './edition.mjs'
 
 // Resolved at runtime rather than imported by name: naming the enterprise app

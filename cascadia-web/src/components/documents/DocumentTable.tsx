@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { Document } from '@cascadia/commons/lib/items/types/document'
+import type { Document } from '@cascadia/commons/items/types/document'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import { PhaseBadge } from '@/components/items/PhaseBadge'
@@ -20,7 +20,7 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface DocumentTableProps {
   documents: Array<Document>

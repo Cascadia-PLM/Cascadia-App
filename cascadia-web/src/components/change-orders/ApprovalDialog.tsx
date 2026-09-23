@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { Check, Loader2, X } from 'lucide-react'
-import type { CanApproveResult } from '@cascadia/commons/lib/lifecycles/types'
+import type { CanApproveResult } from '@cascadia/commons/lifecycles/types'
 import {
   Button,
   Dialog,
@@ -19,9 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useApprovalFormSlots } from '@/lib/lifecycles/approval-form-registry'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useApprovalFormSlots } from '@/lifecycles/approval-form-registry'
 
 interface ApprovalDialogProps {
   open: boolean

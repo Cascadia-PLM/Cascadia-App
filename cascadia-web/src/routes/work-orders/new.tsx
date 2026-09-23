@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft, Wrench } from 'lucide-react'
-import type { WorkOrderCreateInput } from '@cascadia/commons/lib/items/types/work-order'
+import type { WorkOrderCreateInput } from '@cascadia/commons/items/types/work-order'
 import { PageContainer } from '@/components/layout'
 import { WorkOrderForm } from '@/components/work-orders/WorkOrderForm'
 import {
@@ -15,9 +15,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/work-orders/new')({
   component: NewWorkOrderPage,

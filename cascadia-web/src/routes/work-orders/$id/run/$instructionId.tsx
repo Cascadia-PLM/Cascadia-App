@@ -16,12 +16,12 @@ import {
 import type {
   InstructionSnapshot,
   WorkOrderInstruction,
-} from '@cascadia/commons/lib/items/types/work-order'
-import type { StepContentBlock } from '@cascadia/commons/lib/items/types/work-instruction'
+} from '@cascadia/commons/items/types/work-order'
+import type { StepContentBlock } from '@cascadia/commons/items/types/work-instruction'
 import type { ResolvedParametricValue } from '@/components/work-orders/useInstructionRun'
 import { Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { useInvalidateResources, workOrderInstructionQuery } from '@/lib/query'
+import { cn } from '@/utils'
+import { useInvalidateResources, workOrderInstructionQuery } from '@/query'
 import { useInstructionRun } from '@/components/work-orders/useInstructionRun'
 
 type SnapshotOperation = InstructionSnapshot['operations'][number]

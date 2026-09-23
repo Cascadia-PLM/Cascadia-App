@@ -10,32 +10,32 @@ import {
   importDocumentsRequestSchema,
   importIssuesRequestSchema,
   importPartsWithBomRequestSchema,
-} from '@cascadia/commons/lib/import'
+} from '@cascadia/commons/import'
 import {
   optionConditionKey,
   parseOptionText,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { tagged } from '../adapter'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
 import type {
   BomImportResult,
   ImportResult,
   ItemFieldConfig,
-} from '@cascadia/commons/lib/import'
-import { generateXlsxTemplate } from '@/lib/import/xlsx-template'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { apiHandler, jsonResponse } from '@/lib/api/handler'
+} from '@cascadia/commons/import'
+import { generateXlsxTemplate } from '@/import/xlsx-template'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { apiHandler, jsonResponse } from '@/api/handler'
 import {
   AlreadyExistsError,
   AppError,
   PermissionDeniedError,
   ValidationError,
-} from '@/lib/errors'
-import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
-import { requireRole } from '@/lib/auth/server'
-import '@/lib/items/registerItemTypes.server'
+} from '@/errors'
+import { requireBranchAccess, requireDesignAccess } from '@/auth/access'
+import { requireRole } from '@/auth/server'
+import '@/items/registerItemTypes.server'
 
 /**
  * The message a failed row or relationship may carry back to the caller.

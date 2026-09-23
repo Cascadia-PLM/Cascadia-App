@@ -25,12 +25,12 @@ import { eq } from 'drizzle-orm'
 import {
   ROLE_DEFINITIONS,
   roleToDbFormat,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
-import type * as schema from '@/lib/db/schema'
-import type { RoleName } from '@cascadia/commons/lib/auth/permissions'
-import { roles, userRoles, users } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import type * as schema from '@/db/schema'
+import type { RoleName } from '@cascadia/commons/auth/permissions'
+import { roles, userRoles, users } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 type DbSchema = typeof schema
 type TestDbInstance = PostgresJsDatabase<DbSchema>

@@ -56,7 +56,7 @@ Organization → Program → Design
 **BOM participation.** Keep the existing convention: a Part with `partType: 'Software'` is the BOM node (it is what manufacturing consumes — a flashable unit with a part number and revision). Link it to the Software configuration item with a new relationship type:
 
 ```typescript
-// added to partRelationships in cascadia-commons/src/lib/items/types/part.ts
+// added to partRelationships in cascadia-commons/src/items/types/part.ts
 {
   type: 'Software',
   label: 'Software',
@@ -94,7 +94,7 @@ subsystem described below remains the target for Phase 3.
 
 ### 3.1 The `software` extension table
 
-Standard two-table extension (`cascadia-api/src/lib/db/schema/items.ts` or a new `software.ts` schema file):
+Standard two-table extension (`cascadia-api/src/db/schema/items.ts` or a new `software.ts` schema file):
 
 ```typescript
 export const software = pgTable('software', {
@@ -225,7 +225,7 @@ Note the elegant convergence: **a mirrored external repo is just a manifest**. T
 ### 3.4 Provider abstraction
 
 ```typescript
-// cascadia-api/src/lib/scm/types.ts
+// cascadia-api/src/scm/types.ts
 export interface ScmProvider {
   readonly name: 'github' | 'bitbucket' | 'gitlab'
   getRepo(link: RepoRef): Promise<RepoInfo>
@@ -244,7 +244,7 @@ export interface ScmProvider {
 }
 ```
 
-Implementations live in `cascadia-api/src/lib/scm/providers/` (`github.ts` first — plain REST v3, no SDK dependency needed; `bitbucket.ts`, `gitlab.ts` later). All network work runs in background jobs, never in request handlers:
+Implementations live in `cascadia-api/src/scm/providers/` (`github.ts` first — plain REST v3, no SDK dependency needed; `bitbucket.ts`, `gitlab.ts` later). All network work runs in background jobs, never in request handlers:
 
 | Job type                | Trigger                          | Work                                                    |
 | ----------------------- | -------------------------------- | ------------------------------------------------------- |
@@ -252,7 +252,7 @@ Implementations live in `cascadia-api/src/lib/scm/providers/` (`github.ts` first
 | `software.repo.mirror`  | pin with "import source" checked | fetch tree + blobs → manifest, set `mirroredManifestId` |
 | `software.repo.sync`    | cron + webhook                   | update `upstreamHeadSha`/`aheadBy`, raise drift alerts  |
 
-These follow the existing `JobTypeRegistry` pattern verbatim (config in the api's `lib/jobs/definitions/`, handler in `cascadia-workers-job/src/handlers/`).
+These follow the existing `JobTypeRegistry` pattern verbatim (config in the api's `jobs/definitions/`, handler in `cascadia-workers-job/src/handlers/`).
 
 ### 3.5 Source-level change tracking
 
@@ -359,7 +359,7 @@ Item CRUD itself needs **no new routes** — `ItemService` + the generic items/p
 Each phase is independently shippable and useful.
 
 **Phase 1 — Software item type + source store + viewer (read path)**
-Schema (`software`, `software_blobs`, `software_manifests`) + migration; Zod type in `cascadia-commons/src/lib/items/types/software.ts`; registration in `item-type-definitions.ts` + both `registerItemTypes.*` (icon `Cpu`, table `'software'`, numbering `SW-###`, part-lifecycle); `SoftwareSourceService` (manifest CRUD, blob store, zip import, tree/file/diff reads through `VersionResolver` contexts); routes; file-tree + CodeMirror read-only viewer + Part↔Software relationship; zip/file bulk import. _Tests (three-gate: data integrity)_: manifest immutability, blob dedup, version-pinned manifest across checkout→commit→merge, release assigns revision with correct manifest.
+Schema (`software`, `software_blobs`, `software_manifests`) + migration; Zod type in `cascadia-commons/src/items/types/software.ts`; registration in `item-type-definitions.ts` + both `registerItemTypes.*` (icon `Cpu`, table `'software'`, numbering `SW-###`, part-lifecycle); `SoftwareSourceService` (manifest CRUD, blob store, zip import, tree/file/diff reads through `VersionResolver` contexts); routes; file-tree + CodeMirror read-only viewer + Part↔Software relationship; zip/file bulk import. _Tests (three-gate: data integrity)_: manifest immutability, blob dedup, version-pinned manifest across checkout→commit→merge, release assigns revision with correct manifest.
 
 **Phase 2 — Editing + history (write path)**
 Checkout-gated editor, draft manifests, save/commit flow; `source` fieldCategory in `CheckoutService.computeFieldChanges()` + History tab renderer; diff views (revision compare, ECO review diff); build-artifact slot (vault); per-file `field_conflict` sharpening in `ConflictDetectionService`. _Tests_: source field-change expansion, per-file cross-ECO conflict detection, checkout gating (security gate).

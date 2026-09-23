@@ -8,28 +8,28 @@ import { streamToText } from '@tanstack/ai'
 import {
   DEFAULT_API_KEY_POLICY,
   validateApiKeyPolicy,
-} from '@cascadia/commons/lib/auth/api-key-policy-types'
-import { AI_PROVIDERS } from '@cascadia/commons/lib/ai/model-catalog'
+} from '@cascadia/commons/auth/api-key-policy-types'
+import { AI_PROVIDERS } from '@cascadia/commons/ai/model-catalog'
 import { tagged } from '../adapter'
-import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
-import type { UpdateApiKeyInput } from '@/lib/auth/ApiKeyService'
-import type { AIProviderConfig as AIProviderDBConfig } from '@/lib/db/schema/ai'
-import type { AIProviderConfig, ProviderType } from '@/lib/ai/adapters'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { aiProviderTypeSchema, aiSettingsUpdateSchema } from '@/lib/api/schemas'
-import { mountRoutes } from '@/lib/api/route-registry'
-import { db } from '@/lib/db'
-import { aiSettings } from '@/lib/db/schema/ai'
-import { ApiKeyService } from '@/lib/auth/ApiKeyService'
-import { loadApiKeyPolicy, saveApiKeyPolicy } from '@/lib/auth/api-key-policy'
+import type { ApiKeyPolicy } from '@cascadia/commons/auth/api-key-policy-types'
+import type { UpdateApiKeyInput } from '@/auth/ApiKeyService'
+import type { AIProviderConfig as AIProviderDBConfig } from '@/db/schema/ai'
+import type { AIProviderConfig, ProviderType } from '@/ai/adapters'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { aiProviderTypeSchema, aiSettingsUpdateSchema } from '@/api/schemas'
+import { mountRoutes } from '@/api/route-registry'
+import { db } from '@/db'
+import { aiSettings } from '@/db/schema/ai'
+import { ApiKeyService } from '@/auth/ApiKeyService'
+import { loadApiKeyPolicy, saveApiKeyPolicy } from '@/auth/api-key-policy'
 import {
   decryptSecret,
   encrypt,
   isEncryptionConfigured,
-} from '@/lib/crypto/encryption'
-import { getAdapter } from '@/lib/ai/adapters'
-import { aiLogger } from '@/lib/logging/logger'
-import { listProviderModels } from '@/lib/ai/model-discovery'
+} from '@/crypto/encryption'
+import { getAdapter } from '@/ai/adapters'
+import { aiLogger } from '@/logging/logger'
+import { listProviderModels } from '@/ai/model-discovery'
 import {
   CatalogService,
   catalogBulkImportRowSchema,
@@ -37,16 +37,16 @@ import {
   catalogCategoryUpdateSchema,
   catalogEntryCreateSchema,
   catalogEntryUpdateSchema,
-} from '@/lib/services/CatalogService'
-import { ConfigService } from '@/lib/config'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import { JobService } from '@/lib/jobs/JobService'
-import { SettingsService } from '@/lib/config/SettingsService'
-import { ThreadCacheService } from '@/lib/services/ThreadCacheService'
-import { StorageFactory } from '@/lib/vault/storage/storage-factory'
-import { takeFirst } from '@/lib/db/take-first'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import '@/lib/items/registerItemTypes.server'
+} from '@/services/CatalogService'
+import { ConfigService } from '@/config'
+import { ItemTypeRegistry } from '@/items/registry'
+import { JobService } from '@/jobs/JobService'
+import { SettingsService } from '@/config/SettingsService'
+import { ThreadCacheService } from '@/services/ThreadCacheService'
+import { StorageFactory } from '@/vault/storage/storage-factory'
+import { takeFirst } from '@/db/take-first'
+import { NotFoundError, ValidationError } from '@/errors'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Admin')
 

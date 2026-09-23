@@ -21,7 +21,7 @@ impact, create ECOs, transition workflow states.
 ### One tool stack, two frontends
 
 The server publishes the **PLM tool registry**
-(`cascadia-api/src/lib/ai/tools/registry.ts`) — the same registry the in-app AI chatbot
+(`cascadia-api/src/ai/tools/registry.ts`) — the same registry the in-app AI chatbot
 consumes. Each registry entry pairs a TanStack AI tool definition (name,
 description, Zod schemas) with a context-bound handler and declares which
 surfaces expose it:
@@ -150,12 +150,12 @@ stood up; `instance_status` reports the missing configuration instead of
 failing.
 
 The stdio protocol stream owns stdout, so the entry point sets
-`LOG_DESTINATION=stderr`, which `cascadia-api/src/lib/logging/logger.ts` honors for all
+`LOG_DESTINATION=stderr`, which `cascadia-api/src/logging/logger.ts` honors for all
 pino output.
 
 Paths — `docs/`, the root markdown files, and the `package.json` scripts the
 `db_*` tools run — resolve against the workspace root, which
-`cascadia-api/src/lib/mcp/repo-root.ts` finds by walking up to the manifest
+`cascadia-api/src/mcp/repo-root.ts` finds by walking up to the manifest
 declaring `workspaces`. The entry point loads that root's `.env` before any
 tool reads the environment, so `instance_status` reports the same
 configuration the database connection actually uses, whatever working
@@ -166,12 +166,12 @@ directory the MCP client chose.
 ## Architecture
 
 ```
-cascadia-api/src/lib/ai/tools/registry.ts     Canonical PLM tool registry (defs + handlers + surfaces)
-cascadia-api/src/lib/mcp/server-factory.ts    Shared protocol plumbing (tools/list, tools/call, errors)
-cascadia-api/src/lib/mcp/plm-server.ts        cascadia-plm: registry -> MCP tools for one user context
-cascadia-api/src/lib/mcp/dev-server.ts        cascadia-dev: server assembly
-cascadia-api/src/lib/mcp/dev-tools.ts         cascadia-dev: tool implementations
-cascadia-api/src/lib/mcp/repo-root.ts         Workspace root the docs and db_* tools resolve against
+cascadia-api/src/ai/tools/registry.ts     Canonical PLM tool registry (defs + handlers + surfaces)
+cascadia-api/src/mcp/server-factory.ts    Shared protocol plumbing (tools/list, tools/call, errors)
+cascadia-api/src/mcp/plm-server.ts        cascadia-plm: registry -> MCP tools for one user context
+cascadia-api/src/mcp/dev-server.ts        cascadia-dev: server assembly
+cascadia-api/src/mcp/dev-tools.ts         cascadia-dev: tool implementations
+cascadia-api/src/mcp/repo-root.ts         Workspace root the docs and db_* tools resolve against
 cascadia-api/src/server/routes/mcp.ts         /api/mcp HTTP endpoint (auth + Streamable HTTP transport)
 cascadia-api/src/mcp-dev-server.ts            stdio entry point (npm run mcp:dev-server)
 ```
@@ -213,7 +213,7 @@ Design is required`) so a rejected write is as actionable as the factory's
 
 ### Dev-server tests
 
-`cascadia-api/src/lib/mcp/dev-tools.test.ts` pins the root resolution — that
+`cascadia-api/src/mcp/dev-tools.test.ts` pins the root resolution — that
 `search_docs` finds files and `read_doc` reads one — because a wrong root
 fails silently as an empty result set, and pins the traversal guard that keeps
 `read_doc` inside the doc tree.

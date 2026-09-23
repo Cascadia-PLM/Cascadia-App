@@ -228,7 +228,10 @@ export function createAppViteConfig({
         ],
       }),
     ],
-    publicDir: resolve(REPO_ROOT, 'public'),
+    // Static assets are the app's own, like its index.html. Shared web code
+    // imports the logo root-absolute (`/cascadia-plm-logo-icon.svg`), so every
+    // app must ship one in its `public/`.
+    publicDir: resolve(appDir, 'public'),
     build: { outDir: resolve(REPO_ROOT, 'dist', appName) },
     server: {
       port: 3000,

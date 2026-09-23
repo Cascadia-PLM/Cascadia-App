@@ -22,8 +22,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { changeOrderSummaryQuery, useInvalidateResources } from '@/lib/query'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { changeOrderSummaryQuery, useInvalidateResources } from '@/query'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface ChangeOrderSummaryDashboardProps {
   changeOrderId: string

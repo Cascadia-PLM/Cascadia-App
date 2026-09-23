@@ -36,16 +36,16 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash, randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { db } from '@cascadia/api/lib/db'
-import { users } from '@cascadia/api/lib/db/schema/users'
-import { programMembers, programs } from '@cascadia/api/lib/db/schema/programs'
-import { designs } from '@cascadia/api/lib/db/schema/designs'
+import { db } from '@cascadia/api/db'
+import { users } from '@cascadia/api/db/schema/users'
+import { programMembers, programs } from '@cascadia/api/db/schema/programs'
+import { designs } from '@cascadia/api/db/schema/designs'
 import {
   branchItems,
   branches,
   commits,
   itemVersions,
-} from '@cascadia/api/lib/db/schema/versioning'
+} from '@cascadia/api/db/schema/versioning'
 import {
   changeOrderAffectedItems,
   changeOrderDesigns,
@@ -53,13 +53,13 @@ import {
   itemRelationships,
   items,
   parts,
-} from '@cascadia/api/lib/db/schema/items'
-import { vaultFiles } from '@cascadia/api/lib/db/schema/vault'
+} from '@cascadia/api/db/schema/items'
+import { vaultFiles } from '@cascadia/api/db/schema/vault'
 import {
   generateStoragePath,
   sanitizeFilename,
-} from '@cascadia/api/lib/vault/utils/file-utils'
-import { takeFirst } from '@cascadia/api/lib/db/take-first'
+} from '@cascadia/api/vault/utils/file-utils'
+import { takeFirst } from '@cascadia/api/db/take-first'
 import { DemoDataMissing } from './demo-seed-types.ts'
 import type { DatasetResult } from './demo-seed-types.ts'
 

@@ -34,12 +34,12 @@ import {
 
 import type { Edge, Node } from '@xyflow/react'
 import type { ThreadExpandState } from './ThreadNode'
-import type { ThreadResponse } from '@cascadia/commons/lib/thread/types'
+import type { ThreadResponse } from '@cascadia/commons/thread/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { FullscreenGraphWrapper } from '@/components/ui/FullscreenGraphWrapper'
-import { itemThreadQuery } from '@/lib/query'
-import { useTheme } from '@/lib/theme'
+import { itemThreadQuery } from '@/query'
+import { useTheme } from '@/theme'
 
 interface DigitalThreadNavigatorProps {
   itemId: string

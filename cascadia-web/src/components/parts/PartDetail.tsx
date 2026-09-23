@@ -15,15 +15,15 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { Design } from '@cascadia/commons/types/design'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
 import type { EnrichmentSources } from '@/components/items/enrichment-sources'
 import { PageContainer } from '@/components/layout'
 import { PartRelationshipsTab } from '@/components/parts/PartRelationshipsTab'
 import { PartVariantsTab } from '@/components/variants/PartVariantsTab'
 import { ImpactAnalysisDialog } from '@/components/impact'
-import { Slot } from '@/lib/ui/slot-registry'
+import { Slot } from '@/ui/slot-registry'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { PhaseBadge } from '@/components/items/PhaseBadge'
 import { ImageGallery, useItemImages } from '@/components/vault'
@@ -47,8 +47,8 @@ import {
   fillEmptyFields,
   mergeEnrichmentAttributes,
 } from '@/components/items/apply-enrichment'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { useEditLock, useItemEditContext } from '@/lib/hooks/useEditLock'
+import { useVersionContext } from '@/hooks/useVersionContext'
+import { useEditLock, useItemEditContext } from '@/hooks/useEditLock'
 import { WorkspaceContextBanner } from '@/components/workspaces/WorkspaceContextBanner'
 import {
   Badge,
@@ -71,17 +71,17 @@ import {
 } from '@/components/ui'
 import { PartThumbnail } from '@/components/parts/PartThumbnail'
 import { PartAmlSection } from '@/components/parts/PartAmlSection'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   branchDetailQuery,
   designDetailQuery,
   designStatusQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { itemResolvedAtContextQuery } from '@/lib/query/options/items'
+} from '@/query'
+import { itemResolvedAtContextQuery } from '@/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { useReleasedFamily } from '@/hooks/useReleasedFamily'
 
 // Spelled out so Tailwind's scanner sees the class names — the tab count
 // varies with mode and with whether the part has images to show.

@@ -23,8 +23,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { itemTypeConfigListQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { itemTypeConfigListQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/item-types/')({
   component: ItemTypesConfigPage,

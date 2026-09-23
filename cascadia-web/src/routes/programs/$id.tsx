@@ -17,8 +17,8 @@ import {
 import type {
   CreateProgramInput,
   Program,
-} from '@cascadia/commons/lib/types/program'
-import type { Design } from '@cascadia/commons/lib/types/design'
+} from '@cascadia/commons/types/program'
+import type { Design } from '@cascadia/commons/types/design'
 import { PageContainer } from '@/components/layout'
 import { ProgramHistoryGraphView } from '@/components/programs/ProgramHistoryGraphView'
 import { ProgramModelViewer } from '@/components/programs/ProgramModelViewer'
@@ -49,14 +49,14 @@ import {
   AttributesEditor,
   formatAttributeValue,
 } from '@/components/items/AttributesEditor'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   designListQuery,
   programDetailQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/programs/$id')({
   component: ProgramDetailPage,

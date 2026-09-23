@@ -49,13 +49,13 @@ This gives you concurrent engineering by default. Two change orders can modify d
 | `branches`                    | change-order branches (`branchType = 'eco'`) forked from main                |
 | `branch_items`                | Per-branch item overrides (working copies, change tracking)                  |
 
-Schema definitions: `cascadia-api/src/lib/db/schema/items.ts` (lines 118-275).
+Schema definitions: `cascadia-api/src/db/schema/items.ts` (lines 118-275).
 
 ---
 
 ## Change Order Types
 
-Cascadia supports four change order types, defined in `cascadia-commons/src/lib/items/types/change-order.ts`:
+Cascadia supports four change order types, defined in `cascadia-commons/src/items/types/change-order.ts`:
 
 | Type        | Name                       | Purpose                                                                                                |
 | ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -67,7 +67,7 @@ Cascadia supports four change order types, defined in `cascadia-commons/src/lib/
 All four types use the same `ChangeOrderService`, `ChangeOrderMergeService`, and branch infrastructure. The difference is in lifecycle routing: `ChangeOrderService.autoStartWorkflow()` looks up the lifecycle definition configured for each `changeType` in the ChangeOrder's `RuntimeItemTypeConfig`.
 
 ```typescript
-// cascadia-api/src/lib/items/services/ChangeOrderService.ts
+// cascadia-api/src/items/services/ChangeOrderService.ts
 static async autoStartWorkflow(
   changeOrderId: string,
   changeType: 'ECO' | 'ECN' | 'Deviation' | 'MCO',
@@ -170,7 +170,7 @@ for the full three-tier rule.
 
 ## Change Actions
 
-Change actions describe what the change order intends to do to each affected item. They are defined in `cascadia-commons/src/lib/items/types/change-order.ts` and their state mappings live in lifecycle definitions (`cascadia-commons/src/lib/types/lifecycle.ts`).
+Change actions describe what the change order intends to do to each affected item. They are defined in `cascadia-commons/src/items/types/change-order.ts` and their state mappings live in lifecycle definitions (`cascadia-commons/src/types/lifecycle.ts`).
 
 ### `release`
 
@@ -228,7 +228,7 @@ they always were rather than failing the release.
 ### Lifecycle Configuration Example
 
 ```typescript
-// From cascadia-commons/src/lib/types/lifecycle.ts
+// From cascadia-commons/src/types/lifecycle.ts
 const partLifecycle: ChangeActionMappings = {
   release: {
     fromState: 'Draft',
@@ -476,7 +476,7 @@ constraint violation.
 
 ## Impact Analysis
 
-Impact analysis discovers the ripple effects of changing items within and across designs. It is performed by `ImpactAssessmentService.analyzeImpact()` in `cascadia-api/src/lib/items/services/ImpactAssessmentService.ts`.
+Impact analysis discovers the ripple effects of changing items within and across designs. It is performed by `ImpactAssessmentService.analyzeImpact()` in `cascadia-api/src/items/services/ImpactAssessmentService.ts`.
 
 ### Where-Used Traversal
 
@@ -715,7 +715,7 @@ The revision scheme is configurable per lifecycle and per phase:
 
 ## Conflict Detection
 
-`ConflictDetectionService` in `cascadia-api/src/lib/services/ConflictDetectionService.ts` detects conflicts before a change order can be approved.
+`ConflictDetectionService` in `cascadia-api/src/services/ConflictDetectionService.ts` detects conflicts before a change order can be approved.
 
 ### Conflict Types
 
@@ -839,20 +839,20 @@ Change-order cancellation is a lifecycle transition like any other. When a chang
 
 ## Key Files
 
-| File                                                             | Purpose                                                                                                 |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `cascadia-api/src/lib/items/services/ChangeOrderService.ts`      | Core change-order operations: creation, affected items, working copies, scope gates, transitions, close |
-| `cascadia-api/src/lib/services/ChangeOrderMergeService.ts`       | Branch merge and release: merge to main, revision assignment, BOM remapping                             |
-| `cascadia-api/src/lib/services/CheckoutService.ts`               | Item checkout, save changes, checkin, create/delete on branch                                           |
-| `cascadia-api/src/lib/services/ConflictDetectionService.ts`      | Three-way conflict detection, cross-change-order conflicts, rebase                                      |
-| `cascadia-api/src/lib/items/services/ImpactAssessmentService.ts` | Where-used traversal, cross-design impact, risk identification                                          |
-| `cascadia-api/src/lib/services/BranchService.ts`                 | Branch CRUD, change-order branch creation, lock, archive                                                |
-| `cascadia-api/src/lib/services/CommitService.ts`                 | Commit creation, merge commits, field change tracking                                                   |
-| `cascadia-api/src/lib/services/VersionResolver.ts`               | Resolve items per-branch context                                                                        |
-| `cascadia-api/src/lib/services/LifecycleService.ts`              | Change action validation, state transitions, revision schemes                                           |
-| `cascadia-api/src/lib/services/RevisionService.ts`               | Revision letter calculation (A->B, Z->AA, numeric, prefixed)                                            |
-| `cascadia-commons/src/lib/items/types/change-order.ts`           | Type definitions: ChangeAction, ChangeOrderType, schemas                                                |
-| `cascadia-commons/src/lib/types/lifecycle.ts`                    | Lifecycle types: ChangeActionMappings, RevisionScheme, phase config                                     |
-| `cascadia-api/src/lib/db/schema/items.ts`                        | Schema: change_orders, change_order_affected_items, change_order_designs                                |
-| `cascadia-api/src/lib/db/schema/versioning.ts`                   | Schema: branches, branch_items, commits                                                                 |
-| `cascadia-api/src/server/routes/change-orders.ts`                | Canonical transition endpoint                                                                           |
+| File                                                         | Purpose                                                                                                 |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `cascadia-api/src/items/services/ChangeOrderService.ts`      | Core change-order operations: creation, affected items, working copies, scope gates, transitions, close |
+| `cascadia-api/src/services/ChangeOrderMergeService.ts`       | Branch merge and release: merge to main, revision assignment, BOM remapping                             |
+| `cascadia-api/src/services/CheckoutService.ts`               | Item checkout, save changes, checkin, create/delete on branch                                           |
+| `cascadia-api/src/services/ConflictDetectionService.ts`      | Three-way conflict detection, cross-change-order conflicts, rebase                                      |
+| `cascadia-api/src/items/services/ImpactAssessmentService.ts` | Where-used traversal, cross-design impact, risk identification                                          |
+| `cascadia-api/src/services/BranchService.ts`                 | Branch CRUD, change-order branch creation, lock, archive                                                |
+| `cascadia-api/src/services/CommitService.ts`                 | Commit creation, merge commits, field change tracking                                                   |
+| `cascadia-api/src/services/VersionResolver.ts`               | Resolve items per-branch context                                                                        |
+| `cascadia-api/src/services/LifecycleService.ts`              | Change action validation, state transitions, revision schemes                                           |
+| `cascadia-api/src/services/RevisionService.ts`               | Revision letter calculation (A->B, Z->AA, numeric, prefixed)                                            |
+| `cascadia-commons/src/items/types/change-order.ts`           | Type definitions: ChangeAction, ChangeOrderType, schemas                                                |
+| `cascadia-commons/src/types/lifecycle.ts`                    | Lifecycle types: ChangeActionMappings, RevisionScheme, phase config                                     |
+| `cascadia-api/src/db/schema/items.ts`                        | Schema: change_orders, change_order_affected_items, change_order_designs                                |
+| `cascadia-api/src/db/schema/versioning.ts`                   | Schema: branches, branch_items, commits                                                                 |
+| `cascadia-api/src/server/routes/change-orders.ts`            | Canonical transition endpoint                                                                           |

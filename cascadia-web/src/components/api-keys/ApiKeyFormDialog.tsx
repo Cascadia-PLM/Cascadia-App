@@ -10,7 +10,7 @@ import {
   scopeStateFromKey,
   scopeStateToPayload,
 } from './ApiKeyScopeEditor'
-import type { ApiKeyRecord } from '@/lib/query'
+import type { ApiKeyRecord } from '@/query'
 import type { ScopeState } from './ApiKeyScopeEditor'
 import { Button, Input, Label } from '@/components/ui'
 import {
@@ -21,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog'
-import { apiKeyPolicyQuery } from '@/lib/query'
-import { ApiError, apiFetch } from '@/lib/api/client'
+import { apiKeyPolicyQuery } from '@/query'
+import { ApiError, apiFetch } from '@/api/client'
 
 interface ApiKeyFormDialogProps {
   open: boolean

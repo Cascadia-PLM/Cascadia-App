@@ -3,7 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { GitBranch, Loader2, X } from 'lucide-react'
-import type { WorkspaceItem } from '@/lib/query'
+import type { WorkspaceItem } from '@/query'
 import {
   Badge,
   Button,
@@ -16,11 +16,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 import { ItemLink } from '@/components/items/ItemLink'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useInvalidateResources, workspaceItemsQuery } from '@/lib/query'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useInvalidateResources, workspaceItemsQuery } from '@/query'
 
 interface WorkspaceItemsPanelProps {
   workspaceId: string

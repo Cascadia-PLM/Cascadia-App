@@ -10,9 +10,9 @@ import {
   amlMappingUpdateSchema,
   manufacturerPartCreateSchema,
   manufacturerPartUpdateSchema,
-} from '@/lib/services/ManufacturerPartService'
-import { apiHandler, created } from '@/lib/api/handler'
-import { requirePartMasterAccess } from '@/lib/auth/access'
+} from '@/services/ManufacturerPartService'
+import { apiHandler, created } from '@/api/handler'
+import { requirePartMasterAccess } from '@/auth/access'
 
 const adapt = tagged('ManufacturerParts')
 

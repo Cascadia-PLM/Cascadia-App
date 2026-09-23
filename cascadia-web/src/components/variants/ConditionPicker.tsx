@@ -4,7 +4,7 @@
 import type {
   OptionCondition,
   OptionModel,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { Checkbox } from '@/components/ui'
 
 /**

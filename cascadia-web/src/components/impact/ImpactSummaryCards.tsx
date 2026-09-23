@@ -13,10 +13,10 @@ import {
 import type {
   ImpactAnalysisResult,
   ImpactSeverity,
-} from '@cascadia/commons/lib/services/types/impact-analysis'
-import type { ThreadDomain } from '@cascadia/commons/lib/thread/types'
+} from '@cascadia/commons/services/types/impact-analysis'
+import type { ThreadDomain } from '@cascadia/commons/thread/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface ImpactSummaryCardsProps {
   result: ImpactAnalysisResult

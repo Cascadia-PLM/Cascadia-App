@@ -4,8 +4,8 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import { apiHandler } from '@/lib/api/handler'
-import { PackageRegistry } from '@/lib/packages'
+import { apiHandler } from '@/api/handler'
+import { PackageRegistry } from '@/packages'
 
 const adapt = tagged('Packages')
 

@@ -14,8 +14,8 @@ import {
   Input,
   Label,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 interface CreateWorkspaceDialogProps {
   open: boolean

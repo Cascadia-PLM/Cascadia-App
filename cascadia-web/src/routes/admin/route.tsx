@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { createFileRoute } from '@tanstack/react-router'
-import { requireSystemManage } from '@/lib/auth/system-access'
+import { requireSystemManage } from '@/auth/system-access'
 
 /**
  * Layout route for the admin console.

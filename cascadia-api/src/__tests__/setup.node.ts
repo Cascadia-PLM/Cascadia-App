@@ -13,10 +13,10 @@
  */
 
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+import { ItemTypeRegistry } from '@/items/registry'
 // Code definitions, so a suite that never imports a route module still has
 // them — the same registration every composition root performs.
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Runtime item-type configuration, awaited once per worker process.
 //

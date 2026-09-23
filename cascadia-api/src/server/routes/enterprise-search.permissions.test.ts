@@ -37,7 +37,7 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import enterpriseSearchRoutes from './enterprise-search'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -48,16 +48,16 @@ import {
   insertTestUser,
   insertTestUserWithRole,
 } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
-import { programMembers, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { ITEM_TYPE_RESOURCES } from '@/items/item-type-resources'
+import { programMembers, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 interface SearchGroup {
   itemType: string

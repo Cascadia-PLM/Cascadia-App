@@ -2,13 +2,13 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Plus, Trash2 } from 'lucide-react'
-import { OPTION_CODE_PATTERN } from '@cascadia/commons/lib/types/variants'
+import { OPTION_CODE_PATTERN } from '@cascadia/commons/types/variants'
 import { ConditionPicker } from './ConditionPicker'
 import type {
   OptionCondition,
   OptionFamily,
   OptionModel,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { Badge, Button, Checkbox, Input, Label } from '@/components/ui'
 
 /**

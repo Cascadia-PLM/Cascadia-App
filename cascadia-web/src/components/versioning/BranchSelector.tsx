@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { GitBranch, Lock, Plus, Unlock } from 'lucide-react'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import {
   Select,
   SelectContent,
@@ -24,10 +24,10 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog'
 import { Badge, Button, FormField, Input } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query'
-import { designBranchesQuery } from '@/lib/query/options/designs'
-import { designStatusQuery } from '@/lib/query/options/branches'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query'
+import { designBranchesQuery } from '@/query/options/designs'
+import { designStatusQuery } from '@/query/options/branches'
 
 interface Branch {
   id: string

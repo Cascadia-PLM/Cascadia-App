@@ -16,8 +16,8 @@ import {
   Input,
   Label,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { authSessionQuery } from '@/lib/query'
+import { apiFetch } from '@/api/client'
+import { authSessionQuery } from '@/query'
 
 export const Route = createFileRoute('/profile/')({
   component: ProfilePage,

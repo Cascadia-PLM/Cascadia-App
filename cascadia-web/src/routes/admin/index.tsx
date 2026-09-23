@@ -20,11 +20,11 @@ import {
   Users,
 } from 'lucide-react'
 import { useState } from 'react'
-import { SettingKeys } from '@cascadia/commons/lib/config/SettingKeys'
-import { APP_VERSION } from '@cascadia/commons/lib/version'
+import { SettingKeys } from '@cascadia/commons/config/SettingKeys'
+import { APP_VERSION } from '@cascadia/commons/version'
 import { PageContainer } from '@/components/layout'
 import { PackagesCard } from '@/components/admin/PackagesCard'
-import { Slot } from '@/lib/ui/slot-registry'
+import { Slot } from '@/ui/slot-registry'
 import {
   Badge,
   Button,
@@ -40,8 +40,8 @@ import {
   packageListQuery,
   useInvalidateResources,
   vaultConfigQuery,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/')({
   component: AdminPage,

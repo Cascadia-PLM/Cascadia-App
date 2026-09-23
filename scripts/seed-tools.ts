@@ -24,10 +24,10 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { and, eq, inArray, sql } from 'drizzle-orm'
-import { db } from '@cascadia/api/lib/db'
-import { users } from '@cascadia/api/lib/db/schema/users'
-import { items, tools } from '@cascadia/api/lib/db/schema/items'
-import { numberSequences } from '@cascadia/api/lib/db/schema/numbering'
+import { db } from '@cascadia/api/db'
+import { users } from '@cascadia/api/db/schema/users'
+import { items, tools } from '@cascadia/api/db/schema/items'
+import { numberSequences } from '@cascadia/api/db/schema/numbering'
 
 // ============================================================================
 // Config
@@ -37,7 +37,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
 const DATA_FILE = join(REPO_ROOT, 'cascadia-api', 'test-data', 'tools.json')
 
-/** Mirrors the `Tool` interface in src/lib/items/types/tool.ts */
+/** Mirrors the `Tool` interface in src/items/types/tool.ts */
 interface ToolSeedRow {
   itemNumber: string
   revision: string

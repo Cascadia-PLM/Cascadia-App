@@ -13,7 +13,7 @@ import {
 import type {
   FieldConflict,
   MergeConflict,
-} from '@cascadia/commons/lib/services/types/conflicts'
+} from '@cascadia/commons/services/types/conflicts'
 import {
   Badge,
   Button,

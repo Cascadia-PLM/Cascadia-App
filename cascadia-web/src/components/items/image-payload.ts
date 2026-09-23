@@ -10,8 +10,8 @@
  * original file is untouched — it is what gets attached to the item.
  */
 
-import { MAX_ENRICHMENT_IMAGE_BASE64_CHARS } from '@cascadia/commons/lib/items/enrichment/limits'
-import type { EnrichmentImage } from '@cascadia/commons/lib/items/enrichment/limits'
+import { MAX_ENRICHMENT_IMAGE_BASE64_CHARS } from '@cascadia/commons/items/enrichment/limits'
+import type { EnrichmentImage } from '@cascadia/commons/items/enrichment/limits'
 
 /** Longest edge sent to the model, in pixels. */
 export const AI_IMAGE_MAX_EDGE = 1568

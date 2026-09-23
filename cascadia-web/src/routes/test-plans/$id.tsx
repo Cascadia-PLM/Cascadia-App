@@ -4,13 +4,13 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { TestPlan } from '@cascadia/commons/lib/items/types/testplan'
+import type { TestPlan } from '@cascadia/commons/items/types/testplan'
 import type { TestPlanDetailTab } from '@/components/tests/TestPlanDetail'
 import { TestPlanDetail } from '@/components/tests'
 import { TEST_PLAN_DETAIL_TABS } from '@/components/tests/TestPlanDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { entityQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { entityQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 // Version-context params + tab. useVersionContext reads and writes
 // branch/tag/commit through the URL; validateSearch strips anything the

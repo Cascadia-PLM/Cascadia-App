@@ -3,12 +3,12 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import { CommitService } from '@/lib/services/CommitService'
-import { VersionResolver } from '@/lib/services/VersionResolver'
-import { NotFoundError } from '@/lib/errors'
-import { requireDesignAccess } from '@/lib/auth/access'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { itemListSchema } from '@/lib/api/schemas'
+import { CommitService } from '@/services/CommitService'
+import { VersionResolver } from '@/services/VersionResolver'
+import { NotFoundError } from '@/errors'
+import { requireDesignAccess } from '@/auth/access'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { itemListSchema } from '@/api/schemas'
 
 const adapt = tagged('Commits')
 

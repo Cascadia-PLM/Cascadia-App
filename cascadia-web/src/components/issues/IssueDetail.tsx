@@ -5,8 +5,8 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
-import type { Issue } from '@cascadia/commons/lib/items/types/issue'
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Issue } from '@cascadia/commons/items/types/issue'
+import type { Design } from '@cascadia/commons/types/design'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,
@@ -15,8 +15,8 @@ import {
 import { StateBadge } from '@/components/items/StateBadge'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { DesignMultiSelector } from '@/components/versioning/DesignMultiSelector'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { itemAtContextQuery } from '@/lib/query/options/items'
+import { useVersionContext } from '@/hooks/useVersionContext'
+import { itemAtContextQuery } from '@/query/options/items'
 import {
   Badge,
   Button,
@@ -36,7 +36,7 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 
 const SEVERITY_OPTIONS = [

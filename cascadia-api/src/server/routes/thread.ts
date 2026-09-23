@@ -5,17 +5,17 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import type { ThreadDomain } from '@/lib/services/ThreadService'
-import { db } from '@/lib/db'
-import { items } from '@/lib/db/schema'
-import { ThreadService } from '@/lib/services/ThreadService'
-import { NotFoundError } from '@/lib/errors'
-import { requireItemAccess } from '@/lib/auth/access'
+import type { ThreadDomain } from '@/services/ThreadService'
+import { db } from '@/db'
+import { items } from '@/db/schema'
+import { ThreadService } from '@/services/ThreadService'
+import { NotFoundError } from '@/errors'
+import { requireItemAccess } from '@/auth/access'
 import {
   ThreadComparisonService,
   threadComparisonRequestSchema,
-} from '@/lib/services/ThreadComparisonService'
-import { apiHandler } from '@/lib/api/handler'
+} from '@/services/ThreadComparisonService'
+import { apiHandler } from '@/api/handler'
 
 const adapt = tagged('Thread')
 

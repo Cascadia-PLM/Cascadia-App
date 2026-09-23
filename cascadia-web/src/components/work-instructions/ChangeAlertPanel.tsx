@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Check, CheckCheck, Clock, X } from 'lucide-react'
-import type { WorkInstructionChangeAlert } from '@cascadia/commons/lib/items/types/work-instruction'
+import type { WorkInstructionChangeAlert } from '@cascadia/commons/items/types/work-instruction'
 import {
   Badge,
   Button,
@@ -14,9 +14,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources, workInstructionAlertsQuery } from '@/lib/query'
+import { cn } from '@/utils'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources, workInstructionAlertsQuery } from '@/query'
 
 interface ChangeAlertPanelProps {
   workInstructionId: string

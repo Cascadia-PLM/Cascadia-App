@@ -14,7 +14,7 @@
  *     transactions interleaving cannot occur. A check-then-write that is wide
  *     open in production looks atomic under test.
  *  2. **A service that ignores its caller's `tx` looks correct.** `withTx`'s
- *     own doc comment in `lib/db/index.ts` spells this out: on the pooled
+ *     own doc comment in `db/index.ts` spells this out: on the pooled
  *     handle, opening a second transaction lands on a *different* connection
  *     and commits independently of the caller's rollback — but under
  *     `TestDatabase` it lands on the same connection, nests as a savepoint,
@@ -57,7 +57,7 @@ import { inArray, or, sql } from 'drizzle-orm'
 import { insertTestUserWithRole } from '../fixtures/users'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type { TestUser } from '../fixtures/users'
-import * as schema from '@/lib/db/schema'
+import * as schema from '@/db/schema'
 import {
   branchItems,
   changeOrderAffectedItems,
@@ -67,10 +67,10 @@ import {
   jobs,
   programs,
   users,
-} from '@/lib/db/schema'
-import { resetDb, setTestAutonomousDb, setTestDb } from '@/lib/db'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
+} from '@/db/schema'
+import { resetDb, setTestAutonomousDb, setTestDb } from '@/db'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
 
 type DbSchema = typeof schema
 type TestDbInstance = PostgresJsDatabase<DbSchema>

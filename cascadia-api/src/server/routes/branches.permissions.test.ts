@@ -59,23 +59,23 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { BranchService } from '@/lib/services/BranchService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { requireBranchAccess } from '@/lib/auth/access'
-import { PermissionDeniedError } from '@/lib/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { BranchService } from '@/services/BranchService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { requireBranchAccess } from '@/auth/access'
+import { PermissionDeniedError } from '@/errors'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 interface ErrorEnvelope {
   error: { code: string }

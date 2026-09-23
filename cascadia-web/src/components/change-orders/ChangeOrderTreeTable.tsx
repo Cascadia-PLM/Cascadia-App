@@ -3,18 +3,18 @@
 
 import { Check, ExternalLink, Minus, Plus } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
-import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import { formatRevision } from '@cascadia/commons/types/lifecycle'
 import type { BOMTreeNode } from '@/components/bom/types'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import { Badge } from '@/components/ui'
 import { BomTreeView } from '@/components/bom/BomTreeView'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 import { StateBadge } from '@/components/items/StateBadge'
 import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 export type { BOMTreeNode }
 

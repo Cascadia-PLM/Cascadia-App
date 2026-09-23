@@ -14,15 +14,15 @@ import {
   getImportConfig,
   getValidationSummary,
   validateBomStructure,
-} from '@cascadia/commons/lib/import'
+} from '@cascadia/commons/import'
 import type {
   BomDetectionResult,
   BomRelationship,
   ImportItemType,
   ValidatedRow,
-} from '@cascadia/commons/lib/import'
+} from '@cascadia/commons/import'
 import { Badge, Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface ValidationPreviewStepProps {
   itemType?: ImportItemType

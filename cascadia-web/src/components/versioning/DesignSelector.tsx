@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Design } from '@cascadia/commons/types/design'
 import {
   Select,
   SelectContent,

@@ -3,47 +3,47 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { changeActionSchema } from '@cascadia/commons/lib/items/types/change-order'
-import { markConflictReviewedRequestSchema } from '@cascadia/commons/lib/services/types/conflict-review'
+import { changeActionSchema } from '@cascadia/commons/items/types/change-order'
+import { markConflictReviewedRequestSchema } from '@cascadia/commons/services/types/conflict-review'
 import { tagged } from '../adapter'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
-import type { SessionUser } from '@/lib/auth/session'
-import { requireRole } from '@/lib/auth/server'
-import { ApprovalRegistry } from '@/lib/lifecycles/approval-registry'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { LifecycleService } from '@/lib/services/LifecycleService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { ChangeOrderMergeService } from '@/lib/services/ChangeOrderMergeService'
-import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
-import { ConflictDetectionService } from '@/lib/services/ConflictDetectionService'
-import { ConflictReviewService } from '@/lib/services/ConflictReviewService'
-import { ChangeOrderBranchHistoryService } from '@/lib/services/ChangeOrderBranchHistoryService'
-import { ChangeOrderStructureService } from '@/lib/services/ChangeOrderStructureService'
-import { LifecycleDefinitionService } from '@/lib/lifecycles/LifecycleDefinitionService'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
-import { ApprovalService } from '@/lib/lifecycles/ApprovalService'
-import { apiHandler, created, jsonResponse } from '@/lib/api/handler'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
+import type { SessionUser } from '@/auth/session'
+import { requireRole } from '@/auth/server'
+import { ApprovalRegistry } from '@/lifecycles/approval-registry'
+import { ItemService } from '@/items/services/ItemService'
+import { LifecycleService } from '@/services/LifecycleService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { ChangeOrderMergeService } from '@/services/ChangeOrderMergeService'
+import { ImpactAssessmentService } from '@/items/services/ImpactAssessmentService'
+import { ConflictDetectionService } from '@/services/ConflictDetectionService'
+import { ConflictReviewService } from '@/services/ConflictReviewService'
+import { ChangeOrderBranchHistoryService } from '@/services/ChangeOrderBranchHistoryService'
+import { ChangeOrderStructureService } from '@/services/ChangeOrderStructureService'
+import { LifecycleDefinitionService } from '@/lifecycles/LifecycleDefinitionService'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
+import { ApprovalService } from '@/lifecycles/ApprovalService'
+import { apiHandler, created, jsonResponse } from '@/api/handler'
 import {
   AlreadyExistsError,
   NotFoundError,
   PermissionDeniedError,
   ValidationError,
-} from '@/lib/errors'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { DesignService } from '@/lib/services/DesignService'
+} from '@/errors'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { ProgramService } from '@/services/ProgramService'
+import { DesignService } from '@/services/DesignService'
 import {
   requireChangeOrderAccess,
   requireDesignAccess,
   resolveChangeOrderDesignScope,
-} from '@/lib/auth/access'
+} from '@/auth/access'
 import {
   changeOrderUpdateSchema,
   stateApproverInputSchema,
   workflowStateSchema,
   workflowTransitionSchema,
-} from '@/lib/api/schemas'
-import '@/lib/items/registerItemTypes.server'
+} from '@/api/schemas'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Change Orders')
 

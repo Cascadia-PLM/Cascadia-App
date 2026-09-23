@@ -53,7 +53,7 @@ item_relationships.target_make_code text execution of the target Part revision
 designs.configuration         jsonb   how a Manufacturing design was resolved
 ```
 
-Shapes (`cascadia-commons/src/lib/types/variants.ts`):
+Shapes (`cascadia-commons/src/types/variants.ts`):
 
 ```ts
 interface OptionCondition {
@@ -230,8 +230,8 @@ Part and moves lines onto it, and merging is the reverse.
 
 | Concern                         | Where                                                                                                                                   |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Types, canonical form, matching | `cascadia-commons/src/lib/types/variants.ts`                                                                                            |
-| Validation, lint, resolve       | `cascadia-api/src/lib/services/VariantService.ts`                                                                                       |
+| Types, canonical form, matching | `cascadia-commons/src/types/variants.ts`                                                                                                |
+| Validation, lint, resolve       | `cascadia-api/src/services/VariantService.ts`                                                                                           |
 | Line write rules                | `ItemRelationshipService.assertOptionDeclared`, `edgeKey`                                                                               |
 | Part write rules                | `VariantService.assertPartVariantWrite` (called from `ItemService.update`)                                                              |
 | MBOM derivation                 | `MbomService.createFromEbom`, `copyEbomStructureInternal`                                                                               |

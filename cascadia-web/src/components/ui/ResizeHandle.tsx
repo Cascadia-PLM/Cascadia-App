@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface ResizeHandleProps {
   /** Which side of the panel the handle is on */

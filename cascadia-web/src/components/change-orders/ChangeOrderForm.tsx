@@ -3,11 +3,11 @@
 
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
-import { changeOrderSchema } from '@cascadia/commons/lib/items/types/change-order'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
+import { changeOrderSchema } from '@cascadia/commons/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
-import { getItemNumberHelpText } from '@/lib/items/numbering/format'
-import { zodValidator } from '@/lib/form-validation'
+import { getItemNumberHelpText } from '@/items/numbering/format'
+import { zodValidator } from '@/form-validation'
 import {
   Button,
   Checkbox,

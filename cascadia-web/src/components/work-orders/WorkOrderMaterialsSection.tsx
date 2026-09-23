@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { PackageCheck, ScanLine, Trash2 } from 'lucide-react'
-import type { WorkOrderMaterial } from '@/lib/query'
+import type { WorkOrderMaterial } from '@/query'
 import {
   Badge,
   Button,
@@ -22,15 +22,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import {
   itemTextSearchQuery,
   useInvalidateResources,
   workOrderMaterialsQuery,
   workOrderProducedQuery,
-} from '@/lib/query'
+} from '@/query'
 
 interface PartSuggestion {
   id: string

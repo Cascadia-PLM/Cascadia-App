@@ -45,9 +45,9 @@ import programsRoutes from './programs'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
+import { ProgramService } from '@/services/ProgramService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
 
 describe('programs routes — role × membership matrix', () => {
   const testDb = new TestDatabase()

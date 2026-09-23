@@ -40,25 +40,25 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { ChangeOrderMergeService } from '@/lib/services/ChangeOrderMergeService'
-import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { ChangeOrderMergeService } from '@/services/ChangeOrderMergeService'
+import { ImpactAssessmentService } from '@/items/services/ImpactAssessmentService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { ItemTypeRegistry } from '@/items/registry'
 import {
   branchItems,
   itemRelationships,
   items,
   lifecycleDefinitions,
   lifecycleInstances,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const STRUCTURE_TEST_WORKFLOW_ID = '00000000-0000-4000-8000-000000000207'
 

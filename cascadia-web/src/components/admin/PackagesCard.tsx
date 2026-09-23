@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { usePackages } from '@/lib/hooks/usePackages'
+import { usePackages } from '@/hooks/usePackages'
 
 /**
  * Read-only listing of the optional packages this instance is licensed for.

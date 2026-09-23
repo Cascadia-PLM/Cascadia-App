@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
+import type { JobContext, JobHandler } from '@cascadia/api/jobs/types'
 import type {
   WatermarkPdfPayload,
   WatermarkPdfResult,
-} from '@cascadia/api/lib/jobs/definitions/watermark/types'
+} from '@cascadia/api/jobs/definitions/watermark/types'
 
 /**
  * Stamp a mark onto PDF attachments, one new file version per file.
@@ -28,11 +28,9 @@ export const watermarkPdfHandler: JobHandler<
     // Dynamic imports keep the dispatch-side bundle free of pdf-lib and the
     // vault service, matching the other Node handlers.
     const { FileService } =
-      await import('@cascadia/api/lib/vault/services/FileService')
-    const { applyWatermark } =
-      await import('@cascadia/api/lib/vault/pdf/watermark')
-    const { previewKindFor } =
-      await import('@cascadia/commons/lib/vault/preview')
+      await import('@cascadia/api/vault/services/FileService')
+    const { applyWatermark } = await import('@cascadia/api/vault/pdf/watermark')
+    const { previewKindFor } = await import('@cascadia/commons/vault/preview')
 
     await context.log.info('Starting watermark job', {
       fileCount: payload.fileIds.length,
@@ -64,8 +62,8 @@ export const watermarkPdfHandler: JobHandler<
           // or its working copy is merged. Re-check at execution time so the
           // asynchronous rewrite cannot cross that protection boundary.
           const [{ requireItemAccess }, { ItemService }] = await Promise.all([
-            import('@cascadia/api/lib/auth/access'),
-            import('@cascadia/api/lib/items/services/ItemService'),
+            import('@cascadia/api/auth/access'),
+            import('@cascadia/api/items/services/ItemService'),
           ])
           const item = await requireItemAccess(payload.userId, file.itemId)
           await ItemService.requireContentEditable(item, payload.userId)
@@ -110,8 +108,8 @@ export const watermarkPdfHandler: JobHandler<
         // the write; automatic release stamps deliberately skip both checks.
         if (payload.requireEditable) {
           const [{ requireItemAccess }, { ItemService }] = await Promise.all([
-            import('@cascadia/api/lib/auth/access'),
-            import('@cascadia/api/lib/items/services/ItemService'),
+            import('@cascadia/api/auth/access'),
+            import('@cascadia/api/items/services/ItemService'),
           ])
           const item = await requireItemAccess(payload.userId, file.itemId)
           await ItemService.requireContentEditable(item, payload.userId)

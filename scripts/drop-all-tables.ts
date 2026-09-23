@@ -9,7 +9,7 @@
  * Uses dynamic SQL to discover and drop all tables, which works
  * with RDS users that don't have permission to DROP SCHEMA.
  */
-import { db, describeConnection } from '@cascadia/api/lib/db'
+import { db, describeConnection } from '@cascadia/api/db'
 
 try {
   console.log(`Target database: ${describeConnection()}`)

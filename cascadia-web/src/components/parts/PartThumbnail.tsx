@@ -8,7 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/Tooltip'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 const sizeMap = {
   sm: 32,

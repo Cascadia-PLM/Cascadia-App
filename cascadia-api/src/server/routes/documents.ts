@@ -3,14 +3,14 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import type { Document } from '@cascadia/commons/lib/items/types/document'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { NotFoundError } from '@/lib/errors'
-import { apiHandler } from '@/lib/api/handler'
-import { documentUpdateSchema } from '@/lib/api/schemas'
-import { requireItemAccess } from '@/lib/auth/access'
+import type { Document } from '@cascadia/commons/items/types/document'
+import { ItemService } from '@/items/services/ItemService'
+import { NotFoundError } from '@/errors'
+import { apiHandler } from '@/api/handler'
+import { documentUpdateSchema } from '@/api/schemas'
+import { requireItemAccess } from '@/auth/access'
 // Register item types (server-side version)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Documents')
 

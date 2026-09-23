@@ -7,12 +7,9 @@ import { ArrowLeft, Edit, Save, Trash2, X } from 'lucide-react'
 import {
   TOOL_SUBTYPES,
   getSubtypeGroup,
-} from '@cascadia/commons/lib/items/types/tool'
+} from '@cascadia/commons/items/types/tool'
 import { CapabilitiesEditor, CapabilitiesView } from './CapabilitiesEditor'
-import type {
-  KnownToolSubtype,
-  Tool,
-} from '@cascadia/commons/lib/items/types/tool'
+import type { KnownToolSubtype, Tool } from '@cascadia/commons/items/types/tool'
 import type { SearchableSelectOption } from '@/components/ui/SearchableSelect'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
 import type { EnrichmentSources } from '@/components/items/enrichment-sources'
@@ -28,9 +25,9 @@ import {
   fillEmptyFields,
   mergeEnrichmentAttributes,
 } from '@/components/items/apply-enrichment'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
-import { ITEM_NUMBER_PLACEHOLDER } from '@/lib/items/numbering/format'
+import { ITEM_NUMBER_PLACEHOLDER } from '@/items/numbering/format'
 import {
   Button,
   Card,
@@ -50,7 +47,7 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { StateBadge } from '@/components/items/StateBadge'
 import { FreeTransitionControl } from '@/components/items/FreeTransitionControl'
 

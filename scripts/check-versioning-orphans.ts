@@ -18,7 +18,7 @@
  */
 
 import { sql } from 'drizzle-orm'
-import { db } from '@cascadia/api/lib/db'
+import { db } from '@cascadia/api/db'
 
 interface EdgeCheck {
   edge: string

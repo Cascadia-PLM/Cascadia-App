@@ -2,14 +2,14 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { hasPermission } from '@cascadia/commons/lib/auth/permissions'
+import { hasPermission } from '@cascadia/commons/auth/permissions'
 import { tagged } from '../adapter'
-import { JobService } from '@/lib/jobs/JobService'
-import { apiHandler } from '@/lib/api/handler'
-import { permissionService } from '@/lib/auth/permission-service'
-import { resolveCredentials } from '@/lib/auth/credentials'
-import { intersectPermissions } from '@/lib/auth/api-key-utils'
-import { NotFoundError } from '@/lib/errors'
+import { JobService } from '@/jobs/JobService'
+import { apiHandler } from '@/api/handler'
+import { permissionService } from '@/auth/permission-service'
+import { resolveCredentials } from '@/auth/credentials'
+import { intersectPermissions } from '@/auth/api-key-utils'
+import { NotFoundError } from '@/errors'
 
 const adapt = tagged('Jobs')
 

@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Check, Link2, X } from 'lucide-react'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import {
   Dialog,
   DialogContent,
@@ -33,14 +33,14 @@ import {
   DEFAULT_BOM_QUANTITY,
   isValidQuantity,
 } from '@/components/items/bom-quantity'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useListSelection } from '@/lib/hooks/useListSelection'
-import { apiFetch } from '@/lib/api/client'
-import { entityQuery, useInvalidateResources } from '@/lib/query'
-import { ITEM_TYPE_OPTIONS } from '@/lib/items/item-type-ui'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useListSelection } from '@/hooks/useListSelection'
+import { apiFetch } from '@/api/client'
+import { entityQuery, useInvalidateResources } from '@/query'
+import { ITEM_TYPE_OPTIONS } from '@/items/item-type-ui'
 import { StateBadge } from '@/components/items/StateBadge'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface AddRelationshipDialogProps {
   open: boolean

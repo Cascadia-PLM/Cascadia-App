@@ -3,7 +3,7 @@
 
 import { MoreVertical, RotateCcw, SkipForward, Trash2 } from 'lucide-react'
 import type { DataGridColumn, Row } from '@/components/ui'
-import type { EventConsumerStatus } from '@/lib/query'
+import type { EventConsumerStatus } from '@/query'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
   DropdownMenu,

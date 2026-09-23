@@ -66,25 +66,25 @@ import { createHash } from 'node:crypto'
 import {
   ensureDomainEventSequencing,
   sequenceUnsequencedEvents,
-} from '@cascadia/api/lib/events'
+} from '@cascadia/api/events'
 import {
   registerCoreExtensions,
   registerRabbitMqEventRelay,
   registerWebhookDispatcher,
   startEventConsumerPolling,
-} from '@cascadia/api/lib/extensions'
-import { db } from '@cascadia/api/lib/db'
-import { startWebhookDeliveryPump } from '@cascadia/api/lib/webhooks/pump'
-import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
-import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
-import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
-import { workerLogger } from '@cascadia/api/lib/logging/logger'
-import { redactUrlCredentials } from '@cascadia/api/lib/logging/redact-url'
+} from '@cascadia/api/extensions'
+import { db } from '@cascadia/api/db'
+import { startWebhookDeliveryPump } from '@cascadia/api/webhooks/pump'
+import { RabbitMQClient } from '@cascadia/api/jobs/rabbitmq/client'
+import { JobTypeRegistry } from '@cascadia/api/jobs/registry'
+import { ItemTypeRegistry } from '@cascadia/api/items/registry'
+import { workerLogger } from '@cascadia/api/logging/logger'
+import { redactUrlCredentials } from '@cascadia/api/logging/redact-url'
 import { deadLetterDepth, startRetryScheduler } from './scheduler'
 import { JobWorker } from './worker'
 
 // Register job type definitions (configs + schemas)
-import '@cascadia/api/lib/jobs/definitions/register'
+import '@cascadia/api/jobs/definitions/register'
 
 // Register Node.js handler implementations
 import './register'
@@ -95,7 +95,7 @@ import './register'
 // process mounts none, so without this line the registry is empty here and
 // every item type answers "no lifecycle assigned" — which is what
 // `design.clone` hit on its first item, reporting it as an unseeded database.
-import '@cascadia/api/lib/items/registerItemTypes.server'
+import '@cascadia/api/items/registerItemTypes.server'
 
 /**
  * Start a simple HTTP health check server for container orchestration.

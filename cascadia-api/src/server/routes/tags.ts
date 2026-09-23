@@ -3,13 +3,13 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import { DesignService } from '@/lib/services/DesignService'
+import { DesignService } from '@/services/DesignService'
 import {
   requireDesignAccess,
   requireDesignManageAuthority,
-} from '@/lib/auth/access'
-import { NotFoundError } from '@/lib/errors'
-import { apiHandler } from '@/lib/api/handler'
+} from '@/auth/access'
+import { NotFoundError } from '@/errors'
+import { apiHandler } from '@/api/handler'
 
 const adapt = tagged('Tags')
 

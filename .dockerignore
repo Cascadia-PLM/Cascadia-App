@@ -27,7 +27,7 @@ dist
 html
 
 # Runtime data. `vault` is the local file-vault store and reaches multiple GB.
-# These match root-level entries only, so src/lib/vault is unaffected.
+# These match root-level entries only, so src/vault is unaffected.
 vault
 vault-storage
 storage

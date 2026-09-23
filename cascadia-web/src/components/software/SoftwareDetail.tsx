@@ -17,8 +17,8 @@ import {
 } from 'lucide-react'
 import { BuildArtifactCard } from './BuildArtifactCard'
 import { SourceViewer } from './SourceViewer'
-import type { Software } from '@cascadia/commons/lib/items/types/software'
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Software } from '@cascadia/commons/items/types/software'
+import type { Design } from '@cascadia/commons/types/design'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,
@@ -26,8 +26,8 @@ import {
 } from '@/components/items/AttributesEditor'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { useEditLock, useItemEditContext } from '@/lib/hooks/useEditLock'
+import { useVersionContext } from '@/hooks/useVersionContext'
+import { useEditLock, useItemEditContext } from '@/hooks/useEditLock'
 import { WorkspaceContextBanner } from '@/components/workspaces/WorkspaceContextBanner'
 import {
   Badge,
@@ -51,13 +51,13 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { useReleasedFamily } from '@/hooks/useReleasedFamily'
 import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
-import { itemAtContextQuery } from '@/lib/query/options/items'
-import { branchDetailQuery, designStatusQuery } from '@/lib/query'
+import { itemAtContextQuery } from '@/query/options/items'
+import { branchDetailQuery, designStatusQuery } from '@/query'
 
 const SOFTWARE_TYPE_OPTIONS = [
   { value: 'firmware', label: 'Firmware' },

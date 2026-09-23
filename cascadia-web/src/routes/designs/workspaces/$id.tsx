@@ -20,14 +20,14 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   useInvalidateResources,
   workspaceCommitsQuery,
   workspaceDetailQuery,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 import { ConvertToChangeOrderDialog } from '@/components/workspaces/ConvertToChangeOrderDialog'
 import { MergeToChangeOrderDialog } from '@/components/workspaces/MergeToChangeOrderDialog'
 import { WorkspaceItemsPanel } from '@/components/workspaces/WorkspaceItemsPanel'

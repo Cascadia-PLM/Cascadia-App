@@ -236,7 +236,7 @@ Enterprise search does not support offset-based pagination; it returns up to `li
 ## Client-Side Usage
 
 ```typescript
-import { apiGet } from '@/lib/api/client'
+import { apiGet } from '@/api/client'
 
 // Enterprise search
 const { data } = await apiGet<{

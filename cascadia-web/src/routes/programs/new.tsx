@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 import type {
   CreateProgramInput,
   Program,
-} from '@cascadia/commons/lib/types/program'
+} from '@cascadia/commons/types/program'
 import { PageContainer } from '@/components/layout'
 import { ProgramForm } from '@/components/programs/ProgramForm'
 import {
@@ -18,8 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/programs/new')({
   component: NewProgramPage,

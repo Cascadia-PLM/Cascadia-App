@@ -5,7 +5,7 @@ import { FormField, Input } from '@/components/ui'
 import {
   ITEM_NUMBER_PLACEHOLDER,
   getItemNumberHelpText,
-} from '@/lib/items/numbering/format'
+} from '@/items/numbering/format'
 
 interface ItemNumberFieldProps {
   /** Item type key (e.g. 'Part') — drives the format example in the help text. */

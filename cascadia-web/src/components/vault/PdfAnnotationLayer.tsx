@@ -3,15 +3,15 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { MessageSquare, Trash2 } from 'lucide-react'
-import { MIN_DRAG_EXTENT } from '@cascadia/commons/lib/vault/annotations'
+import { MIN_DRAG_EXTENT } from '@cascadia/commons/vault/annotations'
 import type {
   AnnotationGeometry,
   AnnotationKind,
   FileAnnotation,
   NormalizedPoint,
   NormalizedRect,
-} from '@cascadia/commons/lib/vault/annotations'
-import { cn } from '@/lib/utils'
+} from '@cascadia/commons/vault/annotations'
+import { cn } from '@/utils'
 
 export type AnnotationTool = AnnotationKind | 'select'
 

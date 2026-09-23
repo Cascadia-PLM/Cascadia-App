@@ -36,8 +36,8 @@ import { SidebarNavItem } from './SidebarNavItem'
 import { SidebarSection } from './SidebarSection'
 import { NavSubItem } from './NavSubItem'
 import type { SidebarNavProps } from './types'
-import { useSystemAccess } from '@/lib/hooks/usePermissions'
-import { Slot } from '@/lib/ui/slot-registry'
+import { useSystemAccess } from '@/hooks/usePermissions'
+import { Slot } from '@/ui/slot-registry'
 
 function SectionHeader({ label, isOpen }: { label: string; isOpen: boolean }) {
   if (isOpen) {

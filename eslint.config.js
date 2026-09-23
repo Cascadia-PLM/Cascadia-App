@@ -40,7 +40,7 @@ const local = {
 // the list is empty and the rule below restricts nothing, which is exactly
 // correct there.
 //
-// Each module keeps its lib code under `lib/<module-name>/` and (where it
+// Each module keeps its code under `<module-name>/` and (where it
 // has any) its components under `components/<module-name>/`, so those
 // namespaces are patternable per package name. That convention is the whole
 // coverage: a module file OUTSIDE its namesake namespace — cad-generation's
@@ -55,9 +55,9 @@ const local = {
 const proprietaryImportPatterns = [
   ...MODULE_PACKAGES.flatMap((p) => [`@cascadia/${p}`, `@cascadia/${p}/**`]),
   ...MODULE_PACKAGES.flatMap((p) => [
-    `@/lib/${p}`,
-    `@/lib/${p}/**`,
-    `**/lib/${p}/**`,
+    `@/${p}`,
+    `@/${p}/**`,
+    `**/${p}/**`,
     `@/components/${p}/**`,
   ]),
 ]
@@ -67,7 +67,7 @@ const proprietaryImportPatterns = [
 // `A_1` matches `AB1`, and a bare `%` matches every row — a full table scan the
 // user never asked for, and results that quietly disagree with the in-memory
 // `String.includes` path. Build the pattern with likeContains / likeStartsWith
-// / likeEndsWith from `@/lib/db/like-pattern`, which escape the term.
+// / likeEndsWith from `@/db/like-pattern`, which escape the term.
 //
 // Both selectors are argument-position only, and the `expressions.length > 0`
 // guard keeps constant patterns such as `like(items.revision, '-%')` legal —
@@ -83,13 +83,13 @@ const likePatternRestrictions = [
     selector:
       'CallExpression[callee.name=/^(like|ilike|notLike|notIlike)$/] > TemplateLiteral[expressions.length>0]',
     message:
-      'Do not interpolate a term into a LIKE/ILIKE pattern — `%` and `_` become wildcards. Use likeContains/likeStartsWith/likeEndsWith from @/lib/db/like-pattern.',
+      'Do not interpolate a term into a LIKE/ILIKE pattern — `%` and `_` become wildcards. Use likeContains/likeStartsWith/likeEndsWith from @/db/like-pattern.',
   },
   {
     selector:
       "CallExpression[callee.name=/^(like|ilike|notLike|notIlike)$/] > BinaryExpression[operator='+']",
     message:
-      'Do not concatenate a term into a LIKE/ILIKE pattern — `%` and `_` become wildcards. Use likeContains/likeStartsWith/likeEndsWith from @/lib/db/like-pattern.',
+      'Do not concatenate a term into a LIKE/ILIKE pattern — `%` and `_` become wildcards. Use likeContains/likeStartsWith/likeEndsWith from @/db/like-pattern.',
   },
 ]
 
@@ -111,7 +111,7 @@ export default [
       'cascadia-app*/src/routeTree.gen.ts',
       // Generated from the OpenAPI snapshot (npm run types:openapi) and
       // committed; nothing to review here either.
-      'cascadia-web/src/lib/api/openapi-types.gen.ts',
+      'cascadia-web/src/api/openapi-types.gen.ts',
     ],
   },
   ...tanstackConfig,
@@ -167,7 +167,7 @@ export default [
   // boundary invariant, and deliberately only half.
   //
   // `no-restricted-imports` matches the specifier *as written*: it sees the
-  // `@cascadia/<pkg>/**` root-pinned form and the `@/lib/<pkg>/**` /
+  // `@cascadia/<pkg>/**` root-pinned form and the `@/<pkg>/**` /
   // `@/components/<pkg>/**` namespace forms (each module keeps its code under
   // its namesake directories), but NOT a relative `./...` import, a dynamic
   // `import()`, a bare package id in a string, or a module file living outside
@@ -221,7 +221,8 @@ export default [
   // only: the browser never builds a Drizzle chain, and `.offset(` on an array
   // means something else entirely.
   {
-    files: ['cascadia-*/src/lib/**/*.ts', 'cascadia-*/src/server/**/*.ts'],
+    files: ['cascadia-api/src/**/*.ts', 'cascadia-commons/src/**/*.ts'],
+    ignores: ['cascadia-api/src/__tests__/**'],
     rules: { 'local/paginated-query-total-order': 'error' },
   },
   // Escape user text before it reaches a LIKE/ILIKE pattern — see
@@ -455,8 +456,8 @@ export default [
   // Adding this block anywhere above that one would silently disable the
   // LIKE-pattern restrictions for the dispatcher.
   {
-    files: ['cascadia-*/src/lib/events/webhooks/**/*.ts'],
-    ignores: ['cascadia-*/src/lib/events/webhooks/**/*.test.ts'],
+    files: ['cascadia-api/src/events/webhooks/**/*.ts'],
+    ignores: ['cascadia-api/src/events/webhooks/**/*.test.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',

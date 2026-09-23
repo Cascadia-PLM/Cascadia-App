@@ -32,10 +32,10 @@ import {
   TableRow,
   Textarea,
 } from '@/components/ui'
-import { useInvalidateResources } from '@/lib/query'
-import { partAmlQuery } from '@/lib/query/options/manufacturer-parts'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useInvalidateResources } from '@/query'
+import { partAmlQuery } from '@/query/options/manufacturer-parts'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 type QualificationStatus = 'proposed' | 'approved' | 'obsolete'
 

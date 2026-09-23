@@ -4,11 +4,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { GitBranch, Loader2, Plus, RotateCcw, Workflow } from 'lucide-react'
-import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
+import { resolveLifecycleType } from '@cascadia/commons/lifecycles/normalize'
 import type {
   LifecycleDefinition,
   LifecycleType,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,
@@ -19,11 +19,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { LifecycleTable } from '@/components/lifecycles/LifecycleTable'
-import { lifecycleListQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { lifecycleListQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/lifecycles/')({
   component: LifecyclesListPage,

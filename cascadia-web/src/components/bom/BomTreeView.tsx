@@ -15,7 +15,7 @@ import {
   ContextMenuContent,
   ContextMenuTrigger,
 } from '@/components/ui/ContextMenu'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 export interface BomTreeViewProps<T extends BOMTreeNode> {
   nodes: Array<T>

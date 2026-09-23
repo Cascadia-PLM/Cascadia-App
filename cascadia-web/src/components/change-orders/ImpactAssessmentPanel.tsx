@@ -19,12 +19,12 @@ import {
   Plus,
   Users,
 } from 'lucide-react'
-import { formatRevision } from '@cascadia/commons/lib/types/lifecycle'
+import { formatRevision } from '@cascadia/commons/types/lifecycle'
 import type { LucideIcon } from 'lucide-react'
-import type { Risk } from '@cascadia/commons/lib/items/types/change-order'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query/hooks'
-import { changeOrderImpactReportQuery } from '@/lib/query/options/change-orders'
+import type { Risk } from '@cascadia/commons/items/types/change-order'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query/hooks'
+import { changeOrderImpactReportQuery } from '@/query/options/change-orders'
 import {
   Badge,
   Button,

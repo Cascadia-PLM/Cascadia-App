@@ -5,11 +5,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { KeyRound, Lock, Search, Users } from 'lucide-react'
-import type { AdminUser } from '@/lib/query'
+import type { AdminUser } from '@/query'
 import { Badge, Button, Card, Input } from '@/components/ui'
 import { PasswordResetDialog } from '@/components/users/PasswordResetDialog'
-import { adminUserListQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { adminUserListQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/users')({
   component: UsersPage,

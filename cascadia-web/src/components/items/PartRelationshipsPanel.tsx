@@ -25,7 +25,7 @@ import type {
   ViewMode,
   WhereUsedNode,
 } from './part-relationships/types'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import {
   Badge,
   Button,
@@ -36,16 +36,16 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useTheme } from '@/lib/theme'
-import { apiFetch } from '@/lib/api/client'
-import { entityQuery, useInvalidateResources } from '@/lib/query'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useTheme } from '@/theme'
+import { apiFetch } from '@/api/client'
+import { entityQuery, useInvalidateResources } from '@/query'
 import {
   itemBomTreeQuery,
   itemRelationshipsQuery,
   itemWhereUsedQuery,
-} from '@/lib/query/options/relationships'
+} from '@/query/options/relationships'
 
 interface PartRelationshipsPanelProps {
   itemId: string

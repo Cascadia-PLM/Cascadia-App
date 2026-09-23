@@ -3,9 +3,9 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../adapter'
-import { db } from '@/lib/db'
-import { roles } from '@/lib/db/schema/users'
-import { apiHandler } from '@/lib/api/handler'
+import { db } from '@/db'
+import { roles } from '@/db/schema/users'
+import { apiHandler } from '@/api/handler'
 
 const adapt = tagged('Roles')
 

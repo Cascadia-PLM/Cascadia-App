@@ -16,16 +16,16 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
-import type * as schema from '@/lib/db/schema'
-import { itemTypeConfigs, lifecycleDefinitions, users } from '@/lib/db/schema'
+import type * as schema from '@/db/schema'
+import { itemTypeConfigs, lifecycleDefinitions, users } from '@/db/schema'
 import {
   PART_LIFECYCLE_DEFINITION,
   REQUIREMENT_LIFECYCLE_DEFINITION,
   WORK_ORDER_LIFECYCLE_DEFINITION,
-} from '@/lib/items/default-lifecycles'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/items/default-lifecycles'
+import { ItemTypeRegistry } from '@/items/registry'
 
 type DbSchema = typeof schema
 type TestDbInstance = PostgresJsDatabase<DbSchema>
@@ -36,7 +36,7 @@ type TestDbInstance = PostgresJsDatabase<DbSchema>
  */
 export const SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000000'
 
-// The canonical definitions live in `@/lib/items/default-lifecycles` — the
+// The canonical definitions live in `@/items/default-lifecycles` — the
 // same data the app seed and the test global-setup use. Re-exported here so
 // suites keep their historical import path.
 export {

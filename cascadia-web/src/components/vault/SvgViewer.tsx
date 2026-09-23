@@ -11,7 +11,7 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import {
   useFullscreen,
   useViewerZoom,

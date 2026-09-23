@@ -4,8 +4,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Download, Package, Trash2, Upload } from 'lucide-react'
-import type { Software } from '@cascadia/commons/lib/items/types/software'
-import type { FileMetadata } from '@/lib/query'
+import type { Software } from '@cascadia/commons/items/types/software'
+import type { FileMetadata } from '@/query'
 import {
   Button,
   Card,
@@ -13,10 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiErrorFromResponse, apiFetch } from '@/lib/api/client'
-import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
-import { fileMetadataQuery, useInvalidateResources } from '@/lib/query'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiErrorFromResponse, apiFetch } from '@/api/client'
+import { useReleasedFamily } from '@/hooks/useReleasedFamily'
+import { fileMetadataQuery, useInvalidateResources } from '@/query'
 
 /**
  * The primary build artifact slot (proposal §5.2): one vault file

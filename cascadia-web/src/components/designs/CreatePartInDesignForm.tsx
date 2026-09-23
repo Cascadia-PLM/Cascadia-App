@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Info } from 'lucide-react'
 import type { FormEvent } from 'react'
-import type { PartType } from '@cascadia/commons/lib/items/types/part'
+import type { PartType } from '@cascadia/commons/items/types/part'
 import {
   Button,
   ViewEditNumber,
@@ -15,9 +15,9 @@ import {
 } from '@/components/ui'
 import { DialogFooter } from '@/components/ui/Dialog'
 import { PART_TYPE_OPTIONS } from '@/components/parts/PartManufacturingCard'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
-import { designStatusQuery, useResourceMutation } from '@/lib/query'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { designStatusQuery, useResourceMutation } from '@/query'
 
 /**
  * What the create hands back that the caller needs. The item type's own

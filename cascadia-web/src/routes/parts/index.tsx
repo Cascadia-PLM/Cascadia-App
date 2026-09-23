@@ -5,13 +5,13 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { ItemFilters } from '@/lib/query'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { ItemFilters } from '@/query'
 import { PageContainer } from '@/components/layout'
 import { PartTable } from '@/components/parts/PartTable'
 import { ImportButton } from '@/components/import'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { useServerDataGrid } from '@/lib/hooks/useServerDataGrid'
+import { useVersionContext } from '@/hooks/useVersionContext'
+import { useServerDataGrid } from '@/hooks/useServerDataGrid'
 import {
   Badge,
   Button,
@@ -21,8 +21,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   designListQuery,
   gridParamsFromSearch,
@@ -31,8 +31,8 @@ import {
   itemListQuery,
   lifecycleByItemTypeQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 // Search schema for URL validation

@@ -11,8 +11,8 @@ import {
   ExternalLink,
   Save,
 } from 'lucide-react'
-import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
-import type { LifecyclesByChangeType } from '@/lib/query'
+import { resolveLifecycleType } from '@cascadia/commons/lifecycles/normalize'
+import type { LifecyclesByChangeType } from '@/query'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,
@@ -29,13 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import { getNumberingInfo } from '@/lib/items/numbering/format'
+import { getNumberingInfo } from '@/items/numbering/format'
 import {
   itemTypeConfigQuery,
   lifecycleListQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/item-types/$itemType')({
   component: ItemTypeConfigEditPage,
@@ -242,7 +242,9 @@ function ItemTypeConfigEditPage() {
           <CardTitle>Item Numbering</CardTitle>
           <CardDescription>
             How item numbers are generated for this type. Defined in code (
-            <code className="text-xs">src/lib/items/numbering/schemes.ts</code>
+            <code className="text-xs">
+              cascadia-commons/src/items/numbering/schemes.ts
+            </code>
             ).
           </CardDescription>
         </CardHeader>

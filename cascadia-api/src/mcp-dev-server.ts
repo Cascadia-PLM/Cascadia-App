@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   // A variable already exported in the environment still wins — dotenv does
   // not overwrite what is set.
   const [{ REPO_ROOT }, { config: loadEnv }, { resolve }] = await Promise.all([
-    import('./lib/mcp/repo-root'),
+    import('./mcp/repo-root'),
     import('dotenv'),
     import('node:path'),
   ])
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   const [{ StdioServerTransport }, { createDevMcpServer, DEV_SERVER_NAME }] =
     await Promise.all([
       import('@modelcontextprotocol/sdk/server/stdio.js'),
-      import('./lib/mcp/dev-server'),
+      import('./mcp/dev-server'),
     ])
 
   const server = createDevMcpServer()

@@ -17,7 +17,7 @@ import { ApprovalDialog } from './ApprovalDialog'
 import type {
   ApprovalStatus,
   CanApproveResult,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import {
   Badge,
   Button,
@@ -30,8 +30,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui'
-import { Slot } from '@/lib/ui/slot-registry'
-import { changeOrderApprovalsQuery, useInvalidateResources } from '@/lib/query'
+import { Slot } from '@/ui/slot-registry'
+import { changeOrderApprovalsQuery, useInvalidateResources } from '@/query'
 
 interface ApprovalStatusPanelProps {
   changeOrderId: string

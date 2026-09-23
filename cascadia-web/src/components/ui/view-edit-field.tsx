@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from './Select'
 import { Badge } from './Badge'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface BaseFieldProps {
   label: string

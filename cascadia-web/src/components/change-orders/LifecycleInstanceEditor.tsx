@@ -25,12 +25,12 @@ import type {
   InstanceState,
   InstanceTransition,
   LifecycleState,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import { StateNode } from '@/components/lifecycles/StateNode'
 import { TransitionEdge } from '@/components/lifecycles/TransitionEdge'
 import { Button } from '@/components/ui/Button'
-import { useTheme } from '@/lib/theme'
-import { apiErrorFromResponse } from '@/lib/api/client'
+import { useTheme } from '@/theme'
+import { apiErrorFromResponse } from '@/api/client'
 
 interface LifecycleInstanceEditorProps {
   changeOrderId: string
@@ -62,7 +62,7 @@ function getLayoutedElements(
   const nodeWidth = 180
   const nodeHeight = 80
 
-  // Kept in step with `withLayout` in lib/items/default-lifecycles.ts — see
+  // Kept in step with `withLayout` in items/default-lifecycles.ts — see
   // the note there on why the separations are wider than the boxes need.
   dagreGraph.setGraph({
     rankdir: direction,

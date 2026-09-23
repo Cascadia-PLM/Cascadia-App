@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@/components/ui'
 import { PageContainer } from '@/components/layout'
-import { physicalPartListQuery, useInvalidateResources } from '@/lib/query'
+import { physicalPartListQuery, useInvalidateResources } from '@/query'
 import { RegisterPhysicalPartDialog } from '@/components/physical-parts/RegisterPhysicalPartDialog'
 
 export const Route = createFileRoute('/physical-parts/')({

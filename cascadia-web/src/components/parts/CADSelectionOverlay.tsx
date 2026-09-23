@@ -10,7 +10,7 @@ import {
   MousePointerClick,
 } from 'lucide-react'
 import type { CADSelectionState } from './useCADSelectionState'
-import type { CadModelNode } from '@cascadia/commons/lib/vault/cad-nodes'
+import type { CadModelNode } from '@cascadia/commons/vault/cad-nodes'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -18,7 +18,7 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
 import { StateBadge } from '@/components/items/StateBadge'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 
 /**
  * What the selected part of an assembly is, and what can be done with it.

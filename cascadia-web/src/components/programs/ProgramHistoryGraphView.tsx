@@ -20,10 +20,10 @@ import type {
   ProgramCommitGraphNode,
   ProgramCommitNodeData,
   ProgramGraphData,
-} from '@cascadia/commons/lib/versioning/graph-types'
+} from '@cascadia/commons/versioning/graph-types'
 import type { MainHeadNodeType } from '@/components/versioning/MainHeadNode'
 import { FullscreenGraphWrapper } from '@/components/ui'
-import { useTheme } from '@/lib/theme'
+import { useTheme } from '@/theme'
 import { CommitNode } from '@/components/versioning/CommitNode'
 import { MainHeadNode } from '@/components/versioning/MainHeadNode'
 import { SharedForkEdge } from '@/components/versioning/SharedForkEdge'
@@ -33,7 +33,7 @@ import {
   computeBranchColumns,
   computeDagrePositions,
 } from '@/components/versioning/graph-layout'
-import { programHistoryGraphQuery } from '@/lib/query'
+import { programHistoryGraphQuery } from '@/query'
 
 interface ProgramHistoryGraphViewProps {
   programId: string

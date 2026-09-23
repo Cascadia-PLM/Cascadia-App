@@ -128,13 +128,12 @@ jobs:
             # package or app for free, instead of waiting to be noticed.
             #
             # The rest is what the runtime stage of cascadia-app/Dockerfile copies:
-            # public/, scripts/, tsconfig.json and tsconfig.base.json. `tests/**`
+            # scripts/, tsconfig.json and tsconfig.base.json. `tests/**`
             # and `docs/**` are absent on purpose — neither reaches the image, and
             # a test-only or docs-only commit should build nothing.
             _app_sources: &app_sources
               - 'cascadia-*/**'
               - 'scripts/**'
-              - 'public/**'
               - 'package.json'
               - 'package-lock.json'
               - 'tsconfig.json'

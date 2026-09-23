@@ -4,12 +4,12 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Factory, Save } from 'lucide-react'
-import { makeCodeSchema } from '@cascadia/commons/lib/types/variants'
+import { makeCodeSchema } from '@cascadia/commons/types/variants'
 import { OptionConditionChips } from './OptionConditionChips'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
 import type { BOMTreeNode } from '@/components/bom/types'
-import type { Make, OptionModel } from '@cascadia/commons/lib/types/variants'
-import type { ResolvedBomNode } from '@/lib/query'
+import type { Make, OptionModel } from '@cascadia/commons/types/variants'
+import type { ResolvedBomNode } from '@/query'
 import {
   Badge,
   Button,
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui'
 import { BomTreeView } from '@/components/bom/BomTreeView'
 import { StateBadge } from '@/components/items/StateBadge'
-import { partVariantResolveQuery } from '@/lib/query'
+import { partVariantResolveQuery } from '@/query'
 
 /**
  * Pick a value per option family and watch the 100 % BOM it resolves to.

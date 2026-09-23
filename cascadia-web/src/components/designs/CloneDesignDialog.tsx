@@ -19,8 +19,8 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Label } from '@/components/ui/Label'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Progress } from '@/components/ui/Progress'
-import { apiFetch } from '@/lib/api/client'
-import { jobStatusQuery } from '@/lib/query'
+import { apiFetch } from '@/api/client'
+import { jobStatusQuery } from '@/query'
 
 interface CloneDesignDialogProps {
   open: boolean

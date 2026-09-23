@@ -17,7 +17,7 @@
  * handler through `toolRegistry[].invoke` with a `keyScope`, proving the gate
  * sits below both surfaces rather than in either one's plumbing.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/tools/handlers.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/tools/handlers.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -39,7 +39,7 @@ import {
 import { toolRegistry } from './registry'
 import type { ToolContext } from './permission-wrapper'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -47,14 +47,14 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { permissionService } from '@/lib/auth/permission-service'
-import { PermissionDeniedError } from '@/lib/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { permissionService } from '@/auth/permission-service'
+import { PermissionDeniedError } from '@/errors'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('AI read tools — program isolation on the by-id path', () => {
   const testDb = new TestDatabase()

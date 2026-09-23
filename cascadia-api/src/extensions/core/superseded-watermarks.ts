@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { previewKindFor } from '@cascadia/commons/lib/vault/preview'
+import { previewKindFor } from '@cascadia/commons/vault/preview'
 import { defineExtension } from '../registry'
 import type { ConsumedExtension } from '../types'
-import type { DesignReleasedPayload } from '@/lib/events'
-import { DESIGN_RELEASED } from '@/lib/events'
-import { FileService } from '@/lib/vault/services/FileService'
+import type { DesignReleasedPayload } from '@/events'
+import { DESIGN_RELEASED } from '@/events'
+import { FileService } from '@/vault/services/FileService'
 
 export const SUPERSEDED_WATERMARK_EXTENSION_ID = 'core.superseded-watermarks'
 
@@ -58,7 +58,7 @@ export function createSupersededWatermarkExtension(
   const submit =
     options.submit ??
     (async (payload) => {
-      const { JobService } = await import('@/lib/jobs')
+      const { JobService } = await import('@/jobs')
       await JobService.submit(
         'document.watermark.apply',
         {

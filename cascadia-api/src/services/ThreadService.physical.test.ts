@@ -19,7 +19,7 @@
  * thread never survives a consumption (invalidation); the as-built
  * comparison classifies designed/consumed lineages.
  *
- * Run: npx vitest run src/lib/services/ThreadService.physical.test.ts
+ * Run: npx vitest run src/services/ThreadService.physical.test.ts
  */
 
 import {
@@ -43,11 +43,11 @@ import type { ThreadRequest } from './ThreadService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { itemRelationships, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { itemRelationships, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ThreadService physical domain', () => {
   const testDb = new TestDatabase()

@@ -7,7 +7,7 @@
  * Integration tests for the CheckoutService class.
  * Tests cover checkout/checkin workflow, branch operations, and validation.
  *
- * Run: npm run test -- src/lib/services/CheckoutService.test.ts
+ * Run: npm run test -- src/services/CheckoutService.test.ts
  */
 
 import {
@@ -21,7 +21,7 @@ import {
   vi,
 } from 'vitest'
 import { and, eq, isNotNull } from 'drizzle-orm'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import {
@@ -41,7 +41,7 @@ import {
   NotFoundError,
   ResourceLockedError,
   ValidationError,
-} from '@/lib/errors'
+} from '@/errors'
 import {
   branchItems,
   changeOrderAffectedItems,
@@ -56,18 +56,18 @@ import {
   workInstructionPartAttachments,
   workInstructionSteps,
   workInstructions,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 import {
   lifecycleDefinitions,
   lifecycleInstances,
-} from '@/lib/db/schema/lifecycles'
-import { itemTypeConfigs } from '@/lib/db/schema/config'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema/lifecycles'
+import { itemTypeConfigs } from '@/db/schema/config'
+import { ItemTypeRegistry } from '@/items/registry'
 import { SYSTEM_USER_ID } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('CheckoutService', () => {
   const testDb = new TestDatabase()

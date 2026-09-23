@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   lifecycleByItemTypeQuery,
   releasedFamilyStateIds,
-} from '@/lib/query/options/lifecycles'
+} from '@/query/options/lifecycles'
 
 /**
  * Whether an item's state is immutable released lineage, per its own

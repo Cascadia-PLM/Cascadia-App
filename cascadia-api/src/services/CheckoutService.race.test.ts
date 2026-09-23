@@ -22,34 +22,34 @@
  * `ConcurrentTestDatabase`, which is a real pool — so they commit, and the
  * harness cleans up after itself.
  *
- * Run: npx vitest run cascadia-api/src/lib/services/CheckoutService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/services/CheckoutService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { BranchService } from '@/lib/services/BranchService'
-import { ItemService } from '@/lib/items/services/ItemService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { BranchService } from '@/services/BranchService'
+import { ItemService } from '@/items/services/ItemService'
 import {
   AppError,
   NotFoundError,
   ResourceLockedError,
   ValidationError,
-} from '@/lib/errors'
-import { isUniqueViolation } from '@/lib/errors/pg'
+} from '@/errors'
+import { isUniqueViolation } from '@/errors/pg'
 import {
   branchItems,
   changeOrderAffectedItems,
   changeOrderDesigns,
-} from '@/lib/db/schema'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
+} from '@/db/schema'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const CONTENDERS = 8
 

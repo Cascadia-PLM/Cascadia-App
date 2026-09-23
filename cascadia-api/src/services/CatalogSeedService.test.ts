@@ -9,7 +9,7 @@
  * categories, and that running the seed twice does not duplicate
  * categories.
  *
- * Run: npx vitest run src/lib/services/CatalogSeedService.test.ts
+ * Run: npx vitest run src/services/CatalogSeedService.test.ts
  */
 
 import {
@@ -27,7 +27,7 @@ import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   componentCatalogCategories,
   componentCatalogEntries,
-} from '@/lib/db/schema/componentCatalog'
+} from '@/db/schema/componentCatalog'
 
 describe('CatalogSeedService', () => {
   const testDb = new TestDatabase()

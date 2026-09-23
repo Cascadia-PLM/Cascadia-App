@@ -28,16 +28,16 @@ import {
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { DesignReleasedPayload, ItemCreatedPayload } from '@/lib/events'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { FileService } from '@/lib/vault/services/FileService'
-import { defineDomainEvent, publishDomainEvent } from '@/lib/events'
-import { ChangeOrderMergeService } from '@/lib/services/ChangeOrderMergeService'
-import { BranchService } from '@/lib/services/BranchService'
-import { DesignService } from '@/lib/services/DesignService'
+import type { DesignReleasedPayload, ItemCreatedPayload } from '@/events'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { FileService } from '@/vault/services/FileService'
+import { defineDomainEvent, publishDomainEvent } from '@/events'
+import { ChangeOrderMergeService } from '@/services/ChangeOrderMergeService'
+import { BranchService } from '@/services/BranchService'
+import { DesignService } from '@/services/DesignService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -47,13 +47,13 @@ import {
   lifecycleDefinitions,
   lifecycleInstances,
   programs,
-} from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const FINALIZE_SPEC = defineDomainEvent({
   type: 'test.events.finalize_spec',

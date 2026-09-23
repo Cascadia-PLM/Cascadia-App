@@ -31,18 +31,14 @@
 import { ITEM_CREATE, LIFECYCLE_TRANSITION } from './operations'
 import { EVERY_EVENT } from './types'
 import type { defineExtension } from './registry'
-import type { DesignReleasedPayload, ItemCreatedPayload } from '@/lib/events'
+import type { DesignReleasedPayload, ItemCreatedPayload } from '@/events'
 import type { ItemCreateIntent } from './operations'
 import type {
   ExtensionFilter,
   GuardExtension,
   InTransactionExtension,
 } from './types'
-import {
-  DESIGN_RELEASED,
-  ITEM_CREATED,
-  LIFECYCLE_TRANSITIONED,
-} from '@/lib/events'
+import { DESIGN_RELEASED, ITEM_CREATED, LIFECYCLE_TRANSITIONED } from '@/events'
 
 /**
  * Every probe, inside a function nothing calls.

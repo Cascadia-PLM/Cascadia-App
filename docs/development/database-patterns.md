@@ -11,7 +11,7 @@ This guide covers the database conventions used in Cascadia, built on PostgreSQL
 
 ## Schema Conventions
 
-Schema files live in `cascadia-api/src/lib/db/schema/`. Each file defines related tables.
+Schema files live in `cascadia-api/src/db/schema/`. Each file defines related tables.
 
 ### The Two-Table Pattern
 
@@ -41,7 +41,7 @@ items (base fields)          parts (type-specific)
 The `items` table:
 
 ```typescript
-// cascadia-api/src/lib/db/schema/items.ts
+// cascadia-api/src/db/schema/items.ts
 export const items = pgTable(
   'items',
   {
@@ -154,7 +154,7 @@ const result = await db
 
 **`isDeleted` is the marker; `deletedAt`/`deletedBy` are the audit stamp that rides it.** Filter on `isDeleted` — via `notDeleted()`, the one spelling of the predicate, which treats NULL as "not deleted" because the column is nullable even though nothing writes NULL into it — and never on `deletedAt`. All three are written together in exactly one place: `ChangeOrderMergeService`'s `changeType === 'deleted'` arm, which obsoletes an item when its ECO merges. Nothing reads `deletedAt` or `deletedBy`; they exist to record who deleted the item and when. A soft-deleted row is history the system deliberately keeps, so treating the timestamp as a second visibility gate would invent a rule nothing else follows.
 
-Soft-deletion is a visibility rule, not an authorization one. `requireItemAccess` in `lib/auth/access.ts` consults none of the three columns by design — a soft-deleted row keeps its `designId`, so the access boundary it draws is still correct, and whether the caller should _see_ the row stays with the reader that fetches it.
+Soft-deletion is a visibility rule, not an authorization one. `requireItemAccess` in `auth/access.ts` consults none of the three columns by design — a soft-deleted row keeps its `designId`, so the access boundary it draws is still correct, and whether the caller should _see_ the row stays with the reader that fetches it.
 
 ## Common Query Patterns
 
@@ -326,7 +326,7 @@ return db.transaction(async (tx) => {
 
 ### Transaction Gotchas
 
-- **Compose with `withTx`, never with bare `db.transaction()` in callees**: a service method accepts an optional trailing `tx?: TransactionClient`, threads it to callees, and wraps its own writes in `withTx(tx, fn)` from `@/lib/db`. A callee that ignores the caller's `tx` and opens its own transaction commits independently on another pooled connection — the caller's rollback leaves those writes behind, and the test suite cannot show it (its single-connection pool turns the mistake into a savepoint). See the `withTx` docblock in `cascadia-api/src/lib/db/index.ts`.
+- **Compose with `withTx`, never with bare `db.transaction()` in callees**: a service method accepts an optional trailing `tx?: TransactionClient`, threads it to callees, and wraps its own writes in `withTx(tx, fn)` from `@/db`. A callee that ignores the caller's `tx` and opens its own transaction commits independently on another pooled connection — the caller's rollback leaves those writes behind, and the test suite cannot show it (its single-connection pool turns the mistake into a savepoint). See the `withTx` docblock in `cascadia-api/src/db/index.ts`.
 - **Use `tx` consistently**: Inside a transaction callback, always use the `tx` parameter, not the global `db` instance.
 - **Keep transactions short**: Long-running transactions hold locks. Do preparation work before starting the transaction.
 
@@ -339,7 +339,7 @@ generates belongs to that composition.
 
 ### Schema Change Workflow
 
-1. **Edit schema** in `cascadia-api/src/lib/db/schema/*.ts`
+1. **Edit schema** in `cascadia-api/src/db/schema/*.ts`
 2. **Apply to dev database**: `npm run db:push` (pushes schema directly)
 3. **Keep seeds truthful**: if the change affects seeded data shapes, update
    `scripts/seed-minimal.ts` in the same commit — fresh databases are built
@@ -370,7 +370,7 @@ CREATE UNIQUE INDEX your_table_your_column_idx
 Edit the schema file:
 
 ```typescript
-// In cascadia-api/src/lib/db/schema/items.ts
+// In cascadia-api/src/db/schema/items.ts
 export const parts = pgTable('parts', {
   // ... existing columns
   newField: varchar('new_field', { length: 100 }), // Add new column

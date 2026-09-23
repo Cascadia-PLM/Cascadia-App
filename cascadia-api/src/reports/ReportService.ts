@@ -56,7 +56,7 @@ import type {
   ReportExecutionResult,
   ReportFilter,
   ReportSort,
-} from '@cascadia/commons/lib/reports/types'
+} from '@cascadia/commons/reports/types'
 
 // Type-specific table mapping
 const typeTableMap = {

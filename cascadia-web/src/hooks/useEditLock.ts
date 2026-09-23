@@ -3,9 +3,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
-import { apiFetch } from '@/lib/api/client'
-import { itemEditContextQuery } from '@/lib/query'
+import type { VersionContext } from '@/hooks/useVersionContext'
+import { apiFetch } from '@/api/client'
+import { itemEditContextQuery } from '@/query'
 
 export interface EditLockStatus {
   isCheckedOut: boolean

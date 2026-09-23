@@ -5,7 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, GitBranch } from 'lucide-react'
 import { Badge, Card } from '@/components/ui'
-import { workspaceDetailQuery } from '@/lib/query'
+import { workspaceDetailQuery } from '@/query'
 
 interface WorkspaceContextBannerProps {
   branchId: string

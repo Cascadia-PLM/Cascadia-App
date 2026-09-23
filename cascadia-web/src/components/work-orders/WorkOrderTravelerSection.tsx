@@ -18,7 +18,7 @@ import {
 import type {
   WorkOrderInstruction,
   WorkOrderInstructionStatus,
-} from '@cascadia/commons/lib/items/types/work-order'
+} from '@cascadia/commons/items/types/work-order'
 import {
   Badge,
   Button,
@@ -43,16 +43,16 @@ import {
   Textarea,
 } from '@/components/ui'
 import { ExecutionHistoryTable } from '@/components/work-instructions/ExecutionHistoryTable'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import {
   itemTextSearchQuery,
   useInvalidateResources,
   workOrderExecutionsQuery,
   workOrderInstructionsQuery,
-} from '@/lib/query'
-import { cn } from '@/lib/utils'
+} from '@/query'
+import { cn } from '@/utils'
 
 interface WorkOrderTravelerSectionProps {
   workOrderId: string

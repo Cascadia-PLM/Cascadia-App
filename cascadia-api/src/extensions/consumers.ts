@@ -4,13 +4,13 @@
 /**
  * The `consumed` phase, driven.
  *
- * `lib/events/consumers.ts` owns the mechanics of running one consumer — the
+ * `events/consumers.ts` owns the mechanics of running one consumer — the
  * cursor claim, the savepoint per event, the deadline, the backoff, the
  * parking. This file owns *which* consumers exist, and it answers from the
  * extension registry rather than from a second registry of its own.
  *
  * The event log is the substrate and this layer sits on top of it:
- * `lib/extensions` depends on `lib/events` for everything it runs. One import
+ * `extensions` depends on `events` for everything it runs. One import
  * goes the other way, deliberately — `publishDomainEvent` calls
  * `dispatchInTransaction`, so the log's publish *is* this layer's
  * in-transaction hook, and that is what makes emitting without dispatching
@@ -40,14 +40,11 @@ import type {
   DomainEventDefinition,
   PendingDomainEvent,
   PublishDomainEventInput,
-} from '@/lib/events/types'
-import type { TransactionClient } from '@/lib/db'
-import {
-  drainEventConsumer,
-  runEventConsumerOnce,
-} from '@/lib/events/consumers'
-import { publishDomainEvent } from '@/lib/events/publish'
-import { eventLogger } from '@/lib/logging/logger'
+} from '@/events/types'
+import type { TransactionClient } from '@/db'
+import { drainEventConsumer, runEventConsumerOnce } from '@/events/consumers'
+import { publishDomainEvent } from '@/events/publish'
+import { eventLogger } from '@/logging/logger'
 
 /**
  * Build the `emit` a `consumed` handler receives: a publish with the causation

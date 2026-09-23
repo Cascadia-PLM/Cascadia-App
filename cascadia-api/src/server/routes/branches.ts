@@ -4,16 +4,16 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import { BranchService } from '@/lib/services/BranchService'
-import { CommitService } from '@/lib/services/CommitService'
-import { VersionResolver } from '@/lib/services/VersionResolver'
-import { NotFoundError } from '@/lib/errors'
+import { BranchService } from '@/services/BranchService'
+import { CommitService } from '@/services/CommitService'
+import { VersionResolver } from '@/services/VersionResolver'
+import { NotFoundError } from '@/errors'
 import {
   requireBranchAccess,
   requireDesignManageAuthority,
-} from '@/lib/auth/access'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { itemListSchema } from '@/lib/api/schemas'
+} from '@/auth/access'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { itemListSchema } from '@/api/schemas'
 
 const adapt = tagged('Branches')
 

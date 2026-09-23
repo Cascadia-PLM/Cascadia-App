@@ -21,7 +21,7 @@ import type {
   StepContentBlock,
   WorkInstructionOperation,
   WorkInstructionStep,
-} from '@cascadia/commons/lib/items/types/work-instruction'
+} from '@cascadia/commons/items/types/work-instruction'
 import {
   Button,
   Card,
@@ -30,8 +30,8 @@ import {
   Input,
   Textarea,
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { apiErrorFromResponse } from '@/lib/api/client'
+import { cn } from '@/utils'
+import { apiErrorFromResponse } from '@/api/client'
 
 interface StepEditorProps {
   steps: Array<WorkInstructionStep>

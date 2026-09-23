@@ -28,13 +28,13 @@ import type {
   Make,
   OptionCondition,
   OptionModel,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 
 // =====================================================================
 // Work Instructions Module
 // ============================================================================
 
-import type { StepContent } from '@cascadia/commons/lib/items/types/work-instruction-content'
+import type { StepContent } from '@cascadia/commons/items/types/work-instruction-content'
 
 export const items = pgTable(
   'items',
@@ -85,7 +85,7 @@ export const items = pgTable(
     //
     // Arbitrary JSON, and this column is the authority on that: the validating
     // contract in front of it - `baseItemSchema.attributes` in
-    // lib/items/types/base.ts - matches it rather than narrowing it. The two
+    // items/types/base.ts - matches it rather than narrowing it. The two
     // used to contradict each other, and the schema won every argument because
     // every create parses through it. See the `JsonValue` comment there.
     //
@@ -1119,7 +1119,7 @@ export type {
   StepBlockType,
   StepContentBlock,
   StepContent,
-} from '@cascadia/commons/lib/items/types/work-instruction-content'
+} from '@cascadia/commons/items/types/work-instruction-content'
 
 /**
  * Work Instructions - type-specific table following two-table pattern

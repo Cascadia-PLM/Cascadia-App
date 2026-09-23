@@ -3,14 +3,9 @@
 
 import { eq, inArray } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
-import type { DbInstance, TransactionClient } from '@/lib/db'
-import { db } from '@/lib/db'
-import {
-  designs,
-  issueAffectedItems,
-  issueDesigns,
-  issues,
-} from '@/lib/db/schema'
+import type { DbInstance, TransactionClient } from '@/db'
+import { db } from '@/db'
+import { designs, issueAffectedItems, issueDesigns, issues } from '@/db/schema'
 
 /**
  * The program an issue's chosen designs resolve to, or null.

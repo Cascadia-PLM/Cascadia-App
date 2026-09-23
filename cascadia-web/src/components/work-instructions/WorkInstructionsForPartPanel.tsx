@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui'
 import { StateBadge } from '@/components/items/StateBadge'
-import { partWorkInstructionsQuery } from '@/lib/query'
+import { partWorkInstructionsQuery } from '@/query'
 
 interface WorkInstructionForPart {
   attachmentId: string

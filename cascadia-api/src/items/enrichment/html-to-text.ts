@@ -11,7 +11,7 @@
  * redirect hop as well.
  */
 
-import { ValidationError } from '@/lib/errors'
+import { ValidationError } from '@/errors'
 
 /** Hard cap on the extracted body text handed to the model. */
 const MAX_TEXT_CHARS = 8_000

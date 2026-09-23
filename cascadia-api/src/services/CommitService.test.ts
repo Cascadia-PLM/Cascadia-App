@@ -6,7 +6,7 @@
  *
  * Integration tests for the CommitService class.
  *
- * Run: npm run test -- src/lib/services/CommitService.test.ts
+ * Run: npm run test -- src/services/CommitService.test.ts
  */
 
 import {
@@ -25,9 +25,9 @@ import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { changeOrders, items, programs, tags } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
+import { changeOrders, items, programs, tags } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
 
 const NON_EXISTENT_UUID = '00000000-0000-0000-0000-000000000000'
 

@@ -28,17 +28,17 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { eq, max } from 'drizzle-orm'
 import postgres from 'postgres'
 import { z } from 'zod'
-import type { DomainEventConsumer } from '@/lib/events'
-import * as schema from '@/lib/db/schema'
-import { db } from '@/lib/db'
-import { domainEvents, eventConsumers } from '@/lib/db/schema'
+import type { DomainEventConsumer } from '@/events'
+import * as schema from '@/db/schema'
+import { db } from '@/db'
+import { domainEvents, eventConsumers } from '@/db/schema'
 import {
   defineDomainEvent,
   drainEventConsumer,
   ensureDomainEventSequencing,
   publishDomainEvent,
   runEventConsumerOnce,
-} from '@/lib/events'
+} from '@/events'
 
 const ORDERING_EVENT = defineDomainEvent({
   type: 'test.events.ordering_spec',

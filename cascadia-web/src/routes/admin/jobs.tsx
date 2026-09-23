@@ -13,11 +13,8 @@ import {
   XCircle,
 } from 'lucide-react'
 import type { DataGridColumn, Row } from '@/components/ui'
-import type { Job } from '@/lib/query'
-import type {
-  JobPriority,
-  JobStatus,
-} from '@cascadia/commons/lib/jobs/types-wire'
+import type { Job } from '@/query'
+import type { JobPriority, JobStatus } from '@cascadia/commons/jobs/types-wire'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
   Dialog,
@@ -32,12 +29,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
-import {
-  jobDetailQuery,
-  jobListQuery,
-  useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { jobDetailQuery, jobListQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 const JOB_LIST_LIMIT = 500
 const AUTO_REFRESH_MS = 5000

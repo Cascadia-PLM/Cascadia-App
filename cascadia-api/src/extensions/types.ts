@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { DbInstance, TransactionClient } from '@/lib/db'
+import type { DbInstance, TransactionClient } from '@/db'
 import type {
   DomainEvent,
   DomainEventDefinition,
   PendingDomainEvent,
   PublishDomainEventInput,
-} from '@/lib/events/types'
+} from '@/events/types'
 import type { GuardOperation } from './operations'
 
 /**

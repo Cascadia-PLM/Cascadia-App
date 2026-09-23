@@ -15,7 +15,7 @@ import type {
   TransitionAction,
   TransitionGuard,
   UpdateFieldConfig,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import {
   Button,
   Card,
@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import { roleListQuery, userListQuery } from '@/lib/query/options/users'
+import { roleListQuery, userListQuery } from '@/query/options/users'
 
 interface TransitionPropertiesPanelProps {
   transition: LifecycleTransition

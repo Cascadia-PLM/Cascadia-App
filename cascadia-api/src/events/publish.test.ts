@@ -21,14 +21,14 @@ import {
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { TestDatabase } from '@/__tests__/helpers/db'
-import { db } from '@/lib/db'
-import { domainEvents } from '@/lib/db/schema'
-import { ValidationError } from '@/lib/errors'
+import { db } from '@/db'
+import { domainEvents } from '@/db/schema'
+import { ValidationError } from '@/errors'
 import {
   EventTypeRegistry,
   defineDomainEvent,
   publishDomainEvent,
-} from '@/lib/events'
+} from '@/events'
 
 const PUBLISH_SPEC_EVENT = defineDomainEvent({
   type: 'test.events.publish_spec',

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray } from 'drizzle-orm'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db } from '../../db'
 import { branchItems, branches, users } from '../../db/schema'
 import {

@@ -5,16 +5,11 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { ThreadCacheService } from './ThreadCacheService'
 import { WorkOrderMaterialService } from './WorkOrderMaterialService'
-import { db } from '@/lib/db'
-import {
-  itemRelationships,
-  items,
-  vaultFiles,
-  workOrders,
-} from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { serviceLogger } from '@/lib/logging/logger'
-import { SATISFIES_RELATIONSHIP } from '@/lib/services/RequirementService'
+import { db } from '@/db'
+import { itemRelationships, items, vaultFiles, workOrders } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { serviceLogger } from '@/logging/logger'
+import { SATISFIES_RELATIONSHIP } from '@/services/RequirementService'
 
 /**
  * Qualification evidence and rollup

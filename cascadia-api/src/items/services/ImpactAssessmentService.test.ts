@@ -8,7 +8,7 @@
  * answer about the structure a change order is proposing, not the one it
  * started from.
  *
- * Run: npm run test -- src/lib/items/services/ImpactAssessmentService.test.ts
+ * Run: npm run test -- src/items/services/ImpactAssessmentService.test.ts
  */
 
 import {
@@ -26,17 +26,12 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { DesignService } from '@/lib/services/DesignService'
-import { BranchService } from '@/lib/services/BranchService'
-import {
-  branchItems,
-  itemRelationships,
-  items,
-  programs,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { DesignService } from '@/services/DesignService'
+import { BranchService } from '@/services/BranchService'
+import { branchItems, itemRelationships, items, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ImpactAssessmentService where-used branch context', () => {
   const testDb = new TestDatabase()

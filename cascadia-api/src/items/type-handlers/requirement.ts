@@ -3,13 +3,13 @@
 
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
-import { db } from '@/lib/db'
-import { requirements } from '@/lib/db/schema'
+import { db } from '@/db'
+import { requirements } from '@/db/schema'
 
 /**
  * `requirementType` is the API's name for the column the table and the
  * `Requirement` interface both call `type`. The create schema, the AI
- * `create_item` tool (`lib/ai/tools/write-handlers.ts`) and the design
+ * `create_item` tool (`ai/tools/write-handlers.ts`) and the design
  * engine's draft artifacts all spell it that way, so the alias is resolved
  * here — in one place, honoured by every caller including
  * `PUT /api/v1/requirements/:id` and the generic `PUT /api/v1/items/:id`,

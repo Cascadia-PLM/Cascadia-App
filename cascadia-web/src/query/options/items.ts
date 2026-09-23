@@ -5,7 +5,7 @@ import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { gridParamsToSearchParams } from '../grid-params'
 import type { GridParams, GridQuery, GridQueryFactory } from '../grid-params'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 
 /**
  * Filters that scope an item query to a design, program, or version context.

@@ -73,13 +73,13 @@ export {
   RABBITMQ_EVENT_RELAY_ID,
 } from './relay-rabbitmq'
 export type { RabbitMqEventRelayOptions } from './relay-rabbitmq'
-// The webhook fan-out lives under `lib/events/webhooks` with the log it reads,
+// The webhook fan-out lives under `events/webhooks` with the log it reads,
 // and is re-exported here because it is registered like any other extension.
 export {
   createWebhookDispatcher,
   registerWebhookDispatcher,
-} from '@/lib/events/webhooks/dispatcher'
-export type { WebhookDispatcherOptions } from '@/lib/events/webhooks/dispatcher'
+} from '@/events/webhooks/dispatcher'
+export type { WebhookDispatcherOptions } from '@/events/webhooks/dispatcher'
 
 export {
   APPROVAL_VOTE,

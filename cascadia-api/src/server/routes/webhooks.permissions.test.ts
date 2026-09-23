@@ -38,7 +38,7 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import webhookRoutes from './webhooks'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -48,10 +48,10 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ApiKeyService } from '@/lib/auth/ApiKeyService'
-import { webhookSubscriptions } from '@/lib/db/schema'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { ApiKeyService } from '@/auth/ApiKeyService'
+import { webhookSubscriptions } from '@/db/schema'
 
 const ENCRYPTION_KEY = 'b'.repeat(64)
 

@@ -266,7 +266,7 @@ function issueAccessScopeCondition(
  *  - PhysicalPart, through its part's lineage
  *  - Issue, through whichever of its three axes it carries
  *
- * Each arm reproduces that type's own by-id gate in `@/lib/auth/access`, so a
+ * Each arm reproduces that type's own by-id gate in `@/auth/access`, so a
  * row can never be listed by one surface and refused by the other. Blanket
  * design-less admission is what let a work order the by-id gate refuses still
  * appear in the item list.

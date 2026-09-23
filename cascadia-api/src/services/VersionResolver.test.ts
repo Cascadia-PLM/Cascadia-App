@@ -7,7 +7,7 @@
  * Unit tests for the VersionResolver service that resolves item versions
  * at different version contexts (main, branch, commit, tag).
  *
- * Run: npm run test -- src/lib/services/VersionResolver.test.ts
+ * Run: npm run test -- src/services/VersionResolver.test.ts
  */
 
 import {
@@ -32,8 +32,8 @@ import type {
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { setTestDb } from '@/lib/db'
-import { takeFirst } from '@/lib/db/take-first'
+import { setTestDb } from '@/db'
+import { takeFirst } from '@/db/take-first'
 import {
   branchItems,
   changeOrderAffectedItems,
@@ -43,7 +43,7 @@ import {
   parts,
   programs,
   tags,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 // Valid UUID format for non-existent IDs
 const NON_EXISTENT_UUID = '00000000-0000-0000-0000-000000000000'

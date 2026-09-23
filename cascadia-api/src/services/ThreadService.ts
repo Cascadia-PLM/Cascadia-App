@@ -43,8 +43,8 @@ import type {
   ThreadEdge,
   ThreadNode,
   ThreadResponse,
-} from '@cascadia/commons/lib/thread/types'
-import { serviceLogger } from '@/lib/logging/logger'
+} from '@cascadia/commons/thread/types'
+import { serviceLogger } from '@/logging/logger'
 
 // Wire types live in commons so the web can name them; re-exported here so
 // server callers keep importing them from the service.
@@ -53,7 +53,7 @@ export type {
   ThreadEdge,
   ThreadNode,
   ThreadResponse,
-} from '@cascadia/commons/lib/thread/types'
+} from '@cascadia/commons/thread/types'
 
 /**
  * Synthetic thread edge types (derived from columns, not stored edges):

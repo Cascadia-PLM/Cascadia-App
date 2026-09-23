@@ -9,8 +9,8 @@
  */
 
 import { ChevronLeft, MessageSquare } from 'lucide-react'
-import { useChatPanel } from '@/lib/ai/chat-context'
-import { cn } from '@/lib/utils'
+import { useChatPanel } from '@/ai/chat-context'
+import { cn } from '@/utils'
 
 export function ChatPanelButton() {
   const { toggleOpen, isOpen } = useChatPanel()

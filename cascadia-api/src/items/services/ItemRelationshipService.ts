@@ -2,12 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import {
   makeCodeSchema,
   optionConditionKey,
   optionConditionSchema,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { db } from '../../db'
 import {
   branchItems,
@@ -40,10 +40,10 @@ import {
 import { publishStructureEdges, structurePayload } from '../structure-events'
 import { ThreadCacheService } from '../../services/ThreadCacheService'
 import type { TransactionClient } from '../../db'
-import type { PersistedItem } from '@cascadia/commons/lib/items/types/base'
-import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
-import { itemLogger } from '@/lib/logging/logger'
-import { takeFirst } from '@/lib/db/take-first'
+import type { PersistedItem } from '@cascadia/commons/items/types/base'
+import type { OptionCondition } from '@cascadia/commons/types/variants'
+import { itemLogger } from '@/logging/logger'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * The 409 for an edge that is already there. One shape for every path that can
@@ -484,8 +484,7 @@ export class ItemRelationshipService {
     sourceId: string,
     option: OptionCondition,
   ): Promise<void> {
-    const { findUndeclared } =
-      await import('@cascadia/commons/lib/types/variants')
+    const { findUndeclared } = await import('@cascadia/commons/types/variants')
     const [row] = await db
       .select({ optionModel: parts.optionModel })
       .from(parts)

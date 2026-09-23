@@ -19,7 +19,7 @@ import detail from './detail'
 import graph from './graph'
 import files from './files'
 // Register item types (server-side version)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Re-exported for the enterprise-search results route, which gates the same way.
 export { readableItemTypes } from './shared'

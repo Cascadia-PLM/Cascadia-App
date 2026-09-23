@@ -150,7 +150,7 @@ read from either direction:
 | **Incoming** -- who points at me?   | Links a revision left behind are counted twice: rev A and rev B both claim to satisfy the requirement, so the same part is listed twice, once Released and once Superseded     |
 | **Outgoing** -- what do I point at? | The reference is a revision behind: the part still names the requirement row the release superseded, and reads back with its `Superseded` badge                                |
 
-`lib/items/version-lineage.ts` owns all three corrections, keyed on one
+`items/version-lineage.ts` owns all three corrections, keyed on one
 predicate -- `findSupersededRows`, meaning _not the master's current row, and
 not a working copy_:
 
@@ -795,4 +795,4 @@ User requests item at context
 
 - [Change Orders](./change-management.md) -- ECO workflow and lifecycle
 - [Architecture](../architecture/) -- Overall system architecture
-- Developer reference: `cascadia-api/src/lib/services/VersionResolver.ts`, `cascadia-api/src/lib/services/CommitService.ts`, `cascadia-api/src/lib/services/BranchService.ts`
+- Developer reference: `cascadia-api/src/services/VersionResolver.ts`, `cascadia-api/src/services/CommitService.ts`, `cascadia-api/src/services/BranchService.ts`

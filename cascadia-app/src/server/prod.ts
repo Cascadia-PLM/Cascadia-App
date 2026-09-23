@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { serve } from '@hono/node-server'
-import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
+import { ItemTypeRegistry } from '@cascadia/api/items/registry'
 import { registerModules } from '../modules.server'
 
 // Set production mode before importing app (affects static file serving)
@@ -25,8 +25,8 @@ await ItemTypeRegistry.initialize()
 // it. Done before serving: this process emits on its first write.
 const [{ ensureDomainEventSequencing, sequenceUnsequencedEvents }, { db }] =
   await Promise.all([
-    import('@cascadia/api/lib/events/sequencing'),
-    import('@cascadia/api/lib/db'),
+    import('@cascadia/api/events/sequencing'),
+    import('@cascadia/api/db'),
   ])
 await ensureDomainEventSequencing(db)
 // Anything written before the trigger existed committed with no seq, which the
@@ -38,7 +38,7 @@ await sequenceUnsequencedEvents(db)
 // `FOR UPDATE SKIP LOCKED` on the cursor row makes concurrent pollers
 // mutually exclusive per consumer.
 const { startAppEventConsumers } =
-  await import('@cascadia/api/lib/extensions/app-consumers')
+  await import('@cascadia/api/extensions/app-consumers')
 const stopEventConsumers = startAppEventConsumers()
 
 const port = parseInt(process.env.PORT || '3000', 10)

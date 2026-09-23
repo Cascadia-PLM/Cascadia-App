@@ -4,8 +4,8 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { collectionQuery } from './entities'
-import type { FileRecordWithItem } from '@cascadia/commons/lib/vault/types'
-import { apiFetch } from '@/lib/api/client'
+import type { FileRecordWithItem } from '@cascadia/commons/vault/types'
+import { apiFetch } from '@/api/client'
 
 export interface FileMetadata {
   id: string

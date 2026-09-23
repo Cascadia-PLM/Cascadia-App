@@ -62,10 +62,10 @@ import { Button, Input, Card } from '@/components/ui'
 
 ## The cn() Utility
 
-Use `cn()` from `@/lib/utils` to merge class names. It wraps `clsx` for conditional and composable class strings:
+Use `cn()` from `@/utils` to merge class names. It wraps `clsx` for conditional and composable class strings:
 
 ```typescript
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 function MyComponent({ className, isActive }: Props) {
   return (
@@ -100,12 +100,12 @@ import { Input } from '@/components/ui/Input'
 
 ### The zodValidator Wrapper
 
-Zod v4 does not implement `StandardSchemaV1` which TanStack Form expects. Use the `zodValidator()` wrapper from `cascadia-web/src/lib/form-validation.ts`:
+Zod v4 does not implement `StandardSchemaV1` which TanStack Form expects. Use the `zodValidator()` wrapper from `cascadia-web/src/form-validation.ts`:
 
 ```typescript
 import { useForm } from '@tanstack/react-form'
-import { zodValidator } from '@/lib/form-validation'
-import { partCreateSchema } from '@/lib/api/schemas'
+import { zodValidator } from '@/form-validation'
+import { partCreateSchema } from '@/api/schemas'
 
 function PartForm({ onSubmit }: Props) {
   const form = useForm({
@@ -179,10 +179,10 @@ const partType = form.useStore((state) => state.values.partType)
 
 ### Helper Functions
 
-`cascadia-web/src/lib/form-validation.ts` exports additional helpers:
+`cascadia-web/src/form-validation.ts` exports additional helpers:
 
 ```typescript
-import { zodValidator, getFieldError, hasErrors } from '@/lib/form-validation'
+import { zodValidator, getFieldError, hasErrors } from '@/form-validation'
 
 // Get error for a specific field from the error array
 const nameError = getFieldError(form.state.errors, 'name')

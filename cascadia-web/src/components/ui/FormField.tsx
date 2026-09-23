@@ -4,7 +4,7 @@
 import { Children, cloneElement, isValidElement, useId } from 'react'
 import { Label } from './Label'
 import type { ReactElement, ReactNode } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 /**
  * The id of the first child that brings its own. A label points at one

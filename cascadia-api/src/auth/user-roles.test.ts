@@ -11,7 +11,7 @@
  * onConflictDoNothing) while an unguarded duplicate insert is now a real
  * violation rather than a silent twin row.
  *
- * Run: npx vitest run cascadia-api/src/lib/auth/user-roles.test.ts
+ * Run: npx vitest run cascadia-api/src/auth/user-roles.test.ts
  */
 
 import {
@@ -27,10 +27,10 @@ import { and, eq } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { UserService } from '@/lib/auth/UserService'
-import { roles, userRoles } from '@/lib/db/schema/users'
-import { UNIQUE_VIOLATION, asPostgresError } from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
+import { UserService } from '@/auth/UserService'
+import { roles, userRoles } from '@/db/schema/users'
+import { UNIQUE_VIOLATION, asPostgresError } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
 
 describe('user_roles composite primary key', () => {
   const testDb = new TestDatabase()

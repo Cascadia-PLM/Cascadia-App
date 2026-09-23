@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { encodeHexLowerCase } from '@oslojs/encoding'
-import { encrypt, isEncryptionConfigured } from '@/lib/crypto/encryption'
-import { ValidationError } from '@/lib/errors'
+import { encrypt, isEncryptionConfigured } from '@/crypto/encryption'
+import { ValidationError } from '@/errors'
 
 /**
  * Signing-secret generation and storage for webhook subscriptions.

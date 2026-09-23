@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { eq, inArray } from 'drizzle-orm'
-import type { StepContentBlock } from '@/lib/db/schema/items'
-import { db } from '@/lib/db'
-import { items, parts, workInstructionSteps } from '@/lib/db/schema'
+import type { StepContentBlock } from '@/db/schema/items'
+import { db } from '@/db'
+import { items, parts, workInstructionSteps } from '@/db/schema'
 
 interface ResolvedValue {
   value: string | null

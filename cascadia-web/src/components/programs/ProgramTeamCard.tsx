@@ -8,7 +8,7 @@ import type {
   Program,
   ProgramMember,
   ProgramMemberRole,
-} from '@cascadia/commons/lib/types/program'
+} from '@cascadia/commons/types/program'
 import {
   Badge,
   Button,
@@ -38,15 +38,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   activeUserListQuery,
   authSessionQuery,
   programMembersQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 const ROLE_OPTIONS: Array<{ value: ProgramMemberRole; label: string }> = [
   { value: 'admin', label: 'Admin' },

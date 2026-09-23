@@ -21,7 +21,7 @@
  * first exists, one `db:generate` before it reaches anyone. No database and no
  * fixtures — the guard costs a file read and covers both editions.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/constraint-name-length.test.ts
+ * Run: npx vitest run cascadia-api/src/db/constraint-name-length.test.ts
  */
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -30,7 +30,7 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 // The repo root by what it is, not by counting `..` from here — the same
 // marker-based walk, and the same reason, as the dev MCP server's paths.
-import { REPO_ROOT } from '@/lib/mcp/repo-root'
+import { REPO_ROOT } from '@/mcp/repo-root'
 
 /**
  * `NAMEDATALEN` is 64 and one byte goes to the terminator, so 63 bytes is the

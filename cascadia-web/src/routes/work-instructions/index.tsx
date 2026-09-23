@@ -4,8 +4,8 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { ClipboardCheck, Plus } from 'lucide-react'
-import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
-import type { GridParams, ItemFilters } from '@/lib/query'
+import type { WorkInstruction } from '@cascadia/commons/items/types/work-instruction'
+import type { GridParams, ItemFilters } from '@/query'
 import { PageContainer } from '@/components/layout'
 import { WorkInstructionTable } from '@/components/work-instructions/WorkInstructionTable'
 import {
@@ -16,15 +16,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   itemCountsQuery,
   itemListQuery,
   lifecycleByItemTypeQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 const WORK_INSTRUCTION_FILTERS: ItemFilters = { itemType: 'WorkInstruction' }

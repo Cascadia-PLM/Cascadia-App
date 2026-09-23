@@ -6,24 +6,24 @@ import {
   passwordChangeSchema,
   userCreateSchema,
   userUpdateSchema,
-} from '@cascadia/commons/lib/auth/types'
+} from '@cascadia/commons/auth/types'
 import { hashPassword } from './password'
 import { permissionService } from './permission-service'
 import type { SQL } from 'drizzle-orm'
-import type { UserWithRoles } from '@cascadia/commons/lib/auth/types'
+import type { UserWithRoles } from '@cascadia/commons/auth/types'
 import type { z } from 'zod'
-import type { TransactionClient } from '@/lib/db'
-import { db, withTx } from '@/lib/db'
-import { authEvents, roles, userRoles, users } from '@/lib/db/schema/users'
-import { likeContains } from '@/lib/db/like-pattern'
-import { takeFirst } from '@/lib/db/take-first'
+import type { TransactionClient } from '@/db'
+import { db, withTx } from '@/db'
+import { authEvents, roles, userRoles, users } from '@/db/schema/users'
+import { likeContains } from '@/db/like-pattern'
+import { takeFirst } from '@/db/take-first'
 import {
   AlreadyExistsError,
   ConflictError,
   InvalidCredentialsError,
   NotFoundError,
   ValidationError,
-} from '@/lib/errors'
+} from '@/errors'
 
 type DatabaseUser = typeof users.$inferSelect
 

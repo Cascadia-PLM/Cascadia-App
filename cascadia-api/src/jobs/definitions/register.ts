@@ -32,7 +32,7 @@ import { cadConversionConfig } from './conversion/config'
 
 // PDF watermarking jobs (Node.js worker)
 import { watermarkPdfConfig } from './watermark/config'
-import { jobLogger } from '@/lib/logging/logger'
+import { jobLogger } from '@/logging/logger'
 
 // Register all job type definitions
 JobTypeRegistry.register(workflowTransitionNotificationConfig)

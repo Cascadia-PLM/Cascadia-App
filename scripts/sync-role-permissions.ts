@@ -6,12 +6,12 @@
  * Updates all roles in the database to match the current ROLE_DEFINITIONS in code.
  * Run this after adding new permissions to permissions.ts.
  */
-import { db } from '@cascadia/api/lib/db'
-import { roles } from '@cascadia/api/lib/db/schema/users'
+import { db } from '@cascadia/api/db'
+import { roles } from '@cascadia/api/db/schema/users'
 import {
   ROLE_DEFINITIONS,
   roleToDbFormat,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 
 async function syncRolePermissions() {
   console.log('Syncing role permissions from code to database...\n')

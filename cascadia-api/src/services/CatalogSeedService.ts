@@ -23,10 +23,10 @@ import type {
   CatalogElectrical,
   CatalogMountingFeature,
 } from '../db/schema/componentCatalog'
-import type { CategoryDef } from '@/lib/seed-data/catalog-data/categories'
-import type { CatalogEntryDef } from '@/lib/seed-data/types'
-import { ENTRIES } from '@/lib/seed-data/catalog-data/entries'
-import { CATEGORIES } from '@/lib/seed-data/catalog-data/categories'
+import type { CategoryDef } from '@/seed-data/catalog-data/categories'
+import type { CatalogEntryDef } from '@/seed-data/types'
+import { ENTRIES } from '@/seed-data/catalog-data/entries'
+import { CATEGORIES } from '@/seed-data/catalog-data/categories'
 
 export interface CatalogSeedResult {
   categoriesReady: number

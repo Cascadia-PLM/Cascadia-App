@@ -15,10 +15,10 @@ import { designs } from './designs'
 import { items } from './items'
 import { users } from './users'
 
-import type { UpstreamChangeItem } from '@cascadia/commons/lib/thread/upstream'
+import type { UpstreamChangeItem } from '@cascadia/commons/thread/upstream'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { UpstreamChangeItem } from '@cascadia/commons/lib/thread/upstream'
+export type { UpstreamChangeItem } from '@cascadia/commons/thread/upstream'
 
 /**
  * Upstream change status values:

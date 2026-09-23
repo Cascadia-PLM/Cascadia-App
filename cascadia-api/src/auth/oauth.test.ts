@@ -10,7 +10,7 @@
  * configured one admits only accounts Google itself places in a listed
  * Workspace — never on the strength of the email address alone.
  *
- * Run: npm run test -- src/lib/auth/oauth.test.ts
+ * Run: npm run test -- src/auth/oauth.test.ts
  */
 
 import { afterEach, describe, expect, it } from 'vitest'

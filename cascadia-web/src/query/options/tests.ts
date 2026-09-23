@@ -3,8 +3,8 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { ApiData } from '@/lib/api/typed'
-import { apiFetch } from '@/lib/api/client'
+import type { ApiData } from '@/api/typed'
+import { apiFetch } from '@/api/client'
 
 /** One recorded run of a test case — derived from the OpenAPI contract (FE-7). */
 export type TestExecution = ApiData<

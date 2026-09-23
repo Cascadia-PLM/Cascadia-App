@@ -15,7 +15,7 @@
  * stream's finally — so these tests pin the request-level invariant without
  * standing up the SSE stack around it.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/usage.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/usage.test.ts
  */
 
 import {
@@ -31,10 +31,10 @@ import { eq } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { UsageAccumulator, recordLlmUsage } from '@/lib/ai/usage'
-import { aiUsageLogs } from '@/lib/db/schema/ai'
-import { programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { UsageAccumulator, recordLlmUsage } from '@/ai/usage'
+import { aiUsageLogs } from '@/db/schema/ai'
+import { programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 describe('LLM usage capture', () => {
   const testDb = new TestDatabase()

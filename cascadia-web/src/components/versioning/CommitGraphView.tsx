@@ -19,14 +19,14 @@ import { SharedForkEdge } from './SharedForkEdge'
 import { NODE_WIDTH, layoutCommitGraph } from './graph-layout'
 import type { MainHeadNodeType } from './MainHeadNode'
 import type { Node } from '@xyflow/react'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import type {
   CommitGraphData,
   CommitGraphNode,
-} from '@cascadia/commons/lib/versioning/graph-types'
+} from '@cascadia/commons/versioning/graph-types'
 import { FullscreenGraphWrapper } from '@/components/ui'
-import { designHistoryGraphQuery } from '@/lib/query'
-import { useTheme } from '@/lib/theme'
+import { designHistoryGraphQuery } from '@/query'
+import { useTheme } from '@/theme'
 
 // ID for the main HEAD pseudo-node
 const MAIN_HEAD_NODE_ID = 'main-head'

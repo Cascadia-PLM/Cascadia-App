@@ -9,14 +9,14 @@ import type {
   StepContentBlock,
   WorkInstructionOperation,
   WorkInstructionWithSteps,
-} from '@cascadia/commons/lib/items/types/work-instruction'
+} from '@cascadia/commons/items/types/work-instruction'
 import { Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import {
   workInstructionDetailQuery,
   workInstructionOperationsQuery,
   workInstructionResolvedParametricsQuery,
-} from '@/lib/query'
+} from '@/query'
 
 export const Route = createFileRoute('/work-instructions/$id/present')({
   component: PresentationModePage,

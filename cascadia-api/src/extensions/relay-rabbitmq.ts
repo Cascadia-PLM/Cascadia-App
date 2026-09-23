@@ -4,9 +4,9 @@
 import { defineExtension } from './registry'
 import { EVERY_EVENT } from './types'
 import type { EveryEventConsumedExtension } from './types'
-import type { DomainEvent } from '@/lib/events/types'
-import { RabbitMQClient } from '@/lib/jobs/rabbitmq/client'
-import { TransientConsumerError } from '@/lib/events/consumers'
+import type { DomainEvent } from '@/events/types'
+import { RabbitMQClient } from '@/jobs/rabbitmq/client'
+import { TransientConsumerError } from '@/events/consumers'
 
 export const RABBITMQ_EVENT_RELAY_ID = 'relay.rabbitmq'
 

@@ -15,7 +15,7 @@
  * cosmetic bug, not a broken feature.
  *
  * Deliberately free of server imports (no `db`, no drizzle) so the SPA bundle
- * can import it directly. `ProviderType` in `@/lib/db/schema/ai` is the same
+ * can import it directly. `ProviderType` in `@/db/schema/ai` is the same
  * union; it is redeclared here rather than imported to keep that boundary.
  */
 

@@ -5,8 +5,8 @@ import { RotateCcw, Tag } from 'lucide-react'
 import {
   FILE_CATEGORY_OPTIONS,
   isFileCategory,
-} from '@cascadia/commons/lib/vault/file-categories'
-import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
+} from '@cascadia/commons/vault/file-categories'
+import type { FileCategory } from '@cascadia/commons/vault/file-categories'
 import {
   DropdownMenu,
   DropdownMenuContent,

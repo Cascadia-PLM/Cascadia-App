@@ -16,7 +16,7 @@
  * program a request spends against is one the caller can reach, and for an
  * existing session it is that session's own.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/chat-scope.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/chat-scope.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -39,10 +39,10 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { permissionService } from '@/lib/auth/permission-service'
-import { PermissionDeniedError } from '@/lib/errors'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { permissionService } from '@/auth/permission-service'
+import { PermissionDeniedError } from '@/errors'
 
 describe('resolveChatScope — AI chat program isolation', () => {
   const testDb = new TestDatabase()

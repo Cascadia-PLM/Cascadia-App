@@ -23,7 +23,7 @@
  * and take the test with it, which is why there is an explicit timeout rather
  * than a silent hang.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/commit-ancestry.test.ts
+ * Run: npx vitest run cascadia-api/src/db/commit-ancestry.test.ts
  */
 
 import {
@@ -40,10 +40,10 @@ import { commitAncestorDepthCte, commitAncestorSetCte } from './commit-ancestry'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { programs } from '@/lib/db/schema'
-import { commits } from '@/lib/db/schema/versioning'
-import { takeFirst } from '@/lib/db/take-first'
+import { DesignService } from '@/services/DesignService'
+import { programs } from '@/db/schema'
+import { commits } from '@/db/schema/versioning'
+import { takeFirst } from '@/db/take-first'
 
 /** Diamonds to stack. 20 → 61 commits, 1,048,576 distinct paths. */
 const DIAMONDS = 20

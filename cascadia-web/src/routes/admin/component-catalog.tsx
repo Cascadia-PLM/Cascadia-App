@@ -18,16 +18,16 @@ import {
   X,
 } from 'lucide-react'
 import type { ChangeEvent, DragEvent } from 'react'
-import type { CatalogCategory } from '@/lib/query'
-import type { CatalogEntryWithCategory } from '@cascadia/commons/lib/services/types/catalog'
+import type { CatalogCategory } from '@/query'
+import type { CatalogEntryWithCategory } from '@cascadia/commons/services/types/catalog'
 import { PageContainer } from '@/components/layout'
 import { Badge, Button, Input, Label, Textarea } from '@/components/ui'
 import {
   catalogCategoryListQuery,
   catalogEntryListQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 const PAGE_SIZE = 25
 

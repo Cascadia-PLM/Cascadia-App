@@ -8,11 +8,11 @@ import {
   MbomService,
   createMbomSchema,
   reviewUpstreamChangeSchema,
-} from '@/lib/services/MbomService'
-import { DesignService } from '@/lib/services/DesignService'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { requireDesignAccess } from '@/lib/auth/access'
-import { apiHandler, created } from '@/lib/api/handler'
+} from '@/services/MbomService'
+import { DesignService } from '@/services/DesignService'
+import { NotFoundError, ValidationError } from '@/errors'
+import { requireDesignAccess } from '@/auth/access'
+import { apiHandler, created } from '@/api/handler'
 
 const adapt = tagged('MBOM')
 

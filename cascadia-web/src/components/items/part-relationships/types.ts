@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type {
-  Make,
-  OptionCondition,
-} from '@cascadia/commons/lib/types/variants'
+import type { Make, OptionCondition } from '@cascadia/commons/types/variants'
 
 /**
  * Shapes shared by the relationships panel and its four views.

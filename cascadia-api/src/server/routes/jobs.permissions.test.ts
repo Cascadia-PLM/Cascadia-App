@@ -43,21 +43,17 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import jobsRoutes from './jobs'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import {
-  generateApiKey,
-  getKeyPrefix,
-  hashApiKey,
-} from '@/lib/auth/api-key-utils'
-import { apiKeys } from '@/lib/db/schema/api-keys'
-import { jobs } from '@/lib/db/schema/jobs'
-import { takeFirst } from '@/lib/db/take-first'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { generateApiKey, getKeyPrefix, hashApiKey } from '@/auth/api-key-utils'
+import { apiKeys } from '@/db/schema/api-keys'
+import { jobs } from '@/db/schema/jobs'
+import { takeFirst } from '@/db/take-first'
 
 const JOB_TYPE = 'test.jobs.permissions'
 

@@ -26,22 +26,17 @@ import { ItemService } from './ItemService'
 import { ItemRelationshipService } from './ItemRelationshipService'
 import { ChangeOrderService } from './ChangeOrderService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { BranchService } from '@/lib/services/BranchService'
+import { DesignService } from '@/services/DesignService'
+import { BranchService } from '@/services/BranchService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import {
-  branchItems,
-  itemRelationships,
-  items,
-  programs,
-} from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+import { branchItems, itemRelationships, items, programs } from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ItemRelationshipService.getRelationshipsWithDetailsForBranch', () => {
   const testDb = new TestDatabase()

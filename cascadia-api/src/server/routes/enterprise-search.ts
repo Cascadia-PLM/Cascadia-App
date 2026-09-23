@@ -6,15 +6,15 @@ import { inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
 import { readableItemTypes } from './items'
-import type { GlobalSearchCriteria } from '@/lib/items/services/ItemService'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import { db } from '@/lib/db'
-import { designs } from '@/lib/db/schema/designs'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
+import type { GlobalSearchCriteria } from '@/items/services/ItemService'
+import { ItemService } from '@/items/services/ItemService'
+import { ItemTypeRegistry } from '@/items/registry'
+import { db } from '@/db'
+import { designs } from '@/db/schema/designs'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { apiHandler, parseQuery } from '@/api/handler'
 // Register item types (server-side version)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Enterprise Search')
 

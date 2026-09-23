@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { RevisionScheme } from '@cascadia/commons/lib/types/lifecycle'
-import { ValidationError } from '@/lib/errors'
-import { RevisionService } from '@/lib/services/RevisionService'
+import type { RevisionScheme } from '@cascadia/commons/types/lifecycle'
+import { ValidationError } from '@/errors'
+import { RevisionService } from '@/services/RevisionService'
 
 interface FormalRevisionContext {
   field?: string

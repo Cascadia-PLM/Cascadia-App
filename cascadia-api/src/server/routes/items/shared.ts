@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { permissionService } from '@/lib/auth/permission-service'
-import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
+import { permissionService } from '@/auth/permission-service'
+import { ITEM_TYPE_RESOURCES } from '@/items/item-type-resources'
 
 /**
  * Item types whose RBAC resource the user is allowed to read.

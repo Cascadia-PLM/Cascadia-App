@@ -29,12 +29,12 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { eq, sql } from 'drizzle-orm'
 import { ConcurrentTestDatabase } from './concurrent-db'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { designs, items, programs, users } from '@/lib/db/schema'
+import type { Part } from '@cascadia/commons/items/types/part'
+import { ItemService } from '@/items/services/ItemService'
+import { designs, items, programs, users } from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ConcurrentTestDatabase', () => {
   const concurrent = new ConcurrentTestDatabase()

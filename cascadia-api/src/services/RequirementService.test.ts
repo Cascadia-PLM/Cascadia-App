@@ -8,7 +8,7 @@
  * Tests cover satisfaction linking, derivation, allocation, coverage,
  * verification status/method updates, and test case verification linking.
  *
- * Run: npm run test -- src/lib/services/RequirementService.test.ts
+ * Run: npm run test -- src/services/RequirementService.test.ts
  */
 
 import { and, eq } from 'drizzle-orm'
@@ -27,10 +27,10 @@ import { DesignService } from './DesignService'
 import { CheckoutService } from './CheckoutService'
 import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { TestCase } from '@cascadia/commons/lib/items/types/testcase'
-import type { PersistedItem } from '@cascadia/commons/lib/items/types/base'
+import type { Requirement } from '@cascadia/commons/items/types/requirement'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { TestCase } from '@cascadia/commons/items/types/testcase'
+import type { PersistedItem } from '@cascadia/commons/items/types/base'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -39,21 +39,21 @@ import {
   items,
   programMembers,
   programs,
-} from '@/lib/db/schema'
-import { itemVersions } from '@/lib/db/schema/versioning'
+} from '@/db/schema'
+import { itemVersions } from '@/db/schema/versioning'
 import {
   BranchProtectionError,
   ItemCheckoutRequiredError,
   NotFoundError,
   ValidationError,
-} from '@/lib/errors'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
-import { resolveEdgeGuardEnd } from '@/lib/items/traceability-relationships'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { ItemRelationshipService } from '@/items/services/ItemRelationshipService'
+import { resolveEdgeGuardEnd } from '@/items/traceability-relationships'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { takeFirst } from '@/db/take-first'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('RequirementService', () => {
   const testDb = new TestDatabase()

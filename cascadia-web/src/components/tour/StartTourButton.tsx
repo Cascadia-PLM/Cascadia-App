@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { HelpCircle } from 'lucide-react'
-import { useTour } from '@/lib/tour'
+import { useTour } from '@/tour'
 
 export function StartTourButton() {
   const { startTour, isTourActive } = useTour()

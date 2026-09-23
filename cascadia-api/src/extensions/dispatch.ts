@@ -13,15 +13,15 @@ import type {
   RegisteredExtension,
 } from './types'
 import type { GuardOperation } from './operations'
-import type { TransactionClient } from '@/lib/db'
+import type { TransactionClient } from '@/db'
 import type {
   DomainEvent,
   DomainEventDefinition,
   PendingDomainEvent,
-} from '@/lib/events/types'
-import { AppError, ErrorCode } from '@/lib/errors'
-import { describeError } from '@/lib/errors/describe'
-import { eventLogger } from '@/lib/logging/logger'
+} from '@/events/types'
+import { AppError, ErrorCode } from '@/errors'
+import { describeError } from '@/errors/describe'
+import { eventLogger } from '@/logging/logger'
 
 /**
  * How many times a fact may be re-caused by extensions before a publish is
@@ -46,7 +46,7 @@ export const EXTENSION_HOP_CAP = 8
  * would silently re-run the entire release closure and surface as a merge
  * failure naming the release rather than the extension.
  *
- * `pgErrorCode` (`lib/db/retry.ts`) walks the `cause` chain up to five levels
+ * `pgErrorCode` (`db/retry.ts`) walks the `cause` chain up to five levels
  * looking for a string `code`, so the original error is deliberately **not**
  * attached as `cause` — it rides `extensionError` instead, where nothing
  * unwraps it. And this class sets its own `code`, which that walk finds at

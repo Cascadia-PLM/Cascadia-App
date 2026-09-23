@@ -4,47 +4,38 @@
 import { Hono } from 'hono'
 import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
-import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
+import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { tagged } from '../adapter'
-import type { ScopeGraphEdge, ScopeGraphNode } from '@/lib/api/scope-graph'
-import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
-import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
+import type { ScopeGraphEdge, ScopeGraphNode } from '@/api/scope-graph'
+import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/types/bom'
+import type { OptionCondition } from '@cascadia/commons/types/variants'
 import {
   DesignService,
   designCreateSchema,
   designUpdateSchema,
   tagCreateSchema,
-} from '@/lib/services/DesignService'
-import { CommitGraphService } from '@/lib/services/CommitGraphService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { BranchService } from '@/lib/services/BranchService'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { CrossDesignReferenceService } from '@/lib/services/CrossDesignReferenceService'
-import { UsageService } from '@/lib/services/UsageService'
-import { VersionResolver } from '@/lib/services/VersionResolver'
-import { RequirementService } from '@/lib/services/RequirementService'
-import { VerificationService } from '@/lib/services/VerificationService'
+} from '@/services/DesignService'
+import { CommitGraphService } from '@/services/CommitGraphService'
+import { ProgramService } from '@/services/ProgramService'
+import { BranchService } from '@/services/BranchService'
+import { ItemService } from '@/items/services/ItemService'
+import { CrossDesignReferenceService } from '@/services/CrossDesignReferenceService'
+import { UsageService } from '@/services/UsageService'
+import { VersionResolver } from '@/services/VersionResolver'
+import { RequirementService } from '@/services/RequirementService'
+import { VerificationService } from '@/services/VerificationService'
 import {
   GapAnalysisService,
   gapAnalysisRequestSchema,
-} from '@/lib/services/GapAnalysisService'
-import { JobService } from '@/lib/jobs/JobService'
-import { requirePermission } from '@/lib/auth/server'
-import { likeContains } from '@/lib/db/like-pattern'
-import { requireDesignAccess } from '@/lib/auth/access'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import {
-  NotFoundError,
-  PermissionDeniedError,
-  ValidationError,
-} from '@/lib/errors'
-import {
-  apiHandler,
-  created,
-  jsonResponse,
-  parseQuery,
-} from '@/lib/api/handler'
+} from '@/services/GapAnalysisService'
+import { JobService } from '@/jobs/JobService'
+import { requirePermission } from '@/auth/server'
+import { likeContains } from '@/db/like-pattern'
+import { requireDesignAccess } from '@/auth/access'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
+import { apiHandler, created, jsonResponse, parseQuery } from '@/api/handler'
 import {
   designNodeId,
   makeDesignNode,
@@ -54,23 +45,23 @@ import {
   programNodeId,
   scopeGraphQuerySchema,
   scopeGraphResponseSchema,
-} from '@/lib/api/scope-graph'
-import { serviceLogger } from '@/lib/logging/logger'
-import { db } from '@/lib/db'
-import { RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED } from '@/lib/events'
-import { publishStructureEdges } from '@/lib/items/structure-events'
-import { paginatedOrderBy } from '@/lib/db/paginated-order'
+} from '@/api/scope-graph'
+import { serviceLogger } from '@/logging/logger'
+import { db } from '@/db'
+import { RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED } from '@/events'
+import { publishStructureEdges } from '@/items/structure-events'
+import { paginatedOrderBy } from '@/db/paginated-order'
 import {
   changeOrderAffectedItems,
   changeOrders,
   itemRelationships,
   items,
-} from '@/lib/db/schema/items'
-import { branchItems, branches } from '@/lib/db/schema/versioning'
-import { users } from '@/lib/db/schema/users'
-import { designs } from '@/lib/db/schema/designs'
-import { notDeleted, notWorkingRevision } from '@/lib/db/filters'
-import '@/lib/items/registerItemTypes.server'
+} from '@/db/schema/items'
+import { branchItems, branches } from '@/db/schema/versioning'
+import { users } from '@/db/schema/users'
+import { designs } from '@/db/schema/designs'
+import { notDeleted, notWorkingRevision } from '@/db/filters'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Designs')
 

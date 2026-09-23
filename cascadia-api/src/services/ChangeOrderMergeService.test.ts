@@ -7,7 +7,7 @@
  * Integration tests for the ChangeOrderMergeService class.
  * Tests cover change order merge, conflict detection, and revision assignment.
  *
- * Run: npm run test -- src/lib/services/ChangeOrderMergeService.test.ts
+ * Run: npm run test -- src/services/ChangeOrderMergeService.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -21,7 +21,7 @@ import {
   it,
 } from 'vitest'
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import { ItemService } from '../items/services/ItemService'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { ChangeOrderMergeService } from './ChangeOrderMergeService'
@@ -32,8 +32,8 @@ import { RequirementService } from './RequirementService'
 import { LifecycleService } from './LifecycleService'
 import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { PersistedItem } from '@cascadia/commons/lib/items/types/base'
-import type { DesignReleasedPayload } from '@/lib/events'
+import type { PersistedItem } from '@cascadia/commons/items/types/base'
+import type { DesignReleasedPayload } from '@/events'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -53,22 +53,18 @@ import {
   tags,
   upstreamChanges,
   vaultFiles,
-} from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import {
   seedRequirementLifecycle,
   seedStandardPartLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
-import { DESIGN_RELEASED } from '@/lib/events'
-import {
-  MergeConflictError,
-  NotFoundError,
-  ValidationError,
-} from '@/lib/errors'
+import { takeFirst } from '@/db/take-first'
+import { DESIGN_RELEASED } from '@/events'
+import { MergeConflictError, NotFoundError, ValidationError } from '@/errors'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Well-known test workflow ID for ChangeOrderMergeService ECO workflow
 const MERGE_TEST_WORKFLOW_ID = '00000000-0000-4000-8000-000000000201'
@@ -2038,7 +2034,7 @@ describe('ChangeOrderMergeService', () => {
       await ChangeOrderMergeService.merge(changeOrder.id, user.id)
 
       // Verify release commits were created on the design's main branch
-      const { commits } = await import('@/lib/db/schema')
+      const { commits } = await import('@/db/schema')
       const changeOrderItem = await ItemService.findById(changeOrder.id)
       const releaseCommits = await testDb.db
         .select()

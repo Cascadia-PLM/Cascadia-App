@@ -25,9 +25,9 @@ import type {
   WorkInstructionOperation,
   WorkInstructionStep,
   WorkInstructionWithSteps,
-} from '@cascadia/commons/lib/items/types/work-instruction'
-import type { WorkOrderInstructionStatus } from '@cascadia/commons/lib/items/types/work-order'
-import type { StepContentBlock } from '@cascadia/commons/lib/items/types/work-instruction-content'
+} from '@cascadia/commons/items/types/work-instruction'
+import type { WorkOrderInstructionStatus } from '@cascadia/commons/items/types/work-order'
+import type { StepContentBlock } from '@cascadia/commons/items/types/work-instruction-content'
 import { PageContainer } from '@/components/layout'
 import { PartAttachmentPanel } from '@/components/work-instructions/PartAttachmentPanel'
 import { OperationEditor } from '@/components/work-instructions/OperationEditor'
@@ -56,8 +56,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   authSessionQuery,
   itemEditContextQuery,
@@ -67,9 +67,9 @@ import {
   workInstructionDetailQuery,
   workInstructionOperationsQuery,
   workInstructionUsageQuery,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
-import { cn } from '@/lib/utils'
+} from '@/query'
+import { apiFetch } from '@/api/client'
+import { cn } from '@/utils'
 import { StateBadge } from '@/components/items/StateBadge'
 
 /** The tabs the work-instruction page renders; the search schema derives from this list. */

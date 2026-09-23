@@ -19,16 +19,16 @@ import {
   it,
 } from 'vitest'
 import { eq } from 'drizzle-orm'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import {
   DEFAULT_ITEM_LIFECYCLES,
   DEFAULT_LIFECYCLE_LINKS,
   seedDefaultLifecycles,
 } from './default-lifecycles'
 import { TestDatabase } from '@/__tests__/helpers/db'
-import { itemTypeConfigs, lifecycleDefinitions } from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import '@/lib/items/registerItemTypes.server'
+import { itemTypeConfigs, lifecycleDefinitions } from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
+import '@/items/registerItemTypes.server'
 
 interface StoredDefinition {
   states: Array<{

@@ -8,7 +8,7 @@
  * Tests cover conflict detection for branches, ECOs, cross-ECO scenarios,
  * field-level conflict detection, and rebasing.
  *
- * Run: npm run test -- src/lib/services/ConflictDetectionService.test.ts
+ * Run: npm run test -- src/services/ConflictDetectionService.test.ts
  */
 
 import {
@@ -31,7 +31,7 @@ import { RevisionService } from './RevisionService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 import {
   branchItems,
   changeOrderAffectedItems,
@@ -39,10 +39,10 @@ import {
   items,
   programs,
   vaultFiles,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ConflictDetectionService', () => {
   const testDb = new TestDatabase()

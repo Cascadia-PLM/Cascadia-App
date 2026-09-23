@@ -19,26 +19,26 @@ import {
   Unlock,
   Video,
 } from 'lucide-react'
-import { isDisplayableImage } from '@cascadia/commons/lib/vault/image-files'
+import { isDisplayableImage } from '@cascadia/commons/vault/image-files'
 import {
   FILE_CATEGORY_DEFINITIONS,
   FILE_CATEGORY_OPTIONS,
   isFileCategory,
-} from '@cascadia/commons/lib/vault/file-categories'
-import { isPreviewable } from '@cascadia/commons/lib/vault/preview'
+} from '@cascadia/commons/vault/file-categories'
+import { isPreviewable } from '@cascadia/commons/vault/preview'
 import type { DataGridColumn, Row } from '@/components/ui'
-import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
+import type { FileCategory } from '@cascadia/commons/vault/file-categories'
 import { Badge, Button, DataGrid } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { useSystemAccess } from '@/lib/hooks/usePermissions'
-import { useInvalidateResources } from '@/lib/query'
-import { itemFilesQuery } from '@/lib/query/options/item-files'
+import { cn } from '@/utils'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { useSystemAccess } from '@/hooks/usePermissions'
+import { useInvalidateResources } from '@/query'
+import { itemFilesQuery } from '@/query/options/item-files'
 import { FileCategoryMenu } from '@/components/vault/FileCategoryMenu'
 import { FilePreviewDialog } from '@/components/vault/FilePreviewDialog'
-import { Slot } from '@/lib/ui/slot-registry'
-import { apiErrorFromResponse } from '@/lib/api/client'
+import { Slot } from '@/ui/slot-registry'
+import { apiErrorFromResponse } from '@/api/client'
 
 export interface FileRecord {
   id: string

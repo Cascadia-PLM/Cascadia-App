@@ -299,7 +299,7 @@ export interface UpdateFieldConfig {
  * membership actions (`add`, `remove`) are not among them: BOM membership
  * is a branch edit the merge releases with the branch.
  *
- * Re-exported from @/lib/types/lifecycle, where the schema lives.
+ * Re-exported from @/types/lifecycle, where the schema lives.
  */
 export type { ChangeAction } from '../types/lifecycle'
 

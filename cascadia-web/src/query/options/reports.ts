@@ -7,8 +7,8 @@ import { collectionQuery, entityQuery } from './entities'
 import type {
   Report,
   ReportExecutionResult,
-} from '@cascadia/commons/lib/reports/types'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/reports/types'
+import { apiFetch } from '@/api/client'
 
 /** Every report visible to the caller, grouped by item type in the UI. */
 export function reportListQuery() {

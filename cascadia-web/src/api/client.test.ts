@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { describe, expect, it } from 'vitest'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import { ApiError, apiErrorFromResponse } from './client'
 
 describe('apiErrorFromResponse', () => {

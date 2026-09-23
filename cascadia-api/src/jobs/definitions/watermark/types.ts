@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
-import { WATERMARK_POSITIONS } from '@/lib/vault/pdf/watermark'
+import { WATERMARK_POSITIONS } from '@/vault/pdf/watermark'
 
 /**
  * Stamp a mark onto PDF attachments.

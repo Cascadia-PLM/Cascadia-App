@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { APP_VERSION } from '@cascadia/commons/lib/version'
-import {
-  BUILD_DIRTY,
-  BUILD_LABEL,
-  BUILD_SHA,
-  BUILD_TAG,
-} from '@/lib/build-info'
+import { APP_VERSION } from '@cascadia/commons/version'
+import { BUILD_DIRTY, BUILD_LABEL, BUILD_SHA, BUILD_TAG } from '@/build-info'
 
 /**
  * Which build is deployed, at the foot of the sidebar.

@@ -12,15 +12,15 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react'
-import type { TestCase } from '@cascadia/commons/lib/items/types/testcase'
-import { apiFetch } from '@/lib/api/client'
+import type { TestCase } from '@cascadia/commons/items/types/testcase'
+import { apiFetch } from '@/api/client'
 import {
   entitySubQuery,
   itemCollectionQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+} from '@/query'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   Badge,
   Button,

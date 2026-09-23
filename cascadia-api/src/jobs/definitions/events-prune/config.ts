@@ -3,7 +3,7 @@
 
 import { eventsPrunePayloadSchema, eventsPruneResultSchema } from './types'
 import type { EventsPrunePayload, EventsPruneResult } from './types'
-import type { JobTypeConfig } from '@/lib/jobs/types'
+import type { JobTypeConfig } from '@/jobs/types'
 
 /**
  * Prune domain events every consumer has passed and that are older than the

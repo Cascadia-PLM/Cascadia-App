@@ -3,9 +3,9 @@
 
 import { eq } from 'drizzle-orm'
 import type { ExtensionPhase } from './types'
-import { db } from '@/lib/db'
-import { settings } from '@/lib/db/schema'
-import { eventLogger } from '@/lib/logging/logger'
+import { db } from '@/db'
+import { settings } from '@/db/schema'
+import { eventLogger } from '@/logging/logger'
 
 /**
  * Which extensions are switched off, as data.

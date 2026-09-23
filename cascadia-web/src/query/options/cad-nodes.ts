@@ -6,8 +6,8 @@ import { qk } from '../keys'
 import type {
   CadModelNode,
   CadModelNodeCandidate,
-} from '@cascadia/commons/lib/vault/cad-nodes'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/vault/cad-nodes'
+import { apiFetch } from '@/api/client'
 
 export type { CadModelNode, CadModelNodeCandidate }
 

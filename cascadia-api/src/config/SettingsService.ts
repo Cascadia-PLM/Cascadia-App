@@ -9,7 +9,7 @@ import { settings } from '../db/schema'
 export {
   SettingKeys,
   type SettingKey,
-} from '@cascadia/commons/lib/config/SettingKeys'
+} from '@cascadia/commons/config/SettingKeys'
 
 export interface SettingRecord {
   id: string

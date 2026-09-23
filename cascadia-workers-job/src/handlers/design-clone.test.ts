@@ -29,21 +29,16 @@ import {
 import { and, eq } from 'drizzle-orm'
 import { TestDatabase } from '@test/helpers/db'
 import { insertTestUser } from '@test/fixtures/users'
-import {
-  itemVersions,
-  items,
-  parts,
-  programs,
-} from '@cascadia/api/lib/db/schema'
-import { takeFirst } from '@cascadia/api/lib/db/take-first'
-import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
-import { DesignService } from '@cascadia/api/lib/services/DesignService'
-import { LifecycleService } from '@cascadia/api/lib/services/LifecycleService'
+import { itemVersions, items, parts, programs } from '@cascadia/api/db/schema'
+import { takeFirst } from '@cascadia/api/db/take-first'
+import { ItemTypeRegistry } from '@cascadia/api/items/registry'
+import { DesignService } from '@cascadia/api/services/DesignService'
+import { LifecycleService } from '@cascadia/api/services/LifecycleService'
 import { cloneDesignHandler } from './design-clone'
 import type { TestUser } from '@test/fixtures/users'
-import type { JobContext } from '@cascadia/api/lib/jobs/types'
+import type { JobContext } from '@cascadia/api/jobs/types'
 
-import '@cascadia/api/lib/items/registerItemTypes.server'
+import '@cascadia/api/items/registerItemTypes.server'
 
 /** A context that records nothing — progress and log calls are not under test. */
 function jobContext(): JobContext {

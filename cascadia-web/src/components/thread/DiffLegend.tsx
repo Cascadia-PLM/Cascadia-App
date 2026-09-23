@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Circle, Minus, Plus, RefreshCw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface DiffLegendProps {
   showUnchanged?: boolean

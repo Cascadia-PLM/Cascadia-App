@@ -21,7 +21,7 @@
  *   createCollectionResponse,
  *   partCreateSchema,
  *   partUpdateSchema,
- * } from '@/lib/api'
+ * } from '@/api'
  *
  * // In an API route handler
  * const validated = partCreateSchema.parse(body)

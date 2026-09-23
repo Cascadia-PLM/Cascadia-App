@@ -5,8 +5,8 @@ import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { gridParamsToSearchParams } from '../grid-params'
 import type { GridParams, GridQuery } from '../grid-params'
-import type { ApiData } from '@/lib/api/typed'
-import { apiFetch } from '@/lib/api/client'
+import type { ApiData } from '@/api/typed'
+import { apiFetch } from '@/api/client'
 
 /**
  * One row on the enterprise search results page — the documented columns

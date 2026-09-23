@@ -22,44 +22,44 @@
 import { randomUUID } from 'node:crypto'
 
 import { eq } from 'drizzle-orm'
-import { parseOptionText } from '@cascadia/commons/lib/types/variants'
+import { parseOptionText } from '@cascadia/commons/types/variants'
 import { withWritePermissionAndAudit } from './permission-wrapper'
 import {
   issueConfirmationToken,
   redeemConfirmationToken,
 } from './confirmation-store'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
 import type {
   ChangeOrderPriority,
   ChangeOrderType,
-} from '@cascadia/commons/lib/items/types/change-order'
-import type { PartType } from '@cascadia/commons/lib/items/types/part'
-import type { RequirementType } from '@cascadia/commons/lib/items/types/requirement'
-import type { TaskPriority } from '@cascadia/commons/lib/items/types/task'
+} from '@cascadia/commons/items/types/change-order'
+import type { PartType } from '@cascadia/commons/items/types/part'
+import type { RequirementType } from '@cascadia/commons/items/types/requirement'
+import type { TaskPriority } from '@cascadia/commons/items/types/task'
 import type {
   PermissionSpec,
   ToolContext,
   WriteOperationMeta,
 } from './permission-wrapper'
-import { AppError } from '@/lib/errors'
+import { AppError } from '@/errors'
 
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { BranchService } from '@/lib/services/BranchService'
-import { DesignService } from '@/lib/services/DesignService'
-import { LifecycleService } from '@/lib/services/LifecycleService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { getResourceType } from '@/lib/items/item-type-resources'
-import { aiLogger } from '@/lib/logging/logger'
-import { db } from '@/lib/db'
-import { programs } from '@/lib/db/schema'
-import { permissionService } from '@/lib/auth/permission-service'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { ItemService } from '@/items/services/ItemService'
+import { BranchService } from '@/services/BranchService'
+import { DesignService } from '@/services/DesignService'
+import { LifecycleService } from '@/services/LifecycleService'
+import { ProgramService } from '@/services/ProgramService'
+import { getResourceType } from '@/items/item-type-resources'
+import { aiLogger } from '@/logging/logger'
+import { db } from '@/db'
+import { programs } from '@/db/schema'
+import { permissionService } from '@/auth/permission-service'
 import {
   requireChangeOrderAccess as requireChangeOrderAccess,
   requireDesignAccess,
   requireItemAccess,
-} from '@/lib/auth/access'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
+} from '@/auth/access'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 
 // ============================================================================
 // Input Types (manually defined for better type inference)

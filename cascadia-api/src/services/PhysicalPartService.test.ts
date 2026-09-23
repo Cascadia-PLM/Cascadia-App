@@ -10,7 +10,7 @@
  * matters downstream: exactly one PhysicalPart record ever exists per
  * identity, no matter how many times or how concurrently it is registered.
  *
- * Run: npx vitest run src/lib/services/PhysicalPartService.test.ts
+ * Run: npx vitest run src/services/PhysicalPartService.test.ts
  */
 
 import {
@@ -29,12 +29,12 @@ import { PhysicalPartService } from './PhysicalPartService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { items, physicalParts, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { NotFoundError, ValidationError } from '@/errors'
+import { items, physicalParts, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('PhysicalPartService', () => {
   const testDb = new TestDatabase()

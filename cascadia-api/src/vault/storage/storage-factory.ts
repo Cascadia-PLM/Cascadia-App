@@ -6,10 +6,10 @@ import { LocalFileStorage } from './local-storage'
 import { S3Storage } from './s3-storage'
 import type { StorageConfig, VaultStorage } from './types'
 
-import type { VaultConfigInfo } from '@cascadia/commons/lib/vault/types'
+import type { VaultConfigInfo } from '@cascadia/commons/vault/types'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { VaultConfigInfo } from '@cascadia/commons/lib/vault/types'
+export type { VaultConfigInfo } from '@cascadia/commons/vault/types'
 
 /**
  * Factory for creating storage instances based on configuration

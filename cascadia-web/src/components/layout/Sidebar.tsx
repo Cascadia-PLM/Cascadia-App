@@ -10,7 +10,7 @@ import {
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
   useSidebar,
-} from '@/lib/sidebar-context'
+} from '@/sidebar-context'
 import { ResizeHandle } from '@/components/ui/ResizeHandle'
 
 export function Sidebar({ currentPath }: SidebarProps) {

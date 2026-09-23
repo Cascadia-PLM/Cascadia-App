@@ -13,4 +13,4 @@ export type {
   PackageDescriptor,
   PackageId,
   PackageStatus,
-} from '@cascadia/commons/lib/packages/types'
+} from '@cascadia/commons/packages/types'

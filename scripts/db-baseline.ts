@@ -74,7 +74,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { sql } from 'drizzle-orm'
-import { db, describeConnection } from '@cascadia/api/lib/db'
+import { db, describeConnection } from '@cascadia/api/db'
 import { appDir, resolveApp } from './edition.mjs'
 
 // Resolved at runtime rather than imported by name — same reasoning as

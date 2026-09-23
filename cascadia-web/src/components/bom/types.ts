@@ -4,9 +4,9 @@
 /**
  * Shared BOM tree types used by ChangeOrderTreeTable and StructureTab.
  *
- * Re-exported from `@/lib/types/bom`, which is the single declaration the
+ * Re-exported from `@/types/bom`, which is the single declaration the
  * server builds against too — keeping this path so the component imports that
  * already point here do not all have to move.
  */
 
-export type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
+export type { BOMTreeNode, OrphanItem } from '@cascadia/commons/types/bom'

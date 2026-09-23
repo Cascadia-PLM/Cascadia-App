@@ -14,11 +14,11 @@ import {
   conditionMatches,
   formatOptionText,
   formatPartDesignation,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import type { Row } from '@tanstack/react-table'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type { Relationship } from './types'
-import type { Make, OptionModel } from '@cascadia/commons/lib/types/variants'
+import type { Make, OptionModel } from '@cascadia/commons/types/variants'
 import {
   Badge,
   Button,
@@ -37,7 +37,7 @@ import { StateBadge } from '@/components/items/StateBadge'
 import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
 import { OptionConditionPopover } from '@/components/variants/OptionConditionPopover'
 import { BOM_RELATIONSHIP_TYPE } from '@/components/items/bom-target-scope'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 
 /**
  * The relationships table: one collapsible DataGrid per relationship type.

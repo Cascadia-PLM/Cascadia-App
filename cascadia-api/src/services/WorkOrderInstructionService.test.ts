@@ -17,7 +17,7 @@
  * - sign-off routing follows the order's requiresSignOff, and approval no
  *   longer fabricates completed quantity
  *
- * Run: npx vitest run src/lib/services/WorkOrderInstructionService.test.ts
+ * Run: npx vitest run src/services/WorkOrderInstructionService.test.ts
  */
 
 import {
@@ -39,7 +39,7 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { ValidationError } from '@/lib/errors'
+import { ValidationError } from '@/errors'
 import {
   itemRelationships,
   items,
@@ -48,12 +48,12 @@ import {
   workInstructionPartAttachments,
   workInstructionSteps,
   workOrders,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
+} from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('WorkOrderInstructionService', () => {
   const testDb = new TestDatabase()

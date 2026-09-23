@@ -34,24 +34,24 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import partsRoutes from './parts'
 import softwareRoutes from './software'
 import workInstructionsRoutes from './work-instructions'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { Software } from '@cascadia/commons/lib/items/types/software'
-import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { Software } from '@cascadia/commons/items/types/software'
+import type { WorkInstruction } from '@cascadia/commons/items/types/work-instruction'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 interface ErrorEnvelope {
   error: { code: string }

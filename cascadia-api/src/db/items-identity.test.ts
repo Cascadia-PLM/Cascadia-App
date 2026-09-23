@@ -15,7 +15,7 @@
  * collisions are now real, and the legitimate multiplicities (same number in
  * different designs; new revisions of one master) still insert.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/items-identity.test.ts
+ * Run: npx vitest run cascadia-api/src/db/items-identity.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -31,13 +31,9 @@ import {
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { designs, items, programs } from '@/lib/db/schema'
-import {
-  UNIQUE_VIOLATION,
-  asPostgresError,
-  constraintOf,
-} from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
+import { designs, items, programs } from '@/db/schema'
+import { UNIQUE_VIOLATION, asPostgresError, constraintOf } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
 
 const IDENTITY_CONSTRAINT =
   'items_item_number_revision_design_id_item_type_unique'

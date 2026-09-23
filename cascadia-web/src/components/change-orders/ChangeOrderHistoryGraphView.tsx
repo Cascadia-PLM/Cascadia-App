@@ -16,7 +16,7 @@ import type { Node } from '@xyflow/react'
 import type {
   CommitGraphData,
   CommitGraphNode,
-} from '@cascadia/commons/lib/versioning/graph-types'
+} from '@cascadia/commons/versioning/graph-types'
 import { CommitNode } from '@/components/versioning/CommitNode'
 import {
   BRANCH_COLUMN_WIDTH,
@@ -36,8 +36,8 @@ import {
   CardTitle,
   FullscreenGraphWrapper,
 } from '@/components/ui'
-import { changeOrderBranchGraphQuery } from '@/lib/query/options/change-orders'
-import { useTheme } from '@/lib/theme'
+import { changeOrderBranchGraphQuery } from '@/query/options/change-orders'
+import { useTheme } from '@/theme'
 
 interface ChangeOrderGraphData extends CommitGraphData {
   ecoNumber: string

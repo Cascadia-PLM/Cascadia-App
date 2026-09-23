@@ -3,7 +3,7 @@
 
 import { registerCoreExtensions } from './core/register'
 import { startEventConsumerPolling } from './consumers'
-import { eventLogger } from '@/lib/logging/logger'
+import { eventLogger } from '@/logging/logger'
 
 /**
  * Whether the app server runs event consumers itself (`EVENT_CONSUMERS_IN_APP`,

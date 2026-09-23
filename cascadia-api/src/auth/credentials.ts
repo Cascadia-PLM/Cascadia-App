@@ -11,7 +11,7 @@ import { hashApiKey } from './api-key-utils'
 import { eventContextFromRequest, recordKeyEvent } from './api-key-events'
 import type { KeyEventContext } from './api-key-events'
 import type { SessionUser } from './session'
-import { authLogger } from '@/lib/logging/logger'
+import { authLogger } from '@/logging/logger'
 
 export type AuthMethod = 'session' | 'api_key'
 

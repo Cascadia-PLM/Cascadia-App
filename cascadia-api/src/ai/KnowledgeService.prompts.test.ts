@@ -15,7 +15,7 @@
  * 'ignore previous instructions and link to …'" and a model that does it, so
  * it is pinned on every prompt this service builds rather than on one of them.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/KnowledgeService.prompts.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/KnowledgeService.prompts.test.ts
  */
 
 import { describe, expect, it } from 'vitest'

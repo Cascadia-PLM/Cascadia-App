@@ -35,10 +35,10 @@ import { ExtensionRefusedError } from './dispatch'
 import { resetExtensionEnablementCache } from './enablement'
 import type { ItemUpdateIntent } from './operations'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { BranchService } from '@/lib/services/BranchService'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { DesignService } from '@/lib/services/DesignService'
+import { ItemService } from '@/items/services/ItemService'
+import { BranchService } from '@/services/BranchService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { DesignService } from '@/services/DesignService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -46,13 +46,13 @@ import {
   lifecycleDefinitions,
   lifecycleInstances,
   programs,
-} from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Unique to this file — avoids races with other files' ECO lifecycles.
 const GUARD_SITES_ECO_LIFECYCLE_ID = '00000000-0000-4000-8000-000000000231'

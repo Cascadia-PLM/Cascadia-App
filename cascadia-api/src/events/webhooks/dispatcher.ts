@@ -5,17 +5,14 @@ import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
 import {
   WEBHOOK_DISPATCHER_CONSUMER_ID,
   WEBHOOK_PAYLOAD_VERSION,
-} from '@cascadia/commons/lib/webhooks/config'
-import type { EveryEventConsumedExtension } from '@/lib/extensions/types'
-import type { DomainEvent } from '@/lib/events/types'
-import type { TransactionClient } from '@/lib/db'
-import { EVERY_EVENT } from '@/lib/extensions/types'
-import { defineExtension } from '@/lib/extensions/registry'
-import { designs } from '@/lib/db/schema/designs'
-import {
-  webhookDeliveries,
-  webhookSubscriptions,
-} from '@/lib/db/schema/webhooks'
+} from '@cascadia/commons/webhooks/config'
+import type { EveryEventConsumedExtension } from '@/extensions/types'
+import type { DomainEvent } from '@/events/types'
+import type { TransactionClient } from '@/db'
+import { EVERY_EVENT } from '@/extensions/types'
+import { defineExtension } from '@/extensions/registry'
+import { designs } from '@/db/schema/designs'
+import { webhookDeliveries, webhookSubscriptions } from '@/db/schema/webhooks'
 
 export interface WebhookDispatcherOptions {
   /**

@@ -20,7 +20,7 @@ export const PRIORITY_MAP: Record<JobPriority, number> = {
 
 /**
  * Configuration for a job type
- * Mirrors the ItemTypeConfig pattern from src/lib/items/types/base.ts
+ * Mirrors the ItemTypeConfig pattern from src/items/types/base.ts
  */
 export interface JobTypeConfig<TPayload = unknown, TResult = unknown> {
   /** Unique job type identifier (e.g., 'notification.workflow.transition') */

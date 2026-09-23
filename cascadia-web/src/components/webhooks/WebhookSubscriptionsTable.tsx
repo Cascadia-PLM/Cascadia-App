@@ -11,7 +11,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import type { DataGridColumn, Row } from '@/components/ui'
-import type { WebhookSubscription } from '@/lib/query'
+import type { WebhookSubscription } from '@/query'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
   DropdownMenu,

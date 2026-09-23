@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { PermissionAction } from '@cascadia/commons/lib/auth/permissions'
-import { requireFileAccess, requireItemAccess } from '@/lib/auth/access'
-import { requirePermission } from '@/lib/auth/server'
-import { ValidationError } from '@/lib/errors'
-import { getResourceType } from '@/lib/items/item-type-resources'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { BranchService } from '@/lib/services/BranchService'
+import type { PermissionAction } from '@cascadia/commons/auth/permissions'
+import { requireFileAccess, requireItemAccess } from '@/auth/access'
+import { requirePermission } from '@/auth/server'
+import { ValidationError } from '@/errors'
+import { getResourceType } from '@/items/item-type-resources'
+import { ItemService } from '@/items/services/ItemService'
+import { BranchService } from '@/services/BranchService'
 
 type EditableItem = Awaited<ReturnType<typeof requireItemAccess>>
 type EditableBranch = Awaited<

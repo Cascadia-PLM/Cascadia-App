@@ -7,7 +7,7 @@
  * Deliberately this small. The interface used to carry `label`,
  * `pluralLabel`, `icon`, `permissions`, `relationships` and `fieldMetadata`
  * as well, and the admin screen offered an input for each — but the enforced
- * permission model is the role/resource one in `lib/auth/permissions.ts` and
+ * permission model is the role/resource one in `auth/permissions.ts` and
  * never read these, `relationships` and `fieldMetadata` were read by nothing
  * at all, and the labels reached two of the dozen surfaces that display a
  * type's name, so renaming Part to Component produced a search typeahead

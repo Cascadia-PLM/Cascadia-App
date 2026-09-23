@@ -39,14 +39,10 @@ import authRoutes from './auth'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import {
-  generateApiKey,
-  getKeyPrefix,
-  hashApiKey,
-} from '@/lib/auth/api-key-utils'
-import { apiKeys } from '@/lib/db/schema/api-keys'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { generateApiKey, getKeyPrefix, hashApiKey } from '@/auth/api-key-utils'
+import { apiKeys } from '@/db/schema/api-keys'
 
 interface Route {
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'

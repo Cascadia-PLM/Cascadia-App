@@ -6,13 +6,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ArrowRight, Loader2, Search } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
-import { cn } from '@/lib/utils'
-import { enterpriseSearchQuery } from '@/lib/query'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
-import {
-  getItemDetailPath,
-  getItemTypeIconByName,
-} from '@/lib/items/item-type-ui'
+import { cn } from '@/utils'
+import { enterpriseSearchQuery } from '@/query'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { getItemDetailPath, getItemTypeIconByName } from '@/items/item-type-ui'
 
 interface SearchResultItem {
   id: string

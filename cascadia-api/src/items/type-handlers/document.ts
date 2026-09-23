@@ -3,8 +3,8 @@
 
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
-import { db } from '@/lib/db'
-import { documents } from '@/lib/db/schema'
+import { db } from '@/db'
+import { documents } from '@/db/schema'
 
 registerTypeHandler('Document', {
   table: documents,

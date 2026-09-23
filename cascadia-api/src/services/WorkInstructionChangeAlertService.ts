@@ -2,12 +2,12 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
-import { db } from '@/lib/db'
+import { db } from '@/db'
 import {
   items,
   workInstructionChangeAlerts,
   workInstructionPartAttachments,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 interface CreateAlertsInput {
   ecoId: string

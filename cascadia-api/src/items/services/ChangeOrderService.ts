@@ -16,9 +16,9 @@ import {
 import {
   CHANGE_ACTION_LABELS,
   changeOrderTypeSchema,
-} from '@cascadia/commons/lib/items/types/change-order'
-import { isDrivingDefinition } from '@cascadia/commons/lib/lifecycles/normalize'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+} from '@cascadia/commons/items/types/change-order'
+import { isDrivingDefinition } from '@cascadia/commons/lifecycles/normalize'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db, withTx } from '../../db'
 import { parseBaselineReleaseRevision } from '../../import/baseline-revision'
 import {
@@ -79,22 +79,22 @@ import type {
   ChangeOrderType,
   ImpactReport,
   Risk,
-} from '@cascadia/commons/lib/items/types/change-order'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
+} from '@cascadia/commons/items/types/change-order'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
 import type {
   FinalKind,
   LifecycleInstance,
   TransitionResult,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 
 // Lazy-cached dynamic imports to avoid circular dependencies
-// (same pattern as src/lib/items/registry.ts)
+// (same pattern as src/items/registry.ts)
 import type { LifecycleDefinitionService as LifecycleDefinitionServiceType } from '../../lifecycles/LifecycleDefinitionService'
 import type { LifecycleInstanceService as LifecycleInstanceServiceType } from '../../lifecycles/LifecycleInstanceService'
 import type { ConflictDetectionService as ConflictDetectionServiceType } from '../../services/ConflictDetectionService'
 import type { ItemTypeRegistry as ItemTypeRegistryType } from '../registry'
 import type { requireChangeOrderAccess as requireChangeOrderAccessType } from '../../auth/access'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 /** A BOM edit on the ECO's working copy of an affected item */
 export interface BomChangeInput {

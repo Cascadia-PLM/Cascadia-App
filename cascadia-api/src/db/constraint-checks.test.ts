@@ -17,7 +17,7 @@
  * These tests pin the constraints from both sides: the corrupt shapes throw,
  * and every legal shape — including legacy 'DRAFT' and '' — still inserts.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/constraint-checks.test.ts
+ * Run: npx vitest run cascadia-api/src/db/constraint-checks.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -46,11 +46,11 @@ import {
   programs,
   workOrderInstructions,
   workOrders,
-} from '@/lib/db/schema'
-import { asPostgresError, constraintOf } from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
-import { notWorkingRevision } from '@/lib/db/filters'
-import { RevisionService } from '@/lib/services/RevisionService'
+} from '@/db/schema'
+import { asPostgresError, constraintOf } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
+import { notWorkingRevision } from '@/db/filters'
+import { RevisionService } from '@/services/RevisionService'
 
 /** Postgres check_violation. */
 const CHECK_VIOLATION = '23514'

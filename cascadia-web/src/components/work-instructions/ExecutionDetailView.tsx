@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { InstructionExecution } from '@cascadia/commons/lib/items/types/work-order'
+import type { InstructionExecution } from '@cascadia/commons/items/types/work-order'
 import type {
   StepContent,
   StepContentBlock,
-} from '@cascadia/commons/lib/items/types/work-instruction'
+} from '@cascadia/commons/items/types/work-instruction'
 
 import {
   Badge,
@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 /**
  * Step shape shared by traveler snapshots and live template steps — the

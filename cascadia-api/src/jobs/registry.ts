@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import type { JobHandler, JobTypeConfig, RuntimeJobTypeConfig } from './types'
-import { jobLogger } from '@/lib/logging/logger'
+import { jobLogger } from '@/logging/logger'
 
 /**
  * Central registry for all job types in Cascadia.

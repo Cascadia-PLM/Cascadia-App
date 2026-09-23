@@ -2,13 +2,13 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db } from '../db'
 import { branchItems, branches, items, vaultFiles } from '../db/schema'
 import { RevisionService } from './RevisionService'
 import { VersionResolver } from './VersionResolver'
 import { DesignService } from './DesignService'
-import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
+import { ItemRelationshipService } from '@/items/services/ItemRelationshipService'
 
 /**
  * Enumerates every version of an item's master that the 3D comparison view

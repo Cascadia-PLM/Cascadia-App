@@ -16,7 +16,7 @@
  * where-used of the lot climbs to A-1; recall by lot returns A-1 as the
  * end item; production is idempotent and a serial is born exactly once.
  *
- * Run: npx vitest run src/lib/services/GenealogyService.test.ts
+ * Run: npx vitest run src/services/GenealogyService.test.ts
  */
 
 import {
@@ -36,12 +36,12 @@ import { WorkOrderMaterialService } from './WorkOrderMaterialService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { ValidationError } from '@/lib/errors'
-import { programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { ValidationError } from '@/errors'
+import { programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('GenealogyService', () => {
   const testDb = new TestDatabase()

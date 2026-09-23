@@ -19,20 +19,20 @@ import {
   Unlock,
   Video,
 } from 'lucide-react'
-import { formatFileSize } from '@cascadia/commons/lib/vault/format-file-size'
+import { formatFileSize } from '@cascadia/commons/vault/format-file-size'
 import {
   FILE_CATEGORY_DEFINITIONS,
   FILE_CATEGORY_OPTIONS,
   isFileCategory,
-} from '@cascadia/commons/lib/vault/file-categories'
+} from '@cascadia/commons/vault/file-categories'
 import type {
   ColumnFiltersState,
   Row,
   SortingState,
 } from '@tanstack/react-table'
 import type { DataGridColumn } from '@/components/ui'
-import type { FileRecordWithItem } from '@cascadia/commons/lib/vault/types'
-import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
+import type { FileRecordWithItem } from '@cascadia/commons/vault/types'
+import type { FileCategory } from '@cascadia/commons/vault/file-categories'
 import { Badge, DataGrid } from '@/components/ui'
 import {
   DropdownMenu,

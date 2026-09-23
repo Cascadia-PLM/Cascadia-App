@@ -3,9 +3,9 @@
 
 import { useState } from 'react'
 import { Upload } from 'lucide-react'
-import { getImportConfig } from '@cascadia/commons/lib/import'
+import { getImportConfig } from '@cascadia/commons/import'
 import { ImportDialog } from './ImportDialog'
-import type { ImportItemType } from '@cascadia/commons/lib/import'
+import type { ImportItemType } from '@cascadia/commons/import'
 import { Button } from '@/components/ui'
 
 interface ImportButtonProps {

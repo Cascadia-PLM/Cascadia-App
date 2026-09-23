@@ -7,7 +7,7 @@ import { ApiKeyTable } from './ApiKeyTable'
 import { ApiKeyFormDialog } from './ApiKeyFormDialog'
 import { ApiKeySecretDialog } from './ApiKeySecretDialog'
 import { ApiKeyActivityDialog } from './ApiKeyActivityDialog'
-import type { AdminApiKeyRecord, ApiKeyRecord } from '@/lib/query'
+import type { AdminApiKeyRecord, ApiKeyRecord } from '@/query'
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,8 @@ import {
   DialogTitle,
 } from '@/components/ui/Dialog'
 import { Button } from '@/components/ui'
-import { useInvalidateResources } from '@/lib/query'
-import { ApiError, apiFetch } from '@/lib/api/client'
+import { useInvalidateResources } from '@/query'
+import { ApiError, apiFetch } from '@/api/client'
 
 interface ApiKeyManagerProps {
   keys: Array<ApiKeyRecord | AdminApiKeyRecord>

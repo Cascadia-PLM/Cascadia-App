@@ -72,7 +72,7 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { RESOURCE_TYPES } from '@cascadia/commons/lib/auth/permissions'
+import { RESOURCE_TYPES } from '@cascadia/commons/auth/permissions'
 import itemsRoutes from './items'
 import partsRoutes from './parts'
 import documentsRoutes from './documents'
@@ -90,8 +90,8 @@ import physicalPartsRoutes from './physical-parts'
 import filesRoutes from './files'
 import branchesRoutes from './branches'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -99,21 +99,21 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { BranchService } from '@/lib/services/BranchService'
-import { PhysicalPartService } from '@/lib/services/PhysicalPartService'
-import { WorkOrderService } from '@/lib/services/WorkOrderService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
-import { vaultFiles } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { BranchService } from '@/services/BranchService'
+import { PhysicalPartService } from '@/services/PhysicalPartService'
+import { WorkOrderService } from '@/services/WorkOrderService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { ITEM_TYPE_RESOURCES } from '@/items/item-type-resources'
+import { vaultFiles } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 /**
  * Hono publishes its registered routes. Not a contractual API, so the access

@@ -5,8 +5,8 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Box, Check, Edit, Save, Trash2, X } from 'lucide-react'
-import { changeOrderTypeSchema } from '@cascadia/commons/lib/items/types/change-order'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
+import { changeOrderTypeSchema } from '@cascadia/commons/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
 import { PageContainer } from '@/components/layout'
 import {
   AttributesEditor,
@@ -15,8 +15,8 @@ import {
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { StateBadge } from '@/components/items/StateBadge'
 import { ChangeOrderHistoryGraphView as ChangeOrderHistoryGraphView } from '@/components/change-orders/ChangeOrderHistoryGraphView'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useVersionContext } from '@/hooks/useVersionContext'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 import { FileList, FileUploadZone } from '@/components/vault'
 import { GraphNavigator } from '@/components/items/GraphNavigator'
 import { ChangeOrderAffectedItemsPanel } from '@/components/change-orders/ChangeOrderAffectedItemsPanel'
@@ -49,15 +49,15 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   changeOrderDesignsQuery,
   changeOrderLifecycleStructureQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { designDetailQuery, designListQuery } from '@/lib/query/options/designs'
-import { itemAtContextQuery } from '@/lib/query/options/items'
+} from '@/query'
+import { designDetailQuery, designListQuery } from '@/query/options/designs'
+import { itemAtContextQuery } from '@/query/options/items'
 
 interface Design {
   id: string

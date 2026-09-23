@@ -13,7 +13,7 @@
  * for `S3Client`) so that contract can't drift again, and so a third
  * backend has something to satisfy.
  *
- * Run: npm run test -- src/lib/vault/storage/vault-storage-contract.test.ts
+ * Run: npm run test -- src/vault/storage/vault-storage-contract.test.ts
  */
 
 import fs from 'node:fs'
@@ -31,7 +31,7 @@ import { LocalFileStorage } from './local-storage'
 import { S3Storage } from './s3-storage'
 import type { S3Client } from '@aws-sdk/client-s3'
 import type { VaultStorage } from './types'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { NotFoundError, ValidationError } from '@/errors'
 
 /**
  * Minimal in-memory stand-in for `S3Client` — implements only the commands

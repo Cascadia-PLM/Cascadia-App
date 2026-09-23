@@ -22,7 +22,7 @@
  * transaction serializes every call, so the race cannot occur. These commit
  * for real through `ConcurrentTestDatabase`, which cleans up after itself.
  *
- * Run: npx vitest run cascadia-api/src/lib/lifecycles/ApprovalService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lifecycles/ApprovalService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -30,13 +30,13 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { ApprovalService } from './ApprovalService'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { takeFirst } from '@/lib/db/take-first'
-import { ConflictError } from '@/lib/errors'
+import { takeFirst } from '@/db/take-first'
+import { ConflictError } from '@/errors'
 import {
   lifecycleDefinitions,
   lifecycleInstances,
   lifecycleStateApprovers,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 describe('ApprovalService.addStateApprover — one row per approver', () => {
   const concurrent = new ConcurrentTestDatabase()

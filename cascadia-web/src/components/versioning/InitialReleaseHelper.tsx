@@ -4,7 +4,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, FileText, Info, Rocket } from 'lucide-react'
-import type { DesignStatus } from '@/lib/query/options/branches'
+import type { DesignStatus } from '@/query/options/branches'
 import {
   Badge,
   Button,
@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { designStatusQuery } from '@/lib/query/options/branches'
+import { designStatusQuery } from '@/query/options/branches'
 
 interface InitialReleaseHelperProps {
   designId: string

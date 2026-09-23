@@ -21,18 +21,18 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import { useInstructionRun } from './useInstructionRun'
 import type { ReactNode } from 'react'
-import type * as ApiClient from '@/lib/api/client'
-import { ApiError } from '@/lib/api/client'
-import { ToastProvider } from '@/lib/hooks/useToast'
-import { AlertDialogProvider } from '@/lib/hooks/useAlertDialog'
+import type * as ApiClient from '@/api/client'
+import { ApiError } from '@/api/client'
+import { ToastProvider } from '@/hooks/useToast'
+import { AlertDialogProvider } from '@/hooks/useAlertDialog'
 
 const apiFetch = vi.hoisted(() => vi.fn())
 // Keep the real ApiError: both this suite and useErrorHandler test with
 // `instanceof`, and a stubbed class would never match.
-vi.mock('@/lib/api/client', async (importOriginal) => ({
+vi.mock('@/api/client', async (importOriginal) => ({
   ...(await importOriginal<typeof ApiClient>()),
   apiFetch,
 }))

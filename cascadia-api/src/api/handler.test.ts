@@ -20,7 +20,7 @@
  * opts out by name; and a route that declares no schema is untouched by any
  * of it.
  *
- * Run: npx vitest run cascadia-api/src/lib/api/handler.test.ts
+ * Run: npx vitest run cascadia-api/src/api/handler.test.ts
  */
 
 import {
@@ -35,15 +35,15 @@ import {
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import { apiHandler } from './handler'
 import { errorResponseSchema } from './openapi-helpers'
 import { adapt } from '@/server/adapter'
-import { PermissionDeniedError } from '@/lib/errors'
+import { PermissionDeniedError } from '@/errors'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { SessionManager } from '@/lib/auth/session'
-import { authEvents } from '@/lib/db/schema/users'
+import { SessionManager } from '@/auth/session'
+import { authEvents } from '@/db/schema/users'
 
 /**
  * A public route so the test exercises body handling alone — auth and CSRF

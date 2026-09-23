@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { collectionQuery } from './entities'
-import type { ApiData } from '@/lib/api/typed'
+import type { ApiData } from '@/api/typed'
 
 /**
  * Which optional packages this instance is licensed for.

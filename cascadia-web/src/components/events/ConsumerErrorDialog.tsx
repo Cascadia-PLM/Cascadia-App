@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { RotateCcw, SkipForward } from 'lucide-react'
-import type { EventConsumerStatus } from '@/lib/query'
+import type { EventConsumerStatus } from '@/query'
 import { Button } from '@/components/ui'
 import {
   Dialog,

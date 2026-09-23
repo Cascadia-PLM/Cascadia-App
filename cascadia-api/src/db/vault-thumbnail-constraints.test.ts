@@ -17,7 +17,7 @@
  *    did, and a hard-deleted vault_files row would have left an item
  *    advertising a thumbnail id that resolves to nothing.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/vault-thumbnail-constraints.test.ts
+ * Run: npx vitest run cascadia-api/src/db/vault-thumbnail-constraints.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -35,9 +35,9 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestDocument } from '@/__tests__/fixtures/items'
-import { vaultFiles } from '@/lib/db/schema'
-import { asPostgresError, constraintOf } from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
+import { vaultFiles } from '@/db/schema'
+import { asPostgresError, constraintOf } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
 
 /** Postgres unique_violation. */
 const UNIQUE_VIOLATION = '23505'

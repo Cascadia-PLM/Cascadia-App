@@ -21,7 +21,7 @@ import {
  * Declared here so drizzle-kit owns it, but it is deliberately *not* the
  * column's default. `seq` is assigned when the inserting transaction commits,
  * by the `domain_events_assign_seq` constraint trigger
- * (`lib/events/sequencing.ts`), which is what makes seq order equal commit
+ * (`events/sequencing.ts`), which is what makes seq order equal commit
  * order.
  */
 export const domainEventsSequence = pgSequence('domain_events_sequence')

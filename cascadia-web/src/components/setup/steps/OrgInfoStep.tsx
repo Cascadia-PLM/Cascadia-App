@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Building2, CheckCircle, Loader2 } from 'lucide-react'
 import { strings } from '../strings'
-import { settingQuery } from '@/lib/query'
+import { settingQuery } from '@/query'
 import { Button, Card, CardContent, Input, Label } from '@/components/ui'
 
 interface OrgInfo {

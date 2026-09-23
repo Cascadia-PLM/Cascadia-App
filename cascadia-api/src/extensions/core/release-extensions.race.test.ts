@@ -34,18 +34,18 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { eq, inArray, max } from 'drizzle-orm'
 import { createWiChangeAlertExtension } from './wi-change-alerts'
 import { createSupersededWatermarkExtension } from './superseded-watermarks'
-import type { DesignReleasedPayload } from '@/lib/events'
-import type { ConsumedExtension } from '@/lib/extensions'
+import type { DesignReleasedPayload } from '@/events'
+import type { ConsumedExtension } from '@/extensions'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { db } from '@/lib/db'
-import { domainEvents, eventConsumers } from '@/lib/db/schema'
+import { db } from '@/db'
+import { domainEvents, eventConsumers } from '@/db/schema'
 import {
   DESIGN_RELEASED,
   drainEventConsumer,
   ensureDomainEventSequencing,
   publishDomainEvent,
-} from '@/lib/events'
-import { asDomainEventConsumer } from '@/lib/extensions'
+} from '@/events'
+import { asDomainEventConsumer } from '@/extensions'
 
 interface ReleasedItemOverrides {
   changeType?: 'modified' | 'added' | 'deleted'

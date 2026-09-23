@@ -46,7 +46,7 @@ import {
 } from '../../services/CheckoutService'
 import { BranchService } from '../../services/BranchService'
 import { parseBaselineReleaseRevision } from '../../import/baseline-revision'
-// Imported directly rather than through lib/auth/access.ts, whose static
+// Imported directly rather than through auth/access.ts, whose static
 // FileService import would recreate the ItemService <-> FileService cycle that
 // the dynamic import further down this file exists to break.
 import { AccessControlService } from '../../auth/AccessControlService'
@@ -57,8 +57,8 @@ import { ItemVersioningFacade } from './ItemVersioningFacade'
 import { ItemEditPolicy } from './ItemEditPolicy'
 import { ItemSearchService } from './ItemSearchService'
 import { ItemRelationshipService } from './ItemRelationshipService'
-import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { OptionCondition } from '@cascadia/commons/types/variants'
+import type { Part } from '@cascadia/commons/items/types/part'
 import type { AccessScope } from '../../db/filters'
 import type { TypeHandlerContext } from '../type-handlers'
 import type { SQL } from 'drizzle-orm'
@@ -72,15 +72,15 @@ import type { ItemHistoryEntry } from '../../services/CommitService'
 import type {
   BaseItem,
   PersistedItem,
-} from '@cascadia/commons/lib/items/types/base'
+} from '@cascadia/commons/items/types/base'
 import type {
   GlobalSearchCriteria,
   GlobalSearchRow,
   SearchCriteria,
   SearchResult,
 } from './ItemSearchService'
-import { itemLogger } from '@/lib/logging/logger'
-import { takeFirst } from '@/lib/db/take-first'
+import { itemLogger } from '@/logging/logger'
+import { takeFirst } from '@/db/take-first'
 
 export type {
   GlobalSearchCriteria,
@@ -338,7 +338,7 @@ export class ItemService {
     // Skip this check if:
     // - bypassBranchProtection is true (for ECO operations or tests)
     // - The type is exempt, which its lifecycle decides: only Driven
-    //   lifecycles are ECO-controlled (see lib/items/branch-protection.ts)
+    //   lifecycles are ECO-controlled (see items/branch-protection.ts)
     const isChangeOrder = type === 'ChangeOrder'
     if (
       validatedData.designId &&
@@ -684,7 +684,7 @@ export class ItemService {
         }
       }
       if (record.optionModel !== undefined || record.makes !== undefined) {
-        const { VariantService } = await import('@/lib/services/VariantService')
+        const { VariantService } = await import('@/services/VariantService')
         const normalized = await VariantService.assertPartVariantWrite(
           id,
           oldItem as unknown as Pick<Part, 'optionModel' | 'makes'>,

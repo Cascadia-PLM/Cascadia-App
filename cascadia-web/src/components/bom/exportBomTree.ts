@@ -4,7 +4,7 @@
 import {
   formatOptionText,
   formatPartDesignation,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import type { BOMTreeNode } from './types'
 
 interface ExportOptions {

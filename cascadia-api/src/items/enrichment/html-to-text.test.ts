@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { assertSafeUrl } from './html-to-text'
-import { ValidationError } from '@/lib/errors'
+import { ValidationError } from '@/errors'
 
 /**
  * SSRF boundary: link enrichment fetches an arbitrary user-supplied URL

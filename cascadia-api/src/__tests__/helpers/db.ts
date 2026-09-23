@@ -33,10 +33,10 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { eq, sql } from 'drizzle-orm'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
-import type { TransactionClient } from '@/lib/db'
-import * as schema from '@/lib/db/schema'
-import { items, users } from '@/lib/db/schema'
-import { resetDb, setTestAutonomousDb, setTestDb } from '@/lib/db'
+import type { TransactionClient } from '@/db'
+import * as schema from '@/db/schema'
+import { items, users } from '@/db/schema'
+import { resetDb, setTestAutonomousDb, setTestDb } from '@/db'
 
 type DbSchema = typeof schema
 type TestDbInstance = PostgresJsDatabase<DbSchema>

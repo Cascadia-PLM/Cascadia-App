@@ -39,11 +39,11 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { CommitService } from '@/lib/services/CommitService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { CommitService } from '@/services/CommitService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
 
 interface CommitCollection {
   data: Array<{ '@id': string }>

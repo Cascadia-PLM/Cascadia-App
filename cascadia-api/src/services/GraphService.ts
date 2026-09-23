@@ -21,19 +21,19 @@
  */
 
 import { and, eq, inArray, isNull, ne, or } from 'drizzle-orm'
-import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
+import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { UsageService } from './UsageService'
-import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
-import { db } from '@/lib/db'
+import type { OptionCondition } from '@cascadia/commons/types/variants'
+import { db } from '@/db'
 import {
   itemRelationships,
   items,
   physicalParts,
   vaultFiles,
   workOrders,
-} from '@/lib/db/schema'
-import { notDeleted } from '@/lib/db/filters'
-import { designs } from '@/lib/db/schema/designs'
+} from '@/db/schema'
+import { notDeleted } from '@/db/filters'
+import { designs } from '@/db/schema/designs'
 
 export interface GraphNode {
   id: string

@@ -9,13 +9,13 @@ import type {
   WorkOrderCreateInput,
   WorkOrderStatus,
   WorkOrderUpdateInput,
-} from '@cascadia/commons/lib/items/types/work-order'
-import { db } from '@/lib/db'
-import { likeContains } from '@/lib/db/like-pattern'
-import { designs, items, programs, workOrders } from '@/lib/db/schema'
-import { NotFoundError } from '@/lib/errors'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
+} from '@cascadia/commons/items/types/work-order'
+import { db } from '@/db'
+import { likeContains } from '@/db/like-pattern'
+import { designs, items, programs, workOrders } from '@/db/schema'
+import { NotFoundError } from '@/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 
 /**
  * Work orders are items since Phase 2.5 (itemNumber = WO number,

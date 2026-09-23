@@ -22,8 +22,8 @@
 
 import { createHash, randomBytes } from 'node:crypto'
 import { and, eq, gt, isNull, lt } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { aiWriteConfirmations } from '@/lib/db/schema/ai'
+import { db } from '@/db'
+import { aiWriteConfirmations } from '@/db/schema/ai'
 
 /** How long a preview's token stays redeemable. */
 const CONFIRMATION_TTL_MS = 5 * 60 * 1000

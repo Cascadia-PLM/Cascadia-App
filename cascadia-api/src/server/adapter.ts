@@ -4,9 +4,9 @@
 import { uniqueSymbol } from 'hono-openapi'
 import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Context, Handler } from 'hono'
-import type { OpenApiMetadata } from '@/lib/api/openapi-helpers'
-import { metadataToSpec } from '@/lib/api/openapi-helpers'
-import { recordSocketAddress } from '@/lib/api/client-ip'
+import type { OpenApiMetadata } from '@/api/openapi-helpers'
+import { metadataToSpec } from '@/api/openapi-helpers'
+import { recordSocketAddress } from '@/api/client-ip'
 
 type LegacyHandler<TParams = Record<string, string>> = (ctx: {
   params: TParams
@@ -22,7 +22,7 @@ type AnnotatableHandler<TParams = Record<string, string>> =
  * This is the only place it is available: `apiHandler` is handed a fetch
  * `Request`, which carries headers and nothing about the connection that
  * delivered them, so without this step the only answer to "who sent this" is
- * whatever the sender wrote in `X-Forwarded-For`. See `lib/api/client-ip`.
+ * whatever the sender wrote in `X-Forwarded-For`. See `api/client-ip`.
  *
  * `getConnInfo` reads the address off the Node `IncomingMessage` behind the
  * request, which exists only when @hono/node-server is serving — both editions

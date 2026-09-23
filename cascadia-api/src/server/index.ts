@@ -53,12 +53,12 @@ import workInstructions from './routes/work-instructions'
 import workOrders from './routes/work-orders'
 import workflows from './routes/workflows'
 import workspaces from './routes/workspaces'
-import { ERROR_COMPONENTS } from '@/lib/api/openapi-helpers'
-import { mountRoutes } from '@/lib/api/route-registry'
-import { applySecurityHeaders, buildPreflightResponse } from '@/lib/api/cors'
-import { createErrorResponse } from '@/lib/errors/api'
-import { getRequestId } from '@/lib/errors/handleApiError'
-import { AppError, ErrorCode } from '@/lib/errors'
+import { ERROR_COMPONENTS } from '@/api/openapi-helpers'
+import { mountRoutes } from '@/api/route-registry'
+import { applySecurityHeaders, buildPreflightResponse } from '@/api/cors'
+import { createErrorResponse } from '@/errors/api'
+import { getRequestId } from '@/errors/handleApiError'
+import { AppError, ErrorCode } from '@/errors'
 // Item type code definitions. Every route module above imports this too, but
 // this file should not depend on one of them happening to.
 //
@@ -67,7 +67,7 @@ import { AppError, ErrorCode } from '@/lib/errors'
 // `ItemTypeRegistry.initialize()` before `serve()`. Doing it here instead
 // would make importing the app require a reachable database, which the
 // OpenAPI snapshot tool (and its CI job, which runs no Postgres) does.
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const app = new Hono()
 
@@ -81,7 +81,7 @@ const app = new Hono()
 // not exist. That is harmless: a preflight asks about policy, not about the
 // resource, and the real request that follows is still routed — or 404s —
 // normally. A disallowed origin gets a 204 with no Access-Control-* headers
-// and the browser blocks the real request. See lib/api/cors.ts.
+// and the browser blocks the real request. See api/cors.ts.
 app.options('/api/*', (c) => buildPreflightResponse(c.req.raw))
 
 // Mount route groups under the v1 prefix. The OpenAPI document published at

@@ -8,7 +8,7 @@ import type {
   GuardResult,
   TransitionGuard,
   UserRoleConfig,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 
 /**
  * Guard Evaluator for workflow/lifecycle transitions

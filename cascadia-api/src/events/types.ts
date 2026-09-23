@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import type { z } from 'zod'
-import type { TransactionClient } from '@/lib/db'
+import type { TransactionClient } from '@/db'
 
 /**
  * A committed business fact, as consumers see it.

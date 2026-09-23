@@ -5,16 +5,16 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { PhysicalPartService } from './PhysicalPartService'
 import { ThreadCacheService } from './ThreadCacheService'
-import { db } from '@/lib/db'
+import { db } from '@/db'
 import {
   itemRelationships,
   items,
   parts,
   physicalParts,
   workOrders,
-} from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { serviceLogger } from '@/lib/logging/logger'
+} from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { serviceLogger } from '@/logging/logger'
 
 /**
  * Material consumption for work orders, recorded as `Consumes` edges in

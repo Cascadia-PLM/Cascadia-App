@@ -6,9 +6,9 @@ import type {
   ChangeActionMappings,
   LifecyclePhaseConfig,
   RevisionScheme,
-} from '@cascadia/commons/lib/types/lifecycle'
-import type { LifecycleState } from '@cascadia/commons/lib/lifecycles/types'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/types/lifecycle'
+import type { LifecycleState } from '@cascadia/commons/lifecycles/types'
+import { apiFetch } from '@/api/client'
 
 interface LifecycleData {
   lifecycleId: string | null

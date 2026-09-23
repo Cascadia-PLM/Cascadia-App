@@ -17,7 +17,7 @@
  *  - the query count is O(depth), not O(nodes): a tenfold-wider graph at
  *    the same depth issues exactly the same number of queries
  *
- * Run: npx vitest run cascadia-api/src/lib/services/GraphService.test.ts
+ * Run: npx vitest run cascadia-api/src/services/GraphService.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -32,26 +32,26 @@ import {
   vi,
 } from 'vitest'
 import { GraphService } from './GraphService'
-import type * as DbModule from '@/lib/db'
+import type * as DbModule from '@/db'
 
 import type { ItemGraphOptions } from './GraphService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { itemRelationships, items } from '@/lib/db/schema'
-import { designs } from '@/lib/db/schema/designs'
-import { programs } from '@/lib/db/schema/programs'
-import { takeFirst } from '@/lib/db/take-first'
+import { itemRelationships, items } from '@/db/schema'
+import { designs } from '@/db/schema/designs'
+import { programs } from '@/db/schema/programs'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // The exported `db` is a resolution Proxy (it re-targets to the test
 // transaction), so vi.spyOn cannot see `select` — wrap the module with a
 // counting proxy instead (vi.mock is hoisted above the imports by vitest).
 // Everything else re-exports unchanged.
 const queryCounter = vi.hoisted(() => ({ selects: 0 }))
-vi.mock('@/lib/db', async (importOriginal) => {
+vi.mock('@/db', async (importOriginal) => {
   const mod = await importOriginal<typeof DbModule>()
   const counting = new Proxy(mod.db, {
     get(target, prop) {

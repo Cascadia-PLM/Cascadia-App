@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { lifecycleListQuery } from '@/lib/query/options/lifecycles'
+import { lifecycleListQuery } from '@/query/options/lifecycles'
 
 /**
  * Filter-dropdown options for lifecycle state: every state id across every

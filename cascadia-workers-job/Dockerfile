@@ -101,7 +101,7 @@ FROM runtime-deps AS production
 COPY --from=builder /app/.output ./.output
 
 # Copy job-related code
-COPY --from=builder /app/cascadia-api/src/lib/db ./cascadia-api/src/lib/db
+COPY --from=builder /app/cascadia-api/src/db ./cascadia-api/src/db
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

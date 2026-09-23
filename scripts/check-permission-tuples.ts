@@ -33,13 +33,13 @@
  * The definitions are imported rather than parsed, so satisfiability is
  * decided by the same `hasPermission` the request path calls, `manage` acting
  * as a per-resource wildcard included. That works because
- * `lib/auth/permissions.ts` imports nothing; give it a database import and
+ * `auth/permissions.ts` imports nothing; give it a database import and
  * this stops loading in the Lint job, which has no `DATABASE_URL`.
  *
  * ## Why an AST walk and not a grep
  *
  * `permission: [...]` appears inside `l@example` docblocks in
- * `lib/api/handler.ts`, and `['documents', 'manage']` appears verbatim in the
+ * `api/handler.ts`, and `['documents', 'manage']` appears verbatim in the
  * comment on the route that used to charge it. A grep counts both. The
  * precedent is `scripts/check-annotated-bodies.mjs`, whose first attempt
  * "reported eight offenders where there were none"; comments and strings are
@@ -88,11 +88,11 @@ import {
   ROLE_DEFINITIONS,
   hasPermission,
   roleToDbFormat,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 import type {
   PermissionAction,
   ResourceType,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 
 /**
  * Comment marker that lets an unsatisfiable tuple through, with a reason.
@@ -428,7 +428,7 @@ function main(): void {
         'A tuple no role grants is not a tight route, it is a route nobody can',
         'call: it answers 403 to everyone, the Administrator included, with the',
         'message an unauthorized caller gets. Either charge a tuple a role',
-        'holds, or grant the action in cascadia-commons/src/lib/auth/permissions.ts',
+        'holds, or grant the action in cascadia-commons/src/auth/permissions.ts',
         'and sync existing databases with `npm run db:sync-roles`.',
         '',
         'If the tuple is genuinely reserved for a principal the product cannot',

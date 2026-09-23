@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm'
-import type { DbInstance } from '@/lib/db'
-import { webhookDeliveries, webhookSubscriptions } from '@/lib/db/schema'
-import { webhookLogger } from '@/lib/logging/logger'
+import type { DbInstance } from '@/db'
+import { webhookDeliveries, webhookSubscriptions } from '@/db/schema'
+import { webhookLogger } from '@/logging/logger'
 
 /**
  * Retention for the delivery log.

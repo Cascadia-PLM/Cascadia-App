@@ -3,8 +3,8 @@
 
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
-import { db } from '@/lib/db'
-import { physicalParts } from '@/lib/db/schema'
+import { db } from '@/db'
+import { physicalParts } from '@/db/schema'
 
 registerTypeHandler('PhysicalPart', {
   table: physicalParts,

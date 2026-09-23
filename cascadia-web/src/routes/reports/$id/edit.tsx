@@ -5,13 +5,13 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import type { ReportCreateInput } from '@cascadia/commons/lib/reports/types'
+import type { ReportCreateInput } from '@cascadia/commons/reports/types'
 import { PageContainer } from '@/components/layout'
 import { ReportBuilder } from '@/components/reports/ReportBuilder'
 import { Button } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { reportDetailQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { reportDetailQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/reports/$id/edit')({
   component: EditReportPage,

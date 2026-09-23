@@ -10,7 +10,7 @@ import {
   isNull,
 } from 'drizzle-orm'
 import { z } from 'zod'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db } from '../db'
 import {
   ITEM_CHECKED_IN,
@@ -40,7 +40,7 @@ import { publishCheckoutEvent } from './checkout-locks'
 import type { TransactionClient } from '../db'
 import type { commits } from '../db/schema'
 import type { FieldChange } from './CommitService'
-import type { CheckoutStatus as CheckoutStatusWire } from '@cascadia/commons/lib/services/types/checkout'
+import type { CheckoutStatus as CheckoutStatusWire } from '@cascadia/commons/services/types/checkout'
 
 // Core fields that exist on all items
 const coreFields = ['name', 'state', 'revision', 'itemNumber']

@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { AlertCircle, Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
@@ -19,7 +19,7 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface ChangeOrderTableProps {
   items: Array<ChangeOrder>

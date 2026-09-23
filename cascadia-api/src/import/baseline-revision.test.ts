@@ -3,8 +3,8 @@
 
 import { describe, expect, it } from 'vitest'
 import { parseBaselineReleaseRevision } from './baseline-revision'
-import type { RevisionScheme } from '@cascadia/commons/lib/types/lifecycle'
-import { ValidationError } from '@/lib/errors'
+import type { RevisionScheme } from '@cascadia/commons/types/lifecycle'
+import { ValidationError } from '@/errors'
 
 describe('parseBaselineReleaseRevision', () => {
   it('accepts revisions that match the configured release scheme', () => {

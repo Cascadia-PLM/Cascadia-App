@@ -16,7 +16,7 @@
  * Storage is never touched — rows are inserted directly, because
  * `setFileCategory` is pure database work.
  *
- * Run: npx vitest run src/lib/vault/services/FileService.category.test.ts
+ * Run: npx vitest run src/vault/services/FileService.category.test.ts
  */
 
 import {
@@ -31,13 +31,13 @@ import {
 import { eq } from 'drizzle-orm'
 import { FileService } from './FileService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
+import type { FileCategory } from '@cascadia/commons/vault/file-categories'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestDocument } from '@/__tests__/fixtures/items'
-import { vaultFiles } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { ValidationError } from '@/lib/errors'
+import { vaultFiles } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { ValidationError } from '@/errors'
 
 describe('FileService.setFileCategory', () => {
   const testDb = new TestDatabase()

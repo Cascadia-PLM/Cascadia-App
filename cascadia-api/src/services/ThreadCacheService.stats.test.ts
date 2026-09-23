@@ -33,8 +33,8 @@ import { ThreadCacheService } from './ThreadCacheService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { takeFirst } from '@/lib/db/take-first'
-import { items, threadPathCache } from '@/lib/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { items, threadPathCache } from '@/db/schema'
 
 const HOUR_MS = 60 * 60 * 1000
 

@@ -4,19 +4,19 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Info } from 'lucide-react'
-import { designDetailQuery, entityQuery } from '@/lib/query'
+import { designDetailQuery, entityQuery } from '@/query'
 import {
   itemSearchQuery,
   itemTextSearchQuery,
-} from '@/lib/query/options/item-search'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
+} from '@/query/options/item-search'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 
 /** The relationship type that carries BOM structure. */
 export const BOM_RELATIONSHIP_TYPE = 'BOM'
 
 /**
  * BOM lines are Part-to-Part — see the `BOM` entry in `partRelationships`
- * (`@/lib/items/types/part`), whose `targetTypes` is `['Part']`.
+ * (`@/items/types/part`), whose `targetTypes` is `['Part']`.
  */
 export const BOM_TARGET_ITEM_TYPE = 'Part'
 

@@ -24,7 +24,7 @@ import { GraphItemNode } from '@/components/items/GraphItemNode'
 import { GraphFileNode } from '@/components/items/GraphFileNode'
 import { RelationshipEdge } from '@/components/graph/RelationshipEdge'
 import { withEdgeDirectionLabels } from '@/components/graph/edgeStyles'
-import { itemGraphQuery } from '@/lib/query/options/relationships'
+import { itemGraphQuery } from '@/query/options/relationships'
 
 /**
  * The relationship graph: its query, its filters, its React Flow model, and

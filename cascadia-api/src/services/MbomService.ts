@@ -7,7 +7,7 @@ import {
   formatOptionText,
   makeCodeSchema,
   optionConditionKey,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { db } from '../db'
 import { DESIGN_CREATED, publishDomainEvent } from '../events'
 import {
@@ -28,8 +28,8 @@ import { VersionResolver } from './VersionResolver'
 import { LifecycleService } from './LifecycleService'
 import type { UpstreamChangeItem } from '../db/schema'
 import type { DesignConfiguration } from '../db/schema/designs'
-import { takeFirst } from '@/lib/db/take-first'
-import { serviceLogger } from '@/lib/logging/logger'
+import { takeFirst } from '@/db/take-first'
+import { serviceLogger } from '@/logging/logger'
 
 /**
  * Relationship type for linking MBOM items back to their EBOM source

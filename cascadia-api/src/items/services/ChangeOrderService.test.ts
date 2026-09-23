@@ -7,7 +7,7 @@
  * Integration tests for the ChangeOrderService class.
  * Tests cover affected items, workflow transitions, validation, and ECO-as-branch functionality.
  *
- * Run: npm run test -- src/lib/items/services/ChangeOrderService.test.ts
+ * Run: npm run test -- src/items/services/ChangeOrderService.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -22,14 +22,14 @@ import {
   vi,
 } from 'vitest'
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import { ChangeOrderService } from './ChangeOrderService'
 import { ItemService } from './ItemService'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { ChangeOrderReleasedPayload } from '@/lib/events'
-import { RevisionService } from '@/lib/services/RevisionService'
-import { CommitService } from '@/lib/services/CommitService'
+import type { ChangeOrderReleasedPayload } from '@/events'
+import { RevisionService } from '@/services/RevisionService'
+import { CommitService } from '@/services/CommitService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -47,26 +47,26 @@ import {
   itemVersions,
   items as itemsTable,
   programs,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 import {
   lifecycleDefinitions,
   lifecycleHistory,
   lifecycleInstances,
-} from '@/lib/db/schema/lifecycles'
-import { ConflictDetectionService } from '@/lib/services/ConflictDetectionService'
-import { LifecycleService } from '@/lib/services/LifecycleService'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema/lifecycles'
+import { ConflictDetectionService } from '@/services/ConflictDetectionService'
+import { LifecycleService } from '@/services/LifecycleService'
+import { ItemTypeRegistry } from '@/items/registry'
 import {
   SYSTEM_USER_ID,
   overrideItemTypeConfig,
   seedStandardPartLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
+import { NotFoundError, ValidationError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Unique workflow definition ID for this test file's ECO workflow.
 // Avoids races with other test files that also seed ECO workflows.

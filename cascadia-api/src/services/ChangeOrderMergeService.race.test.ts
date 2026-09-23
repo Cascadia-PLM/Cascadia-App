@@ -31,7 +31,7 @@
  * overlap and a rollback-retry cannot be observed. These commit for real
  * through `ConcurrentTestDatabase`, and the harness cleans up after itself.
  *
- * Run: npx vitest run cascadia-api/src/lib/services/ChangeOrderMergeService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/services/ChangeOrderMergeService.race.test.ts
  */
 
 import {
@@ -45,24 +45,19 @@ import {
 } from 'vitest'
 import { and, eq } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { ChangeOrderMergeService } from '@/lib/services/ChangeOrderMergeService'
-import { BranchService } from '@/lib/services/BranchService'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { MergeConflictError } from '@/lib/errors'
-import { pgErrorCode } from '@/lib/db/retry'
-import {
-  branchItems,
-  changeOrderDesigns,
-  commits,
-  items,
-} from '@/lib/db/schema'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { ChangeOrderMergeService } from '@/services/ChangeOrderMergeService'
+import { BranchService } from '@/services/BranchService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { MergeConflictError } from '@/errors'
+import { pgErrorCode } from '@/db/retry'
+import { branchItems, changeOrderDesigns, commits, items } from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ChangeOrderMergeService — releases under real concurrency', () => {
   const concurrent = new ConcurrentTestDatabase()

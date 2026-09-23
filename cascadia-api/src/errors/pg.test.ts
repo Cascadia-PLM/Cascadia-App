@@ -14,7 +14,7 @@
  * So this test forces a real 23505 through the real driver rather than
  * asserting against a literal, which would only re-state the assumption.
  *
- * Run: npx vitest run src/lib/errors/pg.test.ts
+ * Run: npx vitest run src/errors/pg.test.ts
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -29,7 +29,7 @@ import {
 import { NotFoundError } from './index'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { users } from '@/lib/db/schema'
+import { users } from '@/db/schema'
 
 describe('postgres driver error inspection', () => {
   const testDb = new TestDatabase()

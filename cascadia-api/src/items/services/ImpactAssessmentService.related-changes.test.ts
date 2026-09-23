@@ -13,7 +13,7 @@
  * Nothing about that is visible to tsc — an empty string is a `string` — so
  * these run the real query against real Postgres.
  *
- * Run: npx vitest run src/lib/items/services/ImpactAssessmentService.related-changes.test.ts
+ * Run: npx vitest run src/items/services/ImpactAssessmentService.related-changes.test.ts
  */
 
 import {
@@ -31,14 +31,14 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { DesignService } from '@/lib/services/DesignService'
+import { DesignService } from '@/services/DesignService'
 import {
   changeOrderAffectedItems,
   lifecycleInstances,
   programs,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ImpactAssessmentService.findRelatedChanges', () => {
   const testDb = new TestDatabase()

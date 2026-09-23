@@ -6,7 +6,7 @@ import type {
   Make,
   OptionCondition,
   OptionModel,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import {
   Dialog,
   DialogContent,
@@ -27,10 +27,10 @@ import {
 } from '@/components/ui/Select'
 import { BOM_RELATIONSHIP_TYPE } from '@/components/items/bom-target-scope'
 import { isValidQuantity } from '@/components/items/bom-quantity'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query'
-import { cn } from '@/lib/utils'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query'
+import { cn } from '@/utils'
 import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
 
 /** The line being edited — the columns `PUT /relationships/:id` can change. */

@@ -19,7 +19,7 @@ import { db } from '../db'
 import { apiKeyEvents } from '../db/schema/api-keys'
 import { UNKNOWN_CLIENT_IP, resolveClientIp } from '../api/client-ip'
 import type { ApiKeyEventOutcome } from '../db/schema/api-keys'
-import { authLogger } from '@/lib/logging/logger'
+import { authLogger } from '@/logging/logger'
 
 const SUCCESS_SAMPLE_WINDOW_MS = 60_000
 

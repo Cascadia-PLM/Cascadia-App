@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
-import type { TransactionClient } from '@/lib/db'
+import type { TransactionClient } from '@/db'
 
 /**
  * An extension table: the type's own columns, keyed one-to-one on `itemId`.

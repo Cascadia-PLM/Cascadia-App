@@ -184,7 +184,7 @@ jobs:
 
       - name: Commit the refreshed snapshot to main
         run: |
-          FILES="docs/api/openapi.v1.json cascadia-web/src/lib/api/openapi-types.gen.ts"
+          FILES="docs/api/openapi.v1.json cascadia-web/src/api/openapi-types.gen.ts"
           if git diff --quiet -- $FILES; then
             echo "OpenAPI snapshot is up to date."
             exit 0

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import ExcelJS from 'exceljs'
-import type { ItemFieldConfig } from '@cascadia/commons/lib/import/field-configs/types'
+import type { ItemFieldConfig } from '@cascadia/commons/import/field-configs/types'
 
 /**
  * Generate an XLSX template file for import.

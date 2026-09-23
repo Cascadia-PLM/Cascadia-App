@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import type { SessionService } from './SessionService'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { requireDesignAccess } from '@/lib/auth/access'
-import { PermissionDeniedError } from '@/lib/errors'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { requireDesignAccess } from '@/auth/access'
+import { PermissionDeniedError } from '@/errors'
 
 /**
  * Which program an AI chat request spends against, and whether the caller may.

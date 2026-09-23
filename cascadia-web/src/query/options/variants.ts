@@ -3,7 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 
 /**
  * Product variants, read side. Keyed beneath the part, so

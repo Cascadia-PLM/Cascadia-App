@@ -7,7 +7,7 @@
  * Integration tests for the ItemService class.
  * These tests run against a real database with transaction rollback for isolation.
  *
- * Run: npm run test -- src/lib/items/services/ItemService.test.ts
+ * Run: npm run test -- src/items/services/ItemService.test.ts
  */
 
 import {
@@ -20,9 +20,9 @@ import {
   it,
 } from 'vitest'
 import { and, eq } from 'drizzle-orm'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import { ItemService } from './ItemService'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
@@ -31,9 +31,9 @@ import {
   NotFoundError,
   PermissionDeniedError,
   ValidationError,
-} from '@/lib/errors'
-import { RevisionService } from '@/lib/services/RevisionService'
-import { LifecycleService } from '@/lib/services/LifecycleService'
+} from '@/errors'
+import { RevisionService } from '@/services/RevisionService'
+import { LifecycleService } from '@/services/LifecycleService'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
 import {
   branchItems,
@@ -46,15 +46,15 @@ import {
   requirements,
   tasks,
   workOrderInstructions,
-} from '@/lib/db/schema'
-import { itemUpdateSchemaFor } from '@/lib/api/schemas'
-import { takeFirst } from '@/lib/db/take-first'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { permissionService } from '@/lib/auth/permission-service'
+} from '@/db/schema'
+import { itemUpdateSchemaFor } from '@/api/schemas'
+import { takeFirst } from '@/db/take-first'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { permissionService } from '@/auth/permission-service'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ItemService', () => {
   const testDb = new TestDatabase()
@@ -601,7 +601,7 @@ describe('ItemService', () => {
         // it explicitly. That leaves recency - the last ordering rule with
         // any opinion here - pointing at the copy, so these tests fail if
         // the design ranking stops being what decides.
-        const { items: itemsTable } = await import('@/lib/db/schema')
+        const { items: itemsTable } = await import('@/db/schema')
         await testDb.db
           .update(itemsTable)
           .set({ createdAt: new Date(Date.now() + 60_000) })
@@ -1171,7 +1171,7 @@ describe('ItemService', () => {
        * transition machinery is not what these tests are about.
        */
       async function putInState(itemId: string, state: string): Promise<void> {
-        const { items: itemsTable } = await import('@/lib/db/schema')
+        const { items: itemsTable } = await import('@/db/schema')
         await testDb.db
           .update(itemsTable)
           .set({ state })
@@ -1326,7 +1326,7 @@ describe('ItemService', () => {
         // A design-less row — the legacy shape the codebase still repairs by
         // adoption — is what reaches this arm: `requireContentEditable`
         // returns early without a design, so branch protection never runs.
-        const { items: itemsTable } = await import('@/lib/db/schema')
+        const { items: itemsTable } = await import('@/db/schema')
         await testDb.db
           .update(itemsTable)
           .set({ state: released, designId: null })
@@ -2134,7 +2134,7 @@ describe('ItemService', () => {
 
     it('returns not allowed when design has released items', async () => {
       // Insert a released item directly to trigger protection
-      const { items: itemsTable } = await import('@/lib/db/schema')
+      const { items: itemsTable } = await import('@/db/schema')
       await testDb.db.insert(itemsTable).values({
         masterId: crypto.randomUUID(),
         designId,

@@ -3,14 +3,14 @@
 
 import { isIP, isIPv4 } from 'node:net'
 import dns from 'node:dns'
-import { ValidationError } from '@/lib/errors'
+import { ValidationError } from '@/errors'
 
 /**
  * Whether an address the system is about to connect to is somewhere on the
  * public internet, rather than inside the deployment's own network.
  *
  * **This is not `assertSafeUrl` and must not be replaced by it.** That function
- * (`lib/items/enrichment/html-to-text.ts`) is the repository's other egress
+ * (`items/enrichment/html-to-text.ts`) is the repository's other egress
  * check, and it is survivable where it lives because the URL there is transient
  * and fetched once, under an operator's own nose. A webhook target is *stored*
  * and re-fetched forever, which turns any gap into a persistent

@@ -16,7 +16,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { AddPartToDesignDialog } from './AddPartToDesignDialog'
 import { AddPartToStructureDialog } from './AddPartToStructureDialog'
 import { useStructureColumns } from './StructureTabColumns'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import type { BOMTreeNode } from '@/components/bom/types'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
 import type { Row } from '@tanstack/react-table'
@@ -48,20 +48,20 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
-import { apiFetch } from '@/lib/api/client'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   designStructureQuery,
   useInvalidateResources,
   useResourceMutation,
-} from '@/lib/query'
+} from '@/query'
 import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { useTreeSelection } from '@/components/bom/useTreeSelection'
 import { getStateBadgeVariant } from '@/components/bom/helpers'
 import { ItemLink } from '@/components/items/ItemLink'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 import { DataGrid } from '@/components/ui/DataGrid'
 
 // Items that belong to the design but sit outside the BOM hierarchy —

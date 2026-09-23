@@ -4,18 +4,18 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../../adapter'
-import type { items } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { isBranchProtectionExempt } from '@/lib/items/branch-protection'
-import { BranchService } from '@/lib/services/BranchService'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { apiHandler, created, jsonResponse } from '@/lib/api/handler'
-import { requireBranchAccess, requireItemAccess } from '@/lib/auth/access'
+import type { items } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { isBranchProtectionExempt } from '@/items/branch-protection'
+import { BranchService } from '@/services/BranchService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { apiHandler, created, jsonResponse } from '@/api/handler'
+import { requireBranchAccess, requireItemAccess } from '@/auth/access'
 import {
   batchCheckinRequestSchema,
   batchCheckoutRequestSchema,
-} from '@/lib/api/schemas'
+} from '@/api/schemas'
 
 const adapt = tagged('Items')
 

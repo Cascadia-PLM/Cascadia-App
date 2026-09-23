@@ -5,24 +5,24 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { tagged } from '../adapter'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { PartUpdate } from '@/lib/api/schemas'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { VerificationService } from '@/lib/services/VerificationService'
-import { ParametricResolutionService } from '@/lib/services/ParametricResolutionService'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { apiHandler, created } from '@/lib/api/handler'
-import { requireItemAccess, requireItemsAccess } from '@/lib/auth/access'
-import { mountRoutes } from '@/lib/api/route-registry'
-import { partUpdateSchema } from '@/lib/api/schemas'
-import { db } from '@/lib/db'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { PartUpdate } from '@/api/schemas'
+import { ItemService } from '@/items/services/ItemService'
+import { VerificationService } from '@/services/VerificationService'
+import { ParametricResolutionService } from '@/services/ParametricResolutionService'
+import { NotFoundError, ValidationError } from '@/errors'
+import { apiHandler, created } from '@/api/handler'
+import { requireItemAccess, requireItemsAccess } from '@/auth/access'
+import { mountRoutes } from '@/api/route-registry'
+import { partUpdateSchema } from '@/api/schemas'
+import { db } from '@/db'
 import {
   items,
   workInstructionPartAttachments,
   workInstructions,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 // Register item types (server-side version)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Parts')
 

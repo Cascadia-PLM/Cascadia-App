@@ -15,7 +15,7 @@
  *  - deleting the workspace after adoption cannot destroy the ECO's items
  *  - masters already in the ECO are skipped, not clobbered
  *
- * Run: npx vitest run src/lib/items/services/ChangeOrderService.workspace.test.ts
+ * Run: npx vitest run src/items/services/ChangeOrderService.workspace.test.ts
  */
 
 import {
@@ -32,13 +32,13 @@ import { and, eq } from 'drizzle-orm'
 import { ItemService } from './ItemService'
 import { ChangeOrderService } from './ChangeOrderService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import { ChangeOrderMergeService } from '@/lib/services/ChangeOrderMergeService'
-import { BranchService } from '@/lib/services/BranchService'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { CommitService } from '@/lib/services/CommitService'
-import { DesignService } from '@/lib/services/DesignService'
-import { RevisionService } from '@/lib/services/RevisionService'
-import { VersionResolver } from '@/lib/services/VersionResolver'
+import { ChangeOrderMergeService } from '@/services/ChangeOrderMergeService'
+import { BranchService } from '@/services/BranchService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { CommitService } from '@/services/CommitService'
+import { DesignService } from '@/services/DesignService'
+import { RevisionService } from '@/services/RevisionService'
+import { VersionResolver } from '@/services/VersionResolver'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -48,14 +48,14 @@ import {
   lifecycleDefinitions,
   lifecycleInstances,
   programs,
-} from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
-import { ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/db/take-first'
+import { ValidationError } from '@/errors'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Well-known test workflow ID, unique to this file to avoid cross-file races
 const ADOPT_TEST_WORKFLOW_ID = '00000000-0000-4000-8000-000000000221'

@@ -12,11 +12,11 @@
  * coverage from ITEM_TYPE_DEFINITIONS, so a new type missing from this
  * map would silently fall back to the parts permission.
  *
- * Run: npx vitest run src/lib/items/item-type-resources.test.ts
+ * Run: npx vitest run src/items/item-type-resources.test.ts
  */
 
 import { describe, expect, it } from 'vitest'
-import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/items/item-type-definitions'
 import { ITEM_TYPE_RESOURCES, getResourceType } from './item-type-resources'
 
 describe('ITEM_TYPE_RESOURCES', () => {

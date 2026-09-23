@@ -3,24 +3,20 @@
 
 import { eq, inArray } from 'drizzle-orm'
 import { AccessControlService } from './AccessControlService'
-import { BranchService } from '@/lib/services/BranchService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { FileService } from '@/lib/vault/services/FileService'
-import { db } from '@/lib/db'
+import { BranchService } from '@/services/BranchService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { FileService } from '@/vault/services/FileService'
+import { db } from '@/db'
 import {
   changeOrderDesigns,
   issueDesigns,
   issues,
   items,
   physicalParts,
-} from '@/lib/db/schema/items'
-import { workOrders } from '@/lib/db/schema/work-orders'
-import {
-  NotFoundError,
-  PermissionDeniedError,
-  ValidationError,
-} from '@/lib/errors'
+} from '@/db/schema/items'
+import { workOrders } from '@/db/schema/work-orders'
+import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
 
 /**
  * Verify user can access a design. Throws PermissionDeniedError if not.
@@ -202,7 +198,7 @@ export async function requireBranchAccess(
  *    the part it is an instance of, through `physical_parts.part_master_id`.
  *
  * These are the same four types `SELF_SCOPED_ITEM_TYPES` names in
- * `@/lib/db/filters`, and each arm here is the one-row twin of that type's arm
+ * `@/db/filters`, and each arm here is the one-row twin of that type's arm
  * in `accessScopeCondition`. Both surfaces have to draw the boundary in the
  * same place: one admitting what the other refuses is the failure these arms
  * exist to fix. The last two arms landed after the first two, and until they
@@ -235,7 +231,7 @@ export async function requireBranchAccess(
  * single-program install, where it looks right while being wrong by
  * construction. The full reasoning — including why requiring a program is a
  * two-part product change rather than a predicate flip — is recorded on
- * `accessScopeCondition` in `@/lib/db/filters`, and it is recorded in both
+ * `accessScopeCondition` in `@/db/filters`, and it is recorded in both
  * places on purpose: this gate and that predicate must not drift, because one
  * surface admitting what the other refuses is the failure the ChangeOrder and
  * Issue arms exist to fix.
@@ -243,7 +239,7 @@ export async function requireBranchAccess(
  * Takes an id or a row already in hand, and returns the row, so a handler that
  * needs the item does not read it twice. Soft-deleted items are deliberately
  * not filtered out here. `items.isDeleted` is the authoritative marker the rest
- * of the system keys on — always through `notDeleted()` in `@/lib/db/filters`,
+ * of the system keys on — always through `notDeleted()` in `@/db/filters`,
  * which is now its only spelling — and `deletedAt`/`deletedBy` are the audit
  * stamp the ECO merge writes alongside it (`ChangeOrderMergeService`,
  * the `changeType === 'deleted'` arm), never on their own and never read back.

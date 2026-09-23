@@ -7,7 +7,7 @@ import { Loader2, Plus, Trash2, User, Users, X } from 'lucide-react'
 import type {
   InstanceApprover,
   InstanceState,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import {
   Badge,
   Button,
@@ -23,9 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { instanceStateApproversQuery } from '@/lib/query/options/change-orders'
-import { activeUserListQuery, roleListQuery } from '@/lib/query/options/users'
+import { apiFetch } from '@/api/client'
+import { instanceStateApproversQuery } from '@/query/options/change-orders'
+import { activeUserListQuery, roleListQuery } from '@/query/options/users'
 
 interface InstanceStatePropertiesPanelProps {
   state: InstanceState

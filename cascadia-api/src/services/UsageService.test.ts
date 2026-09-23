@@ -13,7 +13,7 @@
  * - Definition resolution (resolveDefinition)
  * - Usage queries (getUsagesOfDefinition, getUsageCount, getUsageWithInheritance)
  *
- * Run: npm run test -- src/lib/services/UsageService.test.ts
+ * Run: npm run test -- src/services/UsageService.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -43,10 +43,10 @@ import {
   parts,
   programs,
   requirements,
-} from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
-import '@/lib/items/registerItemTypes.server'
+} from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
+import '@/items/registerItemTypes.server'
 
 describe('UsageService', () => {
   const testDb = new TestDatabase()

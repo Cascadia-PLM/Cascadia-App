@@ -3,15 +3,15 @@
 
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
-import { db } from '@/lib/db'
-import { ValidationError } from '@/lib/errors'
+import { db } from '@/db'
+import { ValidationError } from '@/errors'
 import {
   items,
   workInstructionOperations,
   workInstructionPartAttachments,
   workInstructionSteps,
   workInstructions,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 registerTypeHandler('WorkInstruction', {
   table: workInstructions,

@@ -14,13 +14,13 @@
  * passing through; and a plaintext key stored before encryption was switched on
  * is still returned untouched.
  *
- * Run: npx vitest run cascadia-api/src/lib/crypto/encryption.test.ts
+ * Run: npx vitest run cascadia-api/src/crypto/encryption.test.ts
  */
 
 import crypto from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { decryptSecret, encrypt, isEncryptionConfigured } from './encryption'
-import { SecretDecryptionError } from '@/lib/errors'
+import { SecretDecryptionError } from '@/errors'
 
 const KEY_A = 'a'.repeat(64)
 const KEY_B = 'b'.repeat(64)

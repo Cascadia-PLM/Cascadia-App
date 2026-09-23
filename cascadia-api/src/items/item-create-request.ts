@@ -9,7 +9,7 @@
  * `ItemService.create`, which parses it against the registered schema for
  * that item type and raises a `ValidationError` carrying the type name. This
  * schema exists so the OpenAPI document can say what that body looks like
- * without an integrator having to read `lib/items/types/*.ts` to find out.
+ * without an integrator having to read `items/types/*.ts` to find out.
  *
  * Derived from `ITEM_TYPE_DEFINITIONS` rather than hand-written, so a new
  * item type is documented the moment it is registered. That is also why it
@@ -18,7 +18,7 @@
  */
 
 import { z } from 'zod'
-import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/items/item-type-definitions'
 
 /**
  * The two keys the route consumes itself, before the item type's schema ever

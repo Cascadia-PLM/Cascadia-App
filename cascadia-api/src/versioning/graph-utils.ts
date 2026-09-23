@@ -8,7 +8,7 @@
  * the ECO branch history graph (`ChangeOrderBranchHistoryService`), and the program
  * history graph — the first and last both via `CommitGraphService`. Each used
  * to carry its own copy of this algorithm and they had already drifted.
- * Everything here is pure — no `@/lib/db` import — so it stays safe to reach
+ * Everything here is pure — no `@/db` import — so it stays safe to reach
  * from client code.
  *
  * Two invariants the callers depend on; do not "simplify" either away:
@@ -38,7 +38,7 @@ import type { Node } from '@xyflow/react'
 import type {
   CommitGraphEdge,
   CommitNodeData,
-} from '@cascadia/commons/lib/versioning/graph-types'
+} from '@cascadia/commons/versioning/graph-types'
 
 /** Time window in milliseconds for consolidating commits (30 minutes) */
 export const CONSOLIDATION_TIME_WINDOW_MS = 30 * 60 * 1000

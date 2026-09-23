@@ -24,7 +24,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import * as dagre from 'dagre'
-import { isWorkingRevisionValue } from '@cascadia/commons/lib/types/lifecycle'
+import { isWorkingRevisionValue } from '@cascadia/commons/types/lifecycle'
 import { ChangeOrderGraphItemNode as ChangeOrderGraphItemNode } from './ChangeOrderGraphItemNode'
 import { ChangeOrderDesignStructureTree as ChangeOrderDesignStructureTree } from './ChangeOrderDesignStructureTree'
 import { AddToChangeOrderDialog } from './AddToChangeOrderDialog'
@@ -34,23 +34,23 @@ import { AddBomChildToChangeOrderDialog } from './AddBomChildToChangeOrderDialog
 import { BatchAddToChangeOrderDialog } from './BatchAddToChangeOrderDialog'
 import type { Edge, Node } from '@xyflow/react'
 import type { BOMTreeNode } from './ChangeOrderTreeTable'
-import type { ChangeOrderAffectedItem } from '@/lib/query'
+import type { ChangeOrderAffectedItem } from '@/query'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
-import { useTheme } from '@/lib/theme'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useTheme } from '@/theme'
 import {
   GRAPH_EDGE_COLORS,
   directionalMarker,
 } from '@/components/graph/edgeStyles'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 import {
   authSessionQuery,
   changeOrderAffectedItemsQuery,
   changeOrderDesignsQuery,
   changeOrderDetailQuery,
   useInvalidateResources,
-} from '@/lib/query'
+} from '@/query'
 import {
   Badge,
   Button,
@@ -66,7 +66,7 @@ import {
   TabsTrigger,
 } from '@/components/ui'
 import { DataGrid } from '@/components/ui/DataGrid'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface ChangeOrderAffectedItemsPanelProps {
   changeOrderId: string

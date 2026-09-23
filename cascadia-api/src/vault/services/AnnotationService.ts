@@ -8,13 +8,13 @@ import type {
   CreateAnnotationInput,
   FileAnnotation,
   UpdateAnnotationInput,
-} from '@cascadia/commons/lib/vault/annotations'
-import { db } from '@/lib/db'
-import { vaultFileAnnotations, vaultFiles } from '@/lib/db/schema/vault'
-import { items } from '@/lib/db/schema/items'
-import { users } from '@/lib/db/schema/users'
-import { branchItems, branches } from '@/lib/db/schema/versioning'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@cascadia/commons/vault/annotations'
+import { db } from '@/db'
+import { vaultFileAnnotations, vaultFiles } from '@/db/schema/vault'
+import { items } from '@/db/schema/items'
+import { users } from '@/db/schema/users'
+import { branchItems, branches } from '@/db/schema/versioning'
+import { takeFirst } from '@/db/take-first'
 import {
   BranchProtectionError,
   ItemCheckoutRequiredError,
@@ -22,7 +22,7 @@ import {
   PermissionDeniedError,
   ResourceLockedError,
   ValidationError,
-} from '@/lib/errors'
+} from '@/errors'
 
 /**
  * Markup on vault files.

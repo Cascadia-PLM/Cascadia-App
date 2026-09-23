@@ -6,8 +6,8 @@ import path from 'node:path'
 import {
   DISPLAYABLE_IMAGE_EXTENSIONS,
   isDisplayableImage,
-} from '@cascadia/commons/lib/vault/image-files'
-import type { FileCategory } from '@cascadia/commons/lib/vault/file-categories'
+} from '@cascadia/commons/vault/image-files'
+import type { FileCategory } from '@cascadia/commons/vault/file-categories'
 
 /**
  * Sanitize filename to remove dangerous characters
@@ -53,7 +53,7 @@ export function generateStoragePath(
 
 // Display formatting is the one thing the client needs from here; it lives in
 // commons, and is re-exported so server callers keep importing it from here.
-export { formatFileSize } from '@cascadia/commons/lib/vault/format-file-size'
+export { formatFileSize } from '@cascadia/commons/vault/format-file-size'
 
 /**
  * Get MIME type icon/category

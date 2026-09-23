@@ -2,11 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { allPackageIds, isPackageId, packageDescriptor } from './catalog'
-import type {
-  PackageId,
-  PackageStatus,
-} from '@cascadia/commons/lib/packages/types'
-import { logger } from '@/lib/logging/logger'
+import type { PackageId, PackageStatus } from '@cascadia/commons/packages/types'
+import { logger } from '@/logging/logger'
 
 /**
  * Resolves which optional packages this instance is entitled to run.

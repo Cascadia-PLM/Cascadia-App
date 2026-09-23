@@ -29,7 +29,7 @@
  * late refusal leaks a blob rather than refusing anything).
  */
 
-import type { ChangeAction } from '@cascadia/commons/lib/types/lifecycle'
+import type { ChangeAction } from '@cascadia/commons/types/lifecycle'
 
 /**
  * A guard-able operation. `TIntent` is carried phantom-wise: there is nothing

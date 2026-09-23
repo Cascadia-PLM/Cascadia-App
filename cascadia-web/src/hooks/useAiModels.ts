@@ -11,13 +11,13 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { fallbackModelOptions } from '@cascadia/commons/lib/ai/model-catalog'
+import { fallbackModelOptions } from '@cascadia/commons/ai/model-catalog'
 import type {
   AiModelOption,
   AiProviderType,
-} from '@cascadia/commons/lib/ai/model-catalog'
-import { qk } from '@/lib/query/keys'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/ai/model-catalog'
+import { qk } from '@/query/keys'
+import { apiFetch } from '@/api/client'
 
 interface DiscoveryResponse {
   models: Array<AiModelOption>

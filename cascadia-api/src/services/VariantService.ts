@@ -28,7 +28,7 @@ import {
   makesSchema,
   optionModelSchema,
   validateSelectionsAgainst,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { db } from '../db'
 import { itemRelationships, items, parts } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
@@ -37,8 +37,8 @@ import type {
   OptionCondition,
   OptionModel,
   SelectionIssue,
-} from '@cascadia/commons/lib/types/variants'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+} from '@cascadia/commons/types/variants'
+import type { Part } from '@cascadia/commons/items/types/part'
 
 type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 

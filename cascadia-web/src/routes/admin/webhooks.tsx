@@ -5,8 +5,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Plus, RefreshCw, Webhook } from 'lucide-react'
-import { WEBHOOK_DISPATCHER_CONSUMER_ID } from '@cascadia/commons/lib/webhooks/config'
-import type { WebhookSubscription } from '@/lib/query'
+import { WEBHOOK_DISPATCHER_CONSUMER_ID } from '@cascadia/commons/webhooks/config'
+import type { WebhookSubscription } from '@/query'
 import type { WebhookFormValues } from '@/components/webhooks/WebhookFormDialog'
 import { Button } from '@/components/ui'
 import { WebhookDeliveriesDialog } from '@/components/webhooks/WebhookDeliveriesDialog'
@@ -18,10 +18,10 @@ import {
   eventTypesQuery,
   useResourceMutation,
   webhookSubscriptionsQuery,
-} from '@/lib/query'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/webhooks')({
   component: WebhooksPage,

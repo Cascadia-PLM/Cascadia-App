@@ -12,7 +12,7 @@ import type {
   RegisteredExtension,
 } from './types'
 import type { GuardOperation } from './operations'
-import { EventTypeRegistry } from '@/lib/events/registry'
+import { EventTypeRegistry } from '@/events/registry'
 
 /**
  * Declare an extension, and register it.
@@ -26,7 +26,7 @@ import { EventTypeRegistry } from '@/lib/events/registry'
  *
  * Registration happens as a side effect, like `defineDomainEvent` and
  * `defineGuardOperation`: importing a module that declares extensions is
- * enough to have them. Core's own live under `lib/extensions/`; a module
+ * enough to have them. Core's own live under `extensions/`; a module
  * package's are imported from its `register.server.ts`.
  *
  * **Why one overload per arm.** Three shapes were measured, and only this one

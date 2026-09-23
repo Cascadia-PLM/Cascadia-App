@@ -28,7 +28,7 @@ import type {
   GapAnalysisResult,
   GapSeverity,
   GapType,
-} from '@cascadia/commons/lib/services/types/gap-analysis'
+} from '@cascadia/commons/services/types/gap-analysis'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
 export type {
@@ -37,7 +37,7 @@ export type {
   Gap,
   GapAnalysisRequest,
   GapAnalysisResult,
-} from '@cascadia/commons/lib/services/types/gap-analysis'
+} from '@cascadia/commons/services/types/gap-analysis'
 
 // ============================================================================
 // Zod Schema for API validation

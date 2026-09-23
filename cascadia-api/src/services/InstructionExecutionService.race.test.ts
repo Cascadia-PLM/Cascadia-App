@@ -34,18 +34,18 @@
  * transaction serializes every call, so the race cannot occur. These commit
  * for real through `ConcurrentTestDatabase`, which cleans up after itself.
  *
- * Run: npx vitest run cascadia-api/src/lib/services/InstructionExecutionService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/services/InstructionExecutionService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { WorkOrderService } from '@/lib/services/WorkOrderService'
-import { WorkOrderInstructionService } from '@/lib/services/WorkOrderInstructionService'
-import { InstructionExecutionService } from '@/lib/services/InstructionExecutionService'
-import { ConflictError, ValidationError } from '@/lib/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { WorkOrderService } from '@/services/WorkOrderService'
+import { WorkOrderInstructionService } from '@/services/WorkOrderInstructionService'
+import { InstructionExecutionService } from '@/services/InstructionExecutionService'
+import { ConflictError, ValidationError } from '@/errors'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
 import {
   domainEvents,
@@ -55,11 +55,11 @@ import {
   lifecycleHistory,
   lifecycleInstances,
   workInstructionSteps,
-} from '@/lib/db/schema'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
+} from '@/db/schema'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('InstructionExecutionService.start — one open run per unit', () => {
   const concurrent = new ConcurrentTestDatabase()

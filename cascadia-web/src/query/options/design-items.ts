@@ -4,7 +4,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import type { GridParams, GridQuery } from '../grid-params'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 
 /** One row of `/api/v1/designs/:id/items` — a design-scoped item summary. */
 export interface DesignItem {

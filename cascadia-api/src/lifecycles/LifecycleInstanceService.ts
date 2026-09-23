@@ -5,7 +5,7 @@ import { and, desc, eq, isNull, lt, or } from 'drizzle-orm'
 import {
   isDrivingDefinition,
   resolveLifecycleType,
-} from '@cascadia/commons/lib/lifecycles/normalize'
+} from '@cascadia/commons/lifecycles/normalize'
 import { db, withTx } from '../db'
 import { lifecycleHistory, lifecycleInstances } from '../db/schema/lifecycles'
 import { items } from '../db/schema/items'
@@ -45,10 +45,10 @@ import type {
   TransitionAction,
   TransitionFlowContext,
   TransitionResult,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import type { TransitionExecutionOptions } from './transition-options'
-import { resolveChangeOrderProgram } from '@/lib/events/program-scope'
-import { takeFirst } from '@/lib/db/take-first'
+import { resolveChangeOrderProgram } from '@/events/program-scope'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Lifecycle instances: starting one for an item, the transitions it can

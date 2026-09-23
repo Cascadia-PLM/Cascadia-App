@@ -12,7 +12,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { strings } from '../strings'
-import { designListQuery, programListQuery } from '@/lib/query'
+import { designListQuery, programListQuery } from '@/query'
 import {
   Button,
   Card,

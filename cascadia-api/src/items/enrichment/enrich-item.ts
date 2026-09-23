@@ -15,7 +15,7 @@
  * stores a source URL as a `link` custom attribute, and attaches dropped
  * images to the item once it exists.
  *
- * Modeled on `cascadia-design-engine/src/lib/cad-generation/assessment.ts`
+ * Modeled on `cascadia-design-engine/src/cad-generation/assessment.ts`
  * (prompt -> JSON -> parse).
  */
 
@@ -25,20 +25,20 @@ import {
   ENRICHMENT_IMAGE_MEDIA_TYPES,
   MAX_ENRICHMENT_IMAGES,
   MAX_ENRICHMENT_IMAGE_BASE64_CHARS,
-} from '@cascadia/commons/lib/items/enrichment/limits'
+} from '@cascadia/commons/items/enrichment/limits'
 import {
   CAPABILITY_SCHEMAS,
   TOOL_SUBTYPES,
-} from '@cascadia/commons/lib/items/types/tool'
+} from '@cascadia/commons/items/types/tool'
 import { assertSafeUrl } from './html-to-text'
 import { fetchSource } from './fetch-source'
 import type { FetchedPage } from './html-to-text'
-import type { EnrichmentImage } from '@cascadia/commons/lib/items/enrichment/limits'
-import type { KnownToolSubtype } from '@cascadia/commons/lib/items/types/tool'
-import type { ProviderType } from '@/lib/ai/adapters'
-import { getAdapter, isAIEnabled, loadProviderConfig } from '@/lib/ai/adapters'
-import { UsageAccumulator, recordLlmUsage } from '@/lib/ai/usage'
-import { RateLimitedError, ValidationError } from '@/lib/errors'
+import type { EnrichmentImage } from '@cascadia/commons/items/enrichment/limits'
+import type { KnownToolSubtype } from '@cascadia/commons/items/types/tool'
+import type { ProviderType } from '@/ai/adapters'
+import { getAdapter, isAIEnabled, loadProviderConfig } from '@/ai/adapters'
+import { UsageAccumulator, recordLlmUsage } from '@/ai/usage'
+import { RateLimitedError, ValidationError } from '@/errors'
 
 export type EnrichableItemType = 'Part' | 'Tool'
 

@@ -27,9 +27,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 import {
   designBranchesQuery,
   designListQuery,
@@ -37,8 +37,8 @@ import {
   itemTextSearchQuery,
   programListQuery,
   useResourceMutation,
-} from '@/lib/query'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
+} from '@/query'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { StateBadge } from '@/components/items/StateBadge'
 
 interface Item {

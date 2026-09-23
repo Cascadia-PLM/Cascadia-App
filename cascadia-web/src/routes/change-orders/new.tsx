@@ -3,10 +3,10 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
 import { ChangeOrderDetail } from '@/components/change-orders/ChangeOrderDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/change-orders/new')({
   component: NewChangeOrderPage,

@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { isRetryableError } from '@cascadia/commons/lib/errors/retry'
+import { isRetryableError } from '@cascadia/commons/errors/retry'
 import { useErrorHandler } from './useErrorHandler'
-import { ApiError, apiFetch } from '@/lib/api/client'
+import { ApiError, apiFetch } from '@/api/client'
 
 interface UseRetryableFetchOptions<T> extends RequestInit {
   /** If true, fetch immediately on mount */

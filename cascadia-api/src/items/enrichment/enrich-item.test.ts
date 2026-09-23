@@ -25,7 +25,7 @@
  * spy on purpose — that function swallows its own insert failures, so a spy
  * can pass while nothing lands.
  *
- * Run: npx vitest run cascadia-api/src/lib/items/enrichment/enrich-item.test.ts
+ * Run: npx vitest run cascadia-api/src/items/enrichment/enrich-item.test.ts
  */
 
 import {
@@ -39,17 +39,17 @@ import {
   vi,
 } from 'vitest'
 import { eq, isNull } from 'drizzle-orm'
-import { MAX_ENRICHMENT_IMAGE_BASE64_CHARS } from '@cascadia/commons/lib/items/enrichment/limits'
+import { MAX_ENRICHMENT_IMAGE_BASE64_CHARS } from '@cascadia/commons/items/enrichment/limits'
 import type * as TanStackAi from '@tanstack/ai'
-import type * as Adapters from '@/lib/ai/adapters'
+import type * as Adapters from '@/ai/adapters'
 import type * as FetchSource from './fetch-source'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { EnrichmentImage } from '@cascadia/commons/lib/items/enrichment/limits'
+import type { EnrichmentImage } from '@cascadia/commons/items/enrichment/limits'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { aiSettings, aiUsageLogs } from '@/lib/db/schema'
-import { recordLlmUsage } from '@/lib/ai/usage'
-import { RateLimitedError, ValidationError } from '@/lib/errors'
+import { aiSettings, aiUsageLogs } from '@/db/schema'
+import { recordLlmUsage } from '@/ai/usage'
+import { RateLimitedError, ValidationError } from '@/errors'
 
 /** Scripted chunk that makes the stream throw where a real provider would. */
 const THROW = Symbol('stream throws here')
@@ -87,7 +87,7 @@ vi.mock('./fetch-source', async (importOriginal) => ({
     }),
 }))
 
-vi.mock('@/lib/ai/adapters', async (importOriginal) => ({
+vi.mock('@/ai/adapters', async (importOriginal) => ({
   // `isAIEnabled` and `loadProviderConfig` stay real, so the settings row
   // seeded below is what resolves. Only the adapter is faked: a real one
   // wants a decryptable API key and nothing downstream of it runs here.

@@ -20,8 +20,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
-import { ItemTypeRegistry } from '@cascadia/api/lib/items/registry'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/items/item-type-definitions'
+import { ItemTypeRegistry } from '@cascadia/api/items/registry'
 // The subject under test: importing it must be enough.
 import '@/main'
 
@@ -32,7 +32,7 @@ describe('jobs worker composition root', () => {
         ItemTypeRegistry.getCodeDefinition(name),
         `Item type "${name}" is not registered in the jobs worker process. ` +
           'The worker mounts no routes, so it must import ' +
-          'lib/items/registerItemTypes.server itself.',
+          'items/registerItemTypes.server itself.',
       ).toBeDefined()
     }
   })

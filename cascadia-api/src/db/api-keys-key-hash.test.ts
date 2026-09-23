@@ -12,7 +12,7 @@
  * claiming one credential, and which of them authenticated came down to row
  * order.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/api-keys-key-hash.test.ts
+ * Run: npx vitest run cascadia-api/src/db/api-keys-key-hash.test.ts
  */
 
 import {
@@ -28,8 +28,8 @@ import { eq } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { apiKeys } from '@/lib/db/schema'
-import { asPostgresError, constraintOf } from '@/lib/errors/pg'
+import { apiKeys } from '@/db/schema'
+import { asPostgresError, constraintOf } from '@/errors/pg'
 
 /** Postgres unique_violation. */
 const UNIQUE_VIOLATION = '23505'

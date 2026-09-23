@@ -17,7 +17,7 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { resolveLifecycleType } from '@cascadia/commons/lib/lifecycles/normalize'
+import { resolveLifecycleType } from '@cascadia/commons/lifecycles/normalize'
 import { db } from '../db'
 import { lifecycleDefinitions } from '../db/schema/lifecycles'
 import { ItemTypeRegistry } from '../items/registry'
@@ -32,15 +32,15 @@ import type {
   ReviseActionMapping,
   RevisionScheme,
   StateChangeActionMapping,
-} from '@cascadia/commons/lib/types/lifecycle'
+} from '@cascadia/commons/types/lifecycle'
 import type {
   InstanceTransition,
   LifecycleDefinition,
   LifecycleState,
   LifecycleTransition,
   LifecycleType,
-} from '@cascadia/commons/lib/lifecycles/types'
-import { serviceLogger } from '@/lib/logging/logger'
+} from '@cascadia/commons/lifecycles/types'
+import { serviceLogger } from '@/logging/logger'
 
 /**
  * The states and revision scheme a release needs for one item type.

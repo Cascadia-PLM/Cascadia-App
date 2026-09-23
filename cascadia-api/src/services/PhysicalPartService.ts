@@ -3,13 +3,13 @@
 
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { PhysicalPart } from '@cascadia/commons/lib/items/types/physical-part'
-import { db } from '@/lib/db'
-import { physicalPartAccessScopeCondition } from '@/lib/db/filters'
-import { likeContains } from '@/lib/db/like-pattern'
-import { items, parts, physicalParts } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { ItemService } from '@/lib/items/services/ItemService'
+import type { PhysicalPart } from '@cascadia/commons/items/types/physical-part'
+import { db } from '@/db'
+import { physicalPartAccessScopeCondition } from '@/db/filters'
+import { likeContains } from '@/db/like-pattern'
+import { items, parts, physicalParts } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { ItemService } from '@/items/services/ItemService'
 
 /**
  * Registration and lookup for PhysicalParts (serialized units and lots).

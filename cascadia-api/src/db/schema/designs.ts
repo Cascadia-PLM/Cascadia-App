@@ -25,8 +25,8 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type {
   DesignConfiguration,
   DesignRow,
-} from '@cascadia/commons/lib/types/design'
-import type { Equal, Expect } from '@cascadia/commons/lib/types/assert'
+} from '@cascadia/commons/types/design'
+import type { Equal, Expect } from '@cascadia/commons/types/assert'
 
 /**
  * Design type values:

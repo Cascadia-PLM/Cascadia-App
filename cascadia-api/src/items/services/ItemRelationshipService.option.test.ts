@@ -19,19 +19,19 @@ import {
 import { eq } from 'drizzle-orm'
 import { ItemRelationshipService } from './ItemRelationshipService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { OptionModel } from '@cascadia/commons/lib/types/variants'
-import { DesignService } from '@/lib/services/DesignService'
+import type { OptionModel } from '@cascadia/commons/types/variants'
+import { DesignService } from '@/services/DesignService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestPart } from '@/__tests__/fixtures/items'
-import { itemRelationships, parts, programs } from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+import { itemRelationships, parts, programs } from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
-import { AlreadyExistsError, ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/db/take-first'
+import { AlreadyExistsError, ValidationError } from '@/errors'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const colourModel: OptionModel = {
   families: [

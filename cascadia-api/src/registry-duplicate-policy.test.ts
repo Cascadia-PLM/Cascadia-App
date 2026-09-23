@@ -27,13 +27,13 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import type { JobHandler, JobTypeConfig } from '@/lib/jobs/types'
-import type { ConsumedExtension } from '@/lib/extensions'
-import type { DomainEventDefinition } from '@/lib/events'
-import { JobTypeRegistry } from '@/lib/jobs/registry'
-import { ApprovalRegistry } from '@/lib/lifecycles/approval-registry'
-import { EventTypeRegistry, defineDomainEvent } from '@/lib/events'
-import { ExtensionRegistry, defineExtension } from '@/lib/extensions'
+import type { JobHandler, JobTypeConfig } from '@/jobs/types'
+import type { ConsumedExtension } from '@/extensions'
+import type { DomainEventDefinition } from '@/events'
+import { JobTypeRegistry } from '@/jobs/registry'
+import { ApprovalRegistry } from '@/lifecycles/approval-registry'
+import { EventTypeRegistry, defineDomainEvent } from '@/events'
+import { ExtensionRegistry, defineExtension } from '@/extensions'
 
 /** A type no shipped definition claims — this file never imports `register.ts`. */
 const TEST_TYPE = 'test.registries.duplicate-policy'

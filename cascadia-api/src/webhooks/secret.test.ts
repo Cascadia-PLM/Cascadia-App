@@ -18,8 +18,8 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { generateWebhookSecret, looksLikeWebhookSecret } from './secret'
-import { decryptSecret, isEncryptionConfigured } from '@/lib/crypto/encryption'
-import { ValidationError } from '@/lib/errors'
+import { decryptSecret, isEncryptionConfigured } from '@/crypto/encryption'
+import { ValidationError } from '@/errors'
 
 const TEST_KEY = 'a'.repeat(64)
 

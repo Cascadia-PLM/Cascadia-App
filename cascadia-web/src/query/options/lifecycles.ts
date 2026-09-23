@@ -10,13 +10,13 @@ import type {
   LifecycleState,
   LifecycleTransition,
   StateApprover,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import type {
   ChangeActionMappings,
   LifecyclePhaseConfig,
   RevisionScheme,
-} from '@cascadia/commons/lib/types/lifecycle'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/types/lifecycle'
+import { apiFetch } from '@/api/client'
 
 /**
  * The definition governing an item type, as `/lifecycles/by-item-type`

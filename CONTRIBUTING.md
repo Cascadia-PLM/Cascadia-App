@@ -133,13 +133,13 @@ npm run workers:dev   # Start RabbitMQ + all workers via Docker
 ### Code Style
 
 - Run `npm run check` before committing — this runs Prettier and ESLint.
-- Use `cn()` from `@/lib/utils` for Tailwind class merging.
+- Use `cn()` from `@/utils` for Tailwind class merging.
 - Prefer Drizzle ORM for all database queries — never raw SQL.
-- Throw typed errors (`NotFoundError`, `ValidationError`, etc.) from `@/lib/errors/`.
+- Throw typed errors (`NotFoundError`, `ValidationError`, etc.) from `@/errors/`.
 
 ### API Routes
 
-- Wrap handlers with `apiHandler()` from `@/lib/api/handler`.
+- Wrap handlers with `apiHandler()` from `@/api/handler`.
 - Return plain objects — they auto-wrap as `{ data: { ... } }`.
 - Use `parseQuery(request, zodSchema)` for validated query params.
 
@@ -174,7 +174,7 @@ When you do write tests:
 
 Before making changes to core areas, familiarize yourself with:
 
-- **Service layer** — Business logic lives in `cascadia-api/src/{lib!/services/` and `cascadia-api/src/lib/items/services/`.
+- **Service layer** — Business logic lives in `cascadia-api/src/{lib!/services/` and `cascadia-api/src/items/services/`.
 - **Two-table pattern** — Items have a shared `items` table and type-specific tables (`parts`, `documents`, etc.).
 - **ECO-as-Branch** — All changes flow through Engineering Change Orders. Cannot modify `main` directly.
 - **Branch protection** — Revision letters are assigned only on merge to main, never during work.

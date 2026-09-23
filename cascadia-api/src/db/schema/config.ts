@@ -12,10 +12,10 @@ import {
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 import { users } from './users'
-import type { RuntimeItemTypeConfig } from '@/lib/items/types/runtime-config'
+import type { RuntimeItemTypeConfig } from '@/items/types/runtime-config'
 
 // Re-export for backward compatibility
-export type { RuntimeItemTypeConfig } from '@/lib/items/types/runtime-config'
+export type { RuntimeItemTypeConfig } from '@/items/types/runtime-config'
 
 /**
  * Runtime configuration for item types.

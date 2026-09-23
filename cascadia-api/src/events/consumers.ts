@@ -4,13 +4,13 @@
 import { and, asc, eq, gt, inArray, lte, max, sql } from 'drizzle-orm'
 import { rowToDomainEvent } from './publish'
 import type { ConsumerRunResult, DomainEventConsumer } from './types'
-import type { TransactionClient } from '@/lib/db'
-import type { EventConsumerRow } from '@/lib/db/schema'
-import { db } from '@/lib/db'
-import { domainEvents, eventConsumers } from '@/lib/db/schema'
-import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors'
-import { describeError } from '@/lib/errors/describe'
-import { eventLogger } from '@/lib/logging/logger'
+import type { TransactionClient } from '@/db'
+import type { EventConsumerRow } from '@/db/schema'
+import { db } from '@/db'
+import { domainEvents, eventConsumers } from '@/db/schema'
+import { ConflictError, NotFoundError, ValidationError } from '@/errors'
+import { describeError } from '@/errors/describe'
+import { eventLogger } from '@/logging/logger'
 
 const DEFAULT_BATCH_SIZE = 100
 const DEFAULT_HANDLER_TIMEOUT_MS = 30_000
@@ -159,7 +159,7 @@ class TimedOutRun extends Error {
  *
  * There was an `EventConsumerRegistry` here. It is gone: `defineExtension`
  * with `phase: 'consumed'` is the only way to register a consumer now, the
- * extension registry holds them, and `lib/extensions/consumers.ts` projects
+ * extension registry holds them, and `extensions/consumers.ts` projects
  * them into the shape below and drives the polling. Two registries would have
  * meant two duplicate policies, two cursor-creation paths, and an
  * introspection endpoint able to answer for only one of them.

@@ -4,17 +4,17 @@
 import { Hono } from 'hono'
 import { decodeIdToken, generateCodeVerifier, generateState } from 'arctic'
 import { z } from 'zod'
-import { SettingKeys } from '@cascadia/commons/lib/config/SettingKeys'
+import { SettingKeys } from '@cascadia/commons/config/SettingKeys'
 import { tagged } from '../adapter'
-import { apiHandler } from '@/lib/api/handler'
-import { AuthService } from '@/lib/auth/AuthService'
-import { UserService } from '@/lib/auth/UserService'
-import { hashSessionToken } from '@/lib/auth/password'
-import { SessionManager } from '@/lib/auth/session'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { permissionService } from '@/lib/auth/permission-service'
-import { buildClearSessionCookie, buildSessionCookie } from '@/lib/auth/cookie'
-import { getSessionTokenFromRequest } from '@/lib/auth/server'
+import { apiHandler } from '@/api/handler'
+import { AuthService } from '@/auth/AuthService'
+import { UserService } from '@/auth/UserService'
+import { hashSessionToken } from '@/auth/password'
+import { SessionManager } from '@/auth/session'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { permissionService } from '@/auth/permission-service'
+import { buildClearSessionCookie, buildSessionCookie } from '@/auth/cookie'
+import { getSessionTokenFromRequest } from '@/auth/server'
 import {
   getAllowedGoogleDomains,
   getGitHubProvider,
@@ -22,13 +22,13 @@ import {
   isGitHubOAuthConfigured,
   isGoogleAccountPermitted,
   isGoogleOAuthConfigured,
-} from '@/lib/auth/oauth'
-import { SettingsService } from '@/lib/config/SettingsService'
-import { ApiKeyService } from '@/lib/auth/ApiKeyService'
-import { AuthenticationError } from '@/lib/errors'
-import { db } from '@/lib/db'
-import { authEvents } from '@/lib/db/schema/users'
-import { resolveClientIp } from '@/lib/api/client-ip'
+} from '@/auth/oauth'
+import { SettingsService } from '@/config/SettingsService'
+import { ApiKeyService } from '@/auth/ApiKeyService'
+import { AuthenticationError } from '@/errors'
+import { db } from '@/db'
+import { authEvents } from '@/db/schema/users'
+import { resolveClientIp } from '@/api/client-ip'
 
 const adapt = tagged('Auth')
 

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { createFileRoute } from '@tanstack/react-router'
-import { requireSystemAccess } from '@/lib/auth/system-access'
+import { requireSystemAccess } from '@/auth/system-access'
 
 /**
  * Layout route for user administration — the System section's Users pages.

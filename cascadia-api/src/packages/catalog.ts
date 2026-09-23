@@ -4,7 +4,7 @@
 import type {
   PackageDescriptor,
   PackageId,
-} from '@cascadia/commons/lib/packages/types'
+} from '@cascadia/commons/packages/types'
 
 /**
  * Every optional package this build knows about.

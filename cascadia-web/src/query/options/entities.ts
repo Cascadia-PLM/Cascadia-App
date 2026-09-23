@@ -4,7 +4,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import type { Resource } from '../keys'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 
 /**
  * A single entity fetched from `/api/v1/{resource}/{id}`.

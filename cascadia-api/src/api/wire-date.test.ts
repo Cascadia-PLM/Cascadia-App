@@ -3,7 +3,7 @@
 
 import { clearableDate } from './wire-date'
 import type { z } from 'zod'
-import { programUpdateSchema } from '@/lib/services/ProgramService'
+import { programUpdateSchema } from '@/services/ProgramService'
 
 /**
  * The invariant is that the three wire spellings of "no date" stay distinct in

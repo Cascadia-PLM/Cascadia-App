@@ -2,11 +2,11 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, count, desc, eq, isNull, sql } from 'drizzle-orm'
-import { COUNTABLE_EXECUTION_STATUSES } from '@cascadia/commons/lib/items/types/work-order'
+import { COUNTABLE_EXECUTION_STATUSES } from '@cascadia/commons/items/types/work-order'
 import { paginatedOrderBy } from '../db/paginated-order'
 import { LifecycleService } from './LifecycleService'
-import type { ExecutionStatus } from '@cascadia/commons/lib/items/types/work-order'
-import { db } from '@/lib/db'
+import type { ExecutionStatus } from '@cascadia/commons/items/types/work-order'
+import { db } from '@/db'
 import {
   executionSignOffs,
   instructionExecutions,
@@ -14,20 +14,16 @@ import {
   users,
   workOrderInstructions,
   workOrders,
-} from '@/lib/db/schema'
-import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors'
+} from '@/db/schema'
+import { ConflictError, NotFoundError, ValidationError } from '@/errors'
 import {
   WORK_ORDER_RUN_COMPLETED,
   WORK_ORDER_SIGN_OFF_SUBMITTED,
   publishDomainEvent,
-} from '@/lib/events'
-import {
-  asPostgresError,
-  constraintOf,
-  isUniqueViolation,
-} from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
-import { LifecycleInstanceService } from '@/lib/lifecycles/LifecycleInstanceService'
+} from '@/events'
+import { asPostgresError, constraintOf, isUniqueViolation } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
+import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 
 /**
  * Runs of traveler lines (work order instructions). An execution always

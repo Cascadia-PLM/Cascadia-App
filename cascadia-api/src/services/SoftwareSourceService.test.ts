@@ -11,7 +11,7 @@
  *  - version-pinned manifests across the full checkout → edit → merge cycle
  *  - released revisions carry their extension row (manifest survives release)
  *
- * Run: npx vitest run src/lib/services/SoftwareSourceService.test.ts
+ * Run: npx vitest run src/services/SoftwareSourceService.test.ts
  */
 
 import {
@@ -34,7 +34,7 @@ import { SoftwareSourceService } from './SoftwareSourceService'
 import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Software } from '@cascadia/commons/lib/items/types/software'
+import type { Software } from '@cascadia/commons/items/types/software'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -50,18 +50,18 @@ import {
   programs,
   software,
   softwareBlobs,
-} from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 import {
   BranchProtectionError,
   ResourceLockedError,
   ValidationError,
-} from '@/lib/errors'
+} from '@/errors'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Well-known test workflow ID for the SoftwareSourceService ECO workflow
 const SW_TEST_WORKFLOW_ID = '00000000-0000-4000-8000-000000000211'

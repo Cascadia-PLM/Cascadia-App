@@ -5,7 +5,7 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import {
   isDrivingDefinition,
   resolveLifecycleType,
-} from '@cascadia/commons/lib/lifecycles/normalize'
+} from '@cascadia/commons/lifecycles/normalize'
 import { db } from '../db'
 import {
   lifecycleDefinitions,
@@ -23,8 +23,8 @@ import type {
   UpdateLifecycleInput,
   ValidationResult,
   ValidationWarning,
-} from '@cascadia/commons/lib/lifecycles/types'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@cascadia/commons/lifecycles/types'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Columns an `update_field` workflow action may write on the base `items`

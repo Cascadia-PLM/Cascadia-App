@@ -26,7 +26,7 @@
 
 import { db } from '../db'
 import { aiUsageLogs } from '../db/schema/ai'
-import { aiLogger } from '@/lib/logging/logger'
+import { aiLogger } from '@/logging/logger'
 
 /** One chat request's worth of LLM usage, summed across model turns. */
 export interface LlmUsageRecord {

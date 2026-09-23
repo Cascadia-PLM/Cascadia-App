@@ -40,9 +40,9 @@ import type {
   SoftwareManifest,
   SoftwareManifestEntry,
 } from '../db/schema/software'
-import type { Software } from '@cascadia/commons/lib/items/types/software'
+import type { Software } from '@cascadia/commons/items/types/software'
 import type { VersionContext } from './VersionResolver'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 export type { ManifestDiffEntry } from './software-source-changes'
 

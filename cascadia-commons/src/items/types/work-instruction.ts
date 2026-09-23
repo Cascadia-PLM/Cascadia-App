@@ -228,7 +228,7 @@ export const workInstructionRelationships = [
 
 // Execution types live with the work order domain now — executions are
 // runs of traveler lines (work order instructions), not of templates.
-// See @/lib/items/types/work-order.
+// See @/items/types/work-order.
 
 // Export type for use in other modules
 export type WorkInstructionInput = z.infer<typeof workInstructionSchema>

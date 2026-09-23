@@ -30,7 +30,7 @@
  * - the pick priority matches the viewer: GLB-with-colors, then primary,
  *   then newest
  *
- * Run: npx vitest run src/lib/services/ModelVersionService.test.ts
+ * Run: npx vitest run src/services/ModelVersionService.test.ts
  */
 
 import {
@@ -54,8 +54,8 @@ import {
   items,
   programs,
   vaultFiles,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 describe('ModelVersionService', () => {
   const testDb = new TestDatabase()

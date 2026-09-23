@@ -28,7 +28,7 @@ it.
 
 ## 1. Define the payload schema and the definition
 
-`cascadia-api/src/lib/events/definitions/work-orders.ts`
+`cascadia-api/src/events/definitions/work-orders.ts`
 
 ```typescript
 import { z } from 'zod'
@@ -80,14 +80,14 @@ Missing the third leaves the type **silently absent** from the catalog API and
 from every wildcard consumer — including webhooks — with nothing failing.
 
 ```typescript
-// cascadia-api/src/lib/events/definitions/work-orders.ts
+// cascadia-api/src/events/definitions/work-orders.ts
 // (1) `defineDomainEvent` self-registers. Done in step 1.
 
-// cascadia-api/src/lib/events/definitions/register.ts
+// cascadia-api/src/events/definitions/register.ts
 // (2) The side-effect import. If the file is new, add it here.
 import './work-orders'
 
-// cascadia-api/src/lib/events/index.ts
+// cascadia-api/src/events/index.ts
 // (3) Re-export the definition and its payload type, so callers and extension
 //     authors can reach both without importing a definitions file directly.
 export { WORK_ORDER_SCRAPPED } from './definitions/work-orders'
@@ -99,10 +99,10 @@ instead — never from core's `register.ts`.
 
 ## 3. Emit inside the caller's transaction
 
-`cascadia-api/src/lib/services/WorkOrderService.ts`
+`cascadia-api/src/services/WorkOrderService.ts`
 
 ```typescript
-import { publishDomainEvent, WORK_ORDER_SCRAPPED } from '@/lib/events'
+import { publishDomainEvent, WORK_ORDER_SCRAPPED } from '@/events'
 
 static async scrapUnit(input: ScrapInput, userId: string): Promise<void> {
   await db.transaction(async (tx) => {

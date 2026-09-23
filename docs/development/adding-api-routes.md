@@ -23,10 +23,10 @@ Every API route file creates a `Hono` app, uses `adapt()` to bridge Hono's conte
 // cascadia-api/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
-import { apiHandler } from '@/lib/api/handler'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { NotFoundError } from '@/lib/errors'
-import '@/lib/items/registerItemTypes.server'
+import { apiHandler } from '@/api/handler'
+import { ItemService } from '@/items/services/ItemService'
+import { NotFoundError } from '@/errors'
+import '@/items/registerItemTypes.server'
 
 const app = new Hono()
 
@@ -97,7 +97,7 @@ You always wrap `apiHandler()` calls with `adapt()` when defining Hono routes.
 
 ## The apiHandler() Wrapper
 
-`apiHandler()` from `cascadia-api/src/lib/api/handler.ts` wraps every API handler. It provides:
+`apiHandler()` from `cascadia-api/src/api/handler.ts` wraps every API handler. It provides:
 
 1. **Authentication** — verifies session or API key, extracts user
 2. **Authorization** — checks permissions if specified
@@ -149,7 +149,7 @@ the message an unauthorized caller gets.
 
 `npm run permissions:check` fails on a tuple no role in `ROLE_DEFINITIONS`
 grants, and runs in CI's Lint job. The other way to satisfy one is to grant the
-action in `cascadia-commons/src/lib/auth/permissions.ts` — existing databases pick
+action in `cascadia-commons/src/auth/permissions.ts` — existing databases pick
 that up with `npm run db:sync-roles`. To see which roles a tuple actually
 admits, run `npm run permissions:check -- --audience`.
 
@@ -178,7 +178,7 @@ to send, instead of a 403. Declaring the gate makes the ordering structural
 rather than something every author has to remember.
 `program-isolation.permissions.test.ts` and `handler.test.ts` both hold it.
 
-Throw to refuse; the `require*Access` helpers in `lib/auth/access` already
+Throw to refuse; the `require*Access` helpers in `auth/access` already
 throw `PermissionDeniedError`, so most gates are one line. Any return value is
 awaited and discarded.
 
@@ -216,7 +216,7 @@ app.get(
 **Return a Response** — passed through directly (for custom status codes, streaming, cookies):
 
 ```typescript
-import { created } from '@/lib/api/handler'
+import { created } from '@/api/handler'
 
 app.post(
   '/',
@@ -291,8 +291,8 @@ Multipart upload handlers read the raw request and are untouched by this.
 Use `parseQuery()` with a Zod schema for validated, typed query parameters:
 
 ```typescript
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { paginationSchema } from '@/lib/api/schemas'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { paginationSchema } from '@/api/schemas'
 
 app.get(
   '/',
@@ -305,7 +305,7 @@ app.get(
 )
 ```
 
-Common query schemas from `cascadia-api/src/lib/api/schemas.ts`:
+Common query schemas from `cascadia-api/src/api/schemas.ts`:
 
 ```typescript
 // Pagination
@@ -384,10 +384,10 @@ app.post('/checkout', adapt(
 
 ## Response Helpers
 
-For responses that need custom status codes, use helpers from `cascadia-api/src/lib/api/handler.ts`:
+For responses that need custom status codes, use helpers from `cascadia-api/src/api/handler.ts`:
 
 ```typescript
-import { apiHandler, created, jsonResponse } from '@/lib/api/handler'
+import { apiHandler, created, jsonResponse } from '@/api/handler'
 
 // 201 Created
 return created({ part })
@@ -396,13 +396,10 @@ return created({ part })
 return jsonResponse({ results }, 207) // Multi-status
 ```
 
-Or use response builders from `cascadia-api/src/lib/api/response.ts` for more control:
+Or use response builders from `cascadia-api/src/api/response.ts` for more control:
 
 ```typescript
-import {
-  createCollectionResponse,
-  createCreatedResponse,
-} from '@/lib/api/response'
+import { createCollectionResponse, createCreatedResponse } from '@/api/response'
 
 // Collection with pagination
 return createCollectionResponse(
@@ -425,7 +422,7 @@ return createCreatedResponse(widget, {
 For routes that need design-level or branch-level access checks beyond simple permissions:
 
 ```typescript
-import { requireDesignAccess, requireBranchAccess } from '@/lib/auth/access'
+import { requireDesignAccess, requireBranchAccess } from '@/auth/access'
 
 app.get(
   '/designs/:designId/items',
@@ -493,7 +490,7 @@ app.route('/api/v1/widgets', widgets)
 API routes that work with items must import the server-side item type registration:
 
 ```typescript
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 ```
 
 This ensures the `ItemTypeRegistry` knows about all item types when the route handler runs.
@@ -516,10 +513,10 @@ Use `import type` for types, and dynamic imports for server-only services when n
 // cascadia-api/src/server/routes/widgets.ts
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
-import { apiHandler, parseQuery, created } from '@/lib/api/handler'
-import { itemListSchema } from '@/lib/api/schemas'
-import { ItemService } from '@/lib/items/services/ItemService'
-import '@/lib/items/registerItemTypes.server'
+import { apiHandler, parseQuery, created } from '@/api/handler'
+import { itemListSchema } from '@/api/schemas'
+import { ItemService } from '@/items/services/ItemService'
+import '@/items/registerItemTypes.server'
 
 const app = new Hono()
 
@@ -565,7 +562,7 @@ export default app
 // cascadia-api/src/server/routes/change-orders.ts (excerpt)
 import { Hono } from 'hono'
 import { adapt } from '../adapter'
-import { apiHandler } from '@/lib/api/handler'
+import { apiHandler } from '@/api/handler'
 
 const app = new Hono()
 

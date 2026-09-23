@@ -3,10 +3,10 @@
 
 import type { AppError } from './AppError'
 
-import type { ErrorResponse } from '@cascadia/commons/lib/errors/api-types'
+import type { ErrorResponse } from '@cascadia/commons/errors/api-types'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { ErrorResponse } from '@cascadia/commons/lib/errors/api-types'
+export type { ErrorResponse } from '@cascadia/commons/errors/api-types'
 
 /**
  * Create a standardized error Response object from an AppError.

@@ -6,10 +6,10 @@
  *
  * The drivers allow-list, state identity by ID, action-target resolution
  * and definition memoization. The Free-lifecycle transition path moved with
- * its engine to lib/lifecycles/LifecycleInstanceService.test.ts (remediation
+ * its engine to lifecycles/LifecycleInstanceService.test.ts (remediation
  * plan CM-22).
  *
- * Run: npx vitest run cascadia-api/src/lib/services/LifecycleService.test.ts
+ * Run: npx vitest run cascadia-api/src/services/LifecycleService.test.ts
  */
 
 import {
@@ -27,8 +27,8 @@ import { LifecycleDefinitionService } from '../lifecycles/LifecycleDefinitionSer
 import { LifecycleService } from './LifecycleService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { lifecycleDefinitions } from '@/lib/db/schema/lifecycles'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+import { lifecycleDefinitions } from '@/db/schema/lifecycles'
+import { ItemTypeRegistry } from '@/items/registry'
 import {
   SYSTEM_USER_ID,
   overrideItemTypeConfig,
@@ -36,7 +36,7 @@ import {
 } from '@/__tests__/fixtures/lifecycles'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 // Security tests (three-gate rule) for the Driven-side `drivers` allow-list
 // (remediation WI-4.4): a Driving lifecycle that is not listed may not act

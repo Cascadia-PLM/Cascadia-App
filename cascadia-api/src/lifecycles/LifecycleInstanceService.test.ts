@@ -7,7 +7,7 @@
  * Integration tests for lifecycle instances: starting, transitions, guards, actions, claims, history and flexible structure. Split from the WorkflowService suite along
  * the same seam as the service (remediation plan CM-22).
  *
- * Run: npx vitest run cascadia-api/src/lib/lifecycles/LifecycleInstanceService.test.ts
+ * Run: npx vitest run cascadia-api/src/lifecycles/LifecycleInstanceService.test.ts
  */
 
 import {
@@ -27,13 +27,9 @@ import { ApprovalService } from './ApprovalService'
 import type {
   CreateLifecycleInput,
   TransitionAction,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import {
-  AlreadyExistsError,
-  NotFoundError,
-  ValidationError,
-} from '@/lib/errors'
+import { AlreadyExistsError, NotFoundError, ValidationError } from '@/errors'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
@@ -46,10 +42,10 @@ import {
   lifecycleDefinitions,
   lifecycleInstances,
   parts,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { ItemService } from '@/items/services/ItemService'
+import { ItemTypeRegistry } from '@/items/registry'
 import {
   SYSTEM_USER_ID,
   overrideItemTypeConfig,
@@ -57,7 +53,7 @@ import {
 } from '@/__tests__/fixtures/lifecycles'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('LifecycleInstanceService', () => {
   const testDb = new TestDatabase()

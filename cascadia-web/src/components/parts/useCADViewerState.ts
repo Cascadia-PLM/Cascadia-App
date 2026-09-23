@@ -11,7 +11,7 @@ import type {
   StandardView,
 } from './CADViewerTypes'
 import type { CADFileEntry } from './cad-types'
-import { itemCadFilesQuery } from '@/lib/query/options/item-files'
+import { itemCadFilesQuery } from '@/query/options/item-files'
 
 /** Shared empty, so "no files yet" is the same array on every render. */
 const NO_FILES: Array<CADFileEntry> = []

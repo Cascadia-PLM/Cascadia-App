@@ -16,10 +16,10 @@ import {
   Label,
   Textarea,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { itemTextSearchQuery } from '@/lib/query'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { itemTextSearchQuery } from '@/query'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 interface PartSuggestion {
   id: string

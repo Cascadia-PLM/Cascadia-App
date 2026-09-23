@@ -37,26 +37,22 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
-import { changeOrderTypeSchema } from '@cascadia/commons/lib/items/types/change-order'
-import { partTypeSchema } from '@cascadia/commons/lib/items/types/part'
-import { requirementTypeSchema } from '@cascadia/commons/lib/items/types/requirement'
-import { taskPrioritySchema } from '@cascadia/commons/lib/items/types/task'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/items/item-type-definitions'
+import { changeOrderTypeSchema } from '@cascadia/commons/items/types/change-order'
+import { partTypeSchema } from '@cascadia/commons/items/types/part'
+import { requirementTypeSchema } from '@cascadia/commons/items/types/requirement'
+import { taskPrioritySchema } from '@cascadia/commons/items/types/task'
 import mcpRoutes from './mcp'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import {
-  generateApiKey,
-  getKeyPrefix,
-  hashApiKey,
-} from '@/lib/auth/api-key-utils'
-import { apiKeys } from '@/lib/db/schema/api-keys'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { generateApiKey, getKeyPrefix, hashApiKey } from '@/auth/api-key-utils'
+import { apiKeys } from '@/db/schema/api-keys'
 
 // Import to register item types (read tools reach the item services)
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 interface ToolListing {
   name: string

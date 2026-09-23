@@ -20,7 +20,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import type { Tool, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js'
-import { safeErrorMessage } from '@/lib/errors/pg'
+import { safeErrorMessage } from '@/errors/pg'
 
 export interface McpToolSpec {
   name: string

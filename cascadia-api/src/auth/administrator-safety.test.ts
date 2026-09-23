@@ -25,7 +25,7 @@
  *  - none of the above blocks the same operation while a second active
  *    Administrator exists — the guard bounds the floor, it is not a freeze
  *
- * Run: npx vitest run cascadia-api/src/lib/auth/administrator-safety.test.ts
+ * Run: npx vitest run cascadia-api/src/auth/administrator-safety.test.ts
  */
 
 import {
@@ -44,11 +44,11 @@ import {
   insertTestUser,
   insertTestUserWithRole,
 } from '@/__tests__/fixtures/users'
-import { UserService } from '@/lib/auth/UserService'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ConflictError } from '@/lib/errors'
-import { roles, userRoles, users } from '@/lib/db/schema/users'
-import { takeFirst } from '@/lib/db/take-first'
+import { UserService } from '@/auth/UserService'
+import { permissionService } from '@/auth/permission-service'
+import { ConflictError } from '@/errors'
+import { roles, userRoles, users } from '@/db/schema/users'
+import { takeFirst } from '@/db/take-first'
 
 describe('administrator availability guards', () => {
   const testDb = new TestDatabase()

@@ -21,7 +21,7 @@
  * `isCurrent = false`), and a design with merge history resolves identically
  * both ways, which is why this went unnoticed.
  *
- * Run: npx vitest run src/lib/services/GapAnalysisService.test.ts
+ * Run: npx vitest run src/services/GapAnalysisService.test.ts
  */
 
 import {
@@ -38,30 +38,30 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { ChangeOrderMergeService } from '@/lib/services/ChangeOrderMergeService'
-import { GapAnalysisService } from '@/lib/services/GapAnalysisService'
-import { MbomService } from '@/lib/services/MbomService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { ChangeOrderMergeService } from '@/services/ChangeOrderMergeService'
+import { GapAnalysisService } from '@/services/GapAnalysisService'
+import { MbomService } from '@/services/MbomService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { permissionService } from '@/auth/permission-service'
+import { ItemTypeRegistry } from '@/items/registry'
 import {
   ALLOCATED_TO_RELATIONSHIP,
   SATISFIES_RELATIONSHIP,
   VERIFIED_BY_RELATIONSHIP,
-} from '@/lib/items/traceability-relationships'
-import { VALIDATES_RELATIONSHIP } from '@/lib/services/VerificationService'
+} from '@/items/traceability-relationships'
+import { VALIDATES_RELATIONSHIP } from '@/services/VerificationService'
 import {
   itemRelationships,
   items,
   lifecycleDefinitions,
   lifecycleInstances,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const GAP_TEST_WORKFLOW_ID = '00000000-0000-4000-8000-000000000309'
 

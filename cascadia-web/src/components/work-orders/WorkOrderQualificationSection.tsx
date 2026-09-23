@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
-import { workOrderQualificationQuery } from '@/lib/query'
+import { workOrderQualificationQuery } from '@/query'
 
 /**
  * The answer to "were the requirements satisfied?": every requirement in

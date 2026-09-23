@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle, Loader2, Plus, UserPlus, Users } from 'lucide-react'
 import { strings } from '../strings'
-import { roleListQuery } from '@/lib/query'
+import { roleListQuery } from '@/query'
 import {
   Badge,
   Button,

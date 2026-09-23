@@ -7,7 +7,7 @@ import { ArrowRight, Check, Loader2 } from 'lucide-react'
 import type {
   AvailableTransition,
   LifecycleState,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import {
   Badge,
   Button,
@@ -19,8 +19,8 @@ import {
   DialogTitle,
   Textarea,
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { changeOrderReleasePreviewQuery } from '@/lib/query/options/change-orders'
+import { cn } from '@/utils'
+import { changeOrderReleasePreviewQuery } from '@/query/options/change-orders'
 
 interface TransitionDialogProps {
   isOpen: boolean

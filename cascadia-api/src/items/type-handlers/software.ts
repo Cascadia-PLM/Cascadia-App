@@ -2,10 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { eq } from 'drizzle-orm'
-import { softwareSourceSchema } from '@cascadia/commons/lib/items/types/software'
+import { softwareSourceSchema } from '@cascadia/commons/items/types/software'
 import { registerTypeHandler } from './index'
-import { db } from '@/lib/db'
-import { software } from '@/lib/db/schema'
+import { db } from '@/db'
+import { software } from '@/db/schema'
 
 const SOURCE_FIELDS = [
   'sourceMode',

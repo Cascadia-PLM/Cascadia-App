@@ -3,7 +3,7 @@
 
 import { Fragment } from 'react'
 import type { ComponentType, ReactNode } from 'react'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 
 /**
  * Named places in core's UI where a module may render something.

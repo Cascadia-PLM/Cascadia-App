@@ -19,8 +19,8 @@ import type {
   JsonValue,
   ProgramRow,
   ProgramSettings,
-} from '@cascadia/commons/lib/types/program'
-import type { Equal, Expect } from '@cascadia/commons/lib/types/assert'
+} from '@cascadia/commons/types/program'
+import type { Equal, Expect } from '@cascadia/commons/types/assert'
 
 // The settings shapes live in commons so the web can name them; re-exported
 // so schema callers keep importing them from here.

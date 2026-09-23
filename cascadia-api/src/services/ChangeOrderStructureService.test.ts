@@ -8,7 +8,7 @@
  * version-resolved items — the third gate. It had no tests while it lived
  * inside a route handler, because there was no seam to call.
  *
- * Run: npm run test -- src/lib/services/ChangeOrderStructureService.test.ts
+ * Run: npm run test -- src/services/ChangeOrderStructureService.test.ts
  */
 
 import {
@@ -39,13 +39,13 @@ import {
   lifecycleDefinitions,
   lifecycleInstances,
   programs,
-} from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
+} from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
-import { NotFoundError } from '@/lib/errors'
+import { takeFirst } from '@/db/take-first'
+import { NotFoundError } from '@/errors'
 
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const CHANGE_ORDER_WORKFLOW_ID = '00000000-0000-4000-8000-000000000209'
 

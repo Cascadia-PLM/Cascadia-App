@@ -13,7 +13,7 @@
  * wired: no token → preview, never a mutation; redeemed token → execution;
  * replay → fresh preview, no second mutation.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/tools/confirmation-store.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/tools/confirmation-store.test.ts
  */
 
 import {
@@ -36,10 +36,10 @@ import {
   hashConfirmationParams,
   issueConfirmationToken,
   redeemConfirmationToken,
-} from '@/lib/ai/tools/confirmation-store'
-import { createProgramHandler } from '@/lib/ai/tools/write-handlers'
-import { aiWriteConfirmations } from '@/lib/db/schema/ai'
-import { programs } from '@/lib/db/schema'
+} from '@/ai/tools/confirmation-store'
+import { createProgramHandler } from '@/ai/tools/write-handlers'
+import { aiWriteConfirmations } from '@/db/schema/ai'
+import { programs } from '@/db/schema'
 
 const TOOL = 'create_item'
 const PARAMS = { itemType: 'Part', name: 'Widget', designId: 'abc' }

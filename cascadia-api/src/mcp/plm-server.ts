@@ -4,7 +4,7 @@
 /**
  * Cascadia PLM MCP Server
  *
- * Publishes the PLM tool registry (`@/lib/ai/tools/registry`) over the
+ * Publishes the PLM tool registry (`@/ai/tools/registry`) over the
  * Model Context Protocol so external agents — Claude, IDE assistants,
  * other integrations — can search part data, walk BOMs, create ECOs, and
  * drive PLM workflows with the same tools, permission checks, and audit
@@ -18,8 +18,8 @@
 
 import { buildMcpServer } from './server-factory'
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import type { ToolContext } from '@/lib/ai/tools'
-import { toolsForSurface } from '@/lib/ai/tools/registry'
+import type { ToolContext } from '@/ai/tools'
+import { toolsForSurface } from '@/ai/tools/registry'
 
 export const PLM_SERVER_NAME = 'cascadia-plm'
 export const PLM_SERVER_VERSION = '1.0.0'

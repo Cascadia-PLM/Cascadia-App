@@ -8,7 +8,7 @@ import type {
   LifecycleDefinition,
   LifecycleType,
   WorkflowType,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import { LifecycleTypeSelector } from '@/components/lifecycles/LifecycleTypeSelector'
 import { DriverSelector } from '@/components/lifecycles/DriverSelector'
 import { LifecycleBuilder } from '@/components/lifecycles/LifecycleBuilder'
@@ -27,8 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/lifecycles/new')({
   component: NewLifecyclePage,

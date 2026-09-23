@@ -29,7 +29,7 @@
  * gates behave the same for each.
  *
  * The permission check runs before `access` and before the body is parsed
- * (`lib/api/handler.ts`), so an empty request body cannot mask a deny: a
+ * (`api/handler.ts`), so an empty request body cannot mask a deny: a
  * refused caller gets 403, not the 400 the body would have earned. The
  * ONLY-OWN leg accordingly asserts *anything but* 403 — 200, 400, 404 and 409
  * all mean the tuple let the caller through, which is the whole claim.
@@ -65,7 +65,7 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
-import { RESOURCE_TYPES } from '@cascadia/commons/lib/auth/permissions'
+import { RESOURCE_TYPES } from '@cascadia/commons/auth/permissions'
 import itemsRoutes from './items'
 import partsRoutes from './parts'
 import documentsRoutes from './documents'
@@ -80,9 +80,9 @@ import toolsRoutes from './tools'
 import softwareRoutes from './software'
 import workOrdersRoutes from './work-orders'
 import physicalPartsRoutes from './physical-parts'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
-import type { ResourceType } from '@cascadia/commons/lib/auth/permissions'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
+import type { ResourceType } from '@cascadia/commons/auth/permissions'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -90,19 +90,19 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { PhysicalPartService } from '@/lib/services/PhysicalPartService'
-import { WorkOrderService } from '@/lib/services/WorkOrderService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
-import { programMembers } from '@/lib/db/schema'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { PhysicalPartService } from '@/services/PhysicalPartService'
+import { WorkOrderService } from '@/services/WorkOrderService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { ITEM_TYPE_RESOURCES } from '@/items/item-type-resources'
+import { programMembers } from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 const ALL_VERBS = ['create', 'read', 'update', 'delete']
 

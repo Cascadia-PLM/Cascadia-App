@@ -11,7 +11,7 @@
  * "record feedstock X with certs 1.2.3; project Y consumes X; looking up
  * project Y shows 1.2.3 satisfied" — and flags what nobody certified.
  *
- * Run: npx vitest run src/lib/services/QualificationService.test.ts
+ * Run: npx vitest run src/services/QualificationService.test.ts
  */
 
 import {
@@ -32,12 +32,12 @@ import { SATISFIES_RELATIONSHIP } from './RequirementService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { ValidationError } from '@/lib/errors'
-import { itemRelationships, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { ValidationError } from '@/errors'
+import { itemRelationships, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('QualificationService', () => {
   const testDb = new TestDatabase()

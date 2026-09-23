@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useQuery } from '@tanstack/react-query'
-import type { ItemFilters } from '@/lib/query'
+import type { ItemFilters } from '@/query'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui'
-import { itemCountsQuery, lifecycleByItemTypeQuery } from '@/lib/query'
+import { itemCountsQuery, lifecycleByItemTypeQuery } from '@/query'
 
 interface LifecycleStateCardsProps {
   itemType: string

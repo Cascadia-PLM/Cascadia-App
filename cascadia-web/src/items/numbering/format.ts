@@ -15,11 +15,11 @@
 import {
   familyNumberingConfig,
   numberingSchemes,
-} from '@cascadia/commons/lib/items/numbering/schemes'
+} from '@cascadia/commons/items/numbering/schemes'
 import type {
   NumberSegment,
   SequenceScope,
-} from '@cascadia/commons/lib/items/numbering/types'
+} from '@cascadia/commons/items/numbering/types'
 
 /** Placeholder shown in every item-number input when the field is left blank. */
 export const ITEM_NUMBER_PLACEHOLDER = 'Auto-generated if blank'

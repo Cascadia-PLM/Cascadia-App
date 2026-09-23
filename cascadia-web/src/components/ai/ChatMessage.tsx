@@ -11,8 +11,8 @@ import remarkGfm from 'remark-gfm'
 import { ConfirmationCard, isConfirmationResult } from './ConfirmationCard'
 import type { ConfirmationDetails } from './ConfirmationCard'
 import { Button } from '@/components/ui/Button'
-import { toAppRelativeUrl } from '@/lib/markdown/url-transform'
-import { cn } from '@/lib/utils'
+import { toAppRelativeUrl } from '@/markdown/url-transform'
+import { cn } from '@/utils'
 
 // UI Message part types from TanStack AI
 interface TextPart {

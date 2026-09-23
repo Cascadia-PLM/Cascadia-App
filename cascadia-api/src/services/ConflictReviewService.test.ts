@@ -31,7 +31,7 @@
  * consume; it does not run detection itself, which is covered by
  * ConflictDetectionService.test.ts.
  *
- * Run: npx vitest run cascadia-api/src/lib/services/ConflictReviewService.test.ts
+ * Run: npx vitest run cascadia-api/src/services/ConflictReviewService.test.ts
  */
 
 import {
@@ -50,8 +50,8 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestChangeOrder } from '@/__tests__/fixtures/items'
-import { conflictReviews } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { conflictReviews } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 /** A field conflict on `weight`, parameterised by what the other side holds. */
 function weightConflict(theirValue: string): FieldConflict {

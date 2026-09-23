@@ -9,23 +9,20 @@ import {
   WEBHOOK_REQUEST_TIMEOUT_MS,
   WEBHOOK_RESPONSE_SNIPPET_BYTES,
   WEBHOOK_RETRY_DELAYS_MS,
-} from '@cascadia/commons/lib/webhooks/config'
+} from '@cascadia/commons/webhooks/config'
 import {
   WEBHOOK_EVENT_ID_HEADER,
   WEBHOOK_EVENT_TYPE_HEADER,
   WEBHOOK_SIGNATURE_HEADER,
   signWebhookBody,
 } from './signing'
-import type { DbInstance } from '@/lib/db'
-import type {
-  WebhookDeliveryRow,
-  WebhookSubscriptionRow,
-} from '@/lib/db/schema'
-import { webhookDeliveries, webhookSubscriptions } from '@/lib/db/schema'
-import { decryptSecret } from '@/lib/crypto/encryption'
-import { SecretDecryptionError } from '@/lib/errors'
-import { assertPublicHost } from '@/lib/net/egress-guard'
-import { webhookLogger } from '@/lib/logging/logger'
+import type { DbInstance } from '@/db'
+import type { WebhookDeliveryRow, WebhookSubscriptionRow } from '@/db/schema'
+import { webhookDeliveries, webhookSubscriptions } from '@/db/schema'
+import { decryptSecret } from '@/crypto/encryption'
+import { SecretDecryptionError } from '@/errors'
+import { assertPublicHost } from '@/net/egress-guard'
+import { webhookLogger } from '@/logging/logger'
 
 /**
  * Sending one subscription's pending deliveries, in order.

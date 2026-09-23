@@ -8,18 +8,18 @@
  * and audit logging to AI tool handlers.
  */
 
-import { hasPermission } from '@cascadia/commons/lib/auth/permissions'
+import { hasPermission } from '@cascadia/commons/auth/permissions'
 import type {
   PermissionAction,
   ResourceType,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 
-import { permissionService } from '@/lib/auth/permission-service'
-import { intersectPermissions } from '@/lib/auth/api-key-utils'
-import { db } from '@/lib/db'
-import { aiUsageLogs } from '@/lib/db/schema/ai'
-import { safeErrorMessage } from '@/lib/errors/pg'
-import { aiLogger } from '@/lib/logging/logger'
+import { permissionService } from '@/auth/permission-service'
+import { intersectPermissions } from '@/auth/api-key-utils'
+import { db } from '@/db'
+import { aiUsageLogs } from '@/db/schema/ai'
+import { safeErrorMessage } from '@/errors/pg'
+import { aiLogger } from '@/logging/logger'
 
 /**
  * Context passed to each tool handler for permission checking and audit logging
@@ -176,7 +176,7 @@ export function withPermissionAndAudit<TInput, TOutput>(
           model: context.model || null,
           // Token counts are not a per-tool quantity: they live on the
           // stream's done chunks, which this wrapper never sees. The chat
-          // route records them per request via lib/ai/usage.ts.
+          // route records them per request via ai/usage.ts.
         })
       } catch (logError) {
         // Don't fail the tool execution if logging fails

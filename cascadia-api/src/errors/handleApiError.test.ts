@@ -19,13 +19,13 @@
  * added to stop wrapped violations being 500s (pg.test.ts pins it against a
  * real 23505 from the real driver), and narrowing it must not undo that.
  *
- * Run: npx vitest run cascadia-api/src/lib/errors/handleApiError.test.ts
+ * Run: npx vitest run cascadia-api/src/errors/handleApiError.test.ts
  */
 
 import { describe, expect, it } from 'vitest'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import { handleApiError } from './handleApiError'
-import { errorResponseSchema } from '@/lib/api/openapi-helpers'
+import { errorResponseSchema } from '@/api/openapi-helpers'
 
 /** An errno error, the way node's fs and undici each attach one. */
 function errnoError(message: string, code: string): Error {

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from './Select'
 import { Popover, PopoverContent, PopoverTrigger } from './Popover'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 // Filter types
 export type FilterType = 'text' | 'select' | 'multiSelect' | 'range'

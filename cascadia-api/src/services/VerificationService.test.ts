@@ -32,22 +32,22 @@ import {
   VerificationService,
 } from './VerificationService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
-import type { TestCase } from '@cascadia/commons/lib/items/types/testcase'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { Requirement } from '@cascadia/commons/items/types/requirement'
+import type { TestCase } from '@cascadia/commons/items/types/testcase'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { takeFirst } from '@/lib/db/take-first'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { ItemService } from '@/lib/items/services/ItemService'
+import { takeFirst } from '@/db/take-first'
+import { NotFoundError, ValidationError } from '@/errors'
+import { ItemService } from '@/items/services/ItemService'
 import {
   itemRelationships,
   programMembers,
   programs,
   testCases,
   testExecutions,
-} from '@/lib/db/schema'
-import '@/lib/items/registerItemTypes.server'
+} from '@/db/schema'
+import '@/items/registerItemTypes.server'
 
 describe('VerificationService', () => {
   const testDb = new TestDatabase()

@@ -56,24 +56,24 @@ import reportsRoutes from './reports'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { WorkOrderService } from '@/lib/services/WorkOrderService'
-import { PhysicalPartService } from '@/lib/services/PhysicalPartService'
-import { ReportService } from '@/lib/reports/ReportService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { PermissionDeniedError } from '@/lib/errors'
-import { issues, workOrders } from '@/lib/db/schema'
+import { ItemService } from '@/items/services/ItemService'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { WorkOrderService } from '@/services/WorkOrderService'
+import { PhysicalPartService } from '@/services/PhysicalPartService'
+import { ReportService } from '@/reports/ReportService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { PermissionDeniedError } from '@/errors'
+import { issues, workOrders } from '@/db/schema'
 import {
   lifecycleDefinitions,
   lifecycleInstances,
-} from '@/lib/db/schema/lifecycles'
+} from '@/db/schema/lifecycles'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('program isolation — items, designs, change orders', () => {
   const testDb = new TestDatabase()
@@ -2147,8 +2147,8 @@ describe('program isolation — items, designs, change orders', () => {
     // scoped rather than eternal — right for an install where tasks are
     // instance-wide chores; revisiting it is a product decision about whether
     // tasks are program-private data, not a bug fix. The reasoning lives on
-    // `accessScopeCondition` in `@/lib/db/filters` and on `requireItemAccess`
-    // in `@/lib/auth/access`; these two tests are what stop either moving by
+    // `accessScopeCondition` in `@/db/filters` and on `requireItemAccess`
+    // in `@/auth/access`; these two tests are what stop either moving by
     // accident.
     //
     // Issue used to sit in this list, on the premise that no form populated

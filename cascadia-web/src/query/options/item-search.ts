@@ -3,7 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 
 export interface ItemSearchParams {
   /** Item type to search within, e.g. `Part`. Required by the endpoint. */

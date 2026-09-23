@@ -24,7 +24,7 @@
  * deleting an ECO that a commit does name keeps the commit and nulls the
  * pointer, which is only correct if the graph readers tolerate the null.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/versioning-fks.test.ts
+ * Run: npx vitest run cascadia-api/src/db/versioning-fks.test.ts
  */
 
 import {
@@ -38,14 +38,14 @@ import {
 } from 'vitest'
 import { and, eq, isNotNull, notInArray, sql } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { BranchService } from '@/lib/services/BranchService'
-import { CommitGraphService } from '@/lib/services/CommitGraphService'
-import { ChangeOrderBranchHistoryService as ChangeOrderBranchHistoryService } from '@/lib/services/ChangeOrderBranchHistoryService'
-import { ItemService } from '@/lib/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { BranchService } from '@/services/BranchService'
+import { CommitGraphService } from '@/services/CommitGraphService'
+import { ChangeOrderBranchHistoryService as ChangeOrderBranchHistoryService } from '@/services/ChangeOrderBranchHistoryService'
+import { ItemService } from '@/items/services/ItemService'
 import {
   branchItems,
   branches,
@@ -55,10 +55,10 @@ import {
   items,
   programs,
   tags,
-} from '@/lib/db/schema'
-import { asPostgresError } from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
-import '@/lib/items/registerItemTypes.server'
+} from '@/db/schema'
+import { asPostgresError } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
+import '@/items/registerItemTypes.server'
 
 const FK_VIOLATION = '23503'
 

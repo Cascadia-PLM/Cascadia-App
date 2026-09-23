@@ -5,16 +5,16 @@ import { and, eq } from 'drizzle-orm'
 import {
   matchNodeInPath,
   toMatchCandidate,
-} from '@cascadia/commons/lib/vault/cad-nodes'
+} from '@cascadia/commons/vault/cad-nodes'
 import type {
   CadModelNode,
   CadModelNodeCandidate,
   MatchCandidate,
-} from '@cascadia/commons/lib/vault/cad-nodes'
-import { db } from '@/lib/db'
-import { cadModelNodeLinks, items, vaultFiles } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { ItemRelationshipService } from '@/lib/items/services/ItemRelationshipService'
+} from '@cascadia/commons/vault/cad-nodes'
+import { db } from '@/db'
+import { cadModelNodeLinks, items, vaultFiles } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { ItemRelationshipService } from '@/items/services/ItemRelationshipService'
 
 /**
  * How deep into the BOM a match will look for the part a model node names.

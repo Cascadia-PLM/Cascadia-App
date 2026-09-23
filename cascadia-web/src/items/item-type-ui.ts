@@ -26,7 +26,7 @@ import {
   TestTube2,
   Wrench,
 } from 'lucide-react'
-import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/items/item-type-definitions'
 import type { LucideIcon } from 'lucide-react'
 
 /**
@@ -98,7 +98,7 @@ export const ITEM_TYPE_OPTIONS: Array<{ label: string; value: string }> =
   }))
 
 // Lifecycle-state filter options are not built here. They come from the
-// lifecycle definitions (`useItemStateOptions` in `@/lib/hooks`), not from
+// lifecycle definitions (`useItemStateOptions` in `@/hooks`), not from
 // the code-defined state lists on the item types, which are configuration's
 // stale shadow: they offered states no item could hold and missed the ones
 // it could.

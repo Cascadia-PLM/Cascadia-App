@@ -6,10 +6,10 @@ import {
   RELATIONSHIP_CONSUMES,
   RELATIONSHIP_PRODUCES,
 } from './WorkOrderMaterialService'
-import { db } from '@/lib/db'
-import { physicalPartAccessScopeCondition } from '@/lib/db/filters'
-import { itemRelationships, items, physicalParts } from '@/lib/db/schema'
-import { NotFoundError } from '@/lib/errors'
+import { db } from '@/db'
+import { physicalPartAccessScopeCondition } from '@/db/filters'
+import { itemRelationships, items, physicalParts } from '@/db/schema'
+import { NotFoundError } from '@/errors'
 
 /**
  * Build genealogy, derived — never stored — from Consumes/Produces edges

@@ -4,8 +4,8 @@
 import { useMemo, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { AlertTriangle, GitBranch, Loader2, Lock, Plus } from 'lucide-react'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
-import type { CheckoutStatus } from '@cascadia/commons/lib/services/types/checkout'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
+import type { CheckoutStatus } from '@cascadia/commons/services/types/checkout'
 import {
   Badge,
   Button,
@@ -25,12 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { CreateWorkspaceDialog } from '@/components/workspaces/CreateWorkspaceDialog'
-import { useInvalidateResources } from '@/lib/query'
-import { designBranchesQuery } from '@/lib/query/options/designs'
-import { itemCheckoutQuery } from '@/lib/query/options/checkout'
+import { useInvalidateResources } from '@/query'
+import { designBranchesQuery } from '@/query/options/designs'
+import { itemCheckoutQuery } from '@/query/options/checkout'
 
 interface Branch {
   id: string

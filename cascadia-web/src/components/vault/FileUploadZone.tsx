@@ -5,12 +5,12 @@ import { useRef, useState } from 'react'
 import { FileIcon, ImageIcon, Upload, X } from 'lucide-react'
 import type { ChangeEvent, DragEvent } from 'react'
 import { Button } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { apiErrorFromResponse } from '@/lib/api/client'
+import { cn } from '@/utils'
+import { apiErrorFromResponse } from '@/api/client'
 
 /**
  * Image types accepted as an item thumbnail. Mirrors the server-side allowlist
- * in `src/lib/vault/utils/file-utils.ts` (SVG excluded - it is scriptable).
+ * in `src/vault/utils/file-utils.ts` (SVG excluded - it is scriptable).
  */
 const THUMBNAILABLE_MIME_TYPES = [
   'image/png',

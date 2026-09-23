@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import type { DataGridColumn } from '@/components/ui/DataGrid'
-import type { DesignItem, GridParams } from '@/lib/query'
-import { useServerDataGrid } from '@/lib/hooks/useServerDataGrid'
-import { designItemsGridQuery } from '@/lib/query'
+import type { DesignItem, GridParams } from '@/query'
+import { useServerDataGrid } from '@/hooks/useServerDataGrid'
+import { designItemsGridQuery } from '@/query'
 import { Badge } from '@/components/ui'
 import { DataGrid } from '@/components/ui/DataGrid'
 import { StateBadge } from '@/components/items/StateBadge'
 import { ItemLink } from '@/components/items/ItemLink'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 
 interface LibraryItemsTabProps {
   designId: string

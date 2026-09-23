@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { UpstreamChangeItem } from '@/lib/db/schema'
+import type { UpstreamChangeItem } from '@/db/schema'
 
 /**
  * Lets an optional module react to an ECO release without core knowing the

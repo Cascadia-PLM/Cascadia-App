@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { TestPlan } from '@cascadia/commons/lib/items/types/testplan'
+import type { TestPlan } from '@cascadia/commons/items/types/testplan'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Button, DataGrid } from '@/components/ui'
 import {
@@ -19,7 +19,7 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface TestPlanTableProps {
   testPlans: Array<TestPlan>

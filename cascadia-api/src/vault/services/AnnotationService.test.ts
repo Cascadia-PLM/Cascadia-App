@@ -9,7 +9,7 @@
  * only read, and who may revise someone else's words — because a hole in it
  * would let anyone alter a released drawing's markup on main.
  *
- * Run: npm run test -- src/lib/vault/services/AnnotationService.test.ts
+ * Run: npm run test -- src/vault/services/AnnotationService.test.ts
  */
 
 import {
@@ -25,19 +25,19 @@ import { AnnotationService } from './AnnotationService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { CheckoutService } from '@/lib/services/CheckoutService'
-import { BranchService } from '@/lib/services/BranchService'
-import { itemVersions, programs, vaultFiles } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { CheckoutService } from '@/services/CheckoutService'
+import { BranchService } from '@/services/BranchService'
+import { itemVersions, programs, vaultFiles } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 import {
   ItemCheckoutRequiredError,
   PermissionDeniedError,
   ResourceLockedError,
-} from '@/lib/errors'
+} from '@/errors'
 
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('AnnotationService', () => {
   const testDb = new TestDatabase()

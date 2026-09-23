@@ -25,9 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { editableChangeOrdersQuery } from '@/lib/query'
+import { apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { editableChangeOrdersQuery } from '@/query'
 
 interface MergeToChangeOrderDialogProps {
   open: boolean

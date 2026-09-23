@@ -4,7 +4,7 @@
 /**
  * Side-effect module: importing it puts every core event definition in the
  * `EventTypeRegistry` (definitions self-register via `defineDomainEvent`).
- * Imported by the events barrel, so any consumer of `@/lib/events` sees the
+ * Imported by the events barrel, so any consumer of `@/events` sees the
  * full core catalog. Module-owned definitions register from their
  * composition root instead — never from here.
  */

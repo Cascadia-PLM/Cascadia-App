@@ -13,7 +13,7 @@ import {
   ValidationError,
 } from './index'
 import type { PostgresDriverError } from './pg'
-import { apiLogger } from '@/lib/logging/logger'
+import { apiLogger } from '@/logging/logger'
 
 /**
  * Generate or extract a request ID from a request.
@@ -26,7 +26,7 @@ export function getRequestId(request: Request): string {
  * Handle any error in an API route and return a proper Response.
  * This is the main error handler that should be used in all API routes.
  *
- * Note: API routes wrapped with `apiHandler()` (see `src/lib/api/handler.ts`)
+ * Note: API routes wrapped with `apiHandler()` (see `src/api/handler.ts`)
  * invoke this automatically — direct calls are only needed for handlers that
  * bypass that wrapper.
  */

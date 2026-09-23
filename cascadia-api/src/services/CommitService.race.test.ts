@@ -25,7 +25,7 @@
  * commit for real through `ConcurrentTestDatabase`, and the harness cleans up
  * after itself.
  *
- * Run: npx vitest run cascadia-api/src/lib/services/CommitService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/services/CommitService.race.test.ts
  */
 
 import {
@@ -40,10 +40,10 @@ import {
 import { eq } from 'drizzle-orm'
 import { CommitService } from './CommitService'
 import { BranchService } from './BranchService'
-import type { TransactionClient } from '@/lib/db'
+import type { TransactionClient } from '@/db'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { branches, commits } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { branches, commits } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 describe('CommitService — commits on one branch under real concurrency', () => {
   const concurrent = new ConcurrentTestDatabase()

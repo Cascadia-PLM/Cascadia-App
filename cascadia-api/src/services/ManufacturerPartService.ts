@@ -3,11 +3,11 @@
 
 import { and, eq, ilike, ne, or } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '@/lib/db'
-import { manufacturerParts, partManufacturerParts } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { likeContains } from '@/lib/db/like-pattern'
-import { takeFirst } from '@/lib/db/take-first'
+import { db } from '@/db'
+import { manufacturerParts, partManufacturerParts } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { likeContains } from '@/db/like-pattern'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Approved Manufacturer List (AML) service.

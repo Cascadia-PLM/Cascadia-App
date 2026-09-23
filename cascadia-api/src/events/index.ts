@@ -9,7 +9,7 @@
  *   committed. `seq` is assigned at commit by a trigger
  *   (`ensureDomainEventSequencing`), so seq order is commit order.
  * - Consumers are `consumed` extensions (`defineExtension` in
- *   `lib/extensions`), each reading the log through its own cursor:
+ *   `extensions`), each reading the log through its own cursor:
  *   at-least-once, in order, Postgres only.
  * - The RabbitMQ relay is one consumer among several — the webhook
  *   dispatcher, core's release follow-ups and module connectors are others.
@@ -44,7 +44,7 @@ export {
   sequenceUnsequencedEvents,
 } from './sequencing'
 // Running one consumer. Which consumers exist, and the polling that drives
-// them, belong to `lib/extensions` — `defineExtension` with
+// them, belong to `extensions` — `defineExtension` with
 // `phase: 'consumed'` is the only way to register one.
 export {
   DEFAULT_ABANDON_AFTER_DAYS,

@@ -7,7 +7,7 @@
  * Integration tests for the BranchService class.
  * Tests cover branch creation, locking, archiving, and protection status.
  *
- * Run: npm run test -- src/lib/services/BranchService.test.ts
+ * Run: npm run test -- src/services/BranchService.test.ts
  */
 
 import {
@@ -26,21 +26,17 @@ import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import {
-  NotFoundError,
-  PermissionDeniedError,
-  ValidationError,
-} from '@/lib/errors'
+import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
 import {
   branchItems,
   changeOrderAffectedItems,
   commits,
   programs,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('BranchService', () => {
   const testDb = new TestDatabase()

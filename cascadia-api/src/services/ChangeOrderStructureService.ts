@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
-import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
+import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { NotFoundError } from '../errors'
 import { db } from '../db'
@@ -16,12 +16,12 @@ import { designs } from '../db/schema/designs'
 import { CrossDesignReferenceService } from './CrossDesignReferenceService'
 import { DesignService } from './DesignService'
 import { VersionResolver } from './VersionResolver'
-import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
+import type { OptionCondition } from '@cascadia/commons/types/variants'
 import type { VersionContext } from './VersionResolver'
-import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
+import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/types/bom'
 
 // The tree this service builds is the same shape the design-structure endpoint
-// builds and the BOM components render, so it is declared once in lib/types.
+// builds and the BOM components render, so it is declared once in types.
 export type { BOMTreeNode, OrphanItem }
 
 export interface ChangeOrderDesignStructure {

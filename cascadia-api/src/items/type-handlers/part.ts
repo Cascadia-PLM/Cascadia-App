@@ -3,8 +3,8 @@
 
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
-import { db } from '@/lib/db'
-import { parts } from '@/lib/db/schema'
+import { db } from '@/db'
+import { parts } from '@/db/schema'
 
 /**
  * Empty-or-absent to NULL, for a column whose value can legitimately be zero.

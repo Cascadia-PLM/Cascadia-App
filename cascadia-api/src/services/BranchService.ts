@@ -3,7 +3,7 @@
 
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db, withTx } from '../db'
 import {
   BRANCH_ARCHIVED,
@@ -27,8 +27,8 @@ import {
 import { DesignService } from './DesignService'
 import { releaseBranchLocks } from './checkout-locks'
 import type { TransactionClient } from '../db'
-import type { BranchType } from '@cascadia/commons/lib/versioning/branch-types'
-import { takeFirst } from '@/lib/db/take-first'
+import type { BranchType } from '@cascadia/commons/versioning/branch-types'
+import { takeFirst } from '@/db/take-first'
 
 // Zod schemas for validation
 export const branchCreateSchema = z.object({

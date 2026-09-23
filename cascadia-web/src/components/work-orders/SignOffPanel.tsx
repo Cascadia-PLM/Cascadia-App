@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { CheckCircle, Loader2, RefreshCw, XCircle } from 'lucide-react'
-import type { InstructionExecution } from '@cascadia/commons/lib/items/types/work-order'
+import type { InstructionExecution } from '@cascadia/commons/items/types/work-order'
 import { Button, Textarea } from '@/components/ui'
 
 interface SignOffPanelProps {

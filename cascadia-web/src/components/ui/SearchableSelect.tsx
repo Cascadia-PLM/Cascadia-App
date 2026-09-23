@@ -6,7 +6,7 @@ import { Check, ChevronsUpDown } from 'lucide-react'
 import { Button } from './Button'
 import { Input } from './Input'
 import { Popover, PopoverContent, PopoverTrigger } from './Popover'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 export interface SearchableSelectOption {
   value: string

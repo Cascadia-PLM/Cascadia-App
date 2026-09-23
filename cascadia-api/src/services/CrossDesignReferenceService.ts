@@ -7,7 +7,7 @@ import { designCrossReferences } from '../db/schema/crossReferences'
 import { items } from '../db/schema/items'
 import { designs } from '../db/schema/designs'
 import { NotFoundError, ValidationError } from '../errors'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Transaction client type for database operations

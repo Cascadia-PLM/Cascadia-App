@@ -47,9 +47,9 @@ import {
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sql } from 'drizzle-orm'
-import { db } from '@cascadia/api/lib/db'
-import { clearDesignationOfNestedParts } from '@cascadia/api/lib/items/design-structure-designation'
-import { generateStoragePath } from '@cascadia/api/lib/vault/utils/file-utils'
+import { db } from '@cascadia/api/db'
+import { clearDesignationOfNestedParts } from '@cascadia/api/items/design-structure-designation'
+import { generateStoragePath } from '@cascadia/api/vault/utils/file-utils'
 import { DemoDataMissing } from './demo-seed-types.ts'
 import type { DatasetResult } from './demo-seed-types.ts'
 

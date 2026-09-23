@@ -23,7 +23,7 @@
  * must not be locked out of asking the assistant a question.
  */
 
-import { RateLimitedError } from '@/lib/errors'
+import { RateLimitedError } from '@/errors'
 
 /** Which budget a stream is counted against. */
 export type StreamPool = 'chat' | 'design'

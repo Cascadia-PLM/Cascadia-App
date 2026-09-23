@@ -26,11 +26,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vitest'
 import { VersionContextSelector } from './VersionContextSelector'
 import type { ReactNode } from 'react'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
-import type * as ApiClient from '@/lib/api/client'
+import type { VersionContext } from '@/hooks/useVersionContext'
+import type * as ApiClient from '@/api/client'
 
 const apiFetch = vi.hoisted(() => vi.fn())
-vi.mock('@/lib/api/client', async (importOriginal) => ({
+vi.mock('@/api/client', async (importOriginal) => ({
   ...(await importOriginal<typeof ApiClient>()),
   apiFetch,
 }))

@@ -23,13 +23,13 @@ import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
 import { LifecycleService } from './LifecycleService'
 import { WorkInstructionInheritanceService } from './WorkInstructionInheritanceService'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { takeFirst } from '@/lib/db/take-first'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { takeFirst } from '@/db/take-first'
+import { NotFoundError, ValidationError } from '@/errors'
 import {
   domainEvents,
   itemRelationships,
@@ -38,10 +38,10 @@ import {
   programs,
   upstreamChanges,
   workInstructionPartAttachments,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 // Register item types so ItemService.create knows about Part
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('MbomService', () => {
   const testDb = new TestDatabase()

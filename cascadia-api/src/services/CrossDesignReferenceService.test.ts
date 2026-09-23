@@ -32,7 +32,7 @@
  * `ChangeOrderMergeService.race.test.ts` owns the concurrency coverage for the
  * transaction this runs inside; repeating it here would buy nothing.
  *
- * Run: npx vitest run cascadia-api/src/lib/services/CrossDesignReferenceService.test.ts
+ * Run: npx vitest run cascadia-api/src/services/CrossDesignReferenceService.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -57,9 +57,9 @@ import {
   designs,
   items,
   programs,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+} from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { NotFoundError, ValidationError } from '@/errors'
 
 /**
  * A resolved view row reduced to everything a release is *not* allowed to

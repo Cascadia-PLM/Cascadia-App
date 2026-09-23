@@ -49,7 +49,7 @@ function isJsonValue(value: unknown): boolean {
       // without complaining - a Date into a string through its `toJSON`, a
       // Map into `{}` - so the column ends up holding something nobody wrote.
       // A caller that means to store a timestamp should format it (see
-      // `toAttributeValue` in lib/import/mapper.ts).
+      // `toAttributeValue` in import/mapper.ts).
       const proto: unknown = Object.getPrototypeOf(value)
       if (proto !== Object.prototype && proto !== null) return false
       return Object.values(value).every(isJsonValue)

@@ -27,8 +27,8 @@
  */
 
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
-import type * as schema from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import type * as schema from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 import {
   changeOrders,
   documents,
@@ -37,7 +37,7 @@ import {
   parts,
   requirements,
   tasks,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 
 type DbSchema = typeof schema
 type TestDbInstance = PostgresJsDatabase<DbSchema>

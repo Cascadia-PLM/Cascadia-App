@@ -20,7 +20,7 @@ import { bomStructureOf } from './item-structure'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestPart } from '@/__tests__/fixtures/items'
-import { itemRelationships } from '@/lib/db/schema'
+import { itemRelationships } from '@/db/schema'
 
 describe('bomStructureOf', () => {
   const testDb = new TestDatabase()

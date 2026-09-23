@@ -4,15 +4,15 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
 import type { ChangeOrderDetailTab } from '@/components/change-orders/ChangeOrderDetail'
 import {
   CHANGE_ORDER_DETAIL_TABS,
   ChangeOrderDetail,
 } from '@/components/change-orders/ChangeOrderDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { entityQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { entityQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 const changeOrderDetailSearchSchema = z.object({
   tab: z.enum(CHANGE_ORDER_DETAIL_TABS).optional().default('overview'),

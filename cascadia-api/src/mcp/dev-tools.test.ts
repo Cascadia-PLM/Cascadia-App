@@ -9,7 +9,7 @@
  * that REPO_ROOT is the checkout, and that the traversal guard built on it
  * still refuses to read outside the doc tree.
  *
- * Run: npx vitest run cascadia-api/src/lib/mcp/dev-tools.test.ts
+ * Run: npx vitest run cascadia-api/src/mcp/dev-tools.test.ts
  */
 
 import { readFileSync } from 'node:fs'

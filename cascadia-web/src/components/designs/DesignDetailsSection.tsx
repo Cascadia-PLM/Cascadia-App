@@ -4,11 +4,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Tags } from 'lucide-react'
-import type { Design } from '@cascadia/commons/lib/types/design'
-import type { Program } from '@cascadia/commons/lib/types/program'
-import { apiFetch } from '@/lib/api/client'
-import { designFamiliesQuery } from '@/lib/query'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import type { Design } from '@cascadia/commons/types/design'
+import type { Program } from '@cascadia/commons/types/program'
+import { apiFetch } from '@/api/client'
+import { designFamiliesQuery } from '@/query'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   Badge,
   Card,

@@ -8,14 +8,14 @@ import type {
   AffectedItem,
   ChangeActionOptions,
   ChangeOrder,
-} from '@cascadia/commons/lib/items/types/change-order'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
+} from '@cascadia/commons/items/types/change-order'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
 import type {
   ApprovalsByState,
   CanApproveResult,
   EffectiveLifecycleStructure,
-} from '@cascadia/commons/lib/lifecycles/types'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/lifecycles/types'
+import { apiFetch } from '@/api/client'
 
 /**
  * One change order.

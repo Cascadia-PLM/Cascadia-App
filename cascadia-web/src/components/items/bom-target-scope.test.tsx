@@ -26,7 +26,7 @@ import React from 'react'
 import { useRelationshipTargets } from './bom-target-scope'
 
 const apiFetch = vi.hoisted(() => vi.fn())
-vi.mock('@/lib/api/client', () => ({ apiFetch }))
+vi.mock('@/api/client', () => ({ apiFetch }))
 
 const SOURCE_ITEM_ID = 'item-1'
 const SOURCE_MASTER_ID = 'master-1'

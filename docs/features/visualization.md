@@ -121,7 +121,7 @@ Program → Designs → Items (Parts, Requirements, Documents, …)
 - `GET /api/v1/designs/:id/graph?direction=all|up|down&itemTypes=A,B` -- design node, parent program (up), top-level items (down). Requires design access.
 - Item nodes expand via the existing `GET /api/v1/items/:id/graph`.
 
-Program and design nodes use prefixed IDs (`program:<uuid>`, `design:<uuid>`); item nodes keep raw item IDs so responses from the scope endpoints and the item graph endpoint merge into one client-side cache. Shared node/edge builders live in `cascadia-api/src/lib/api/scope-graph.ts`.
+Program and design nodes use prefixed IDs (`program:<uuid>`, `design:<uuid>`); item nodes keep raw item IDs so responses from the scope endpoints and the item graph endpoint merge into one client-side cache. Shared node/edge builders live in `cascadia-api/src/api/scope-graph.ts`.
 
 ### Where It Appears
 

@@ -3,10 +3,10 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { FinalKind } from '@cascadia/commons/lib/lifecycles/types'
+import type { FinalKind } from '@cascadia/commons/lifecycles/types'
 import { Button } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { itemTransitionsQuery } from '@/lib/query'
+import { apiFetch } from '@/api/client'
+import { itemTransitionsQuery } from '@/query'
 
 export interface FreeTransitionOption {
   id: string

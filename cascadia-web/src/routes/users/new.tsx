@@ -14,8 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiErrorFromResponse } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiErrorFromResponse } from '@/api/client'
 
 export const Route = createFileRoute('/users/new')({
   component: NewUserPage,

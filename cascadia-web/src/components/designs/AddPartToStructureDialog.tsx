@@ -7,7 +7,7 @@ import { ArrowLeft, ExternalLink, Search } from 'lucide-react'
 import { AddPartChoice } from './AddPartChoice'
 import { CreatePartInDesignForm } from './CreatePartInDesignForm'
 import type { AddPartStep } from './AddPartChoice'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import {
   Dialog,
   DialogContent,
@@ -27,10 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
-import { entityQuery, useResourceMutation } from '@/lib/query'
-import { cn } from '@/lib/utils'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { entityQuery, useResourceMutation } from '@/query'
+import { cn } from '@/utils'
 import { StateBadge } from '@/components/items/StateBadge'
 
 type DesignScope = 'current' | 'library'

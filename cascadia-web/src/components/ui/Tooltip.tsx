@@ -4,7 +4,7 @@
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { forwardRef } from 'react'
 import type { ComponentPropsWithoutRef, ElementRef } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 /**
  * TooltipProvider wraps your app to enable tooltips.

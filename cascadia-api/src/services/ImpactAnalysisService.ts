@@ -26,7 +26,7 @@ import type {
   ImpactDirection,
   ImpactSeverity,
   ImpactedItem,
-} from '@cascadia/commons/lib/services/types/impact-analysis'
+} from '@cascadia/commons/services/types/impact-analysis'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
 export type {
@@ -37,7 +37,7 @@ export type {
   ImpactedItem,
   ImpactAnalysisRequest,
   ImpactAnalysisResult,
-} from '@cascadia/commons/lib/services/types/impact-analysis'
+} from '@cascadia/commons/services/types/impact-analysis'
 
 // ============================================================================
 // Zod Schema for API validation

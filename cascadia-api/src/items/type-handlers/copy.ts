@@ -4,8 +4,8 @@
 import { eq } from 'drizzle-orm'
 import { getTypeHandler } from './index'
 import './init'
-import type { TransactionClient } from '@/lib/db'
-import { db } from '@/lib/db'
+import type { TransactionClient } from '@/db'
+import { db } from '@/db'
 
 /**
  * Columns never carried from one item version to the next.

@@ -31,7 +31,7 @@ import type {
   CatalogMountingFeature,
   CatalogStockSize,
   CatalogSupplier,
-} from '@cascadia/commons/lib/services/types/catalog'
+} from '@cascadia/commons/services/types/catalog'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
 export type {
@@ -40,7 +40,7 @@ export type {
   CatalogElectrical,
   CatalogSupplier,
   CatalogStockSize,
-} from '@cascadia/commons/lib/services/types/catalog'
+} from '@cascadia/commons/services/types/catalog'
 
 // ============================================================================
 // Categories Table (self-referencing hierarchy)

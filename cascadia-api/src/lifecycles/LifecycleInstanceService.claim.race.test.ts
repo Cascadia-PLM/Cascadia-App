@@ -27,18 +27,18 @@
  * cascade from their item, but the definition outlives it and its name is
  * unique, so leaving one behind would poison the next run.
  *
- * Run: npx vitest run cascadia-api/src/lib/lifecycles/LifecycleInstanceService.claim.race.test.ts
+ * Run: npx vitest run cascadia-api/src/lifecycles/LifecycleInstanceService.claim.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { eq, inArray } from 'drizzle-orm'
 import { LifecycleDefinitionService } from './LifecycleDefinitionService'
 import { LifecycleInstanceService } from './LifecycleInstanceService'
-import type { CreateLifecycleInput } from '@cascadia/commons/lib/lifecycles/types'
+import type { CreateLifecycleInput } from '@cascadia/commons/lifecycles/types'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { insertTestPart } from '@/__tests__/fixtures/items'
-import { lifecycleDefinitions, lifecycleInstances } from '@/lib/db/schema'
+import { lifecycleDefinitions, lifecycleInstances } from '@/db/schema'
 
 /**
  * Five contenders, not two. Two callers can miss each other by accident — the

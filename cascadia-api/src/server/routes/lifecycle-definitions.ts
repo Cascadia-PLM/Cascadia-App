@@ -4,17 +4,17 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import { LifecycleDefinitionService } from '@/lib/lifecycles/LifecycleDefinitionService'
-import { ApprovalService } from '@/lib/lifecycles/ApprovalService'
-import { NotFoundError } from '@/lib/errors'
-import { apiHandler, created, parseQuery } from '@/lib/api/handler'
+import { LifecycleDefinitionService } from '@/lifecycles/LifecycleDefinitionService'
+import { ApprovalService } from '@/lifecycles/ApprovalService'
+import { NotFoundError } from '@/errors'
+import { apiHandler, created, parseQuery } from '@/api/handler'
 import {
   stateApproverInputSchema,
   stateApproverPatchSchema,
   stateApproversReplaceSchema,
   workflowDefinitionCreateSchema,
   workflowDefinitionUpdateSchema,
-} from '@/lib/api/schemas'
+} from '@/api/schemas'
 
 /**
  * The lifecycle-definition routes: the definitions, their state approvers,

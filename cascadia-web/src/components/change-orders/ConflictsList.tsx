@@ -26,8 +26,8 @@ import type {
 import type {
   ConflictDetectionResult,
   FieldConflict,
-} from '@cascadia/commons/lib/services/types/conflicts'
-import type { EnrichedItemConflict } from '@cascadia/commons/lib/services/types/conflict-review'
+} from '@cascadia/commons/services/types/conflicts'
+import type { EnrichedItemConflict } from '@cascadia/commons/services/types/conflict-review'
 import {
   Badge,
   Button,
@@ -36,9 +36,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query/hooks'
-import { changeOrderConflictsQuery } from '@/lib/query/options/change-orders'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query/hooks'
+import { changeOrderConflictsQuery } from '@/query/options/change-orders'
 
 interface EnrichedConflictDetectionResult extends Omit<
   ConflictDetectionResult,

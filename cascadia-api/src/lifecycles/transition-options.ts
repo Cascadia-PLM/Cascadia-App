@@ -7,7 +7,7 @@
  * database transaction and is typed by the transaction client.
  */
 
-import type { TransactionClient } from '@/lib/db'
+import type { TransactionClient } from '@/db'
 
 export interface TransitionExecutionOptions {
   /**

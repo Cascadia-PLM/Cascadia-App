@@ -2,11 +2,11 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm'
-import { changeActionSchema } from '@cascadia/commons/lib/items/types/change-order'
+import { changeActionSchema } from '@cascadia/commons/items/types/change-order'
 import {
   BRANCH_TYPES,
   TAG_TYPES,
-} from '@cascadia/commons/lib/versioning/branch-types'
+} from '@cascadia/commons/versioning/branch-types'
 import { db } from '../db'
 import { notWorkingRevision } from '../db/filters'
 import { withSerializableRetry } from '../db/retry'
@@ -51,16 +51,16 @@ import { releaseBranchLocks } from './checkout-locks'
 import type { DesignReleasedPayload } from '../events'
 import type { TransactionClient } from '../db'
 import type { ResolvedActionStates } from './LifecycleService'
-import type { RevisionScheme } from '@cascadia/commons/lib/types/lifecycle'
+import type { RevisionScheme } from '@cascadia/commons/types/lifecycle'
 import type { UpstreamChangeItem, commits } from '../db/schema'
 import type {
   ChangeAction,
   ChangeOrder,
-} from '@cascadia/commons/lib/items/types/change-order'
-import type { MergeConflict } from '@cascadia/commons/lib/services/types/conflicts'
-import { serviceLogger } from '@/lib/logging/logger'
-import { takeFirst } from '@/lib/db/take-first'
-import { parseBaselineReleaseRevision } from '@/lib/import/baseline-revision'
+} from '@cascadia/commons/items/types/change-order'
+import type { MergeConflict } from '@cascadia/commons/services/types/conflicts'
+import { serviceLogger } from '@/logging/logger'
+import { takeFirst } from '@/db/take-first'
+import { parseBaselineReleaseRevision } from '@/import/baseline-revision'
 
 // ============================================
 // Types
@@ -87,7 +87,7 @@ export interface ChangeOrderMergeResult {
 }
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { MergeConflict } from '@cascadia/commons/lib/services/types/conflicts'
+export type { MergeConflict } from '@cascadia/commons/services/types/conflicts'
 
 export interface MergeValidation {
   canMerge: boolean
@@ -2642,7 +2642,7 @@ export class ChangeOrderMergeService {
     // The work-instruction change alert and the superseded-revision watermark
     // used to be dispatched here, as two post-commit try/catch blocks. They are
     // now `consumed` extensions on `design.released`
-    // (`lib/extensions/core/`), which is strictly better in the one way that
+    // (`extensions/core/`), which is strictly better in the one way that
     // matters and not worse in any: this block only ever ran on the
     // branch-merge path, so a change order releasing through the branchless or
     // state-only arm dispatched neither and nothing recorded that it was owed.

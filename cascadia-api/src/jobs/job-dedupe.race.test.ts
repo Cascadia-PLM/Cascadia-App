@@ -34,12 +34,12 @@ import {
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { db } from '@/lib/db'
-import { ConflictError } from '@/lib/errors'
-import { jobs } from '@/lib/db/schema'
-import { JobService } from '@/lib/jobs/JobService'
-import { JobTypeRegistry } from '@/lib/jobs/registry'
-import { RabbitMQClient } from '@/lib/jobs/rabbitmq/client'
+import { db } from '@/db'
+import { ConflictError } from '@/errors'
+import { jobs } from '@/db/schema'
+import { JobService } from '@/jobs/JobService'
+import { JobTypeRegistry } from '@/jobs/registry'
+import { RabbitMQClient } from '@/jobs/rabbitmq/client'
 
 describe('job submission dedupe key', () => {
   const concurrent = new ConcurrentTestDatabase()

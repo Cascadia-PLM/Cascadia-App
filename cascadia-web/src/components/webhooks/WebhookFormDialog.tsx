@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { EventTypeSummary, WebhookSubscription } from '@/lib/query'
+import type { EventTypeSummary, WebhookSubscription } from '@/query'
 import {
   Button,
   Checkbox,
@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog'
-import { programListQuery } from '@/lib/query'
+import { programListQuery } from '@/query'
 
 export interface WebhookFormValues {
   name: string

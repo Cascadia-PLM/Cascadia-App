@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { TransactionClient } from '@/lib/db'
-import type { SessionUser } from '@/lib/auth/session'
+import type { TransactionClient } from '@/db'
+import type { SessionUser } from '@/auth/session'
 
 /**
  * Lets an optional module participate in approval voting without core knowing
@@ -43,7 +43,7 @@ export interface ApprovalAttestation {
  * module's types:
  *
  * ```typescript
- * declare module '@/lib/lifecycles/approval-registry' {
+ * declare module '@/lifecycles/approval-registry' {
  *   interface ApprovalExtras {
  *     signing?: ApprovalSigningContext
  *   }

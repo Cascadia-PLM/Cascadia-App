@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Eye, EyeOff, Pencil, Play, Trash2 } from 'lucide-react'
-import type { Report } from '@cascadia/commons/lib/reports/types'
+import type { Report } from '@cascadia/commons/reports/types'
 import type { DataGridColumn, Row } from '@/components/ui'
 import { Badge, Button, DataGrid } from '@/components/ui'
 

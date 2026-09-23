@@ -9,21 +9,21 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { authEvents, users } from '@/lib/db/schema'
+import { db } from '@/db'
+import { authEvents, users } from '@/db/schema'
 import {
   hashPassword,
   hashSessionToken,
   needsRehash,
   verifyPassword,
-} from '@/lib/auth/password'
-import { SessionManager } from '@/lib/auth/session'
+} from '@/auth/password'
+import { SessionManager } from '@/auth/session'
 import {
   AccountLockedError,
   AuthenticationError,
   ValidationError,
-} from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/errors'
+import { takeFirst } from '@/db/take-first'
 
 export interface LoginInput {
   username: string
@@ -380,7 +380,7 @@ export class AuthService {
       user = newUser
 
       // Assign default "User" role
-      const { roles, userRoles } = await import('@/lib/db/schema')
+      const { roles, userRoles } = await import('@/db/schema')
       const defaultRole = await db.query.roles.findFirst({
         where: eq(roles.name, 'User'),
       })

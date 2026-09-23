@@ -18,7 +18,7 @@
  * pre-validation as a caller convention, and the point of these cases is that
  * the handler does not depend on the convention being honoured.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/tools/offer-navigation.validation.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/tools/offer-navigation.validation.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -35,7 +35,7 @@ import { offerNavigationHandler } from './handlers'
 import { toolRegistry } from './registry'
 import type { ToolContext } from './permission-wrapper'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -43,14 +43,14 @@ import {
   insertTestRole,
   insertTestUser,
 } from '@/__tests__/fixtures/users'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { permissionService } from '@/lib/auth/permission-service'
-import { ValidationError } from '@/lib/errors'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { permissionService } from '@/auth/permission-service'
+import { ValidationError } from '@/errors'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('offer_navigation — navigation URL inputs', () => {
   const testDb = new TestDatabase()

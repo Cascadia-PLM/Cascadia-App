@@ -13,10 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query/hooks'
-import { stateApproversQuery } from '@/lib/query/options/lifecycles'
-import { activeUserListQuery, roleListQuery } from '@/lib/query/options/users'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query/hooks'
+import { stateApproversQuery } from '@/query/options/lifecycles'
+import { activeUserListQuery, roleListQuery } from '@/query/options/users'
 
 interface StateApproversPanelProps {
   workflowDefinitionId: string

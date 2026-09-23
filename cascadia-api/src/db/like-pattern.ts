@@ -15,7 +15,7 @@
  * Callers writing raw SQL must append `ESCAPE '\\'` explicitly, as
  * `VersionResolver.itemFilterConditions` does.
  *
- * This module deliberately lives outside `lib/db/index.ts`: that module opens
+ * This module deliberately lives outside `db/index.ts`: that module opens
  * the postgres connection, and these are pure string functions that route and
  * client-adjacent code should be able to import freely.
  */

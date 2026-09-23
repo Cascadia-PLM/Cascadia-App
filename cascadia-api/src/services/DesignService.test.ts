@@ -8,7 +8,7 @@
  * Tests cover design CRUD, hierarchy, tags, search, protection status,
  * and the standard library.
  *
- * Run: npm run test -- src/lib/services/DesignService.test.ts
+ * Run: npm run test -- src/services/DesignService.test.ts
  */
 
 import {
@@ -24,10 +24,10 @@ import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { items, programs } from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
-import '@/lib/items/registerItemTypes.server'
+import { items, programs } from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
+import '@/items/registerItemTypes.server'
 
 describe('DesignService', () => {
   const testDb = new TestDatabase()

@@ -12,7 +12,7 @@
  * - removing a line atomically returns the unit to Available
  * - lot/bulk lines accumulate quantity on a single edge per target
  *
- * Run: npx vitest run src/lib/services/WorkOrderMaterialService.test.ts
+ * Run: npx vitest run src/services/WorkOrderMaterialService.test.ts
  */
 
 import {
@@ -37,17 +37,12 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { seedWorkOrderLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { ValidationError } from '@/lib/errors'
-import {
-  itemRelationships,
-  items,
-  physicalParts,
-  programs,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { ValidationError } from '@/errors'
+import { itemRelationships, items, physicalParts, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('WorkOrderMaterialService', () => {
   const testDb = new TestDatabase()

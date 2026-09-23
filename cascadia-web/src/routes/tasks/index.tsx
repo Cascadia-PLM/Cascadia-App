@@ -5,8 +5,8 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { LayoutGrid, List as ListIcon, Plus } from 'lucide-react'
-import type { Task } from '@cascadia/commons/lib/items/types/task'
-import type { ItemFilters } from '@/lib/query'
+import type { Task } from '@cascadia/commons/items/types/task'
+import type { ItemFilters } from '@/query'
 import { PageContainer } from '@/components/layout'
 import { TaskTable } from '@/components/tasks/TaskTable'
 import { KanbanBoard } from '@/components/tasks/KanbanBoard'
@@ -18,10 +18,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { itemCollectionQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { itemCollectionQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 import { LifecycleStateCards } from '@/components/items/LifecycleStateCards'
 
 const TASK_FILTERS: ItemFilters = { itemType: 'Task' }

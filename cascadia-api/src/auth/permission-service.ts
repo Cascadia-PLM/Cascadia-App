@@ -5,14 +5,14 @@ import { eq } from 'drizzle-orm'
 import {
   canonicalResource,
   hasPermission,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 import { db } from '../db'
 import { roles, userRoles } from '../db/schema/users'
 import type {
   PermissionAction,
   ResourceType,
-} from '@cascadia/commons/lib/auth/permissions'
-import { authLogger } from '@/lib/logging/logger'
+} from '@cascadia/commons/auth/permissions'
+import { authLogger } from '@/logging/logger'
 
 /**
  * Permission Service

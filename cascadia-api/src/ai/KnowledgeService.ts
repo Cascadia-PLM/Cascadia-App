@@ -17,9 +17,9 @@ import type { z } from 'zod'
 import type {
   RelationshipConfig,
   StateConfig,
-} from '@cascadia/commons/lib/items/types/base'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import { aiLogger } from '@/lib/logging/logger'
+} from '@cascadia/commons/items/types/base'
+import { ItemTypeRegistry } from '@/items/registry'
+import { aiLogger } from '@/logging/logger'
 
 // Field definition extracted from Zod schema
 export interface FieldDefinition {
@@ -145,8 +145,8 @@ export class KnowledgeService {
     // Ensure ItemTypeRegistry is initialized
     await ItemTypeRegistry.initialize()
 
-    // Dynamic, to keep lib/ai off a static cycle through the service layer.
-    const { LifecycleService } = await import('@/lib/services/LifecycleService')
+    // Dynamic, to keep ai off a static cycle through the service layer.
+    const { LifecycleService } = await import('@/services/LifecycleService')
 
     const itemTypes = ItemTypeRegistry.getAllTypes()
 
@@ -313,8 +313,8 @@ export class KnowledgeService {
   ): Promise<ProgramContext | null> {
     try {
       // Lazy import to avoid bundling database code in client
-      const { db } = await import('@/lib/db')
-      const { programs } = await import('@/lib/db/schema')
+      const { db } = await import('@/db')
+      const { programs } = await import('@/db/schema')
       const { eq } = await import('drizzle-orm')
 
       const program = await db.query.programs.findFirst({
@@ -343,8 +343,8 @@ export class KnowledgeService {
   ): Promise<DesignContext | null> {
     try {
       // Lazy import to avoid bundling database code in client
-      const { db } = await import('@/lib/db')
-      const { designs } = await import('@/lib/db/schema')
+      const { db } = await import('@/db')
+      const { designs } = await import('@/db/schema')
       const { eq } = await import('drizzle-orm')
 
       const design = await db.query.designs.findFirst({

@@ -14,7 +14,7 @@ import { DISPLAYABLE_IMAGE_EXTENSIONS } from './image-files'
  * Previewability is decided by **file extension, never by the stored
  * `mimeType`**: the mime type is whatever the browser asserted at upload time
  * and is therefore caller-controlled, while the extension has already passed
- * the vault's upload allowlist in `src/lib/vault/utils/file-utils.ts`. The
+ * the vault's upload allowlist in `src/vault/utils/file-utils.ts`. The
  * server sends the `contentType` recorded here rather than echoing the stored
  * one, so an `.html` payload can never be replayed as inline markup.
  *

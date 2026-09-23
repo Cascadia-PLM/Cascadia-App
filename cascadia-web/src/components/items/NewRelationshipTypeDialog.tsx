@@ -32,12 +32,12 @@ import {
   DEFAULT_BOM_QUANTITY,
   isValidQuantity,
 } from '@/components/items/bom-quantity'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query'
-import { ITEM_TYPE_OPTIONS } from '@/lib/items/item-type-ui'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query'
+import { ITEM_TYPE_OPTIONS } from '@/items/item-type-ui'
 import { StateBadge } from '@/components/items/StateBadge'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface NewRelationshipTypeDialogProps {
   open: boolean

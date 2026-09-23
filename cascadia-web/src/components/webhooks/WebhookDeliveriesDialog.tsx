@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import type { WebhookDelivery, WebhookSubscription } from '@/lib/query'
+import type { WebhookDelivery, WebhookSubscription } from '@/query'
 import { Badge, Button, LoadingSpinner } from '@/components/ui'
 import {
   Dialog,
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/Dialog'
-import { webhookDeliveriesQuery } from '@/lib/query'
+import { webhookDeliveriesQuery } from '@/query'
 
 interface WebhookDeliveriesDialogProps {
   subscription: WebhookSubscription | null

@@ -15,14 +15,14 @@
 import {
   ENRICHMENT_IMAGE_MEDIA_TYPES,
   MAX_ENRICHMENT_IMAGE_BYTES,
-} from '@cascadia/commons/lib/items/enrichment/limits'
+} from '@cascadia/commons/items/enrichment/limits'
 import { assertSafeUrl, extractText } from './html-to-text'
 import type { FetchedPage } from './html-to-text'
 import type {
   EnrichmentImage,
   EnrichmentImageMediaType,
-} from '@cascadia/commons/lib/items/enrichment/limits'
-import { ValidationError } from '@/lib/errors'
+} from '@cascadia/commons/items/enrichment/limits'
+import { ValidationError } from '@/errors'
 
 /** Hard cap on the HTML we will read into memory; longer pages are truncated. */
 const MAX_HTML_BYTES = 1_000_000

@@ -85,10 +85,10 @@ it('calls merge with correct params', async () => {
 
 ### 3. Golden examples to pattern-match
 
-- `src/lib/services/BranchService.test.ts` — branch invariants
-- `src/lib/services/ChangeOrderMergeService.test.ts` — ECO release invariants
-- `src/lib/services/VersionResolver.test.ts` — version resolution correctness
-- `src/lib/auth/AccessControlService.test.ts` — access boundary tests (once written in Phase 4)
+- `src/services/BranchService.test.ts` — branch invariants
+- `src/services/ChangeOrderMergeService.test.ts` — ECO release invariants
+- `src/services/VersionResolver.test.ts` — version resolution correctness
+- `src/auth/AccessControlService.test.ts` — access boundary tests (once written in Phase 4)
 
 ### 4. Use the standard fixture pattern
 

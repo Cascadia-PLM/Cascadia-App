@@ -3,9 +3,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Lock, Unlock } from 'lucide-react'
-import type { DesignStatus } from '@/lib/query/options/branches'
+import type { DesignStatus } from '@/query/options/branches'
 import { Badge } from '@/components/ui'
-import { designStatusQuery } from '@/lib/query/options/branches'
+import { designStatusQuery } from '@/query/options/branches'
 
 /** Re-exported so the forms that read a design's phase keep one import path. */
 export type { DesignStatus }

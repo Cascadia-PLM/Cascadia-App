@@ -14,8 +14,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { Document } from '@cascadia/commons/lib/items/types/document'
-import type { Design } from '@cascadia/commons/lib/types/design'
+import type { Document } from '@cascadia/commons/items/types/document'
+import type { Design } from '@cascadia/commons/types/design'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { RelationshipSection } from '@/components/items/RelationshipSection'
@@ -30,8 +30,8 @@ import {
   useItemPreviewableFiles,
 } from '@/components/vault'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
-import { useEditLock, useItemEditContext } from '@/lib/hooks/useEditLock'
+import { useVersionContext } from '@/hooks/useVersionContext'
+import { useEditLock, useItemEditContext } from '@/hooks/useEditLock'
 import { WorkspaceContextBanner } from '@/components/workspaces/WorkspaceContextBanner'
 import {
   Badge,
@@ -55,17 +55,17 @@ import {
   ViewEditText,
   ViewEditTextarea,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   branchDetailQuery,
   designDetailQuery,
   designStatusQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { itemAtContextQuery } from '@/lib/query/options/items'
+} from '@/query'
+import { itemAtContextQuery } from '@/query/options/items'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useReleasedFamily } from '@/lib/hooks/useReleasedFamily'
+import { useReleasedFamily } from '@/hooks/useReleasedFamily'
 import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 
 // Constants

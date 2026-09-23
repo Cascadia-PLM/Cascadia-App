@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Search,
 } from 'lucide-react'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import { Button, Card, CardContent } from '@/components/ui'
 import {
   Select,
@@ -22,9 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { designChangeOrdersQuery } from '@/lib/query'
+import { designChangeOrdersQuery } from '@/query'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface ChangeOrdersTabProps {
   designId: string

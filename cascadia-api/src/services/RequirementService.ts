@@ -20,12 +20,12 @@ import { resolveInheritedLineage } from '../items/version-lineage'
 import { BranchService } from './BranchService'
 import { VersionResolver } from './VersionResolver'
 import type { VersionContext } from './VersionResolver'
-import type { PersistedItem } from '@cascadia/commons/lib/items/types/base'
-import type { Requirement } from '@cascadia/commons/lib/items/types/requirement'
+import type { PersistedItem } from '@cascadia/commons/items/types/base'
+import type { Requirement } from '@cascadia/commons/items/types/requirement'
 
 /**
  * Relationship type constants for requirements domain.
- * Defined in `lib/items/traceability-relationships` so the edit-lock policy
+ * Defined in `items/traceability-relationships` so the edit-lock policy
  * can name them without importing this service back; re-exported here because
  * this is where callers have always found them.
  */

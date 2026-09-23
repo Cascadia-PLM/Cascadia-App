@@ -15,8 +15,8 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import type { VersionContext } from '@/hooks/useVersionContext'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 import {
   Badge,
   Button,
@@ -26,7 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { designBranchesQuery, itemHistoryQuery } from '@/lib/query'
+import { designBranchesQuery, itemHistoryQuery } from '@/query'
 import { SourceChangesList } from '@/components/software/SourceChangesList'
 
 interface FieldChange {

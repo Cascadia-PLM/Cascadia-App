@@ -9,7 +9,7 @@
  * its owner could not, on either axis (permissions or roles), and must never
  * outlive what the instance policy allows.
  *
- * Run: npm run test -- src/lib/auth/api-key-scope.test.ts
+ * Run: npm run test -- src/auth/api-key-scope.test.ts
  */
 
 import { describe, expect, it } from 'vitest'
@@ -17,10 +17,10 @@ import {
   DEFAULT_API_KEY_POLICY,
   resolveKeyExpiration,
   validateApiKeyPolicy,
-} from '@cascadia/commons/lib/auth/api-key-policy-types'
+} from '@cascadia/commons/auth/api-key-policy-types'
 import { intersectPermissions, intersectRoles } from './api-key-utils'
 import { deriveStatus } from './ApiKeyService'
-import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
+import type { ApiKeyPolicy } from '@cascadia/commons/auth/api-key-policy-types'
 
 describe('intersectRoles', () => {
   it('returns every owner role when the key is unscoped', () => {

@@ -23,7 +23,7 @@
  * (or an operator cancel) the job in between. Those flips are guarded to the
  * status they expect, and these tests race them on purpose.
  *
- * Run: npx vitest run cascadia-api/src/lib/jobs/JobService.test.ts
+ * Run: npx vitest run cascadia-api/src/jobs/JobService.test.ts
  */
 
 import {
@@ -40,15 +40,15 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { MockInstance } from 'vitest'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { JobStatus } from '@/lib/db/schema/jobs'
+import type { JobStatus } from '@/db/schema/jobs'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { JobService } from '@/lib/jobs/JobService'
-import { JobTypeRegistry } from '@/lib/jobs/registry'
-import { RabbitMQClient } from '@/lib/jobs/rabbitmq/client'
-import { ValidationError } from '@/lib/errors'
-import { jobs } from '@/lib/db/schema/jobs'
-import { takeFirst } from '@/lib/db/take-first'
+import { JobService } from '@/jobs/JobService'
+import { JobTypeRegistry } from '@/jobs/registry'
+import { RabbitMQClient } from '@/jobs/rabbitmq/client'
+import { ValidationError } from '@/errors'
+import { jobs } from '@/db/schema/jobs'
+import { takeFirst } from '@/db/take-first'
 
 const TEST_TYPE = 'test.jobs.claim-invariants'
 const MAX_ATTEMPTS = 3

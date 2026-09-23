@@ -12,7 +12,7 @@
  * whole instance; no budget means the check costs nothing and blocks
  * nothing.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/adapters.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/adapters.test.ts
  */
 
 import {
@@ -27,11 +27,11 @@ import {
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { loadProviderConfig } from '@/lib/ai/adapters'
-import { RateLimitedError } from '@/lib/errors'
-import { aiSettings, aiUsageLogs } from '@/lib/db/schema/ai'
-import { programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { loadProviderConfig } from '@/ai/adapters'
+import { RateLimitedError } from '@/errors'
+import { aiSettings, aiUsageLogs } from '@/db/schema/ai'
+import { programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 describe('loadProviderConfig — monthly token budget', () => {
   const testDb = new TestDatabase()

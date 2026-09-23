@@ -3,7 +3,7 @@
 One cache, one set of keys, one place that decides what a mutation invalidates.
 
 Everything the UI reads goes through the shared TanStack Query cache in
-`cascadia-web/src/lib/query/`. Route loaders prime it, components read it, mutations
+`cascadia-web/src/query/`. Route loaders prime it, components read it, mutations
 invalidate it. There is no second cache.
 
 ## Why it works this way
@@ -21,16 +21,16 @@ sidebar, and every picker, whether or not they are currently mounted.
 
 ## The layers
 
-| File                                         | Owns                                            |
-| -------------------------------------------- | ----------------------------------------------- |
-| `cascadia-web/src/lib/query/client.ts`       | The single `QueryClient` and its defaults       |
-| `cascadia-web/src/lib/query/keys.ts`         | `qk` — every cache key in the app               |
-| `cascadia-web/src/lib/query/invalidation.ts` | Which resources go stale when one is written    |
-| `cascadia-web/src/lib/query/hooks.ts`        | `useInvalidateResources`, `useResourceMutation` |
-| `cascadia-web/src/lib/query/grid-params.ts`  | URL ⇄ grid params, shared by loaders and grids  |
-| `cascadia-web/src/lib/query/options/*`       | Query factories per resource                    |
+| File                                     | Owns                                            |
+| ---------------------------------------- | ----------------------------------------------- |
+| `cascadia-web/src/query/client.ts`       | The single `QueryClient` and its defaults       |
+| `cascadia-web/src/query/keys.ts`         | `qk` — every cache key in the app               |
+| `cascadia-web/src/query/invalidation.ts` | Which resources go stale when one is written    |
+| `cascadia-web/src/query/hooks.ts`        | `useInvalidateResources`, `useResourceMutation` |
+| `cascadia-web/src/query/grid-params.ts`  | URL ⇄ grid params, shared by loaders and grids  |
+| `cascadia-web/src/query/options/*`       | Query factories per resource                    |
 
-Import from the barrel: `import { designListQuery, useInvalidateResources } from '@/lib/query'`.
+Import from the barrel: `import { designListQuery, useInvalidateResources } from '@/query'`.
 
 ## Keys
 
@@ -214,10 +214,10 @@ Set in `client.ts`:
 
 ## Adding a resource
 
-1. Add a query factory in `cascadia-web/src/lib/query/options/<resource>.ts` using `qk`
+1. Add a query factory in `cascadia-web/src/query/options/<resource>.ts` using `qk`
    for the key. For a simple `GET /api/v1/x/:id`, `entityQuery` already covers
    it; for `GET /api/v1/x`, `collectionQuery` does.
-2. Export it from `cascadia-web/src/lib/query/index.ts`.
+2. Export it from `cascadia-web/src/query/index.ts`.
 3. If writing it should refresh other resources, add the edge to
    `RESOURCE_DEPENDENTS`.
 4. Prime it from the route loader with `ensureQueryData`; read it with

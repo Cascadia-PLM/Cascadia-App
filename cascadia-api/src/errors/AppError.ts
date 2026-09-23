@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { errorCodeToHttpStatus } from '@cascadia/commons/lib/errors/codes'
-import type { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { errorCodeToHttpStatus } from '@cascadia/commons/errors/codes'
+import type { ErrorCode } from '@cascadia/commons/errors/codes'
 
-import type { FieldError } from '@cascadia/commons/lib/errors/api-types'
+import type { FieldError } from '@cascadia/commons/errors/api-types'
 
 /**
  * Additional context information for an error.
@@ -19,7 +19,7 @@ export interface ErrorContext {
 }
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { FieldError } from '@cascadia/commons/lib/errors/api-types'
+export type { FieldError } from '@cascadia/commons/errors/api-types'
 
 /**
  * Base error class for all application errors.

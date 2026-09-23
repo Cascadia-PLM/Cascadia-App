@@ -19,8 +19,8 @@ import {
 import { NotFoundError, ValidationError } from '../errors'
 import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
-import type { CatalogEntryWithCategory } from '@cascadia/commons/lib/services/types/catalog'
-import { takeFirst } from '@/lib/db/take-first'
+import type { CatalogEntryWithCategory } from '@cascadia/commons/services/types/catalog'
+import { takeFirst } from '@/db/take-first'
 
 // ============================================================================
 // Response Types
@@ -107,7 +107,7 @@ export type UpdateCatalogEntryInput = z.infer<typeof catalogEntryUpdateSchema>
 export type BulkImportRow = z.infer<typeof catalogBulkImportRowSchema>
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { CatalogEntryWithCategory } from '@cascadia/commons/lib/services/types/catalog'
+export type { CatalogEntryWithCategory } from '@cascadia/commons/services/types/catalog'
 
 export interface CatalogEntryFull extends CatalogEntryWithCategory {
   media: Array<{

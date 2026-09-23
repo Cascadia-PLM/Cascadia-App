@@ -4,7 +4,7 @@
 /**
  * Which build the browser is actually running.
  *
- * Distinct from `APP_VERSION` in `@/lib/version`, and deliberately so.
+ * Distinct from `APP_VERSION` in `@/version`, and deliberately so.
  * `APP_VERSION` is the product version out of package.json — it answers "which
  * Cascadia release is this?" and moves only when upstream cuts one. It cannot
  * answer "which build of *our* tree is deployed?", because a fork's own commits
@@ -14,7 +14,7 @@
  * These constants are baked in by Vite at build time from `VITE_BUILD_*`, which
  * the image build passes through from `git describe` on the host. They are
  * client-only on purpose: `import.meta.env` is a Vite construct, and
- * `@/lib/version` is imported by the API server too, where esbuild would leave
+ * `@/version` is imported by the API server too, where esbuild would leave
  * `import.meta.env` undefined and the property read would throw at boot.
  *
  * `.git` is excluded from the Docker build context (see `.dockerignore`), so

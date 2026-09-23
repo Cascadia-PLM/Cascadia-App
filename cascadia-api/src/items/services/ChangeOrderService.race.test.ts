@@ -21,22 +21,22 @@
  * calls genuinely interleave and commit, and the harness cleans up after
  * itself.
  *
- * Run: npx vitest run cascadia-api/src/lib/items/services/ChangeOrderService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/items/services/ChangeOrderService.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { and, eq } from 'drizzle-orm'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
+import type { Part } from '@cascadia/commons/items/types/part'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { ChangeOrderService } from '@/lib/items/services/ChangeOrderService'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { isUniqueViolation } from '@/lib/errors/pg'
-import { branches, changeOrderDesigns, commits } from '@/lib/db/schema'
+import { ChangeOrderService } from '@/items/services/ChangeOrderService'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { isUniqueViolation } from '@/errors/pg'
+import { branches, changeOrderDesigns, commits } from '@/db/schema'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ChangeOrderService — concurrent design association', () => {
   const concurrent = new ConcurrentTestDatabase()

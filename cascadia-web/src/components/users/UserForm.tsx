@@ -5,8 +5,8 @@ import { useForm } from '@tanstack/react-form'
 import {
   userCreateSchema,
   userUpdateSchema,
-} from '@cascadia/commons/lib/auth/types'
-import { zodValidator } from '@/lib/form-validation'
+} from '@cascadia/commons/auth/types'
+import { zodValidator } from '@/form-validation'
 import {
   Button,
   FormField,

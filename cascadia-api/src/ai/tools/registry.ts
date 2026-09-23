@@ -10,7 +10,7 @@
  *
  * - The in-app AI chatbot (`createServerTools()` / `createSearchTools()` in
  *   `./index.ts`) binds entries into TanStack AI server tools.
- * - The MCP server (`@/lib/mcp/plm-server`) publishes entries as MCP tools
+ * - The MCP server (`@/mcp/plm-server`) publishes entries as MCP tools
  *   for external agents (Claude, IDE agents, other integrations).
  *
  * Adding a tool: define it in `definitions.ts`/`write-definitions.ts`, write

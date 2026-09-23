@@ -6,7 +6,7 @@
  *
  * Tests for the AuthService class (login/logout functionality).
  *
- * Run: npm run test -- src/lib/auth/AuthService.test.ts
+ * Run: npm run test -- src/auth/AuthService.test.ts
  */
 
 import {
@@ -23,10 +23,10 @@ import { AuthService } from './AuthService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { hashPassword } from '@/lib/auth/password'
-import { SessionManager } from '@/lib/auth/session'
-import { users } from '@/lib/db/schema'
-import { AuthenticationError, ValidationError } from '@/lib/errors'
+import { hashPassword } from '@/auth/password'
+import { SessionManager } from '@/auth/session'
+import { users } from '@/db/schema'
+import { AuthenticationError, ValidationError } from '@/errors'
 
 describe('AuthService', () => {
   const testDb = new TestDatabase()

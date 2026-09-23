@@ -10,12 +10,12 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { makeCodeSchema } from '@cascadia/commons/lib/types/variants'
+import { makeCodeSchema } from '@cascadia/commons/types/variants'
 import { tagged } from '../adapter'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { requireItemAccess } from '@/lib/auth/access'
-import { ValidationError } from '@/lib/errors'
-import { VariantService } from '@/lib/services/VariantService'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { requireItemAccess } from '@/auth/access'
+import { ValidationError } from '@/errors'
+import { VariantService } from '@/services/VariantService'
 
 const adapt = tagged('Variants')
 

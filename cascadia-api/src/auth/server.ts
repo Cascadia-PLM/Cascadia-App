@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
-import { hasPermission } from '@cascadia/commons/lib/auth/permissions'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
+import { hasPermission } from '@cascadia/commons/auth/permissions'
 import { db } from '../db'
 import { resolveClientIp } from '../api/client-ip'
 import { authEvents } from '../db/schema/users'
@@ -14,7 +14,7 @@ import type { Session, SessionUser, SessionValidationResult } from './session'
 import type {
   PermissionAction,
   ResourceType,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 
 /**
  * Result of unified request authentication. For API-key requests there is no

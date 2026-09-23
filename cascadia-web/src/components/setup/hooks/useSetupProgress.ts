@@ -3,9 +3,9 @@
 
 import { STEP_ORDER } from '../strings'
 import type { WizardStep } from '../strings'
-import type { SetupProgressState } from '@/lib/query/options/setup'
-import { useResourceMutation } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import type { SetupProgressState } from '@/query/options/setup'
+import { useResourceMutation } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export function firstIncompleteStep(progress: SetupProgressState): WizardStep {
   if (!progress.orgInfo) return 'org'

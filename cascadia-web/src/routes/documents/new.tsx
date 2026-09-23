@@ -5,11 +5,11 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { z } from 'zod'
-import type { Document } from '@cascadia/commons/lib/items/types/document'
+import type { Document } from '@cascadia/commons/items/types/document'
 import { DocumentDetail } from '@/components/documents/DocumentDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { designListQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { designListQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 const newDocumentSearchSchema = z.object({
   designId: z.string().uuid().optional(),

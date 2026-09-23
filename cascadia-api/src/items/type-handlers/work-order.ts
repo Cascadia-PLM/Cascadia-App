@@ -3,8 +3,8 @@
 
 import { eq } from 'drizzle-orm'
 import { registerTypeHandler } from './index'
-import { db } from '@/lib/db'
-import { workOrders } from '@/lib/db/schema'
+import { db } from '@/db'
+import { workOrders } from '@/db/schema'
 
 const toDate = (v: unknown): Date | null =>
   v ? (v instanceof Date ? v : new Date(String(v))) : null

@@ -3,18 +3,18 @@
 
 import { ZodError } from 'zod'
 import { EventTypeRegistry } from './registry'
-import type { TransactionClient } from '@/lib/db'
-import type { DomainEventRow } from '@/lib/db/schema'
+import type { TransactionClient } from '@/db'
+import type { DomainEventRow } from '@/db/schema'
 import type {
   DomainEvent,
   DomainEventDefinition,
   PendingDomainEvent,
   PublishDomainEventInput,
 } from './types'
-import { dispatchInTransaction } from '@/lib/extensions/dispatch'
-import { ValidationError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
-import { domainEvents } from '@/lib/db/schema'
+import { dispatchInTransaction } from '@/extensions/dispatch'
+import { ValidationError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
+import { domainEvents } from '@/db/schema'
 
 /**
  * Declare a domain event type. Registers the definition in

@@ -4,15 +4,15 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import type { Document } from '@cascadia/commons/lib/items/types/document'
+import type { Document } from '@cascadia/commons/items/types/document'
 import type { DocumentDetailTab } from '@/components/documents/DocumentDetail'
 import {
   DOCUMENT_DETAIL_TABS,
   DocumentDetail,
 } from '@/components/documents/DocumentDetail'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { entityQuery, useInvalidateResources } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { entityQuery, useInvalidateResources } from '@/query'
+import { apiFetch } from '@/api/client'
 
 const documentDetailSearchSchema = z.object({
   branch: z.string().uuid().optional(),

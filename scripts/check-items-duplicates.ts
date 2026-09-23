@@ -16,7 +16,7 @@
  * Exit code 0 = clean; 1 = duplicates found (listed on stdout).
  */
 import { sql } from 'drizzle-orm'
-import { db, describeConnection } from '@cascadia/api/lib/db'
+import { db, describeConnection } from '@cascadia/api/db'
 
 console.log(`Target database: ${describeConnection()}`)
 

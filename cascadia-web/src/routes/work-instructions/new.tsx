@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft, ClipboardCheck } from 'lucide-react'
-import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
+import type { WorkInstruction } from '@cascadia/commons/items/types/work-instruction'
 import { PageContainer } from '@/components/layout'
 import { WorkInstructionForm } from '@/components/work-instructions/WorkInstructionForm'
 import {
@@ -15,8 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/work-instructions/new')({
   component: NewWorkInstructionPage,

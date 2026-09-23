@@ -23,14 +23,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import {
-  roleListQuery,
-  useInvalidateResources,
-  userDetailQuery,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { roleListQuery, useInvalidateResources, userDetailQuery } from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/users/$id')({
   component: UserDetailPage,

@@ -8,7 +8,7 @@
  * Tests cover program-based access control, the cross-program-authority
  * bypass (keyed on the RBAC programs:manage permission), and design access.
  *
- * Run: npm run test -- src/lib/auth/AccessControlService.test.ts
+ * Run: npm run test -- src/auth/AccessControlService.test.ts
  */
 
 import {
@@ -24,9 +24,9 @@ import { eq } from 'drizzle-orm'
 import { AccessControlService } from './AccessControlService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { roles, userRoles } from '@/lib/db/schema/users'
-import { designs, programMembers, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { roles, userRoles } from '@/db/schema/users'
+import { designs, programMembers, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 describe('AccessControlService', () => {
   const testDb = new TestDatabase()

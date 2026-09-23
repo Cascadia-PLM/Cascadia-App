@@ -9,8 +9,8 @@ import type { ItemConflict } from './ConflictDetectionService'
 import type {
   ConflictReview,
   EnrichedItemConflict,
-} from '@cascadia/commons/lib/services/types/conflict-review'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@cascadia/commons/services/types/conflict-review'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Service for managing conflict reviews on ECOs.

@@ -17,8 +17,8 @@ import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import { VERIFIED_BY_RELATIONSHIP, idsWithLinks } from './RequirementService'
-import type { ExecutionStatus } from '@cascadia/commons/lib/items/types/testcase'
-import { takeFirst } from '@/lib/db/take-first'
+import type { ExecutionStatus } from '@cascadia/commons/items/types/testcase'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Relationship type constant for test-to-part validation

@@ -5,13 +5,13 @@ import { sql } from 'drizzle-orm'
 import {
   familyNumberingConfig,
   numberingSchemes,
-} from '@cascadia/commons/lib/items/numbering/schemes'
+} from '@cascadia/commons/items/numbering/schemes'
 import type {
   NumberSegment,
   NumberingContext,
   SequenceScope,
-} from '@cascadia/commons/lib/items/numbering/types'
-import { autonomousDb } from '@/lib/db'
+} from '@cascadia/commons/items/numbering/types'
+import { autonomousDb } from '@/db'
 
 /**
  * Service for generating and validating item numbers.

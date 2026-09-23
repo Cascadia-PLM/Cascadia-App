@@ -14,7 +14,7 @@
  * own schema forbids (`columns` is `min(1)`), which then executes and returns
  * rows with no columns at all.
  *
- * Run: npx vitest run cascadia-api/src/lib/reports/ReportService.test.ts
+ * Run: npx vitest run cascadia-api/src/reports/ReportService.test.ts
  */
 
 import {
@@ -27,10 +27,10 @@ import {
   it,
 } from 'vitest'
 import { ReportService } from './ReportService'
-import type { FilterOperator } from '@cascadia/commons/lib/reports/types'
+import type { FilterOperator } from '@cascadia/commons/reports/types'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { items } from '@/lib/db/schema'
+import { items } from '@/db/schema'
 
 describe('ReportService.update', () => {
   const testDb = new TestDatabase()
@@ -177,7 +177,7 @@ describe('ReportService.update', () => {
  * Complex-algorithm gate: four operators build four different patterns, and
  * reading the code does not tell you what a `_` in the value does.
  *
- * Run: npx vitest run cascadia-api/src/lib/reports/ReportService.test.ts
+ * Run: npx vitest run cascadia-api/src/reports/ReportService.test.ts
  */
 describe('ReportService.execute — text filter operators', () => {
   const testDb = new TestDatabase()

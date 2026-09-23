@@ -16,10 +16,10 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { apiFetch } from '@/lib/api/client'
-import { designListQuery, useResourceMutation } from '@/lib/query'
-import { cn } from '@/lib/utils'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { designListQuery, useResourceMutation } from '@/query'
+import { cn } from '@/utils'
 
 interface DesignOption {
   id: string

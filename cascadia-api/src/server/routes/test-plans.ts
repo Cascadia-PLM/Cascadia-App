@@ -4,10 +4,10 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import { VerificationService } from '@/lib/services/VerificationService'
-import { apiHandler } from '@/lib/api/handler'
-import { requireItemAccess } from '@/lib/auth/access'
-import '@/lib/items/registerItemTypes.server'
+import { VerificationService } from '@/services/VerificationService'
+import { apiHandler } from '@/api/handler'
+import { requireItemAccess } from '@/auth/access'
+import '@/items/registerItemTypes.server'
 
 const adapt = tagged('Test Plans')
 

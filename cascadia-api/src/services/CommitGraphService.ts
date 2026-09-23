@@ -11,12 +11,12 @@
  * its query parameters and call in here.
  *
  * Commit consolidation is not defined here: it lives, once, in
- * `@/lib/versioning/graph-utils` and is covered by the invariants tests
+ * `@/versioning/graph-utils` and is covered by the invariants tests
  * alongside it.
  */
 
 import { desc, eq, inArray } from 'drizzle-orm'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { DesignService } from './DesignService'
 import { BranchService } from './BranchService'
 import type {
@@ -27,12 +27,12 @@ import type {
   ProgramCommitGraphNode,
   ProgramGraphData,
   ProgramGraphDesign,
-} from '@cascadia/commons/lib/versioning/graph-types'
-import { consolidateCommits } from '@/lib/versioning/graph-utils'
-import { db } from '@/lib/db'
-import { changeOrderDesigns, items } from '@/lib/db/schema/items'
-import { branches, commits, tags } from '@/lib/db/schema/versioning'
-import { users } from '@/lib/db/schema/users'
+} from '@cascadia/commons/versioning/graph-types'
+import { consolidateCommits } from '@/versioning/graph-utils'
+import { db } from '@/db'
+import { changeOrderDesigns, items } from '@/db/schema/items'
+import { branches, commits, tags } from '@/db/schema/versioning'
+import { users } from '@/db/schema/users'
 
 /**
  * Build commit graph data for visualization

@@ -34,11 +34,11 @@ import { z } from 'zod'
 import {
   changeOrderPrioritySchema,
   changeOrderTypeSchema,
-} from '@cascadia/commons/lib/items/types/change-order'
-import { partTypeSchema } from '@cascadia/commons/lib/items/types/part'
-import { requirementTypeSchema } from '@cascadia/commons/lib/items/types/requirement'
-import { taskPrioritySchema } from '@cascadia/commons/lib/items/types/task'
-import { makeCodeSchema } from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/items/types/change-order'
+import { partTypeSchema } from '@cascadia/commons/items/types/part'
+import { requirementTypeSchema } from '@cascadia/commons/items/types/requirement'
+import { taskPrioritySchema } from '@cascadia/commons/items/types/task'
+import { makeCodeSchema } from '@cascadia/commons/types/variants'
 import { ITEM_TYPE_NAMES } from './definitions'
 
 /**

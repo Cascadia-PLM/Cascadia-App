@@ -9,8 +9,8 @@
  */
 
 import crypto from 'node:crypto'
-import { SecretDecryptionError } from '@/lib/errors'
-import { cryptoLogger } from '@/lib/logging/logger'
+import { SecretDecryptionError } from '@/errors'
+import { cryptoLogger } from '@/logging/logger'
 
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 12

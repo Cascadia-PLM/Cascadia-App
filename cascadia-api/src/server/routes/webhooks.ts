@@ -5,22 +5,22 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { and, desc, eq, isNull, lt, max } from 'drizzle-orm'
 import { tagged } from '../adapter'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { db } from '@/lib/db'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { db } from '@/db'
 import {
   domainEvents,
   webhookDeliveries,
   webhookSubscriptions,
-} from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { EventTypeRegistry } from '@/lib/events'
+} from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { EventTypeRegistry } from '@/events'
 import {
   assertTargetResolvesPublic,
   validateEgressUrl,
-} from '@/lib/net/egress-guard'
-import { DELETED_SUBSCRIPTION_EXPIRY_ERROR } from '@/lib/webhooks/retention'
-import { generateWebhookSecret } from '@/lib/webhooks/secret'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/net/egress-guard'
+import { DELETED_SUBSCRIPTION_EXPIRY_ERROR } from '@/webhooks/retention'
+import { generateWebhookSecret } from '@/webhooks/secret'
+import { takeFirst } from '@/db/take-first'
 
 const adapt = tagged('Webhooks')
 
@@ -132,7 +132,7 @@ const createSubscriptionSchema = z.object({
   /**
    * Sign deliveries with an HMAC secret. Defaults to true, and creation is
    * refused when `ENCRYPTION_KEY` is unset rather than storing a key in the
-   * clear — see `lib/webhooks/secret.ts`.
+   * clear — see `webhooks/secret.ts`.
    */
   signed: z.boolean().optional(),
   /** Allow an `http:` target. Off by default. */

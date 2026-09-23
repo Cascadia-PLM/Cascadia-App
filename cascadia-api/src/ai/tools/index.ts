@@ -28,7 +28,7 @@
  *
  * Usage:
  * ```typescript
- * import { createServerTools } from '@/lib/ai/tools'
+ * import { createServerTools } from '@/ai/tools'
  *
  * const tools = createServerTools({
  *   userId: user.id,

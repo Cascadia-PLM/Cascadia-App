@@ -17,10 +17,7 @@ import { users } from './users'
 import { items } from './items'
 import type { SQL } from 'drizzle-orm'
 
-import type {
-  JobPriority,
-  JobStatus,
-} from '@cascadia/commons/lib/jobs/types-wire'
+import type { JobPriority, JobStatus } from '@cascadia/commons/jobs/types-wire'
 
 /**
  * The statuses in which a job has released its dedupe key, as SQL text.
@@ -32,10 +29,7 @@ import type {
 const DEDUPE_KEY_RELEASING_STATUSES_SQL = `'failed', 'cancelled'`
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type {
-  JobStatus,
-  JobPriority,
-} from '@cascadia/commons/lib/jobs/types-wire'
+export type { JobStatus, JobPriority } from '@cascadia/commons/jobs/types-wire'
 
 /**
  * Background jobs table

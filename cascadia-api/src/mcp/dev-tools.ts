@@ -132,7 +132,7 @@ async function instanceStatus(): Promise<Record<string, unknown>> {
     vaultRootSet: !!process.env.VAULT_ROOT,
   }
 
-  const { PackageRegistry } = await import('@/lib/packages/registry')
+  const { PackageRegistry } = await import('@/packages/registry')
   const packages = PackageRegistry.list().map((p) => ({
     id: p.id,
     name: p.name,
@@ -142,8 +142,8 @@ async function instanceStatus(): Promise<Record<string, unknown>> {
   let database: Record<string, unknown>
   try {
     const [{ db }, schema, { count }] = await Promise.all([
-      import('@/lib/db'),
-      import('@/lib/db/schema'),
+      import('@/db'),
+      import('@/db/schema'),
       import('drizzle-orm'),
     ])
     const [userRows, itemRows, programRows, designRows] = await Promise.all([
@@ -173,8 +173,8 @@ async function instanceStatus(): Promise<Record<string, unknown>> {
 }
 
 async function listItemTypes(): Promise<Record<string, unknown>> {
-  await import('@/lib/items/registerItemTypes.server')
-  const { ItemTypeRegistry } = await import('@/lib/items/registry')
+  await import('@/items/registerItemTypes.server')
+  const { ItemTypeRegistry } = await import('@/items/registry')
 
   // Runtime (admin-configured) overrides live in the database; code
   // definitions alone still answer "what types exist" when it's down.
@@ -198,7 +198,7 @@ async function listItemTypes(): Promise<Record<string, unknown>> {
 
 async function listRoles(): Promise<Record<string, unknown>> {
   const { ROLE_DEFINITIONS } =
-    await import('@cascadia/commons/lib/auth/permissions')
+    await import('@cascadia/commons/auth/permissions')
   const builtIn = Object.values(ROLE_DEFINITIONS).map((role) => ({
     name: role.name,
     description: role.description,
@@ -207,8 +207,8 @@ async function listRoles(): Promise<Record<string, unknown>> {
 
   try {
     const [{ db }, { roles }] = await Promise.all([
-      import('@/lib/db'),
-      import('@/lib/db/schema/users'),
+      import('@/db'),
+      import('@/db/schema/users'),
     ])
     const dbRoles = await db.select().from(roles)
     return {
@@ -303,7 +303,7 @@ each is enabled on this instance (via the CASCADIA_PACKAGES environment variable
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true, openWorldHint: false },
       execute: async () => {
-        const { PackageRegistry } = await import('@/lib/packages/registry')
+        const { PackageRegistry } = await import('@/packages/registry')
         return { packages: PackageRegistry.list() }
       },
     },

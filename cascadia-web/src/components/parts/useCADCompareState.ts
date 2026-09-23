@@ -8,7 +8,7 @@ import type {
   CADCompareSlot,
 } from '@/components/parts/CADViewer'
 import type { CompareSlotSelection } from '@/components/parts/CADComparePanel'
-import type { ModelVersionEntry } from '@/lib/query'
+import type { ModelVersionEntry } from '@/query'
 import {
   COMPARE_SLOT_COLORS,
   DEFAULT_COMPARE_OPACITY,
@@ -17,7 +17,7 @@ import {
   modelVersionLabel,
   resolveSlot,
 } from '@/components/parts/CADComparePanel'
-import { itemModelVersionsQuery } from '@/lib/query'
+import { itemModelVersionsQuery } from '@/query'
 
 /** Shared empty, so "no versions yet" is the same array on every render. */
 const NO_VERSIONS: Array<ModelVersionEntry> = []

@@ -3,9 +3,9 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { OptionCondition } from '@cascadia/commons/lib/types/variants'
+import type { OptionCondition } from '@cascadia/commons/types/variants'
 import type { BOMTreeNode } from '@/components/bom/types'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 
 /**
  * Reads over an item's relationship edges — the flat list, the BOM tree it

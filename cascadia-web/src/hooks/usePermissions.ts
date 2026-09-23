@@ -6,12 +6,12 @@ import {
   canAccessSystem,
   canManageSystem,
   hasPermission,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 import type {
   PermissionAction,
   ResourceType,
-} from '@cascadia/commons/lib/auth/permissions'
-import { currentUserPermissionsQuery } from '@/lib/query'
+} from '@cascadia/commons/auth/permissions'
+import { currentUserPermissionsQuery } from '@/query'
 
 /**
  * The signed-in user's permissions, read through the shared query cache so one

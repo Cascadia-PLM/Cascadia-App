@@ -8,7 +8,7 @@
  * and the design-engine renderer tests for the component-level assertions
  * that this transform is actually wired in.
  *
- * Run: npx vitest run cascadia-web/src/lib/markdown/url-transform.test.ts
+ * Run: npx vitest run cascadia-web/src/markdown/url-transform.test.ts
  */
 
 import { describe, expect, it } from 'vitest'

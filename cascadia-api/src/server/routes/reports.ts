@@ -5,12 +5,12 @@ import { Hono } from 'hono'
 import {
   reportExecutionOptionsSchema,
   reportSchema,
-} from '@cascadia/commons/lib/reports/types'
+} from '@cascadia/commons/reports/types'
 import { tagged } from '../adapter'
 import type { z } from 'zod'
-import { ReportService } from '@/lib/reports/ReportService'
-import { NotFoundError } from '@/lib/errors'
-import { apiHandler, created } from '@/lib/api/handler'
+import { ReportService } from '@/reports/ReportService'
+import { NotFoundError } from '@/errors'
+import { apiHandler, created } from '@/api/handler'
 
 const adapt = tagged('Reports')
 

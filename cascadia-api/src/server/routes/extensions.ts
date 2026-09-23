@@ -4,14 +4,14 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../adapter'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
+import { apiHandler, parseQuery } from '@/api/handler'
 import {
   ExtensionRegistry,
   GUARD_OPERATIONS,
   describeExtensions,
   disabledExtensionIds,
   isExtensionEnabled,
-} from '@/lib/extensions'
+} from '@/extensions'
 
 const adapt = tagged('Extensions')
 

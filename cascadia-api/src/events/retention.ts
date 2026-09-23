@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, asc, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
-import type { DbInstance, TransactionClient } from '@/lib/db'
-import { domainEvents, eventConsumers } from '@/lib/db/schema'
-import { eventLogger } from '@/lib/logging/logger'
+import type { DbInstance, TransactionClient } from '@/db'
+import { domainEvents, eventConsumers } from '@/db/schema'
+import { eventLogger } from '@/logging/logger'
 
 /**
  * How long a consumer may stay parked before retention gives up on it, when a

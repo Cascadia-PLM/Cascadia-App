@@ -34,12 +34,12 @@
  * process that publishes.
  */
 
-import { JobService } from '@cascadia/api/lib/jobs/JobService'
-import { JobTypeRegistry } from '@cascadia/api/lib/jobs/registry'
-import { RabbitMQClient } from '@cascadia/api/lib/jobs/rabbitmq/client'
-import { RABBITMQ_CONFIG } from '@cascadia/api/lib/jobs/rabbitmq/types'
-import { workerLogger } from '@cascadia/api/lib/logging/logger'
-import type { JobTypeConfig } from '@cascadia/api/lib/jobs/types'
+import { JobService } from '@cascadia/api/jobs/JobService'
+import { JobTypeRegistry } from '@cascadia/api/jobs/registry'
+import { RabbitMQClient } from '@cascadia/api/jobs/rabbitmq/client'
+import { RABBITMQ_CONFIG } from '@cascadia/api/jobs/rabbitmq/types'
+import { workerLogger } from '@cascadia/api/logging/logger'
+import type { JobTypeConfig } from '@cascadia/api/jobs/types'
 
 export interface RetrySchedulerHandle {
   stop: () => void

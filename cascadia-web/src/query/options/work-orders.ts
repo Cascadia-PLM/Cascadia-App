@@ -8,8 +8,8 @@ import type {
   InstructionExecution,
   WorkOrder,
   WorkOrderInstruction,
-} from '@cascadia/commons/lib/items/types/work-order'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/items/types/work-order'
+import { apiFetch } from '@/api/client'
 
 export interface WorkOrderList {
   workOrders: Array<WorkOrder>

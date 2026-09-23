@@ -7,7 +7,7 @@ import { useBreadcrumbRouteInfo } from './useBreadcrumbRouteInfo'
 import { useBreadcrumbData } from './useBreadcrumbData'
 import { BreadcrumbDropdown } from './BreadcrumbDropdown'
 import { BreadcrumbLink } from './BreadcrumbLink'
-import { useVersionContext } from '@/lib/hooks/useVersionContext'
+import { useVersionContext } from '@/hooks/useVersionContext'
 import { VersionContextSelector } from '@/components/versioning/VersionContextSelector'
 
 /**

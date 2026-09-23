@@ -4,7 +4,7 @@
 import { hash as argon2Hash, verify as argon2Verify } from '@node-rs/argon2'
 import { SHA256 } from '@oslojs/crypto/sha2'
 import { decodeBase64, encodeBase64 } from '@oslojs/encoding'
-import { authLogger } from '@/lib/logging/logger'
+import { authLogger } from '@/logging/logger'
 
 const ARGON2_PREFIX = 'argon2id:'
 

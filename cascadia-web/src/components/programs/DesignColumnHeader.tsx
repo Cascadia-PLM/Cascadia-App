@@ -3,7 +3,7 @@
 
 import { Link } from '@tanstack/react-router'
 import { Box } from 'lucide-react'
-import type { ProgramGraphDesign } from '@cascadia/commons/lib/versioning/graph-types'
+import type { ProgramGraphDesign } from '@cascadia/commons/versioning/graph-types'
 
 interface DesignColumnHeaderProps {
   design: ProgramGraphDesign

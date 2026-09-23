@@ -3,11 +3,8 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type {
-  JobPriority,
-  JobStatus,
-} from '@cascadia/commons/lib/jobs/types-wire'
-import { apiFetch } from '@/lib/api/client'
+import type { JobPriority, JobStatus } from '@cascadia/commons/jobs/types-wire'
+import { apiFetch } from '@/api/client'
 
 export interface Job {
   id: string

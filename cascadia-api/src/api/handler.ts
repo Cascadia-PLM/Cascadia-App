@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { hasPermission } from '@cascadia/commons/lib/auth/permissions'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { hasPermission } from '@cascadia/commons/auth/permissions'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import {
   RateLimiter,
   apiLimiter,
@@ -17,22 +17,22 @@ import type { z } from 'zod'
 import type {
   PermissionAction,
   ResourceType,
-} from '@cascadia/commons/lib/auth/permissions'
-import type { SessionUser } from '@/lib/auth/session'
-import type { AuthMethod } from '@/lib/auth/credentials'
-import { resolveCredentials } from '@/lib/auth/credentials'
-import { intersectPermissions } from '@/lib/auth/api-key-utils'
-import { permissionService } from '@/lib/auth/permission-service'
-import { db } from '@/lib/db'
-import { authEvents } from '@/lib/db/schema/users'
-import { getRequestId, handleApiError } from '@/lib/errors/handleApiError'
+} from '@cascadia/commons/auth/permissions'
+import type { SessionUser } from '@/auth/session'
+import type { AuthMethod } from '@/auth/credentials'
+import { resolveCredentials } from '@/auth/credentials'
+import { intersectPermissions } from '@/auth/api-key-utils'
+import { permissionService } from '@/auth/permission-service'
+import { db } from '@/db'
+import { authEvents } from '@/db/schema/users'
+import { getRequestId, handleApiError } from '@/errors/handleApiError'
 import {
   AppError,
   AuthenticationError,
   RateLimitedError,
   ValidationError,
-} from '@/lib/errors'
-import { createErrorResponse } from '@/lib/errors/api'
+} from '@/errors'
+import { createErrorResponse } from '@/errors/api'
 
 /**
  * Validate the Origin header for state-changing requests (CSRF protection).
@@ -135,7 +135,7 @@ interface HandlerOptions<
    * it here makes the ordering structural instead of a convention every author
    * has to remember, and `program-isolation.permissions.test.ts` holds it.
    *
-   * Throw to refuse — the `require*Access` helpers in `lib/auth/access` already
+   * Throw to refuse — the `require*Access` helpers in `auth/access` already
    * throw `PermissionDeniedError`, so most gates are a one-line call. Any
    * return value is awaited and discarded: several of those helpers return the
    * scope they resolved, and a handler that needs it calls them again (they
@@ -400,7 +400,7 @@ export function apiHandler<
 
       // Rate limiting, keyed on the address the deployment vouches for rather
       // than on whatever the caller wrote in X-Forwarded-For — see
-      // lib/api/client-ip. Off outside production unless RATE_LIMIT_ENFORCE
+      // api/client-ip. Off outside production unless RATE_LIMIT_ENFORCE
       // says otherwise; see rateLimitingEnabled.
       if (options.rateLimit !== 'none' && rateLimitingEnabled()) {
         let limiter: RateLimiter

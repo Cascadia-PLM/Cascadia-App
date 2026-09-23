@@ -67,7 +67,7 @@ import type {
   SortingState,
 } from '@tanstack/react-table'
 import type { ReactNode, SetStateAction } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 // Per-column presentation hints read by DataGrid when rendering headers/cells.
 // TanStack ships ColumnMeta as an empty interface for consumers to augment.

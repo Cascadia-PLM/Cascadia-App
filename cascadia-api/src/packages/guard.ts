@@ -3,8 +3,8 @@
 
 import { PackageRegistry } from './registry'
 import { packageDescriptor } from './catalog'
-import type { PackageId } from '@cascadia/commons/lib/packages/types'
-import { PackageNotLicensedError } from '@/lib/errors'
+import type { PackageId } from '@cascadia/commons/packages/types'
+import { PackageNotLicensedError } from '@/errors'
 
 /**
  * Throw unless this instance is licensed for `id`.

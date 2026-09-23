@@ -9,19 +9,19 @@ import type {
   PaginationState,
   SortingState,
 } from '@tanstack/react-table'
-import type { GridParams, GridQueryFactory } from '@/lib/query/grid-params'
+import type { GridParams, GridQueryFactory } from '@/query/grid-params'
 import {
   DEFAULT_PAGE_SIZE,
   gridUrlStateFromSearch,
   toGridParams,
-} from '@/lib/query/grid-params'
+} from '@/query/grid-params'
 
-export type { GridParams as ServerDataGridParams } from '@/lib/query/grid-params'
+export type { GridParams as ServerDataGridParams } from '@/query/grid-params'
 export type {
   GridQuery,
   GridQueryFactory,
   GridQueryResult,
-} from '@/lib/query/grid-params'
+} from '@/query/grid-params'
 
 export interface UseServerDataGridOptions<T> {
   /**

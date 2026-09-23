@@ -40,8 +40,8 @@ import { getTypeHandler } from '../type-handlers'
 import '../type-handlers/init'
 import type { AccessScope } from '../../db/filters'
 import type { SQL } from 'drizzle-orm'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
-import { paginatedOrderBy } from '@/lib/db/paginated-order'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
+import { paginatedOrderBy } from '@/db/paginated-order'
 
 export interface SearchCriteria {
   query?: string

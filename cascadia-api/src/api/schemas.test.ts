@@ -20,7 +20,7 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { baseItemUpdateSchema, itemUpdateSchemaFor } from './schemas'
-import { ITEM_TYPE_RESOURCES } from '@/lib/items/item-type-resources'
+import { ITEM_TYPE_RESOURCES } from '@/items/item-type-resources'
 
 const ITEM_TYPES = Object.keys(ITEM_TYPE_RESOURCES)
 

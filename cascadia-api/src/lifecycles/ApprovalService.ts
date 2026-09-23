@@ -27,7 +27,7 @@ import type {
   InstanceApprover,
   LifecycleState,
   StateApprover,
-} from '@cascadia/commons/lib/lifecycles/types'
+} from '@cascadia/commons/lifecycles/types'
 import type {
   ApprovalAttestation,
   ApprovalContext,
@@ -39,9 +39,9 @@ import {
   NotFoundError,
   PermissionDeniedError,
   ValidationError,
-} from '@/lib/errors'
-import { isUniqueViolation } from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/errors'
+import { isUniqueViolation } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Service for managing workflow approvals

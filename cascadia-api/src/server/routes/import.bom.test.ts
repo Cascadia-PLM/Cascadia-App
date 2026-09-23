@@ -30,18 +30,18 @@ import {
 } from 'vitest'
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import { validateBomStructure } from '@cascadia/commons/lib/import'
+import { validateBomStructure } from '@cascadia/commons/import'
 import importRoutes from './import'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { SessionManager } from '@/lib/auth/session'
-import { permissionService } from '@/lib/auth/permission-service'
-import { itemRelationships, programMembers, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+import { DesignService } from '@/services/DesignService'
+import { SessionManager } from '@/auth/session'
+import { permissionService } from '@/auth/permission-service'
+import { itemRelationships, programMembers, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 interface ImportBody {
   data: {

@@ -3,20 +3,20 @@
 
 import { Hono } from 'hono'
 import { tagged } from '../../adapter'
-import type { ResourceType } from '@cascadia/commons/lib/auth/permissions'
-import type { BaseItem } from '@cascadia/commons/lib/items/types/base'
-import { requirePermission } from '@/lib/auth/server'
-import { ValidationError } from '@/lib/errors'
-import { getResourceType } from '@/lib/items/item-type-resources'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { apiHandler, jsonResponse } from '@/lib/api/handler'
-import { requireBranchAccess, requireDesignAccess } from '@/lib/auth/access'
-import { batchCreateRequestSchema } from '@/lib/api'
+import type { ResourceType } from '@cascadia/commons/auth/permissions'
+import type { BaseItem } from '@cascadia/commons/items/types/base'
+import { requirePermission } from '@/auth/server'
+import { ValidationError } from '@/errors'
+import { getResourceType } from '@/items/item-type-resources'
+import { ItemService } from '@/items/services/ItemService'
+import { apiHandler, jsonResponse } from '@/api/handler'
+import { requireBranchAccess, requireDesignAccess } from '@/auth/access'
+import { batchCreateRequestSchema } from '@/api'
 import {
   batchDeleteRequestSchema,
   batchUpdateRequestSchema,
   itemUpdateSchemaFor,
-} from '@/lib/api/schemas'
+} from '@/api/schemas'
 
 const adapt = tagged('Items')
 

@@ -12,19 +12,19 @@
  */
 
 import { and, desc, eq } from 'drizzle-orm'
-import { resolveKeyExpiration } from '@cascadia/commons/lib/auth/api-key-policy-types'
+import { resolveKeyExpiration } from '@cascadia/commons/auth/api-key-policy-types'
 import { db } from '../db'
 import { apiKeyEvents, apiKeys } from '../db/schema/api-keys'
 import { users } from '../db/schema/users'
 import { generateApiKey, getKeyPrefix, hashApiKey } from './api-key-utils'
 import { loadApiKeyPolicy } from './api-key-policy'
 import { permissionService } from './permission-service'
-import type { ApiKeyStatus } from '@cascadia/commons/lib/auth/api-key-types'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import type { ApiKeyStatus } from '@cascadia/commons/auth/api-key-types'
+import { NotFoundError, ValidationError } from '@/errors'
 
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { ApiKeyStatus } from '@cascadia/commons/lib/auth/api-key-types'
+export type { ApiKeyStatus } from '@cascadia/commons/auth/api-key-types'
 
 export function deriveStatus(key: {
   expiresAt: Date | null

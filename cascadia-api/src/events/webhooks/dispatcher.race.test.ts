@@ -27,20 +27,20 @@ import { asc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { createWebhookDispatcher } from './dispatcher'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { db } from '@/lib/db'
+import { db } from '@/db'
 import {
   domainEvents,
   eventConsumers,
   webhookDeliveries,
   webhookSubscriptions,
-} from '@/lib/db/schema'
+} from '@/db/schema'
 import {
   defineDomainEvent,
   ensureDomainEventSequencing,
   publishDomainEvent,
   runEventConsumerOnce,
-} from '@/lib/events'
-import { asDomainEventConsumer } from '@/lib/extensions'
+} from '@/events'
+import { asDomainEventConsumer } from '@/extensions'
 
 /** This suite's own types. Nothing else in the pool publishes them. */
 const WATCHED = defineDomainEvent({

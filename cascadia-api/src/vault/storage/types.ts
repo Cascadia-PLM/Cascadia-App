@@ -7,7 +7,7 @@
  *
  * Throw contract, binding on every implementation: a `path` that traverses
  * outside the vault root (contains `..`, or is absolute) throws
- * `ValidationError` from `@/lib/errors`; a `path` the backend does not hold
+ * `ValidationError` from `@/errors`; a `path` the backend does not hold
  * throws `NotFoundError` from `retrieve`, `createReadStream`, and `getSize`.
  * These propagate through `handleApiError`, which classifies by error class
  * (`ValidationError` -> 400, `NotFoundError` -> 404) — an implementation that

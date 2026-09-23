@@ -10,8 +10,8 @@ import { programMembers, programs, users } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
-import { takeFirst } from '@/lib/db/take-first'
-import { clearableDate } from '@/lib/api/wire-date'
+import { takeFirst } from '@/db/take-first'
+import { clearableDate } from '@/api/wire-date'
 
 // Zod schemas for validation
 export const programCreateSchema = z.object({

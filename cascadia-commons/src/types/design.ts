@@ -13,7 +13,7 @@ export interface DesignConfiguration {
 
 /**
  * A `designs` row. Hand-written here so the web can name it without the
- * schema; `lib/db/schema/designs.ts` asserts it matches the table.
+ * schema; `db/schema/designs.ts` asserts it matches the table.
  */
 export interface DesignRow {
   id: string

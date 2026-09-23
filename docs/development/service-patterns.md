@@ -1,6 +1,6 @@
 # Service Layer Patterns
 
-This guide covers the conventions and patterns used in Cascadia's service layer, located in `cascadia-api/src/lib/services/` and `cascadia-api/src/lib/items/services/`.
+This guide covers the conventions and patterns used in Cascadia's service layer, located in `cascadia-api/src/services/` and `cascadia-api/src/items/services/`.
 
 ## Architecture Overview
 
@@ -10,10 +10,10 @@ Cascadia uses a three-layer architecture for server-side logic:
 API Routes (cascadia-api/src/server/routes/)
     │  Thin handlers — parse request, call service, return response
     ▼
-Service Layer (cascadia-api/src/lib/services/, cascadia-api/src/lib/items/services/)
+Service Layer (cascadia-api/src/services/, cascadia-api/src/items/services/)
     │  Business logic, validation, orchestration
     ▼
-Database Layer (cascadia-api/src/lib/db/, Drizzle ORM)
+Database Layer (cascadia-api/src/db/, Drizzle ORM)
     │  Schema definitions, queries, transactions
     ▼
 PostgreSQL
@@ -34,7 +34,7 @@ PostgreSQL
 All services use static methods on a class. There are no instances to manage or inject.
 
 ```typescript
-// cascadia-api/src/lib/services/BranchService.ts
+// cascadia-api/src/services/BranchService.ts
 export class BranchService {
   static async getById(id: string) {
     const result = await db
@@ -71,7 +71,7 @@ const part = await ItemService.findById(partId)
 - Types/interfaces exported alongside the service
 
 ```
-cascadia-api/src/lib/services/
+cascadia-api/src/services/
 ├── BranchService.ts          # Branch management
 ├── BranchService.test.ts     # Tests
 ├── CheckoutService.ts        # Item checkout/checkin
@@ -112,7 +112,7 @@ const validatedData = typeConfig.schema.parse(dataWithType)
 
 ### Typed Error Classes
 
-Services throw typed errors from `cascadia-api/src/lib/errors/`. Each error maps to an HTTP status code automatically.
+Services throw typed errors from `cascadia-api/src/errors/`. Each error maps to an HTTP status code automatically.
 
 | Error Class               | HTTP Status | When to Use              |
 | ------------------------- | ----------- | ------------------------ |
@@ -158,7 +158,7 @@ throw new PermissionDeniedError('parts', 'delete')
 
 ### How apiHandler Catches Errors
 
-The `apiHandler()` wrapper in `cascadia-api/src/lib/api/handler.ts` catches all errors thrown by services and converts them to proper HTTP responses automatically. You never need try/catch in routes:
+The `apiHandler()` wrapper in `cascadia-api/src/api/handler.ts` catches all errors thrown by services and converts them to proper HTTP responses automatically. You never need try/catch in routes:
 
 ```typescript
 // In the route — just throw, apiHandler catches it
@@ -257,7 +257,7 @@ change-order release's outer transaction decorative — every nested
 
 The pattern the codebase uses instead: a service method accepts an
 optional trailing `tx?: TransactionClient`, threads it to every callee,
-and wraps its own writes in `withTx(tx, fn)` from `@/lib/db` — which runs
+and wraps its own writes in `withTx(tx, fn)` from `@/db` — which runs
 `fn` inside the caller's transaction when there is one and opens a new
 one otherwise. Nesting a real transaction client produces a savepoint,
 which is what you want.
@@ -322,16 +322,16 @@ export class CheckoutService {
 
 ## Key Services Reference
 
-| Service                    | Location                               | Purpose                                 |
-| -------------------------- | -------------------------------------- | --------------------------------------- |
-| `ItemService`              | `cascadia-api/src/lib/items/services/` | CRUD for all item types                 |
-| `BranchService`            | `cascadia-api/src/lib/services/`       | Branch creation, locking, archiving     |
-| `CheckoutService`          | `cascadia-api/src/lib/services/`       | Item checkout/checkin on branches       |
-| `CommitService`            | `cascadia-api/src/lib/services/`       | Create version commits                  |
-| `VersionResolver`          | `cascadia-api/src/lib/services/`       | Resolve item versions per branch/commit |
-| `ChangeOrderMergeService`  | `cascadia-api/src/lib/services/`       | Merge ECO branches to main              |
-| `DesignService`            | `cascadia-api/src/lib/services/`       | Design management                       |
-| `LifecycleService`         | `cascadia-api/src/lib/services/`       | Lifecycle state transitions             |
-| `ConflictDetectionService` | `cascadia-api/src/lib/services/`       | Detect merge conflicts                  |
-| `RevisionService`          | `cascadia-api/src/lib/services/`       | Assign revision letters on release      |
-| `JobService`               | `cascadia-api/src/lib/jobs/`           | Submit and manage background jobs       |
+| Service                    | Location                           | Purpose                                 |
+| -------------------------- | ---------------------------------- | --------------------------------------- |
+| `ItemService`              | `cascadia-api/src/items/services/` | CRUD for all item types                 |
+| `BranchService`            | `cascadia-api/src/services/`       | Branch creation, locking, archiving     |
+| `CheckoutService`          | `cascadia-api/src/services/`       | Item checkout/checkin on branches       |
+| `CommitService`            | `cascadia-api/src/services/`       | Create version commits                  |
+| `VersionResolver`          | `cascadia-api/src/services/`       | Resolve item versions per branch/commit |
+| `ChangeOrderMergeService`  | `cascadia-api/src/services/`       | Merge ECO branches to main              |
+| `DesignService`            | `cascadia-api/src/services/`       | Design management                       |
+| `LifecycleService`         | `cascadia-api/src/services/`       | Lifecycle state transitions             |
+| `ConflictDetectionService` | `cascadia-api/src/services/`       | Detect merge conflicts                  |
+| `RevisionService`          | `cascadia-api/src/services/`       | Assign revision letters on release      |
+| `JobService`               | `cascadia-api/src/jobs/`           | Submit and manage background jobs       |

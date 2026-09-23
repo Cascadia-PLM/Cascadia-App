@@ -201,7 +201,7 @@ export const vaultFileAnnotations = pgTable(
     pageNumber: integer('page_number').notNull(),
     /** 'highlight' | 'rect' | 'ink' | 'note' | 'text' */
     kind: varchar('kind', { length: 20 }).notNull(),
-    /** Normalized geometry; shape depends on `kind`. See `@/lib/vault/annotations`. */
+    /** Normalized geometry; shape depends on `kind`. See `@/vault/annotations`. */
     geometry: jsonb('geometry').notNull(),
     /** Stroke/fill colour as a hex string, e.g. '#f59e0b'. */
     color: varchar('color', { length: 9 }).notNull(),

@@ -25,15 +25,15 @@ import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { seedStandardPartLifecycle } from '@/__tests__/fixtures/lifecycles'
-import { db } from '@/lib/db'
-import { changeOrderDesigns, programs } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import { DesignService } from '@/lib/services/DesignService'
+import { db } from '@/db'
+import { changeOrderDesigns, programs } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { ItemService } from '@/items/services/ItemService'
+import { ItemTypeRegistry } from '@/items/registry'
+import { DesignService } from '@/services/DesignService'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('resolveChangeOrderProgram', () => {
   const testDb = new TestDatabase()

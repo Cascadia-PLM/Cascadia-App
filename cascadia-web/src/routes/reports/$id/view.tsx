@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Pencil } from 'lucide-react'
 import { ReportViewer } from '@/components/reports/ReportViewer'
 import { Button } from '@/components/ui'
-import { reportDetailQuery } from '@/lib/query'
+import { reportDetailQuery } from '@/query'
 
 export const Route = createFileRoute('/reports/$id/view')({
   component: ViewReportPage,

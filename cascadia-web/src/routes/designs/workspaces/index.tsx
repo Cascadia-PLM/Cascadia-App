@@ -4,7 +4,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, GitBranch, Trash2 } from 'lucide-react'
-import type { Workspace } from '@/lib/query'
+import type { Workspace } from '@/query'
 import { PageContainer } from '@/components/layout'
 import {
   Badge,
@@ -15,14 +15,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   useInvalidateResources,
   workspaceDetailQuery,
   workspaceListQuery,
-} from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@/query'
+import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/designs/workspaces/')({
   component: WorkspacesPage,

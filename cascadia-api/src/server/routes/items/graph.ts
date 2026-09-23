@@ -4,14 +4,14 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { tagged } from '../../adapter'
-import { requirePermission } from '@/lib/auth/server'
-import { NotFoundError } from '@/lib/errors'
-import { getResourceType } from '@/lib/items/item-type-resources'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { GraphService } from '@/lib/services/GraphService'
-import { apiHandler, parseQuery } from '@/lib/api/handler'
-import { requireItemAccess } from '@/lib/auth/access'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
+import { requirePermission } from '@/auth/server'
+import { NotFoundError } from '@/errors'
+import { getResourceType } from '@/items/item-type-resources'
+import { ItemService } from '@/items/services/ItemService'
+import { GraphService } from '@/services/GraphService'
+import { apiHandler, parseQuery } from '@/api/handler'
+import { requireItemAccess } from '@/auth/access'
+import { AccessControlService } from '@/auth/AccessControlService'
 
 const adapt = tagged('Items')
 

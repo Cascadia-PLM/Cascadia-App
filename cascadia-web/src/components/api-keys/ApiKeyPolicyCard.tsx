@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertCircle, CheckCircle, Clock, RotateCcw, Save } from 'lucide-react'
-import type { ApiKeyPolicy } from '@cascadia/commons/lib/auth/api-key-policy-types'
+import type { ApiKeyPolicy } from '@cascadia/commons/auth/api-key-policy-types'
 import {
   Button,
   Card,
@@ -16,8 +16,8 @@ import {
   Label,
   Switch,
 } from '@/components/ui'
-import { apiKeyPolicyQuery, useInvalidateResources } from '@/lib/query'
-import { ApiError, apiFetch } from '@/lib/api/client'
+import { apiKeyPolicyQuery, useInvalidateResources } from '@/query'
+import { ApiError, apiFetch } from '@/api/client'
 
 /**
  * Instance-wide expiration policy editor.

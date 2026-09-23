@@ -23,9 +23,9 @@ import { redirect } from '@tanstack/react-router'
 import {
   canAccessSystem,
   canManageSystem,
-} from '@cascadia/commons/lib/auth/permissions'
+} from '@cascadia/commons/auth/permissions'
 import type { QueryClient } from '@tanstack/react-query'
-import { currentUserPermissionsQuery } from '@/lib/query'
+import { currentUserPermissionsQuery } from '@/query'
 
 /**
  * `fetchQuery`, not `ensureQueryData`: this read decides a redirect, so it has

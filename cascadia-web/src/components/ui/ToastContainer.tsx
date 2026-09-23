@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react'
-import type { ToastVariant } from '@/lib/hooks/useToast'
-import { useToast } from '@/lib/hooks/useToast'
-import { cn } from '@/lib/utils'
+import type { ToastVariant } from '@/hooks/useToast'
+import { useToast } from '@/hooks/useToast'
+import { cn } from '@/utils'
 
 const variantStyles: Record<ToastVariant, string> = {
   default: 'bg-white border-gray-300 dark:bg-gray-800 dark:border-gray-700',

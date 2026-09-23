@@ -7,8 +7,8 @@ import { entityQuery, entitySubQuery } from './entities'
 import type {
   WorkInstructionOperation,
   WorkInstructionWithSteps,
-} from '@cascadia/commons/lib/items/types/work-instruction'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/items/types/work-instruction'
+import { apiFetch } from '@/api/client'
 
 /**
  * One work instruction template, steps included.

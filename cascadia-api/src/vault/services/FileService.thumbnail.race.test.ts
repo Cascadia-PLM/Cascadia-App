@@ -22,7 +22,7 @@
  * so the two designations really do interleave. No storage is touched:
  * designating a thumbnail is pure database work.
  *
- * Run: npx vitest run cascadia-api/src/lib/vault/services/FileService.thumbnail.race.test.ts
+ * Run: npx vitest run cascadia-api/src/vault/services/FileService.thumbnail.race.test.ts
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -30,9 +30,9 @@ import { and, eq } from 'drizzle-orm'
 import { FileService } from './FileService'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { insertTestDocument } from '@/__tests__/fixtures/items'
-import { vaultFiles } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { ConflictError } from '@/lib/errors'
+import { vaultFiles } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { ConflictError } from '@/errors'
 
 describe('FileService.setItemThumbnail — concurrent designations', () => {
   const concurrent = new ConcurrentTestDatabase()

@@ -5,7 +5,7 @@ import { CheckCircle2, Circle } from 'lucide-react'
 import { STEP_ORDER, strings } from './strings'
 import type { WizardStep } from './strings'
 import type { SetupProgressState } from './hooks/useSetupStatus'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface SetupSidebarProps {
   current: WizardStep

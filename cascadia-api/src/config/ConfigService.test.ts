@@ -11,7 +11,7 @@
  * failed to fold it in, every change order on that install would refuse to
  * be created with "no workflow configured" (remediation plan CM-25).
  *
- * Run: npx vitest run cascadia-api/src/lib/config/ConfigService.test.ts
+ * Run: npx vitest run cascadia-api/src/config/ConfigService.test.ts
  */
 
 import {
@@ -28,11 +28,11 @@ import { ConfigService, normalizeRuntimeConfig } from './ConfigService'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import { overrideItemTypeConfig } from '@/__tests__/fixtures/lifecycles'
-import { itemTypeConfigs } from '@/lib/db/schema'
-import { ItemTypeRegistry } from '@/lib/items/registry'
-import { ValidationError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
-import '@/lib/items/registerItemTypes.server'
+import { itemTypeConfigs } from '@/db/schema'
+import { ItemTypeRegistry } from '@/items/registry'
+import { ValidationError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
+import '@/items/registerItemTypes.server'
 
 const DEFINITION = '00000000-0000-4000-8000-000000000102'
 const OTHER = '00000000-0000-4000-8000-000000000103'

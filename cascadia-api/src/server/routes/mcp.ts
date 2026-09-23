@@ -5,7 +5,7 @@
  * MCP (Model Context Protocol) endpoint — Streamable HTTP transport.
  *
  * External agents connect here to use the Cascadia PLM tools (see
- * `@/lib/mcp/plm-server`). Authentication is API-key only:
+ * `@/mcp/plm-server`). Authentication is API-key only:
  *
  *   Authorization: Bearer csc_...
  *
@@ -24,8 +24,8 @@
 
 import { Hono } from 'hono'
 import { StreamableHTTPTransport } from '@hono/mcp'
-import { resolveCredentials } from '@/lib/auth/credentials'
-import { createPlmMcpServer } from '@/lib/mcp/plm-server'
+import { resolveCredentials } from '@/auth/credentials'
+import { createPlmMcpServer } from '@/mcp/plm-server'
 
 const app = new Hono()
 

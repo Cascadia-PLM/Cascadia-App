@@ -9,7 +9,7 @@
  * the caller resolved for the user, and to the item types the caller
  * allowed. These tests assert those invariants against a real database.
  *
- * Run: npm run test -- src/lib/items/services/ItemSearchService.test.ts
+ * Run: npm run test -- src/items/services/ItemSearchService.test.ts
  */
 
 import {
@@ -21,17 +21,17 @@ import {
   expect,
   it,
 } from 'vitest'
-import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/lib/items/item-type-definitions'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/items/item-type-definitions'
 import { ItemSearchService } from './ItemSearchService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { designs, items, programs, tools } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { getTypeHandler } from '@/lib/items/type-handlers'
+import { designs, items, programs, tools } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { getTypeHandler } from '@/items/type-handlers'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('ItemSearchService.searchGlobal', () => {
   const testDb = new TestDatabase()

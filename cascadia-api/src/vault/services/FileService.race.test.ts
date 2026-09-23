@@ -40,7 +40,7 @@
  * OS temp dir — never the dev vault — because the ordering of the store
  * against the transaction is the point of half of them.
  *
- * Run: npx vitest run cascadia-api/src/lib/vault/services/FileService.race.test.ts
+ * Run: npx vitest run cascadia-api/src/vault/services/FileService.race.test.ts
  */
 
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -59,20 +59,20 @@ import {
 import { and, eq } from 'drizzle-orm'
 import { FileService } from './FileService'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { FileUploadMetadata } from '@/lib/vault/storage'
+import type { FileUploadMetadata } from '@/vault/storage'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { insertTestDocument } from '@/__tests__/fixtures/items'
-import { vaultFileHistory, vaultFiles } from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
-import { LocalFileStorage, StorageFactory } from '@/lib/vault/storage'
+import { vaultFileHistory, vaultFiles } from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
+import { LocalFileStorage, StorageFactory } from '@/vault/storage'
 import {
   AppError,
   ConflictError,
   NotFoundError,
   ResourceLockedError,
   ValidationError,
-} from '@/lib/errors'
+} from '@/errors'
 
 const CONTENDERS = 8
 

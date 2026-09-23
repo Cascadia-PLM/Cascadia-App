@@ -80,7 +80,7 @@ export const RESOURCES = [
  * `ApprovalExtras` uses:
  *
  * ```typescript
- * declare module '@/lib/query/keys' {
+ * declare module '@/query/keys' {
  *   interface ModuleResources {
  *     signatures: true
  *   }

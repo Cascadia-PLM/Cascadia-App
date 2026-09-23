@@ -30,7 +30,7 @@ import { and, eq, sql } from 'drizzle-orm'
 // from a module-level constant. See the note in
 // components/versioning/graph-layout.ts.
 import dagre from 'dagre'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import { itemTypeConfigs, lifecycleDefinitions, users } from '../db/schema'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '../db/schema'

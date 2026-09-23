@@ -9,7 +9,7 @@ import type {
   AsBuiltLine,
   GenealogyNode,
   PhysicalPartEvidenceLink,
-} from '@/lib/query'
+} from '@/query'
 import {
   Badge,
   Button,
@@ -28,9 +28,9 @@ import {
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { FileList, FileUploadZone } from '@/components/vault'
-import { apiFetch } from '@/lib/api/client'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { apiFetch } from '@/api/client'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   itemTextSearchQuery,
   physicalPartAsBuiltQuery,
@@ -38,7 +38,7 @@ import {
   physicalPartEvidenceQuery,
   physicalPartGenealogyQuery,
   useInvalidateResources,
-} from '@/lib/query'
+} from '@/query'
 
 export const Route = createFileRoute('/physical-parts/$id')({
   component: PhysicalPartDetailPage,

@@ -4,7 +4,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import type { UIMessage } from '@tanstack/ai-react'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 
 /** One row of the chat sidebar's conversation history. */
 export interface AiChatSession {

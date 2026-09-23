@@ -3,9 +3,9 @@
 
 import { memo } from 'react'
 import { Edit2, RotateCcw, Trash2 } from 'lucide-react'
-import { NO_REVISION_MARKER } from '@cascadia/commons/lib/types/lifecycle'
+import { NO_REVISION_MARKER } from '@cascadia/commons/types/lifecycle'
 import type { Node, NodeProps } from '@xyflow/react'
-import type { LifecyclePhaseConfig } from '@cascadia/commons/lib/types/lifecycle'
+import type { LifecyclePhaseConfig } from '@cascadia/commons/types/lifecycle'
 
 interface PhaseGroupNodeData extends Record<string, unknown> {
   phase: LifecyclePhaseConfig

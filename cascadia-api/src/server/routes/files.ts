@@ -6,46 +6,46 @@ import { z } from 'zod'
 import {
   CATEGORY_SOURCES,
   FILE_CATEGORY_VALUES,
-} from '@cascadia/commons/lib/vault/file-categories'
+} from '@cascadia/commons/vault/file-categories'
 import {
   PREVIEWABLE_EXTENSIONS,
   maxPreviewBytesFor,
   previewFormatFor,
-} from '@cascadia/commons/lib/vault/preview'
+} from '@cascadia/commons/vault/preview'
 import {
   createAnnotationSchema,
   updateAnnotationSchema,
-} from '@cascadia/commons/lib/vault/annotations'
+} from '@cascadia/commons/vault/annotations'
 import {
   resetNodeLinkSchema,
   setNodeLinkSchema,
-} from '@cascadia/commons/lib/vault/cad-nodes'
+} from '@cascadia/commons/vault/cad-nodes'
 import { tagged } from '../adapter'
-import { FileService } from '@/lib/vault/services/FileService'
-import { JobService } from '@/lib/jobs/JobService'
-import { apiHandler, jsonResponse, parseQuery } from '@/lib/api/handler'
+import { FileService } from '@/vault/services/FileService'
+import { JobService } from '@/jobs/JobService'
+import { apiHandler, jsonResponse, parseQuery } from '@/api/handler'
 import {
   FileTooLargeError,
   FileTypeNotAllowedError,
   NotFoundError,
   PermissionDeniedError,
   ValidationError,
-} from '@/lib/errors'
-import { requireFileAccess } from '@/lib/auth/access'
-import { requirePermission } from '@/lib/auth/server'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { mountRoutes } from '@/lib/api/route-registry'
+} from '@/errors'
+import { requireFileAccess } from '@/auth/access'
+import { requirePermission } from '@/auth/server'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { mountRoutes } from '@/api/route-registry'
 import {
   batchFileCheckinRequestSchema,
   batchFileCheckoutRequestSchema,
-} from '@/lib/api/schemas'
-import { AnnotationService } from '@/lib/vault/services/AnnotationService'
-import { CadModelNodeService } from '@/lib/vault/services/CadModelNodeService'
-import { WATERMARK_POSITIONS } from '@/lib/vault/pdf/watermark'
+} from '@/api/schemas'
+import { AnnotationService } from '@/vault/services/AnnotationService'
+import { CadModelNodeService } from '@/vault/services/CadModelNodeService'
+import { WATERMARK_POSITIONS } from '@/vault/pdf/watermark'
 import {
   requireFileMutation,
   requireItemFileMutation,
-} from '@/lib/vault/file-mutation-policy'
+} from '@/vault/file-mutation-policy'
 
 const adapt = tagged('Files')
 

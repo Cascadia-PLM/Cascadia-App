@@ -32,7 +32,7 @@ import { items, workInstructions } from './items'
 // as material traceability.
 // =====================================================================
 
-import type { InstructionSnapshot } from '@cascadia/commons/lib/items/types/work-instruction-content'
+import type { InstructionSnapshot } from '@cascadia/commons/items/types/work-instruction-content'
 
 // =====================================================================
 // Work Orders — item type table (two-table pattern, Tool pattern:
@@ -95,7 +95,7 @@ export const workOrdersRelations = relations(workOrders, ({ one }) => ({
 }))
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { InstructionSnapshot } from '@cascadia/commons/lib/items/types/work-instruction-content'
+export type { InstructionSnapshot } from '@cascadia/commons/items/types/work-instruction-content'
 
 export const workOrderInstructions = pgTable(
   'work_order_instructions',

@@ -12,23 +12,23 @@
  *   drivers allow-list on the Driven ones
  */
 import { eq } from 'drizzle-orm'
-import { db, describeConnection } from '@cascadia/api/lib/db'
-import { roles, userRoles, users } from '@cascadia/api/lib/db/schema/users'
-import { designs } from '@cascadia/api/lib/db/schema/designs'
-import { branches, commits } from '@cascadia/api/lib/db/schema/versioning'
-import { itemTypeConfigs } from '@cascadia/api/lib/db/schema/config'
-import { lifecycleDefinitions } from '@cascadia/api/lib/db/schema/lifecycles'
+import { db, describeConnection } from '@cascadia/api/db'
+import { roles, userRoles, users } from '@cascadia/api/db/schema/users'
+import { designs } from '@cascadia/api/db/schema/designs'
+import { branches, commits } from '@cascadia/api/db/schema/versioning'
+import { itemTypeConfigs } from '@cascadia/api/db/schema/config'
+import { lifecycleDefinitions } from '@cascadia/api/db/schema/lifecycles'
 import {
   DEFAULT_ITEM_LIFECYCLES,
   seedDefaultLifecycles,
-} from '@cascadia/api/lib/items/default-lifecycles'
-import { hashPassword } from '@cascadia/api/lib/auth/password'
+} from '@cascadia/api/items/default-lifecycles'
+import { hashPassword } from '@cascadia/api/auth/password'
 import {
   ROLE_DEFINITIONS,
   roleToDbFormat,
-} from '@cascadia/commons/lib/auth/permissions'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
-import { takeFirst } from '@cascadia/api/lib/db/take-first'
+} from '@cascadia/commons/auth/permissions'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
+import { takeFirst } from '@cascadia/api/db/take-first'
 
 // Fixed IDs for consistent references (RFC 4122 compliant UUIDs)
 // Format: version 4 (13th char = 4), variant 1 (17th char = 8-b)

@@ -52,7 +52,7 @@ These services coordinate multiple lower-layer services to implement complex bus
 
 ### ItemService
 
-**File**: `cascadia-api/src/lib/items/services/ItemService.ts`
+**File**: `cascadia-api/src/items/services/ItemService.ts`
 
 The central CRUD service for all item types. Handles creation, updates, deletion, search, and version-aware operations.
 
@@ -67,7 +67,7 @@ Key responsibilities:
 
 ### ChangeOrderService
 
-**File**: `cascadia-api/src/lib/items/services/ChangeOrderService.ts`
+**File**: `cascadia-api/src/items/services/ChangeOrderService.ts`
 
 Manages the ECO lifecycle: adding affected items, creating branches, orchestrating transitions.
 
@@ -82,7 +82,7 @@ Key responsibilities:
 
 ### ChangeOrderMergeService
 
-**File**: `cascadia-api/src/lib/services/ChangeOrderMergeService.ts`
+**File**: `cascadia-api/src/services/ChangeOrderMergeService.ts`
 
 Orchestrates ECO release: validates merges, assigns revisions, creates merge commits, archives branches.
 
@@ -99,7 +99,7 @@ Key responsibilities:
 
 ### ConflictDetectionService
 
-**File**: `cascadia-api/src/lib/services/ConflictDetectionService.ts`
+**File**: `cascadia-api/src/services/ConflictDetectionService.ts`
 
 Detects conflicts between branches: checkout locks, main divergence, cross-ECO modifications.
 
@@ -107,7 +107,7 @@ Detects conflicts between branches: checkout locks, main divergence, cross-ECO m
 
 ### ImpactAssessmentService
 
-**File**: `cascadia-api/src/lib/services/ImpactAnalysisService.ts`
+**File**: `cascadia-api/src/services/ImpactAnalysisService.ts`
 
 Analyzes BOM relationships to find items indirectly affected by changes.
 
@@ -121,7 +121,7 @@ Single-responsibility services implementing core domain operations.
 
 ### CheckoutService
 
-**File**: `cascadia-api/src/lib/services/CheckoutService.ts`
+**File**: `cascadia-api/src/services/CheckoutService.ts`
 
 Manages item checkout (lock for editing) and save operations on branches.
 
@@ -136,7 +136,7 @@ Key methods:
 
 ### VersionResolver
 
-**File**: `cascadia-api/src/lib/services/VersionResolver.ts`
+**File**: `cascadia-api/src/services/VersionResolver.ts`
 
 Resolves which version of an item to show for a given context (main, branch, commit, tag).
 
@@ -151,7 +151,7 @@ Key methods:
 
 ### CommitService
 
-**File**: `cascadia-api/src/lib/services/CommitService.ts`
+**File**: `cascadia-api/src/services/CommitService.ts`
 
 Creates commits and tracks item changes within them.
 
@@ -165,7 +165,7 @@ Key methods:
 
 ### BranchService
 
-**File**: `cascadia-api/src/lib/services/BranchService.ts`
+**File**: `cascadia-api/src/services/BranchService.ts`
 
 Branch lifecycle: creation, locking, archival, lookup.
 
@@ -180,7 +180,7 @@ Key methods:
 
 ### DesignService
 
-**File**: `cascadia-api/src/lib/services/DesignService.ts`
+**File**: `cascadia-api/src/services/DesignService.ts`
 
 Design CRUD and initialization. Leaf service with no service dependencies.
 
@@ -191,7 +191,7 @@ Key methods:
 
 ### LifecycleService
 
-**File**: `cascadia-api/src/lib/services/LifecycleService.ts`
+**File**: `cascadia-api/src/services/LifecycleService.ts`
 
 Item lifecycle state management using workflow definitions.
 
@@ -204,7 +204,7 @@ Key methods:
 
 ### ItemVersioningFacade
 
-**File**: `cascadia-api/src/lib/items/services/ItemVersioningFacade.ts`
+**File**: `cascadia-api/src/items/services/ItemVersioningFacade.ts`
 
 Reads and writes items at a point in version history: `getAtContext`, `listAtContext`,
 `diff`, `createOnBranch`. Private to `ItemService`, which re-exports the same API.
@@ -213,7 +213,7 @@ Reads and writes items at a point in version history: `getAtContext`, `listAtCon
 
 ### ItemEditPolicy
 
-**File**: `cascadia-api/src/lib/items/services/ItemEditPolicy.ts`
+**File**: `cascadia-api/src/items/services/ItemEditPolicy.ts`
 
 Whether a caller may mutate an item's content right now — branch protection, branch
 lock state, and the checkout in `branch_items.checkedOutBy`. `requireContentEditable`
@@ -232,18 +232,18 @@ through `ItemService.update` / `.addRelationship` rather than against the class.
 
 Standalone services with no service-layer dependencies. They only access the database directly.
 
-| Service                      | File                                                             | Purpose                                      |
-| ---------------------------- | ---------------------------------------------------------------- | -------------------------------------------- |
-| `ProgramService`             | `cascadia-api/src/lib/services/ProgramService.ts`                | Program CRUD and membership checks           |
-| `ItemTypeRegistry`           | `cascadia-api/src/lib/items/registry.ts`                         | Central registry of item type configurations |
-| `NumberingService`           | `cascadia-api/src/lib/items/numbering/NumberingService.ts`       | Auto-numbering (P-001, ECO-001, D-001)       |
-| `ItemRelationshipService`    | `cascadia-api/src/lib/items/services/ItemRelationshipService.ts` | BOM and cross-item relationships             |
-| `ItemSearchService`          | `cascadia-api/src/lib/items/services/ItemSearchService.ts`       | Full-text search, filtering, sorting         |
-| `UsageService`               | `cascadia-api/src/lib/services/UsageService.ts`                  | SysML definition/usage copy tracking         |
-| `LifecycleDefinitionService` | `cascadia-api/src/lib/lifecycles/LifecycleDefinitionService.ts`  | Lifecycle definitions: CRUD and validation   |
-| `LifecycleInstanceService`   | `cascadia-api/src/lib/lifecycles/LifecycleInstanceService.ts`    | Instances, transitions, claims, history      |
-| `ApprovalService`            | `cascadia-api/src/lib/lifecycles/ApprovalService.ts`             | Approvers and approval votes                 |
-| `FileService`                | `cascadia-api/src/lib/vault/services/FileService.ts`             | File vault upload/download/versioning        |
+| Service                      | File                                                         | Purpose                                      |
+| ---------------------------- | ------------------------------------------------------------ | -------------------------------------------- |
+| `ProgramService`             | `cascadia-api/src/services/ProgramService.ts`                | Program CRUD and membership checks           |
+| `ItemTypeRegistry`           | `cascadia-api/src/items/registry.ts`                         | Central registry of item type configurations |
+| `NumberingService`           | `cascadia-api/src/items/numbering/NumberingService.ts`       | Auto-numbering (P-001, ECO-001, D-001)       |
+| `ItemRelationshipService`    | `cascadia-api/src/items/services/ItemRelationshipService.ts` | BOM and cross-item relationships             |
+| `ItemSearchService`          | `cascadia-api/src/items/services/ItemSearchService.ts`       | Full-text search, filtering, sorting         |
+| `UsageService`               | `cascadia-api/src/services/UsageService.ts`                  | SysML definition/usage copy tracking         |
+| `LifecycleDefinitionService` | `cascadia-api/src/lifecycles/LifecycleDefinitionService.ts`  | Lifecycle definitions: CRUD and validation   |
+| `LifecycleInstanceService`   | `cascadia-api/src/lifecycles/LifecycleInstanceService.ts`    | Instances, transitions, claims, history      |
+| `ApprovalService`            | `cascadia-api/src/lifecycles/ApprovalService.ts`             | Approvers and approval votes                 |
+| `FileService`                | `cascadia-api/src/vault/services/FileService.ts`             | File vault upload/download/versioning        |
 
 ---
 
@@ -251,9 +251,9 @@ Standalone services with no service-layer dependencies. They only access the dat
 
 ### Typed Error Hierarchy
 
-All business errors extend `AppError` (defined in `cascadia-api/src/lib/errors/AppError.ts`), which carries:
+All business errors extend `AppError` (defined in `cascadia-api/src/errors/AppError.ts`), which carries:
 
-- `code`: Machine-readable error code (enum from `cascadia-commons/src/lib/errors/codes.ts`)
+- `code`: Machine-readable error code (enum from `cascadia-commons/src/errors/codes.ts`)
 - `httpStatus`: Derived automatically from the code
 - `message`: Human-readable description
 - `context`: Structured metadata (requestId, userId, resource, etc.)
@@ -301,7 +301,7 @@ Services throw typed errors. `apiHandler()` catches everything via `handleApiErr
 Service throws NotFoundError("Part", "P-001")
     │
     ▼
-handleApiError() in cascadia-api/src/lib/errors/handleApiError.ts
+handleApiError() in cascadia-api/src/errors/handleApiError.ts
     ├── AppError → createErrorResponse(error, requestId)
     │               Returns: { error: { code, message, context, timestamp } }
     │               Status: error.httpStatus (404)
@@ -342,7 +342,7 @@ const result = await db.transaction(async (tx) => {
 For operations where concurrent access is expected (like ECO merge), use `withSerializableRetry()`:
 
 ```typescript
-import { withSerializableRetry } from '@/lib/db/retry'
+import { withSerializableRetry } from '@/db/retry'
 
 const result = await withSerializableRetry(async () => {
   return await db.transaction(async (tx) => {
@@ -396,10 +396,10 @@ When modifying a service, consider its position in the graph:
 
 ## Key Files
 
-| File                                            | Purpose                                                            |
-| ----------------------------------------------- | ------------------------------------------------------------------ |
-| `cascadia-api/src/lib/api/handler.ts`           | `apiHandler()` -- wraps all routes with auth, CSRF, error handling |
-| `cascadia-api/src/lib/errors/index.ts`          | All typed error classes                                            |
-| `cascadia-api/src/lib/errors/handleApiError.ts` | `handleApiError()` -- catches and maps errors to responses         |
-| `cascadia-api/src/lib/errors/AppError.ts`       | Base error class with code, status, context                        |
-| `cascadia-commons/src/lib/errors/codes.ts`      | Error code enum and HTTP status mapping                            |
+| File                                        | Purpose                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| `cascadia-api/src/api/handler.ts`           | `apiHandler()` -- wraps all routes with auth, CSRF, error handling |
+| `cascadia-api/src/errors/index.ts`          | All typed error classes                                            |
+| `cascadia-api/src/errors/handleApiError.ts` | `handleApiError()` -- catches and maps errors to responses         |
+| `cascadia-api/src/errors/AppError.ts`       | Base error class with code, status, context                        |
+| `cascadia-commons/src/errors/codes.ts`      | Error code enum and HTTP status mapping                            |

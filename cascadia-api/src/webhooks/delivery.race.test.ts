@@ -26,13 +26,13 @@ import {
   WEBHOOK_FAILURE_THRESHOLD,
   WEBHOOK_MAX_ATTEMPTS,
   WEBHOOK_RESPONSE_SNIPPET_BYTES,
-} from '@cascadia/commons/lib/webhooks/config'
+} from '@cascadia/commons/webhooks/config'
 import { deliverForSubscription, deliverNextForSubscription } from './delivery'
 import { runWebhookPumpOnce } from './pump'
 import { pruneWebhookDeliveries } from './retention'
-import type { WebhookSubscriptionRow } from '@/lib/db/schema'
+import type { WebhookSubscriptionRow } from '@/db/schema'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { webhookDeliveries, webhookSubscriptions } from '@/lib/db/schema'
+import { webhookDeliveries, webhookSubscriptions } from '@/db/schema'
 
 /** A response, without a real socket. */
 function reply(status: number, headers: Record<string, string> = {}): Response {

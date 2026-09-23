@@ -3,8 +3,8 @@
 
 import { defineExtension } from '../registry'
 import type { ConsumedExtension } from '../types'
-import type { DesignReleasedPayload } from '@/lib/events'
-import { DESIGN_RELEASED } from '@/lib/events'
+import type { DesignReleasedPayload } from '@/events'
+import { DESIGN_RELEASED } from '@/events'
 
 export const WI_CHANGE_ALERT_EXTENSION_ID = 'core.wi-change-alerts'
 
@@ -53,7 +53,7 @@ export function createWiChangeAlertExtension(
   const submit =
     options.submit ??
     (async (payload) => {
-      const { JobService } = await import('@/lib/jobs')
+      const { JobService } = await import('@/jobs')
       const { dedupeKey, ...jobPayload } = payload
       await JobService.submit(
         'notification.workinstruction.partchanged',

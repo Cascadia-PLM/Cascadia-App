@@ -10,9 +10,9 @@
 
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import * as schema from '../lib/db/schema'
-import { ensureDomainEventSequencing } from '../lib/events/sequencing'
-import { seedDefaultLifecycles } from '../lib/items/default-lifecycles'
+import * as schema from '../db/schema'
+import { ensureDomainEventSequencing } from '../events/sequencing'
+import { seedDefaultLifecycles } from '../items/default-lifecycles'
 import { seedBuiltInRoles } from './fixtures/users'
 
 export default async function globalSetup() {
@@ -54,7 +54,7 @@ export default async function globalSetup() {
 
   // Point the application's own db module at the test database too.
   //
-  // cascadia-api/src/lib/db reads DATABASE_URL at import time and builds a
+  // cascadia-api/src/db reads DATABASE_URL at import time and builds a
   // client from it. TestDatabase swaps that client out via setTestDb(), but
   // anything importing the module before a suite calls setup() — or any code
   // reaching for the global handle rather than the injected one — would still
@@ -97,7 +97,7 @@ export default async function globalSetup() {
 /**
  * Connection target for logging, with credentials stripped.
  *
- * The same rule as `describeConnection` in `lib/db`, which cannot be imported
+ * The same rule as `describeConnection` in `db`, which cannot be imported
  * here — it builds a client from `DATABASE_URL` the moment it loads. An `@` in
  * the path, query or fragment means a password with an unencoded `/`, `?` or
  * `#` ended the authority early, and host, port and path would print part of

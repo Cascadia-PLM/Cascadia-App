@@ -23,7 +23,7 @@
  *    designId/designCode/designName must still be on the merged node, or the
  *    design columns blank out
  *
- * Run: npx vitest run cascadia-api/src/lib/versioning/graph-utils.test.ts
+ * Run: npx vitest run cascadia-api/src/versioning/graph-utils.test.ts
  */
 
 import { describe, expect, it } from 'vitest'
@@ -34,7 +34,7 @@ import type {
   CommitNodeData,
   ProgramCommitGraphNode,
   ProgramCommitNodeData,
-} from '@cascadia/commons/lib/versioning/graph-types'
+} from '@cascadia/commons/versioning/graph-types'
 
 const AUTHOR = { id: 'user-1', name: 'Author One' }
 const BASE_TIME = new Date('2026-03-01T10:00:00Z').getTime()

@@ -39,9 +39,9 @@ import type {
   LifecycleDefinition,
   LifecycleState,
   LifecycleTransition,
-} from '@cascadia/commons/lib/lifecycles/types'
-import type { LifecyclePhaseConfig } from '@cascadia/commons/lib/types/lifecycle'
-import { useTheme } from '@/lib/theme'
+} from '@cascadia/commons/lifecycles/types'
+import type { LifecyclePhaseConfig } from '@cascadia/commons/types/lifecycle'
+import { useTheme } from '@/theme'
 import { Button } from '@/components/ui/Button'
 
 interface LifecycleBuilderProps {
@@ -80,7 +80,7 @@ function getLayoutedElements(
   const nodeWidth = 180
   const nodeHeight = 80
 
-  // Kept in step with `withLayout` in lib/items/default-lifecycles.ts, which
+  // Kept in step with `withLayout` in items/default-lifecycles.ts, which
   // seeds the shipped defaults: pressing Auto Layout on an untouched default
   // should leave it where it was, not shuffle it into a second arrangement.
   dagreGraph.setGraph({

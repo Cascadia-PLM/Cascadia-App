@@ -6,11 +6,8 @@ import { qk } from '../keys'
 import { gridParamsToSearchParams } from '../grid-params'
 import { entityQuery, entitySubQuery } from './entities'
 import type { GridParams, GridQuery } from '../grid-params'
-import type {
-  Program,
-  ProgramMember,
-} from '@cascadia/commons/lib/types/program'
-import { apiFetch } from '@/lib/api/client'
+import type { Program, ProgramMember } from '@cascadia/commons/types/program'
+import { apiFetch } from '@/api/client'
 
 export interface ProgramCounts {
   active: number

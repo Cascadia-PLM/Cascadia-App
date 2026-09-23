@@ -9,7 +9,7 @@
  * cross-domain relationships, severity calculation, summary generation,
  * and recommendation logic.
  *
- * Run: npm run test -- src/lib/services/ImpactAnalysisService.test.ts
+ * Run: npm run test -- src/services/ImpactAnalysisService.test.ts
  */
 
 import {
@@ -27,11 +27,11 @@ import { DesignService } from './DesignService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { itemRelationships, items, programs } from '@/lib/db/schema'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { NotFoundError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
-import '@/lib/items/registerItemTypes.server'
+import { itemRelationships, items, programs } from '@/db/schema'
+import { ItemService } from '@/items/services/ItemService'
+import { NotFoundError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
+import '@/items/registerItemTypes.server'
 
 describe('ImpactAnalysisService', () => {
   const testDb = new TestDatabase()

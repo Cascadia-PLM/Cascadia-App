@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { ArrowLeft, Clock } from 'lucide-react'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import { Button } from '@/components/ui'
 
 interface HistoricalViewBannerProps {

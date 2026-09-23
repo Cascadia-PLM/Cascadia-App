@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Factory, Loader2, XCircle } from 'lucide-react'
-import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
+import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/types/bom'
 import {
   Dialog,
   DialogContent,
@@ -26,12 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch } from '@/api/client'
 import {
   designStructureQuery,
   designTagsQuery,
   useResourceMutation,
-} from '@/lib/query'
+} from '@/query'
 
 interface Tag {
   id: string

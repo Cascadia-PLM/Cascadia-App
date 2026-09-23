@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { sql } from 'drizzle-orm'
-import type { DbInstance } from '@/lib/db'
-import { eventLogger } from '@/lib/logging/logger'
+import type { DbInstance } from '@/db'
+import { eventLogger } from '@/logging/logger'
 
 /**
  * Advisory lock key ('EVNT') that serialises the commit tails of

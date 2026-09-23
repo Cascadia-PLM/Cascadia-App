@@ -7,9 +7,9 @@ import { AlertTriangle, Info } from 'lucide-react'
 import { MakesEditor } from './MakesEditor'
 import { OptionModelEditor } from './OptionModelEditor'
 import { PartConfigurator } from './PartConfigurator'
-import type { Design } from '@cascadia/commons/lib/types/design'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { Make, OptionModel } from '@cascadia/commons/lib/types/variants'
+import type { Design } from '@cascadia/commons/types/design'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { Make, OptionModel } from '@cascadia/commons/types/variants'
 import type { MbomConfigurationInput } from '@/components/mbom/CreateMbomDialog'
 import { CreateMbomDialog } from '@/components/mbom/CreateMbomDialog'
 import {
@@ -22,13 +22,9 @@ import {
   CardTitle,
   Input,
 } from '@/components/ui'
-import { apiFetch } from '@/lib/api/client'
-import {
-  entityQuery,
-  partVariantLintQuery,
-  useResourceMutation,
-} from '@/lib/query'
-import { useAlertDialog } from '@/lib/hooks/useAlertDialog'
+import { apiFetch } from '@/api/client'
+import { entityQuery, partVariantLintQuery, useResourceMutation } from '@/query'
+import { useAlertDialog } from '@/hooks/useAlertDialog'
 
 const EMPTY_MODEL: OptionModel = { families: [], constraints: [] }
 

@@ -3,8 +3,8 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
-import type { ApiData } from '@/lib/api/typed'
-import { apiFetch } from '@/lib/api/client'
+import type { ApiData } from '@/api/typed'
+import { apiFetch } from '@/api/client'
 
 /** Whether a model hangs off the item version itself or a Document it links. */
 export type ModelVersionFileSource = ModelVersionFile['source']

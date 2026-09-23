@@ -13,7 +13,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import { z } from 'zod'
-import { TAG_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { TAG_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db } from '../db'
 import { DESIGN_CREATED, publishDomainEvent } from '../events'
 import { likeContains } from '../db/like-pattern'
@@ -22,7 +22,7 @@ import { branches, commits, designs, items, tags } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
-import { takeFirst } from '@/lib/db/take-first'
+import { takeFirst } from '@/db/take-first'
 
 // Zod schemas for validation
 export const designCreateSchema = z.object({

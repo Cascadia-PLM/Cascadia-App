@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, isNotNull, isNull, lt, ne, or } from 'drizzle-orm'
-import { THUMBNAIL_FILE_CATEGORY } from '@cascadia/commons/lib/vault/file-categories'
+import { THUMBNAIL_FILE_CATEGORY } from '@cascadia/commons/vault/file-categories'
 import { db } from '../../db'
 import {
   FILE_CHECKED_IN,
@@ -32,23 +32,19 @@ import { ItemService } from '../../items/services/ItemService'
 import type {
   CategorySource,
   FileCategory,
-} from '@cascadia/commons/lib/vault/file-categories'
+} from '@cascadia/commons/vault/file-categories'
 import type { SQL } from 'drizzle-orm'
 import type { TransactionClient } from '../../db'
 import type { FileUploadMetadata, VaultStorage } from '../storage'
-import type { AccessScope } from '@/lib/db/filters'
+import type { AccessScope } from '@/db/filters'
 import type {
   FileRecord,
   FileRecordWithItem,
-} from '@cascadia/commons/lib/vault/types'
-import { vaultLogger } from '@/lib/logging/logger'
-import { accessScopeCondition, notDeleted } from '@/lib/db/filters'
-import { takeFirst } from '@/lib/db/take-first'
-import {
-  asPostgresError,
-  constraintOf,
-  isUniqueViolation,
-} from '@/lib/errors/pg'
+} from '@cascadia/commons/vault/types'
+import { vaultLogger } from '@/logging/logger'
+import { accessScopeCondition, notDeleted } from '@/db/filters'
+import { takeFirst } from '@/db/take-first'
+import { asPostgresError, constraintOf, isUniqueViolation } from '@/errors/pg'
 import {
   AlreadyExistsError,
   ConflictError,
@@ -59,7 +55,7 @@ import {
   PermissionDeniedError,
   ResourceLockedError,
   ValidationError,
-} from '@/lib/errors'
+} from '@/errors'
 
 /**
  * How a file's bytes were read, as recorded in `vault_file_history`.
@@ -75,7 +71,7 @@ export type {
   CadMetadata,
   FileRecord,
   FileRecordWithItem,
-} from '@cascadia/commons/lib/vault/types'
+} from '@cascadia/commons/vault/types'
 
 export interface UploadFileOptions {
   itemId: string

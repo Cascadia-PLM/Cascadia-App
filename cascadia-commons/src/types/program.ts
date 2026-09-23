@@ -24,7 +24,7 @@ export interface ProgramSettings {
 
 /**
  * A `programs` row. Hand-written here so the web can name it without the
- * schema; `lib/db/schema/programs.ts` asserts it matches the table.
+ * schema; `db/schema/programs.ts` asserts it matches the table.
  */
 export interface ProgramRow {
   id: string

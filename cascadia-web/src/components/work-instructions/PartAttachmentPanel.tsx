@@ -23,14 +23,14 @@ import {
   CardTitle,
   Input,
 } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { apiFetch } from '@/lib/api/client'
+import { cn } from '@/utils'
+import { apiFetch } from '@/api/client'
 import {
   entitySubQuery,
   itemTextSearchQuery,
   useInvalidateResources,
-} from '@/lib/query'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
+} from '@/query'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 
 interface PartSearchResult {
   id: string

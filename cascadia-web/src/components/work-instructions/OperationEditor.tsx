@@ -7,7 +7,7 @@ import { StepEditor } from './StepEditor'
 import type {
   WorkInstructionOperation,
   WorkInstructionStep,
-} from '@cascadia/commons/lib/items/types/work-instruction'
+} from '@cascadia/commons/items/types/work-instruction'
 import {
   Badge,
   Button,
@@ -18,8 +18,8 @@ import {
   Textarea,
 } from '@/components/ui'
 
-import { apiFetch } from '@/lib/api/client'
-import { useInvalidateResources } from '@/lib/query'
+import { apiFetch } from '@/api/client'
+import { useInvalidateResources } from '@/query'
 
 interface OperationEditorProps {
   /**

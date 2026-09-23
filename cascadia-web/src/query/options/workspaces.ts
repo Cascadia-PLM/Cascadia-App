@@ -4,8 +4,8 @@
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
 import { collectionQuery, entitySubQuery } from './entities'
-import type { ApiData } from '@/lib/api/typed'
-import { apiFetch } from '@/lib/api/client'
+import type { ApiData } from '@/api/typed'
+import { apiFetch } from '@/api/client'
 
 /** A workspace branch as the list endpoint returns it, joined to its design. */
 export interface Workspace {

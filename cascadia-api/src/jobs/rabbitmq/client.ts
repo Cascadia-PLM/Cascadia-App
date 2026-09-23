@@ -5,8 +5,8 @@ import amqp from 'amqplib'
 import { RABBITMQ_CONFIG } from './types'
 import type { Channel, ConfirmChannel } from 'amqplib'
 import type { JobMessage } from '../types'
-import { rabbitmqLogger } from '@/lib/logging/logger'
-import { redactUrlCredentials } from '@/lib/logging/redact-url'
+import { rabbitmqLogger } from '@/logging/logger'
+import { redactUrlCredentials } from '@/logging/redact-url'
 
 const {
   EXCHANGE_NAME,

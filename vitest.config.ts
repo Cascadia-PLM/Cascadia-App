@@ -81,15 +81,12 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
-      include: [
-        'cascadia-*/src/lib/**/*.ts',
-        'cascadia-*/src/components/**/*.tsx',
-      ],
+      include: ['cascadia-*/src/**/*.ts', 'cascadia-*/src/components/**/*.tsx'],
       exclude: [
         'cascadia-*/src/**/*.test.ts',
         'cascadia-*/src/**/*.spec.ts',
         'cascadia-*/src/__tests__/**',
-        'cascadia-*/src/lib/db/schema/**', // Schema definitions don't need coverage
+        'cascadia-*/src/db/schema/**', // Schema definitions don't need coverage
       ],
       // Coverage is reported but no thresholds are enforced.
       // Revisit once the suite stabilizes post-initial release.

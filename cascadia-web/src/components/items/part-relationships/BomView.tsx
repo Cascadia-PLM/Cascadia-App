@@ -9,17 +9,17 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react'
-import { formatPartDesignation } from '@cascadia/commons/lib/types/variants'
+import { formatPartDesignation } from '@cascadia/commons/types/variants'
 import type { BOMTreeNode } from '@/components/bom/types'
 import type { ColumnDefinition } from '@/components/bom/BomTreeView'
-import type { OptionModel } from '@cascadia/commons/lib/types/variants'
+import type { OptionModel } from '@cascadia/commons/types/variants'
 import { Badge, Button, Card, CardContent } from '@/components/ui'
 import { ContextMenuItem } from '@/components/ui/ContextMenu'
 import { BomTreeView } from '@/components/bom/BomTreeView'
 import { exportBomTreeToCsv } from '@/components/bom/exportBomTree'
 import { StateBadge } from '@/components/items/StateBadge'
 import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
-import { getItemDetailPath } from '@/lib/items/item-type-ui'
+import { getItemDetailPath } from '@/items/item-type-ui'
 
 /**
  * The BOM structure tab: the assembly tree, in a grid layout.

@@ -7,8 +7,8 @@ import { z } from 'zod'
 import type {
   CreateProgramInput,
   Program,
-} from '@cascadia/commons/lib/types/program'
-import { zodValidator } from '@/lib/form-validation'
+} from '@cascadia/commons/types/program'
+import { zodValidator } from '@/form-validation'
 import {
   Button,
   FormField,

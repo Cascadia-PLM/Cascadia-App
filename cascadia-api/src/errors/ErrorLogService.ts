@@ -2,11 +2,11 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
-import { getErrorStrategy } from '@cascadia/commons/lib/errors/severity'
+import { getErrorStrategy } from '@cascadia/commons/errors/severity'
 import type { AppError } from './AppError'
-import { db } from '@/lib/db'
-import { errorLogs } from '@/lib/db/schema'
-import { apiLogger } from '@/lib/logging/logger'
+import { db } from '@/db'
+import { errorLogs } from '@/db/schema'
+import { apiLogger } from '@/logging/logger'
 
 interface LogErrorParams {
   error: AppError

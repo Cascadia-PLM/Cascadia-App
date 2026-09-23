@@ -5,8 +5,8 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Box } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/lib/types/bom'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import type { BOMTreeNode, OrphanItem } from '@cascadia/commons/types/bom'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import { CADFileSelect } from '@/components/parts/CADFileSelect'
 import { CADViewerSurface } from '@/components/parts/CADViewerSurface'
 import { useCADViewerState } from '@/components/parts/useCADViewerState'
@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
-import { designStructureQuery } from '@/lib/query'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
+import { designStructureQuery } from '@/query'
 
 // Module scope so the "no structure yet" render keeps a stable array identity
 // for the memo below.

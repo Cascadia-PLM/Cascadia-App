@@ -4,15 +4,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileSearch } from 'lucide-react'
-import {
-  isPreviewable,
-  previewKindFor,
-} from '@cascadia/commons/lib/vault/preview'
+import { isPreviewable, previewKindFor } from '@cascadia/commons/vault/preview'
 import type { FileRecord } from '@/components/vault/FileList'
 import { Card, CardContent } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { itemFilesQuery } from '@/lib/query/options/item-files'
-import { authSessionQuery } from '@/lib/query'
+import { cn } from '@/utils'
+import { itemFilesQuery } from '@/query/options/item-files'
+import { authSessionQuery } from '@/query'
 import { FilePreview } from '@/components/vault/FilePreview'
 import { useFileMarkup } from '@/components/vault/useFileMarkup'
 

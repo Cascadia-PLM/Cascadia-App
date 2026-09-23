@@ -7,10 +7,10 @@ import type {
   InstantiateInstructionInput,
   WorkOrderInstruction,
   WorkOrderInstructionStatus,
-} from '@cascadia/commons/lib/items/types/work-order'
-import type { InstructionSnapshot } from '@/lib/db/schema/work-orders'
-import type { TransactionClient } from '@/lib/db'
-import { db } from '@/lib/db'
+} from '@cascadia/commons/items/types/work-order'
+import type { InstructionSnapshot } from '@/db/schema/work-orders'
+import type { TransactionClient } from '@/db'
+import { db } from '@/db'
 import {
   instructionExecutions,
   itemRelationships,
@@ -21,9 +21,9 @@ import {
   workInstructions,
   workOrderInstructions,
   workOrders,
-} from '@/lib/db/schema'
-import { NotFoundError, ValidationError } from '@/lib/errors'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/db/schema'
+import { NotFoundError, ValidationError } from '@/errors'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Traveler management: instances of WorkInstruction templates inside a

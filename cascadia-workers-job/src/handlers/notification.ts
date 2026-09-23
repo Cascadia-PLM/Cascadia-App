@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import type { JobContext, JobHandler } from '@cascadia/api/lib/jobs/types'
+import type { JobContext, JobHandler } from '@cascadia/api/jobs/types'
 import type {
   NotificationResult,
   WorkflowTransitionPayload,
-} from '@cascadia/api/lib/jobs/definitions/notification/types'
+} from '@cascadia/api/jobs/definitions/notification/types'
 
 /**
  * Handler for workflow transition notification jobs.

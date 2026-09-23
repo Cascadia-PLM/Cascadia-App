@@ -26,9 +26,9 @@ import {
 } from './swimLaneLayout'
 import type { Node, NodeProps } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'
-import type { ThreadNode as ThreadNodeData } from '@cascadia/commons/lib/thread/types'
+import type { ThreadNode as ThreadNodeData } from '@cascadia/commons/thread/types'
 import { useLifecycleState } from '@/components/items/StateBadge'
-import { getItemDetailRoutePattern } from '@/lib/items/item-type-ui'
+import { getItemDetailRoutePattern } from '@/items/item-type-ui'
 
 /** Opposite side of a handle position (Top↔Bottom, Left↔Right). */
 export function flipPosition(position: Position): Position {

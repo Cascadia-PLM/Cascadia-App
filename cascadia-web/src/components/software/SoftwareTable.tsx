@@ -4,7 +4,7 @@
 import { Link } from '@tanstack/react-router'
 import { useCallback } from 'react'
 import { Edit, Eye, MoreVertical, Trash2 } from 'lucide-react'
-import type { Software } from '@cascadia/commons/lib/items/types/software'
+import type { Software } from '@cascadia/commons/items/types/software'
 import type {
   ColumnFiltersState,
   DataGridColumn,
@@ -25,7 +25,7 @@ import {
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
 import { StateBadge } from '@/components/items/StateBadge'
-import { useLifecyclePhases } from '@/lib/hooks/useLifecyclePhases'
+import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface SoftwareTableProps {
   items: Array<Software>

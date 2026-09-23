@@ -22,7 +22,7 @@ import {
   validateEgressUrl,
 } from './egress-guard'
 import type { HostResolver } from './egress-guard'
-import { ValidationError } from '@/lib/errors'
+import { ValidationError } from '@/errors'
 
 const resolvesTo =
   (...addresses: Array<string>): HostResolver =>

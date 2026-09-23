@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useEffect, useState } from 'react'
-import type { Role, UserWithRoles } from '@cascadia/commons/lib/auth/types'
+import type { Role, UserWithRoles } from '@cascadia/commons/auth/types'
 import {
   Button,
   Checkbox,
@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 interface RoleAssignmentDialogProps {
   user: UserWithRoles | null

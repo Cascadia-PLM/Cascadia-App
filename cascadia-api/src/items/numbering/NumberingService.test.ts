@@ -9,7 +9,7 @@
  * commits immediately, independent of whether the caller's transaction
  * survives — which is what these tests pin.
  *
- * Run: npm run test -- src/lib/items/numbering/NumberingService.test.ts
+ * Run: npm run test -- src/items/numbering/NumberingService.test.ts
  */
 
 import {
@@ -24,7 +24,7 @@ import {
 import { eq } from 'drizzle-orm'
 import { NumberingService } from './NumberingService'
 import { TestDatabase } from '@/__tests__/helpers/db'
-import { numberSequences } from '@/lib/db/schema/numbering'
+import { numberSequences } from '@/db/schema/numbering'
 
 describe('NumberingService', () => {
   const testDb = new TestDatabase()

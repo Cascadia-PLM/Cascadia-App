@@ -23,11 +23,11 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { asc, eq, inArray, max } from 'drizzle-orm'
 import { z } from 'zod'
-import type { DomainEventConsumer } from '@/lib/events'
+import type { DomainEventConsumer } from '@/events'
 import { ConcurrentTestDatabase } from '@/__tests__/helpers/concurrent-db'
-import { db } from '@/lib/db'
-import { domainEvents, eventConsumers } from '@/lib/db/schema'
-import { ValidationError } from '@/lib/errors'
+import { db } from '@/db'
+import { domainEvents, eventConsumers } from '@/db/schema'
+import { ValidationError } from '@/errors'
 import {
   EventHandlerTimeoutError,
   TransientConsumerError,
@@ -39,8 +39,8 @@ import {
   resumeEventConsumer,
   runEventConsumerOnce,
   skipPoisonEvent,
-} from '@/lib/events'
-import { ExtensionDispatchError } from '@/lib/extensions'
+} from '@/events'
+import { ExtensionDispatchError } from '@/extensions'
 
 const CONSUMER_SPEC_A = defineDomainEvent({
   type: 'test.events.consumer_spec.a',

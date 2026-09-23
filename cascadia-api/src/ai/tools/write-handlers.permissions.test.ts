@@ -33,7 +33,7 @@
  * name, the two item numbers and the current state back to the caller. A gate
  * on execution alone would still disclose the target.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/tools/write-handlers.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/tools/write-handlers.permissions.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -47,7 +47,7 @@ import {
   expect,
   it,
 } from 'vitest'
-import { LIFECYCLE_IDS } from '@cascadia/commons/lib/items/lifecycle-ids'
+import { LIFECYCLE_IDS } from '@cascadia/commons/items/lifecycle-ids'
 import {
   createItemHandler,
   createRelationshipHandler,
@@ -57,11 +57,11 @@ import {
 import { toolRegistry } from './registry'
 import type { ToolContext } from './permission-wrapper'
 import type { TestUser } from '@/__tests__/fixtures/users'
-import type { ChangeOrder } from '@cascadia/commons/lib/items/types/change-order'
-import type { Document } from '@cascadia/commons/lib/items/types/document'
-import type { Part } from '@cascadia/commons/lib/items/types/part'
-import type { Task } from '@cascadia/commons/lib/items/types/task'
-import type { WorkInstruction } from '@cascadia/commons/lib/items/types/work-instruction'
+import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
+import type { Document } from '@cascadia/commons/items/types/document'
+import type { Part } from '@cascadia/commons/items/types/part'
+import type { Task } from '@cascadia/commons/items/types/task'
+import type { WorkInstruction } from '@cascadia/commons/items/types/work-instruction'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -74,19 +74,15 @@ import {
   overrideItemTypeConfig,
   seedSystemUser,
 } from '@/__tests__/fixtures/lifecycles'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { permissionService } from '@/lib/auth/permission-service'
-import { branchItems, branches } from '@/lib/db/schema/versioning'
-import {
-  changeOrderDesigns,
-  itemRelationships,
-  items,
-} from '@/lib/db/schema/items'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { permissionService } from '@/auth/permission-service'
+import { branchItems, branches } from '@/db/schema/versioning'
+import { changeOrderDesigns, itemRelationships, items } from '@/db/schema/items'
 
 // Import to register item types
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 /** The fields of the write tools' response envelope these tests assert on. */
 interface WriteEnvelope {
@@ -446,7 +442,7 @@ describe('AI write tools — program isolation', () => {
  * item's type: `requireItemAccess` already gates both source and target at
  * the instance level inside the handler, so only the type dimension was open.
  *
- * Run: npx vitest run cascadia-api/src/lib/ai/tools/write-handlers.permissions.test.ts
+ * Run: npx vitest run cascadia-api/src/ai/tools/write-handlers.permissions.test.ts
  */
 describe('AI write tools — permission resource follows the target item type', () => {
   const testDb = new TestDatabase()

@@ -6,10 +6,10 @@ import { useQuery } from '@tanstack/react-query'
 import type {
   CadModelNode,
   CadModelNodeCandidate,
-} from '@cascadia/commons/lib/vault/cad-nodes'
-import { NO_STRUCTURE, cadModelNodesQuery } from '@/lib/query/options/cad-nodes'
-import { useResourceMutation } from '@/lib/query'
-import { apiFetch } from '@/lib/api/client'
+} from '@cascadia/commons/vault/cad-nodes'
+import { NO_STRUCTURE, cadModelNodesQuery } from '@/query/options/cad-nodes'
+import { useResourceMutation } from '@/query'
+import { apiFetch } from '@/api/client'
 
 /**
  * Which part of an assembly model is selected, and what that part is.

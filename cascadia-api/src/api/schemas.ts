@@ -17,30 +17,30 @@ import {
   optionModelSchema,
   productFamilyCodeSchema,
   variantCodeSchema,
-} from '@cascadia/commons/lib/types/variants'
-import { changeOrderTypeSchema } from '@cascadia/commons/lib/items/types/change-order'
-import { jsonValueSchema } from '@cascadia/commons/lib/items/types/base'
-import { testStepSchema } from '@cascadia/commons/lib/items/types/testcase'
+} from '@cascadia/commons/types/variants'
+import { changeOrderTypeSchema } from '@cascadia/commons/items/types/change-order'
+import { jsonValueSchema } from '@cascadia/commons/items/types/base'
+import { testStepSchema } from '@cascadia/commons/items/types/testcase'
 import {
   issueCategories,
   issuePriorities,
   issueSeverities,
-} from '@cascadia/commons/lib/items/types/issue'
-import { workOrderUpdateSchema } from '@cascadia/commons/lib/items/types/work-order'
-import { softwareSourceUpdateFields } from '@cascadia/commons/lib/items/types/software'
-import { TAG_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
-import { clearableDate } from '@/lib/api/wire-date'
+} from '@cascadia/commons/items/types/issue'
+import { workOrderUpdateSchema } from '@cascadia/commons/items/types/work-order'
+import { softwareSourceUpdateFields } from '@cascadia/commons/items/types/software'
+import { TAG_TYPES } from '@cascadia/commons/versioning/branch-types'
+import { clearableDate } from '@/api/wire-date'
 
 // =============================================================================
 // User Schemas
 // =============================================================================
 
 /**
- * User create/update schemas live in `lib/auth/types.ts`, not here.
+ * User create/update schemas live in `auth/types.ts`, not here.
  *
  * A second pair used to sit in this file with a `passwordConfirm` field and no
  * `provider`/`active`. Nothing enforced it — `UserService` parses the
- * `lib/auth/types` pair, and `UserForm` validates against the same — so the
+ * `auth/types` pair, and `UserForm` validates against the same — so the
  * copy here was a shape that had never matched the API's actual contract. It
  * is gone rather than reconciled: one schema per resource is the whole point.
  */
@@ -764,7 +764,7 @@ export type ItemListQuery = z.infer<typeof itemListSchema>
 /**
  * A workflow definition is the most deeply nested body the API accepts, and
  * the lifecycle editor is its only real client. These schemas mirror the
- * interfaces in `lib/lifecycles/types.ts` and `lib/types/lifecycle.ts` field
+ * interfaces in `lifecycles/types.ts` and `types/lifecycle.ts` field
  * for field, with these notes:
  *
  * - Guards and actions are discriminated unions on `type`, so a `field_value`

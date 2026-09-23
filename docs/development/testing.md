@@ -44,7 +44,7 @@ npm run test:coverage # Run with coverage report
 npm run test:ui       # Open Vitest UI
 
 # Run a single file
-npx vitest run cascadia-api/src/lib/services/BranchService.test.ts
+npx vitest run cascadia-api/src/services/BranchService.test.ts
 
 # Run tests matching a pattern
 npx vitest run -t "should create branch"
@@ -67,7 +67,7 @@ npm run test:e2e:full     # Reset database + seed + run tests
 Tests are co-located with the code they test:
 
 ```
-cascadia-api/src/lib/services/
+cascadia-api/src/services/
 ├── BranchService.ts
 ├── BranchService.test.ts     # Co-located test
 ├── CheckoutService.ts
@@ -98,7 +98,7 @@ cascadia-api/src/__tests__/
 Vitest globals are enabled — `describe`, `it`, `expect`, `vi` are available without import.
 
 ```typescript
-// cascadia-api/src/lib/services/BranchService.test.ts
+// cascadia-api/src/services/BranchService.test.ts
 describe('BranchService', () => {
   describe('createChangeOrderBranch', () => {
     it('creates a branch named eco/{itemNumber}', async () => {

@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
-import { BRANCH_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db } from '../db'
 import {
   branchItems,
@@ -22,10 +22,10 @@ import { likeContains } from '../db/like-pattern'
 import { BranchService } from './BranchService'
 import { DesignService } from './DesignService'
 
-import type { VersionContext } from '@cascadia/commons/lib/versioning/version-context'
+import type { VersionContext } from '@cascadia/commons/versioning/version-context'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
-export type { VersionContext } from '@cascadia/commons/lib/versioning/version-context'
+export type { VersionContext } from '@cascadia/commons/versioning/version-context'
 
 export interface ItemFilters {
   itemType?: string

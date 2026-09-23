@@ -7,11 +7,11 @@ import {
   TOOL_SUBTYPES,
   getSubtypeGroup,
   toolSchema,
-} from '@cascadia/commons/lib/items/types/tool'
+} from '@cascadia/commons/items/types/tool'
 import { CapabilitiesEditor } from './CapabilitiesEditor'
-import type { Tool } from '@cascadia/commons/lib/items/types/tool'
+import type { Tool } from '@cascadia/commons/items/types/tool'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
-import { zodValidator } from '@/lib/form-validation'
+import { zodValidator } from '@/form-validation'
 import {
   Button,
   FormField,

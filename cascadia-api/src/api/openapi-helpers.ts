@@ -7,7 +7,7 @@ import type { DescribeRouteOptions } from 'hono-openapi'
 
 /**
  * Standard error envelope returned by `handleApiError`. Matches the shape
- * `createErrorResponse` (`src/lib/errors/api.ts`) actually writes, field for
+ * `createErrorResponse` (`src/errors/api.ts`) actually writes, field for
  * field, so the spec stays honest.
  *
  * Two of these fields were wrong until the CSRF rejection was made to

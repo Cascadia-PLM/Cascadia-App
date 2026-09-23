@@ -25,10 +25,10 @@ import {
 } from './swimLaneLayout'
 import type { NodeProps } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'
-import type { ThreadNodeDiff as ThreadNodeDiffData } from '@cascadia/commons/lib/thread/types'
-import { cn } from '@/lib/utils'
+import type { ThreadNodeDiff as ThreadNodeDiffData } from '@cascadia/commons/thread/types'
+import { cn } from '@/utils'
 import { useLifecycleState } from '@/components/items/StateBadge'
-import { getItemDetailRoutePattern } from '@/lib/items/item-type-ui'
+import { getItemDetailRoutePattern } from '@/items/item-type-ui'
 
 interface ThreadNodeDiffProps {
   data: ThreadNodeDiffData & { onClick?: () => void }

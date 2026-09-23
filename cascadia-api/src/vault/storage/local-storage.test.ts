@@ -6,7 +6,7 @@
  *
  * Unit tests for the local file system storage implementation.
  *
- * Run: npm run test -- src/lib/vault/storage/local-storage.test.ts
+ * Run: npm run test -- src/vault/storage/local-storage.test.ts
  */
 
 import fs from 'node:fs'
@@ -14,7 +14,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { LocalFileStorage } from './local-storage'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { NotFoundError, ValidationError } from '@/errors'
 
 describe('LocalFileStorage', () => {
   let storage: LocalFileStorage

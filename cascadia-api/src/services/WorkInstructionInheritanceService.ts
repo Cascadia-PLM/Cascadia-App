@@ -2,8 +2,8 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { items, workInstructionPartAttachments } from '@/lib/db/schema'
+import { db } from '@/db'
+import { items, workInstructionPartAttachments } from '@/db/schema'
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 

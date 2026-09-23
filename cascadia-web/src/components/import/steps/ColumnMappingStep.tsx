@@ -11,12 +11,12 @@ import {
   getImportConfig,
   getUnmappedColumns,
   updateMapping,
-} from '@cascadia/commons/lib/import'
+} from '@cascadia/commons/import'
 import type {
   ColumnMapping,
   ImportItemType,
   ParsedFile,
-} from '@cascadia/commons/lib/import'
+} from '@cascadia/commons/import'
 import {
   Select,
   SelectContent,
@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { Badge } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 interface ColumnMappingStepProps {
   itemType?: ImportItemType

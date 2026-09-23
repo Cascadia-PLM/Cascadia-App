@@ -11,17 +11,17 @@
 import {
   formatOptionText,
   formatPartDesignation,
-} from '@cascadia/commons/lib/types/variants'
+} from '@cascadia/commons/types/variants'
 import { withPermissionAndAudit } from './permission-wrapper'
 import type { ToolContext } from './permission-wrapper'
-import type { ItemNumberMatch } from '@/lib/items/services/ItemService'
-import { ImpactAssessmentService } from '@/lib/items/services/ImpactAssessmentService'
-import { ItemService } from '@/lib/items/services/ItemService'
-import { DesignService } from '@/lib/services/DesignService'
-import { ProgramService } from '@/lib/services/ProgramService'
-import { AccessControlService } from '@/lib/auth/AccessControlService'
-import { requireItemAccess } from '@/lib/auth/access'
-import { ValidationError } from '@/lib/errors'
+import type { ItemNumberMatch } from '@/items/services/ItemService'
+import { ImpactAssessmentService } from '@/items/services/ImpactAssessmentService'
+import { ItemService } from '@/items/services/ItemService'
+import { DesignService } from '@/services/DesignService'
+import { ProgramService } from '@/services/ProgramService'
+import { AccessControlService } from '@/auth/AccessControlService'
+import { requireItemAccess } from '@/auth/access'
+import { ValidationError } from '@/errors'
 
 /**
  * A canonical UUID, in either case. Shared by the id-or-code resolvers below
@@ -183,7 +183,7 @@ export const searchItemsHandler = withPermissionAndAudit(
     // resolve id-or-name to the ID so the filter matches stored rows.
     let stateFilter = input.state
     if (stateFilter && input.itemType) {
-      const { ItemTypeRegistry } = await import('@/lib/items/registry')
+      const { ItemTypeRegistry } = await import('@/items/registry')
       const lifecycle = await ItemTypeRegistry.getLifecycleForType(
         input.itemType,
       )

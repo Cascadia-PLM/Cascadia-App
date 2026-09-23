@@ -16,7 +16,7 @@
  *    cross-design NO ACTION would have made any Engineering design with a
  *    derived MBOM undeletable.
  *
- * Run: npx vitest run cascadia-api/src/lib/db/designs-fks.test.ts
+ * Run: npx vitest run cascadia-api/src/db/designs-fks.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -33,10 +33,10 @@ import { eq } from 'drizzle-orm'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { DesignService } from '@/lib/services/DesignService'
-import { branches, commits, designs, programs } from '@/lib/db/schema'
-import { asPostgresError } from '@/lib/errors/pg'
-import { takeFirst } from '@/lib/db/take-first'
+import { DesignService } from '@/services/DesignService'
+import { branches, commits, designs, programs } from '@/db/schema'
+import { asPostgresError } from '@/errors/pg'
+import { takeFirst } from '@/db/take-first'
 
 /** Postgres foreign_key_violation. */
 const FK_VIOLATION = '23503'

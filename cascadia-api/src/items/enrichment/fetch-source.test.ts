@@ -8,13 +8,13 @@
  * two things the fetcher adds on top of it: every redirect hop is re-checked,
  * and bodies are bounded whatever the server declared.
  *
- * Run: npx vitest run cascadia-api/src/lib/items/enrichment/fetch-source.test.ts
+ * Run: npx vitest run cascadia-api/src/items/enrichment/fetch-source.test.ts
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MAX_ENRICHMENT_IMAGE_BYTES } from '@cascadia/commons/lib/items/enrichment/limits'
+import { MAX_ENRICHMENT_IMAGE_BYTES } from '@cascadia/commons/items/enrichment/limits'
 import { fetchSource } from './fetch-source'
-import { ValidationError } from '@/lib/errors'
+import { ValidationError } from '@/errors'
 
 const fetchMock = vi.fn()
 

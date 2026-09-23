@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import { AppError } from './AppError'
 import type { ZodError } from 'zod'
 import type { ErrorContext, FieldError } from './AppError'
 
 // Re-export everything from codes and AppError
-export * from '@cascadia/commons/lib/errors/codes'
+export * from '@cascadia/commons/errors/codes'
 export * from './AppError'
 
 // ============================================================================

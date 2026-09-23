@@ -51,13 +51,13 @@ import {
   EventTypeRegistry,
   defineDomainEvent,
   publishDomainEvent,
-} from '@/lib/events'
+} from '@/events'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { domainEvents, settings } from '@/lib/db/schema'
-import { withSerializableRetry } from '@/lib/db/retry'
-import { ErrorCode } from '@/lib/errors'
-import { handleApiError } from '@/lib/errors/handleApiError'
+import { domainEvents, settings } from '@/db/schema'
+import { withSerializableRetry } from '@/db/retry'
+import { ErrorCode } from '@/errors'
+import { handleApiError } from '@/errors/handleApiError'
 
 const TEST_TYPE = 'test.extensions.dispatch'
 

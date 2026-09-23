@@ -7,7 +7,7 @@
  * Integration tests for the ProgramService class.
  * Tests cover program CRUD, membership management, search, and access control.
  *
- * Run: npm run test -- src/lib/services/ProgramService.test.ts
+ * Run: npm run test -- src/services/ProgramService.test.ts
  */
 
 import {
@@ -23,7 +23,7 @@ import { ProgramService } from './ProgramService'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
-import { NotFoundError, ValidationError } from '@/lib/errors'
+import { NotFoundError, ValidationError } from '@/errors'
 
 describe('ProgramService', () => {
   const testDb = new TestDatabase()

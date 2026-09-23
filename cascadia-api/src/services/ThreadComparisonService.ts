@@ -3,7 +3,7 @@
 
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
-import { optionConditionKey } from '@cascadia/commons/lib/types/variants'
+import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { db } from '../db'
 import {
   branches,
@@ -36,7 +36,7 @@ import type {
   ThreadEdgeDiff,
   ThreadNodeDiff,
   VersionContextInfo,
-} from '@cascadia/commons/lib/thread/types'
+} from '@cascadia/commons/thread/types'
 // Wire types live in commons so the web can name them; re-exported so
 // server callers keep importing them from here.
 export type {
@@ -49,7 +49,7 @@ export type {
   ThreadComparisonStats,
   ThreadComparison,
   ComparisonTargets,
-} from '@cascadia/commons/lib/thread/types'
+} from '@cascadia/commons/thread/types'
 
 /**
  * Request schema for thread comparison

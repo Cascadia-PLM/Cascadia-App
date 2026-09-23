@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
 import {
   defaultRetryConfig,
   getRetryDelay,
   isRetryableError,
   sleep,
-} from '@cascadia/commons/lib/errors/retry'
-import { ApiError } from '@cascadia/commons/lib/errors/api-error'
-import type { RetryConfig } from '@cascadia/commons/lib/errors/retry'
-import type { ErrorResponse } from '@cascadia/commons/lib/errors/api-types'
+} from '@cascadia/commons/errors/retry'
+import { ApiError } from '@cascadia/commons/errors/api-error'
+import type { RetryConfig } from '@cascadia/commons/errors/retry'
+import type { ErrorResponse } from '@cascadia/commons/errors/api-types'
 
-export { ApiError } from '@cascadia/commons/lib/errors/api-error'
+export { ApiError } from '@cascadia/commons/errors/api-error'
 
 /**
  * Options for the apiFetch function.

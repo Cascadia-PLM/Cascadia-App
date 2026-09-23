@@ -31,8 +31,8 @@ import type {
   ConflictDetectionResult,
   FieldConflict,
   ItemConflict,
-} from '@cascadia/commons/lib/services/types/conflicts'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@cascadia/commons/services/types/conflicts'
+import { takeFirst } from '@/db/take-first'
 
 /**
  * Columns that identify an item version rather than describe it.
@@ -61,7 +61,7 @@ export type {
   FieldConflict,
   ItemConflict,
   ConflictDetectionResult,
-} from '@cascadia/commons/lib/services/types/conflicts'
+} from '@cascadia/commons/services/types/conflicts'
 
 /**
  * Result of rebasing an item

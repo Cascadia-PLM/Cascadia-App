@@ -2,14 +2,14 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm'
-import { WEBHOOK_DELIVERY_CONCURRENCY } from '@cascadia/commons/lib/webhooks/config'
+import { WEBHOOK_DELIVERY_CONCURRENCY } from '@cascadia/commons/webhooks/config'
 import { deliverForSubscription } from './delivery'
-import type { DbInstance } from '@/lib/db'
+import type { DbInstance } from '@/db'
 import type { DeliverOptions, DeliveryLease } from './delivery'
-import { db as defaultDb } from '@/lib/db'
-import { webhookDeliveries, webhookSubscriptions } from '@/lib/db/schema'
-import { isEncryptionConfigured } from '@/lib/crypto/encryption'
-import { webhookLogger } from '@/lib/logging/logger'
+import { db as defaultDb } from '@/db'
+import { webhookDeliveries, webhookSubscriptions } from '@/db/schema'
+import { isEncryptionConfigured } from '@/crypto/encryption'
+import { webhookLogger } from '@/logging/logger'
 
 /**
  * The thing that picks pending deliveries up and sends them.

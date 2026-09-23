@@ -28,12 +28,12 @@ import type { NodeExpandState } from './GraphExpandButton'
 import { GraphItemNode } from '@/components/items/GraphItemNode'
 import { GraphFileNode } from '@/components/items/GraphFileNode'
 import { Button, FullscreenGraphWrapper } from '@/components/ui'
-import { useTheme } from '@/lib/theme'
+import { useTheme } from '@/theme'
 import {
   designScopeGraphQuery,
   itemGraphQuery,
   programScopeGraphQuery,
-} from '@/lib/query'
+} from '@/query'
 
 /**
  * ScopeGraphView — drill-down graph over the organizational hierarchy:

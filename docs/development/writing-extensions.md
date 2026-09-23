@@ -39,15 +39,15 @@ fail the user's operation when your handler fails.
 ## A `consumed` extension
 
 ```typescript
-// cascadia-your-module/src/lib/your-module/run-alerts.ts
+// cascadia-your-module/src/your-module/run-alerts.ts
 // The published extension surface, which is what a module relies on — not
-// the api's internal `lib/extensions` barrel. A module names the application
+// the api's internal `extensions` barrel. A module names the application
 // packages it reaches; `@/` inside a module is the module itself.
 import { defineExtension } from '@cascadia/api/extensions'
 import type { ConsumedExtension } from '@cascadia/api/extensions'
-import type { WorkOrderRunCompletedPayload } from '@cascadia/api/lib/events'
-import { WORK_ORDER_RUN_COMPLETED } from '@cascadia/api/lib/events'
-import { PackageRegistry } from '@cascadia/api/lib/packages'
+import type { WorkOrderRunCompletedPayload } from '@cascadia/api/events'
+import { WORK_ORDER_RUN_COMPLETED } from '@cascadia/api/events'
+import { PackageRegistry } from '@cascadia/api/packages'
 
 export function createRunAlertsConsumer(): ConsumedExtension<WorkOrderRunCompletedPayload> {
   return {
@@ -263,7 +263,7 @@ not have run.
 
 **Do not put a module file under a path that mirrors a core path under `@/`.**
 The boundary checker fails on alias-root collisions, so a module file under
-`src/lib/events/` would shadow core's.
+`src/events/` would shadow core's.
 
 ## Testing
 

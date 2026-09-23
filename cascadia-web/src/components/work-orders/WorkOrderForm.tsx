@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { Loader2, Search } from 'lucide-react'
 import { z } from 'zod'
-import type { WorkOrderCreateInput } from '@cascadia/commons/lib/items/types/work-order'
+import type { WorkOrderCreateInput } from '@cascadia/commons/items/types/work-order'
 import {
   Button,
   FormField,
@@ -18,9 +18,9 @@ import {
   SelectValue,
   Textarea,
 } from '@/components/ui'
-import { entityQuery, itemTextSearchQuery, programListQuery } from '@/lib/query'
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue'
-import { zodValidator } from '@/lib/form-validation'
+import { entityQuery, itemTextSearchQuery, programListQuery } from '@/query'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { zodValidator } from '@/form-validation'
 
 interface PartSearchResult {
   id: string

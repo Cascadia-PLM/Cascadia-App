@@ -15,10 +15,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ErrorCode } from '@cascadia/commons/lib/errors/codes'
-import type { InstructionExecution } from '@cascadia/commons/lib/items/types/work-order'
-import { ApiError, apiFetch } from '@/lib/api/client'
-import { useErrorHandler } from '@/lib/hooks/useErrorHandler'
+import { ErrorCode } from '@cascadia/commons/errors/codes'
+import type { InstructionExecution } from '@cascadia/commons/items/types/work-order'
+import { ApiError, apiFetch } from '@/api/client'
+import { useErrorHandler } from '@/hooks/useErrorHandler'
 
 /** A parametric block's value resolved against current part data. */
 export interface ResolvedParametricValue {

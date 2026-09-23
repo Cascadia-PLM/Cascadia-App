@@ -3,8 +3,8 @@
 
 import { useMemo, useState } from 'react'
 import { Download, Eye, GitCompare, Plus, Tag } from 'lucide-react'
-import { TAG_TYPES } from '@cascadia/commons/lib/versioning/branch-types'
-import type { VersionContext } from '@/lib/hooks/useVersionContext'
+import { TAG_TYPES } from '@cascadia/commons/versioning/branch-types'
+import type { VersionContext } from '@/hooks/useVersionContext'
 import {
   Badge,
   Button,

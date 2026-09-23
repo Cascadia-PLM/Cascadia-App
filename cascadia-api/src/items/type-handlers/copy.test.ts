@@ -10,7 +10,7 @@
  * this replaced had each already drifted from the schema, in opposite
  * directions, which is exactly the failure these tests exist to catch.
  *
- * Run: npm run test -- src/lib/items/type-handlers/copy.test.ts
+ * Run: npm run test -- src/items/type-handlers/copy.test.ts
  */
 
 import { randomUUID } from 'node:crypto'
@@ -36,10 +36,10 @@ import {
   workInstructionOperations,
   workInstructionSteps,
   workInstructions,
-} from '@/lib/db/schema'
-import { takeFirst } from '@/lib/db/take-first'
+} from '@/db/schema'
+import { takeFirst } from '@/db/take-first'
 
-import '@/lib/items/registerItemTypes.server'
+import '@/items/registerItemTypes.server'
 
 describe('copyTypeSpecificData', () => {
   const testDb = new TestDatabase()

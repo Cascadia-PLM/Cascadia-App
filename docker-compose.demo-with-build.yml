@@ -19,14 +19,17 @@
 # Then open http://localhost:3000 and log in with:
 #   admin@cascadia.local / Cascadia
 #
-# The first boot pushes the schema, runs the minimal seed, then loads the
-# TDJ-25 robot-arm demo (88 parts, 101 BOM rows, ~79 STEP+GLB+thumb trios).
-# Subsequent boots are no-ops — the demo seed exits early when it sees the
-# ROBOT-ARM program already exists.
+# The first boot applies the migrations, runs the minimal seed, then loads the
+# demo datasets (TDJ-25 robot arm, FreeCAD/KiCad PUC + USV, standard-library
+# components). Subsequent boots are no-ops — migrations are already applied
+# and each dataset's seed exits early when it sees its programs already exist.
 #
 # Reset everything (wipes only the demo's volumes — does not touch the dev
 # stack from docker-compose.yml):
 #   docker compose -f docker-compose.demo-with-build.yml down -v
+#
+# Run that reset once if this stack last booted with `drizzle push`: that
+# database has no migration journal, and boot refuses it rather than guess.
 #
 # Notes:
 #   * Shares the project name `cascadia-demo` with docker-compose.demo.yml
@@ -116,10 +119,12 @@ services:
       # pinned tag). Absent by default — this directory is gitignored.
       - ./demo-data:/app/demo-data:ro
     networks: [cascadia-demo]
-    # First boot: push schema → minimal seed → demo seed → serve.
-    # All steps are idempotent so reboots are safe.
+    # First boot: migrate → minimal seed → demo seed → serve.
+    # All steps are idempotent so reboots are safe. Migrations rather than
+    # `push --force` — see the app service in docker-compose.demo.yml for what
+    # push does to every boot after the demo seed.
     command: >
-      sh -c "node scripts/drizzle.mjs push --force
+      sh -c "tsx scripts/boot-migrate.ts
       && tsx scripts/seed-minimal.ts
       && tsx scripts/seed-demo.ts
       && npm run serve"

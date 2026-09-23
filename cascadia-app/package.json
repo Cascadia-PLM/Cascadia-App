@@ -1,0 +1,14 @@
+{
+  "name": "@cascadia/app",
+  "version": "0.6.0",
+  "description": "Cascadia PLM \u2014 community edition.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cascadia/api": "*",
+    "@cascadia/commons": "*",
+    "@cascadia/web": "*",
+    "@cascadia/workers-job": "*"
+  }
+}

@@ -46,7 +46,7 @@ export function generateSingleServerCompose(
       app: {
         build: {
           context: '.',
-          dockerfile: 'docker/app.Dockerfile',
+          dockerfile: 'cascadia-app/Dockerfile',
           target: 'production',
         },
         restart: 'unless-stopped',

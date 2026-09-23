@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.base.json",
+  // The Vite base config is real, type-checked code that lives beside `src`,
+  // not inside it. Left out, ESLint refuses to parse it at all.
+  //
+  // `@/` is this package. Commons is reachable by name; the API is not — no
+  // path for `@cascadia/api`, so a component that reaches for a service or
+  // the schema fails to resolve here, which is the boundary the split exists
+  // to enforce. A type the client needs belongs in commons.
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.base.ts"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@cascadia/commons/*": ["../cascadia-commons/src/*"]
+    }
+  }
+}

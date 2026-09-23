@@ -15,14 +15,15 @@ import viteReact from '@vitejs/plugin-react'
 // packages,
 // and naming a missing tsconfig here would fail before a single test ran.
 const tsconfigProjects = [
-  './packages/cascadia-commons/tsconfig.json',
-  './packages/cascadia-api/tsconfig.json',
-  './packages/cascadia-web/tsconfig.json',
+  './cascadia-commons/tsconfig.json',
+  './cascadia-api/tsconfig.json',
+  './cascadia-web/tsconfig.json',
+  './cascadia-workers-job/tsconfig.json',
   // Root: `scripts/` and its tests, which name the packages by import name.
   './tsconfig.json',
-  './packages/advanced-auditing/tsconfig.json',
-  './packages/design-engine/tsconfig.json',
-  './packages/odoo-integration/tsconfig.json',
+  './cascadia-advanced-auditing/tsconfig.json',
+  './cascadia-design-engine/tsconfig.json',
+  './cascadia-odoo-integration/tsconfig.json',
 ].filter((project) => existsSync(project))
 
 export default defineConfig({
@@ -42,9 +43,9 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          setupFiles: ['./packages/cascadia-api/src/__tests__/setup.node.ts'],
+          setupFiles: ['./cascadia-api/src/__tests__/setup.node.ts'],
           include: [
-            'packages/*/src/**/*.{test,spec}.ts',
+            'cascadia-*/src/**/*.{test,spec}.ts',
             'publish/*.{test,spec}.ts',
             // Recursive, and `.mjs` as well as `.ts`, so the two hand-written
             // ESLint rules' RuleTester suites run. They sit in
@@ -64,14 +65,14 @@ export default defineConfig({
         test: {
           name: 'dom',
           environment: 'jsdom',
-          setupFiles: ['./packages/cascadia-web/src/__tests__/setup.dom.ts'],
-          include: ['packages/*/src/**/*.{test,spec}.tsx'],
+          setupFiles: ['./cascadia-web/src/__tests__/setup.dom.ts'],
+          include: ['cascadia-*/src/**/*.{test,spec}.tsx'],
         },
       },
     ],
 
     // Global setup/teardown (root-level: runs once, before any project)
-    globalSetup: './packages/cascadia-api/src/__tests__/global-setup.ts',
+    globalSetup: './cascadia-api/src/__tests__/global-setup.ts',
 
     exclude: ['node_modules', 'dist', '.output'],
 
@@ -81,14 +82,14 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       reportsDirectory: './coverage',
       include: [
-        'packages/*/src/lib/**/*.ts',
-        'packages/*/src/components/**/*.tsx',
+        'cascadia-*/src/lib/**/*.ts',
+        'cascadia-*/src/components/**/*.tsx',
       ],
       exclude: [
-        'packages/*/src/**/*.test.ts',
-        'packages/*/src/**/*.spec.ts',
-        'packages/*/src/__tests__/**',
-        'packages/*/src/lib/db/schema/**', // Schema definitions don't need coverage
+        'cascadia-*/src/**/*.test.ts',
+        'cascadia-*/src/**/*.spec.ts',
+        'cascadia-*/src/__tests__/**',
+        'cascadia-*/src/lib/db/schema/**', // Schema definitions don't need coverage
       ],
       // Coverage is reported but no thresholds are enforced.
       // Revisit once the suite stabilizes post-initial release.
@@ -124,7 +125,7 @@ export default defineConfig({
     // in the api package; a commons or web test that wants them is testing the
     // wrong layer.
     alias: {
-      '@test': './packages/cascadia-api/src/__tests__',
+      '@test': './cascadia-api/src/__tests__',
     },
   },
 })

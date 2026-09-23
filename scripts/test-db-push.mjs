@@ -10,7 +10,7 @@
  * is what runs there.
  *
  * The test database needs no seed. Lifecycle rows are seeded by
- * `packages/cascadia-api/src/__tests__/global-setup.ts` on every run, and everything
+ * `cascadia-api/src/__tests__/global-setup.ts` on every run, and everything
  * else a suite needs it builds itself.
  *
  *   createdb -U postgres cascadia_test

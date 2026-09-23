@@ -4,7 +4,7 @@ Cascadia PLM manages engineering data through **item types** -- typed records th
 
 This document covers all 13 registered item types -- purpose, database schema, lifecycle, relationships, API surface, and UI pages. The seven with the deepest UI surface get a numbered section each; the rest are grouped under [Additional Item Types](#additional-item-types).
 
-**The 13 types:** Part, Document, ChangeOrder, Requirement, Task, WorkInstruction, Issue, TestPlan, TestCase, Software, Tool, PhysicalPart, WorkOrder. The canonical list lives in `packages/cascadia-commons/src/lib/items/item-type-definitions.ts`.
+**The 13 types:** Part, Document, ChangeOrder, Requirement, Task, WorkInstruction, Issue, TestPlan, TestCase, Software, Tool, PhysicalPart, WorkOrder. The canonical list lives in `cascadia-commons/src/lib/items/item-type-definitions.ts`.
 
 ---
 
@@ -43,7 +43,7 @@ All item types in Cascadia follow a **two-table pattern**:
 
 ### Item Numbering
 
-Each item type has a default numbering scheme defined in `packages/cascadia-commons/src/lib/items/numbering/schemes.ts`:
+Each item type has a default numbering scheme defined in `cascadia-commons/src/lib/items/numbering/schemes.ts`:
 
 | Item Type       | Prefix | Example       |
 | --------------- | ------ | ------------- |
@@ -157,9 +157,9 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 ### Key Files
 
-- Schema: `packages/cascadia-api/src/lib/db/schema/items.ts` (parts table)
-- Types: `packages/cascadia-commons/src/lib/items/types/part.ts`
-- Form: `packages/cascadia-web/src/components/parts/PartForm.tsx`
+- Schema: `cascadia-api/src/lib/db/schema/items.ts` (parts table)
+- Types: `cascadia-commons/src/lib/items/types/part.ts`
+- Form: `cascadia-web/src/components/parts/PartForm.tsx`
 
 ---
 
@@ -234,10 +234,10 @@ Documents integrate with the vault file system for version-controlled file stora
 
 ### Key Files
 
-- Schema: `packages/cascadia-api/src/lib/db/schema/items.ts` (documents table)
-- Types: `packages/cascadia-commons/src/lib/items/types/document.ts`
-- Form: `packages/cascadia-web/src/components/documents/DocumentForm.tsx`
-- Vault schema: `packages/cascadia-api/src/lib/db/schema/vault.ts`
+- Schema: `cascadia-api/src/lib/db/schema/items.ts` (documents table)
+- Types: `cascadia-commons/src/lib/items/types/document.ts`
+- Form: `cascadia-web/src/components/documents/DocumentForm.tsx`
+- Vault schema: `cascadia-api/src/lib/db/schema/vault.ts`
 
 ---
 
@@ -370,11 +370,11 @@ The Change Order has several supporting tables beyond the main `change_orders` t
 
 ### Key Files
 
-- Schema: `packages/cascadia-api/src/lib/db/schema/items.ts` (change_orders and related tables)
-- Types: `packages/cascadia-commons/src/lib/items/types/change-order.ts`
-- Form: `packages/cascadia-web/src/components/change-orders/ChangeOrderForm.tsx`
-- Service: `packages/cascadia-api/src/lib/items/services/ChangeOrderService.ts`
-- Release: `packages/cascadia-api/src/lib/services/ChangeOrderMergeService.ts` (in service layer)
+- Schema: `cascadia-api/src/lib/db/schema/items.ts` (change_orders and related tables)
+- Types: `cascadia-commons/src/lib/items/types/change-order.ts`
+- Form: `cascadia-web/src/components/change-orders/ChangeOrderForm.tsx`
+- Service: `cascadia-api/src/lib/items/services/ChangeOrderService.ts`
+- Release: `cascadia-api/src/lib/services/ChangeOrderMergeService.ts` (in service layer)
 
 ---
 
@@ -485,9 +485,9 @@ see [Traceability links and branch protection](#traceability-links-and-branch-pr
 
 ### Key Files
 
-- Schema: `packages/cascadia-api/src/lib/db/schema/items.ts` (requirements table)
-- Types: `packages/cascadia-commons/src/lib/items/types/requirement.ts`
-- Form: `packages/cascadia-web/src/components/requirements/RequirementForm.tsx`
+- Schema: `cascadia-api/src/lib/db/schema/items.ts` (requirements table)
+- Types: `cascadia-commons/src/lib/items/types/requirement.ts`
+- Form: `cascadia-web/src/components/requirements/RequirementForm.tsx`
 
 ---
 
@@ -550,9 +550,9 @@ Also: Cancelled
 
 ### Key Files
 
-- Schema: `packages/cascadia-api/src/lib/db/schema/items.ts` (tasks table)
-- Types: `packages/cascadia-commons/src/lib/items/types/task.ts`
-- Form: `packages/cascadia-web/src/components/tasks/TaskForm.tsx`
+- Schema: `cascadia-api/src/lib/db/schema/items.ts` (tasks table)
+- Types: `cascadia-commons/src/lib/items/types/task.ts`
+- Form: `cascadia-web/src/components/tasks/TaskForm.tsx`
 
 ---
 
@@ -697,10 +697,10 @@ Draft -> In Review -> Approved -> Released -> Obsolete
 
 ### Key Files
 
-- Schema: `packages/cascadia-api/src/lib/db/schema/items.ts` (work_instructions and related tables)
-- Types: `packages/cascadia-commons/src/lib/items/types/work-instruction.ts`
-- Form: `packages/cascadia-web/src/components/work-instructions/WorkInstructionForm.tsx`
-- Components: `packages/cascadia-web/src/components/work-instructions/` (StepEditor, ParametricBlock, etc.)
+- Schema: `cascadia-api/src/lib/db/schema/items.ts` (work_instructions and related tables)
+- Types: `cascadia-commons/src/lib/items/types/work-instruction.ts`
+- Form: `cascadia-web/src/components/work-instructions/WorkInstructionForm.tsx`
+- Components: `cascadia-web/src/components/work-instructions/` (StepEditor, ParametricBlock, etc.)
 
 ---
 
@@ -770,9 +770,9 @@ Also: Cancelled
 
 ### Key Files
 
-- Schema: `packages/cascadia-api/src/lib/db/schema/items.ts` (issues table)
-- Types: `packages/cascadia-commons/src/lib/items/types/issue.ts`
-- Form: `packages/cascadia-web/src/components/issues/IssueForm.tsx`
+- Schema: `cascadia-api/src/lib/db/schema/items.ts` (issues table)
+- Types: `cascadia-commons/src/lib/items/types/issue.ts`
+- Form: `cascadia-web/src/components/issues/IssueForm.tsx`
 
 ---
 
@@ -897,11 +897,11 @@ A Design is a version-controlled container for items within a program. Designs h
 
 ### Key Files
 
-- Program schema: `packages/cascadia-api/src/lib/db/schema/programs.ts`
-- Design schema: `packages/cascadia-api/src/lib/db/schema/designs.ts`
-- Versioning schema: `packages/cascadia-api/src/lib/db/schema/versioning.ts` (branches, commits, tags)
-- Program form: `packages/cascadia-web/src/components/programs/ProgramForm.tsx`
-- Design form: `packages/cascadia-web/src/components/designs/DesignForm.tsx`
+- Program schema: `cascadia-api/src/lib/db/schema/programs.ts`
+- Design schema: `cascadia-api/src/lib/db/schema/designs.ts`
+- Versioning schema: `cascadia-api/src/lib/db/schema/versioning.ts` (branches, commits, tags)
+- Program form: `cascadia-web/src/components/programs/ProgramForm.tsx`
+- Design form: `cascadia-web/src/components/designs/DesignForm.tsx`
 
 ---
 
@@ -1060,26 +1060,26 @@ See `docs/features/software-management.md` for the full design.
 
 All item types are registered in `ItemTypeRegistry`, which implements a two-tier configuration pattern:
 
-1. **Code definitions** -- everything about a type: its schema, table, labels, icon, relationships and searchable fields. They live in `ITEM_TYPE_DEFINITIONS` (`packages/cascadia-commons/src/lib/items/item-type-definitions.ts`) and are registered by `registerItemTypes.server.ts`.
+1. **Code definitions** -- everything about a type: its schema, table, labels, icon, relationships and searchable fields. They live in `ITEM_TYPE_DEFINITIONS` (`cascadia-commons/src/lib/items/item-type-definitions.ts`) and are registered by `registerItemTypes.server.ts`.
 2. **Runtime config** -- one field, from the database `item_type_configs` table: which lifecycle governs the type (plus, for ChangeOrder, the workflow each change type runs).
 
 Runtime config overrides the code default for that one field; everything else always comes from code.
 
 ### Registration Source
 
-`packages/cascadia-commons/src/lib/items/item-type-definitions.ts` holds the definitions;
+`cascadia-commons/src/lib/items/item-type-definitions.ts` holds the definitions;
 `registerItemTypes.server.ts` registers them. Each composition root — the HTTP
 server and the jobs worker — imports the registrations and then awaits
 `ItemTypeRegistry.initialize()`, which loads the runtime configs.
 
 ### Lifecycle Assignment
 
-Each item type is assigned a lifecycle definition by ID (defaults in `packages/cascadia-commons/src/lib/items/lifecycle-ids.ts`). The lifecycle controls valid states and transition rules. Multiple item types can share the same lifecycle definition. An administrator can reassign it under **Admin > Item Types**; the swap is refused if the target is the wrong kind of definition or if any existing item is in a state the target does not define.
+Each item type is assigned a lifecycle definition by ID (defaults in `cascadia-commons/src/lib/items/lifecycle-ids.ts`). The lifecycle controls valid states and transition rules. Multiple item types can share the same lifecycle definition. An administrator can reassign it under **Admin > Item Types**; the swap is refused if the target is the wrong kind of definition or if any existing item is in a state the target does not define.
 
 ### Permissions Model
 
 Access is not configured per item type. Each type maps to an RBAC resource
-(`ITEM_TYPE_RESOURCES` in `packages/cascadia-api/src/lib/items/item-type-resources.ts`
+(`ITEM_TYPE_RESOURCES` in `cascadia-api/src/lib/items/item-type-resources.ts`
 — `Part` to `parts`, `ChangeOrder` to `change_orders`, and so on), and roles
 hold permissions on those resources. See
 [Access Control](../admin/access-control.md).

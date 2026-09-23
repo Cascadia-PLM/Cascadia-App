@@ -18,7 +18,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 
 // Silence the application's pino logger so it doesn't interleave with the
 // generated JSON on stdout. Must precede the dynamic import below.
@@ -46,7 +46,7 @@ function flagValue(name: string): string | undefined {
 
 const edition = flagValue('--app') ?? resolveApp()
 const { registerModules } = (await import(
-  `../apps/${edition}/src/modules.server`
+  `../${appDir(edition)}/src/modules.server`
 )) as { registerModules: () => void }
 registerModules()
 

@@ -78,7 +78,7 @@
     "demo:logs": "docker compose -f docker-compose.demo.yml logs -f app",
     "demo:fetch": "tsx scripts/fetch-demo-data.ts",
     "deploy:install": "tsx scripts/deploy/install.ts",
-    "mcp:dev-server": "tsx packages/cascadia-api/src/mcp-dev-server.ts",
+    "mcp:dev-server": "tsx cascadia-api/src/mcp-dev-server.ts",
     "jobs:worker": "node scripts/workers.mjs jobs:built",
     "jobs:worker:dev": "node scripts/workers.mjs jobs",
     "cad:worker:dev": "docker compose --profile cad up cad-converter-dev --build -d && docker logs -f cascadia-cad-converter-dev",
@@ -206,7 +206,6 @@
     }
   },
   "workspaces": [
-    "packages/*",
-    "apps/*"
+    "cascadia-*"
   ]
 }

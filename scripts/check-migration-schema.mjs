@@ -143,7 +143,7 @@ function reportDifference(migrated, pushed) {
   console.error(
     'A schema change ships with migrations for both editions — run\n' +
       '`npm run db:generate` and `CASCADIA_APP=cascadia npm run db:generate`,\n' +
-      'and commit what appears under apps/*/drizzle/. If they are already\n' +
+      'and commit what appears under cascadia-app*/drizzle/. If they are already\n' +
       'committed, one of them does not do what the schema says.',
   )
 }

@@ -34,7 +34,7 @@ The main Cascadia application providing all PLM functionality.
 ### Image Build
 
 ```bash
-docker build -t ghcr.io/cascadia-plm/cascadia-app -f docker/app.Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-app -f cascadia-app/Dockerfile .
 ```
 
 ### Environment Variables
@@ -77,7 +77,7 @@ GET /api/v1/health
 ## File Vault (embedded in Core App)
 
 File storage is part of the Core App process. The vault library
-(`packages/cascadia-api/src/lib/vault/`) handles upload/download, check-out/check-in,
+(`cascadia-api/src/lib/vault/`) handles upload/download, check-out/check-in,
 version management, and storage abstraction — there is no separate vault
 container to build or deploy.
 
@@ -139,7 +139,7 @@ If running PostgreSQL in Docker too, set `POSTGRES_HOST=postgres` in `.env`.
 ### Image Build
 
 ```bash
-docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f workers/node/Dockerfile .
+docker build -t ghcr.io/cascadia-plm/cascadia-jobs-worker -f cascadia-workers-job/Dockerfile .
 ```
 
 ### Environment Variables

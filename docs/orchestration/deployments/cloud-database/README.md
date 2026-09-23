@@ -116,7 +116,7 @@ Follow your cloud provider's instructions above.
 
 Nothing is required for a fresh database: `docker-compose.yml` here boots the app
 through `scripts/boot-migrate.ts`, which applies the committed migrations under
-`apps/*/drizzle/` before the server starts. To apply them ahead of the
+`cascadia-app*/drizzle/` before the server starts. To apply them ahead of the
 deployment instead, from a checkout of the release being deployed:
 
 ```bash

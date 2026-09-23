@@ -13,7 +13,7 @@ as of v0.5.0 — the first release that ships migration files.
 `db:push` diffs the live database against the code and applies the
 difference directly — fine for ephemeral databases, but it writes no
 history and cannot be reviewed. Released versions ship migration files
-under `apps/<edition>/drizzle/`, and `db:migrate` applies exactly the
+under `cascadia-app*/drizzle/`, and `db:migrate` applies exactly the
 committed, reviewed SQL in order, recording each file in the journal
 (`drizzle.__drizzle_migrations`).
 
@@ -297,9 +297,9 @@ one. Three things make that true, and all three have to hold:
 1. **Every folded migration is unpublished.** A release tag is not the line —
    publication is. A production database can only be tracking what this
    repository's `main` has carried, tagged or not, so check what `main`
-   already holds under `apps/*/drizzle/`: anything there stays where it is,
+   already holds under `cascadia-app*/drizzle/`: anything there stays where it is,
    forever. (This is stricter than the release check the first fold used —
-   `git ls-tree -r --name-only v0.5.0 -- apps/*/drizzle/` — which is only
+   `git ls-tree -r --name-only v0.5.0 -- cascadia-app*/drizzle/` — which is only
    equivalent while nothing has been published since the tag.)
 2. **The consolidated file keeps the `when` of the _last_ migration it
    folds.** Drizzle applies on `created_at < folderMillis`, so the timestamp
@@ -380,7 +380,7 @@ for.
 
 - Every schema change ships with migrations for **both editions** — run
   `npm run db:generate` and `CASCADIA_APP=cascadia npm run db:generate`,
-  commit what appears under `apps/*/drizzle/`. CI fails otherwise.
+  commit what appears under `cascadia-app*/drizzle/`. CI fails otherwise.
 - Never edit a committed migration file. Nothing verifies the stored hash,
   so an edit does not fail — it silently divides your installs into those
   that ran the old statements and those that ran the new. Fix forward with a
@@ -390,5 +390,5 @@ for.
   migrations" above. It happens once per wave, right before the publish that
   ships it, so each publish carries at most one new migration per edition.
 - The enterprise migrations are proprietary (they name module tables) and
-  never publish; the community migrations under `apps/cascadia/drizzle/`
+  never publish; the community migrations under `cascadia-app/drizzle/`
   ship to the public repo. `npm run publish:verify` checks both directions.

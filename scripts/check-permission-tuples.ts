@@ -167,7 +167,7 @@ function reasonFor(site: Site): string {
   return 'granted by no role in ROLE_DEFINITIONS'
 }
 
-const SOURCE_FILE = /^(?:packages|apps)\/[^/]+\/src\/.*\.tsx?$/
+const SOURCE_FILE = /^cascadia-[^/]+\/src\/.*\.tsx?$/
 const TEST_FILE = /\.(?:test|spec)\.tsx?$/
 /**
  * Cheap gate: parsing the whole workspace to find ~300 sites is waste.
@@ -428,7 +428,7 @@ function main(): void {
         'A tuple no role grants is not a tight route, it is a route nobody can',
         'call: it answers 403 to everyone, the Administrator included, with the',
         'message an unauthorized caller gets. Either charge a tuple a role',
-        'holds, or grant the action in packages/cascadia-commons/src/lib/auth/permissions.ts',
+        'holds, or grant the action in cascadia-commons/src/lib/auth/permissions.ts',
         'and sync existing databases with `npm run db:sync-roles`.',
         '',
         'If the tuple is genuinely reserved for a principal the product cannot',

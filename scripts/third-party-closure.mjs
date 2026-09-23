@@ -11,8 +11,8 @@
  * is the same idea for core-vs-proprietary — the classification has one home.
  *
  * "Distributed" is the lockfile's `dev` flag inverted. It is the right line
- * because it is the line npm itself draws: `docker/app.Dockerfile` and
- * `workers/node/Dockerfile` both build their runtime layer with
+ * because it is the line npm itself draws: `cascadia-app/Dockerfile` and
+ * `cascadia-workers-job/Dockerfile` both build their runtime layer with
  * `npm ci --omit=dev`, so this set is, package for package, what lands in the
  * images. Dev-only packages are build and test tooling that is never conveyed,
  * and neither licence obligations nor attribution follow them.

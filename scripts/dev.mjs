@@ -8,12 +8,12 @@
 // lines after PowerShell has already drawn its next prompt.
 
 import { spawn, spawnSync } from 'node:child_process'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 
 // Which app to run is resolved, never named. The published tree has no
 // `cascadia-enterprise`, and a hardcoded path here made `npm run dev` a broken
 // script in a fresh clone of the public repository. See scripts/edition.mjs.
-const APP = resolveApp()
+const APP_DIR = appDir(resolveApp())
 
 // `--client` / `--api` run one half, for the npm scripts of the same name.
 const only = process.argv.includes('--client')
@@ -35,7 +35,7 @@ const procs = [
     name: 'client',
     color: '\x1b[34m',
     cmd: 'vite',
-    args: ['--port', CLIENT_PORT, '--config', `apps/${APP}/vite.config.ts`],
+    args: ['--port', CLIENT_PORT, '--config', `${APP_DIR}/vite.config.ts`],
   },
   // `watch` so edits to server/lib files auto-reload the API (matches Vite HMR
   // on the client side); without it the API serves stale code until restarted.
@@ -43,7 +43,7 @@ const procs = [
     name: 'api',
     color: '\x1b[32m',
     cmd: 'tsx',
-    args: ['watch', `apps/${APP}/src/server/dev.ts`],
+    args: ['watch', `${APP_DIR}/src/server/dev.ts`],
   },
 ].filter((p) => only === null || p.name === only)
 

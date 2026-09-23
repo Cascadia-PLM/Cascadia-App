@@ -23,13 +23,15 @@
       // tsx reads this file too, so `npm run db:seed` and the rest resolve
       // `@/` inside the api the same way.
       "@/*": [
-        "./packages/cascadia-api/src/*",
-        "./packages/cascadia-web/src/*",
-        "./packages/cascadia-commons/src/*"
+        "./cascadia-api/src/*",
+        "./cascadia-web/src/*",
+        "./cascadia-workers-job/src/*",
+        "./cascadia-commons/src/*"
       ],
-      "@cascadia/api/*": ["./packages/cascadia-api/src/*"],
-      "@cascadia/web/*": ["./packages/cascadia-web/src/*"],
-      "@cascadia/commons/*": ["./packages/cascadia-commons/src/*"]
+      "@cascadia/api/*": ["./cascadia-api/src/*"],
+      "@cascadia/web/*": ["./cascadia-web/src/*"],
+      "@cascadia/workers-job/*": ["./cascadia-workers-job/src/*"],
+      "@cascadia/commons/*": ["./cascadia-commons/src/*"]
     }
   }
 }

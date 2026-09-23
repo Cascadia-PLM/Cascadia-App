@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.base.json",
+  // The app-level configs are type-checked code too — without them here,
+  // ESLint has no project for them and refuses to parse.
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "drizzle.config.ts"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "../cascadia-web/src/*",
+        "../cascadia-api/src/*",
+        "../cascadia-workers-job/src/*",
+        "../cascadia-commons/src/*"
+      ],
+      "@cascadia/api/*": ["../cascadia-api/src/*"],
+      "@cascadia/web/*": ["../cascadia-web/src/*"],
+      "@cascadia/workers-job/*": ["../cascadia-workers-job/src/*"],
+      "@cascadia/commons/*": ["../cascadia-commons/src/*"]
+    }
+  }
+}

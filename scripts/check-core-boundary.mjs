@@ -30,7 +30,7 @@
  * reaching the api? See "Application layering" below.
  *
  * This is a stopgap with a known replacement. Phase 2 splits the workspace, at
- * which point CI can build and test `apps/cascadia` with the proprietary
+ * which point CI can build and test `cascadia-app` with the proprietary
  * packages *deleted from the tree* — which proves the same property by
  * construction rather than by analysis. Until then, this is the gate.
  */
@@ -38,10 +38,15 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { MODULE_PACKAGES, editionOf, normalize } from './edition-manifest.mjs'
+import {
+  MODULE_PACKAGES,
+  editionOf,
+  normalize,
+  workspaceDir,
+} from './edition-manifest.mjs'
 
 // Both lists derive from the edition manifest so a new module package is
-// covered the day its packages/<name>/** pattern lands in PROPRIETARY.
+// covered the day its cascadia-<name>/** pattern lands in PROPRIETARY.
 // The old hardcoded copies here had already drifted: they omitted the
 // odoo-integration package entirely, so a core import under it — or its
 // quoted package id — passed this check silently. (No quoted ids in this
@@ -50,7 +55,7 @@ import { MODULE_PACKAGES, editionOf, normalize } from './edition-manifest.mjs'
 /** Entitlement ids that belong to a proprietary package. */
 const PROPRIETARY_PACKAGE_IDS = MODULE_PACKAGES
 
-const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src`)
+const MODULE_SRC = MODULE_PACKAGES.map((p) => `${workspaceDir(p)}/src`)
 
 /**
  * The application's own packages, by import name. `@/` inside one of them
@@ -58,9 +63,10 @@ const MODULE_SRC = MODULE_PACKAGES.map((p) => `packages/${p}/src`)
  * names a package's tsconfig maps are meant to resolve at all.
  */
 const APP_PACKAGES = {
-  '@cascadia/commons': 'packages/cascadia-commons/src',
-  '@cascadia/api': 'packages/cascadia-api/src',
-  '@cascadia/web': 'packages/cascadia-web/src',
+  '@cascadia/commons': 'cascadia-commons/src',
+  '@cascadia/api': 'cascadia-api/src',
+  '@cascadia/web': 'cascadia-web/src',
+  '@cascadia/workers-job': 'cascadia-workers-job/src',
 }
 const APP_SRC = Object.values(APP_PACKAGES)
 
@@ -73,7 +79,7 @@ const appPackageOf = (file) =>
 /**
  * Entry points, which are allowed to import a composition root.
  *
- * Since Phase 2 the app entry points live in `apps/`, and the enterprise app is
+ * Since Phase 2 the app entry points live in the app workspaces (`cascadia-app`, `cascadia-app-enterprise`), and the enterprise app is
  * classified proprietary in its entirety — so they are no longer core files and
  * need no exemption. What remains is root-level tooling that operates on one
  * edition's composition.
@@ -191,15 +197,15 @@ function resolveSpecifier(specifier, fromFile) {
       // still named a module, and the subpath test below reads straight past
       // it: only a trailing slash matched, so this fell through to null and
       // was never classified. Point it at the package manifest, a real file
-      // under packages/<name>/ that the edition manifest calls proprietary.
+      // under cascadia-<name>/ that the edition manifest calls proprietary.
       // The core package needs no equivalent: a core target records nothing.
       if (specifier === `@cascadia/${name}`) {
-        return tryExtensions(join('packages', name, 'package.json'))
+        return tryExtensions(join(workspaceDir(name), 'package.json'))
       }
       const prefix = `@cascadia/${name}/`
       if (specifier.startsWith(prefix)) {
         return tryExtensions(
-          join('packages', name, 'src', specifier.slice(prefix.length)),
+          join(workspaceDir(name), 'src', specifier.slice(prefix.length)),
         )
       }
     }
@@ -318,12 +324,13 @@ const collisions = [...byRelativePath].filter(([, roots]) => roots.size > 1)
 // A declared edge is fine — it is a fact recorded where npm and a human can
 // both see it. What is refused is an *undeclared* one.
 const moduleOf = (file) =>
-  MODULE_PACKAGES.find((name) => file.startsWith(`packages/${name}/`)) ?? null
+  MODULE_PACKAGES.find((name) => file.startsWith(`${workspaceDir(name)}/`)) ??
+  null
 
 /** Module package → the module packages its package.json admits to needing. */
 const declaredDeps = new Map(
   MODULE_PACKAGES.map((name) => {
-    const manifestPath = `packages/${name}/package.json`
+    const manifestPath = `${workspaceDir(name)}/package.json`
     const manifest = existsSync(manifestPath)
       ? JSON.parse(readFileSync(manifestPath, 'utf8'))
       : {}
@@ -368,10 +375,13 @@ for (const file of allFiles) {
 // ── Application layering ─────────────────────────────────────────────────
 //
 // Commons imports commons. The web imports web and commons. The api imports
-// api and commons. Nothing else — in particular the web never reaches the api,
-// which is the property the package split exists to hold: the client bundle
-// cannot pull `postgres` in through a type import that happened to sit beside
-// a service.
+// api and commons. The jobs worker imports itself, the api and commons — it is
+// the process that runs the handlers, so it sits above the api, and the api
+// never reaches back into it: `JobService.submit` needs a job's *definition*,
+// which stays in the api, never its handler. Nothing else — in particular the
+// web never reaches the api, which is the property the package split exists to
+// hold: the client bundle cannot pull `postgres` in through a type import that
+// happened to sit beside a service.
 //
 // The tsconfigs and the Vite alias plugin already refuse to *resolve* an
 // import that crosses the wrong way, so a violation here normally fails
@@ -387,6 +397,11 @@ const LAYERS_MAY_REACH = {
   '@cascadia/commons': new Set(['@cascadia/commons']),
   '@cascadia/web': new Set(['@cascadia/web', '@cascadia/commons']),
   '@cascadia/api': new Set(['@cascadia/api', '@cascadia/commons']),
+  '@cascadia/workers-job': new Set([
+    '@cascadia/workers-job',
+    '@cascadia/api',
+    '@cascadia/commons',
+  ]),
 }
 const isTestFile = (file) =>
   /\.test\.tsx?$/.test(file) || file.includes('/__tests__/')
@@ -501,8 +516,10 @@ if (layering.size > 0) {
   }
   console.error(
     'commons reaches only commons; web reaches web and commons; api reaches\n' +
-      'api and commons. A type the web needs from a service belongs in\n' +
-      '@cascadia/commons — declare it there and re-export it from the service.',
+      'api and commons; the jobs worker reaches itself, the api and commons.\n' +
+      'A type the web needs from a service belongs in @cascadia/commons —\n' +
+      'declare it there and re-export it from the service. A handler the api\n' +
+      'wants to run belongs to the worker: submit the job instead.',
   )
   process.exit(1)
 }

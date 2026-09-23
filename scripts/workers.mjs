@@ -21,12 +21,12 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 
 const CAD_WORKERS = [
-  ['workers/cad-converter', 'cad-converter-dev'],
-  ['workers/cad-generator', 'cad-generator-dev'],
-  ['workers/freecad-runner', 'freecad-runner-dev'],
+  ['cascadia-workers-cad', 'cad-converter-dev'],
+  ['cascadia-workers-cad-generator', 'cad-generator-dev'],
+  ['cascadia-workers-freecad-runner', 'freecad-runner-dev'],
 ]
 
 const services = CAD_WORKERS.filter(([dir]) => existsSync(dir)).map(
@@ -47,10 +47,14 @@ try {
       if (services.length > 0) {
         run(['compose', '--profile', 'cad', 'up', '-d', ...services, '--build'])
       }
-      execFileSync('npx', ['tsx', `apps/${resolveApp()}/src/jobs-worker.ts`], {
-        stdio: 'inherit',
-        shell: process.platform === 'win32',
-      })
+      execFileSync(
+        'npx',
+        ['tsx', `${appDir(resolveApp())}/src/jobs-worker.ts`],
+        {
+          stdio: 'inherit',
+          shell: process.platform === 'win32',
+        },
+      )
       break
     }
     // The Node worker lives in the app, because it registers the same modules
@@ -58,10 +62,14 @@ try {
     // Phase 2 split moved and nothing noticed — they were broken in *this*
     // tree too, not only the published one.
     case 'jobs':
-      execFileSync('npx', ['tsx', `apps/${resolveApp()}/src/jobs-worker.ts`], {
-        stdio: 'inherit',
-        shell: process.platform === 'win32',
-      })
+      execFileSync(
+        'npx',
+        ['tsx', `${appDir(resolveApp())}/src/jobs-worker.ts`],
+        {
+          stdio: 'inherit',
+          shell: process.platform === 'win32',
+        },
+      )
       break
     case 'jobs:built': {
       const entry = `.output/${resolveApp()}/server/jobs-worker.mjs`

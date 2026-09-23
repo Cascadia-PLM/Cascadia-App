@@ -5,7 +5,7 @@
 
 import { tanstackConfig } from '@tanstack/eslint-config'
 import tseslint from 'typescript-eslint'
-import { PROPRIETARY } from './scripts/edition-manifest.mjs'
+import { MODULE_PACKAGES } from './scripts/edition-manifest.mjs'
 import noIndirectEffectFetch from './scripts/eslint-rules/no-indirect-effect-fetch.mjs'
 import paginatedQueryTotalOrder from './scripts/eslint-rules/paginated-query-total-order.mjs'
 
@@ -33,25 +33,13 @@ const local = {
  * Derived from the edition manifest's package names rather than written out
  * here, so the two cannot drift.
  */
-// Derived from the manifest, not listed. Writing the names here would put a
-// proprietary package id inside a core file — `boundary:check` says so, and it
-// is right: this file is published, where those packages do not exist. In the
-// public tree `PROPRIETARY` is empty, so both lists below are empty and the
-// rule below restricts nothing, which is exactly correct there.
-const APP_PACKAGES = new Set([
-  'cascadia-api',
-  'cascadia-web',
-  'cascadia-commons',
-])
-
-const MODULE_PACKAGES = [
-  ...new Set(
-    PROPRIETARY.map((p) => /^packages\/([^/]+)\//.exec(p)?.[1]).filter(
-      (name) => name !== undefined && !APP_PACKAGES.has(name),
-    ),
-  ),
-]
-
+// `MODULE_PACKAGES` comes from the manifest, not a list here. Writing the
+// names here would put a proprietary package id inside a core file —
+// `boundary:check` says so, and it is right: this file is published, where
+// those packages do not exist. In the public tree `PROPRIETARY` is empty, so
+// the list is empty and the rule below restricts nothing, which is exactly
+// correct there.
+//
 // Each module keeps its lib code under `lib/<module-name>/` and (where it
 // has any) its components under `components/<module-name>/`, so those
 // namespaces are patternable per package name. That convention is the whole
@@ -60,9 +48,9 @@ const MODULE_PACKAGES = [
 // is invisible to this rule and belongs to `boundary:check` (which resolves
 // real paths) and its alias-collision pass.
 //
-// (A previous derivation filtered PROPRIETARY entries by 'packages/<p>/src/'
+// (A previous derivation filtered PROPRIETARY entries by '<pkg>/src/'
 // prefixes — which no manifest entry has ever contained, the entries being
-// 'packages/<p>/**' — so it provably contributed nothing and only the
+// '<pkg>/**' — so it provably contributed nothing and only the
 // @cascadia/* patterns were live.)
 const proprietaryImportPatterns = [
   ...MODULE_PACKAGES.flatMap((p) => [`@cascadia/${p}`, `@cascadia/${p}/**`]),
@@ -116,14 +104,14 @@ export default [
       'html/**',
       'infra/**',
       '**/*.js',
-      'packages/cascadia-api/test-data/**',
+      'cascadia-api/test-data/**',
       // Generated per app and gitignored. Type-aware linting two of these
       // alongside four TS programs exhausts the default heap, and there is
       // nothing to review in a file nobody writes.
-      'apps/*/src/routeTree.gen.ts',
+      'cascadia-app*/src/routeTree.gen.ts',
       // Generated from the OpenAPI snapshot (npm run types:openapi) and
       // committed; nothing to review here either.
-      'packages/cascadia-web/src/lib/api/openapi-types.gen.ts',
+      'cascadia-web/src/lib/api/openapi-types.gen.ts',
     ],
   },
   ...tanstackConfig,
@@ -201,10 +189,10 @@ export default [
     ? [
         {
           // Scoped to the application packages by path, so no ignore list is
-          // needed: module files simply are not under these three.
+          // needed: module files simply are not under these four.
           files: [
-            'packages/cascadia-{api,web,commons}/src/**/*.ts',
-            'packages/cascadia-{api,web,commons}/src/**/*.tsx',
+            'cascadia-{api,web,commons,workers-job}/src/**/*.ts',
+            'cascadia-{api,web,commons,workers-job}/src/**/*.tsx',
           ],
           rules: {
             'no-restricted-imports': [
@@ -233,14 +221,14 @@ export default [
   // only: the browser never builds a Drizzle chain, and `.offset(` on an array
   // means something else entirely.
   {
-    files: ['packages/*/src/lib/**/*.ts', 'packages/*/src/server/**/*.ts'],
+    files: ['cascadia-*/src/lib/**/*.ts', 'cascadia-*/src/server/**/*.ts'],
     rules: { 'local/paginated-query-total-order': 'error' },
   },
   // Escape user text before it reaches a LIKE/ILIKE pattern — see
   // `likePatternRestrictions` above for what and why.
   //
   // Scoped to `.ts` deliberately: the E2E isVisible ban lives outside
-  // `packages/`, and a broader glob here would silently disable it.
+  // the workspaces, and a broader glob here would silently disable it.
   //
   // It sits BEFORE the effect-fetch block rather than after because the two
   // overlap — a hook module under `components/` or `routes/` is a `.ts` file —
@@ -249,9 +237,9 @@ export default [
   // effect-fetch block below spreads these selectors back in, and so does the
   // routes/api block at the bottom; both overlaps are therefore neutral rather
   // than merely improbable. Order is load-bearing here: a new block matching
-  // `packages/**` must either come before this one or restate these selectors.
+  // `cascadia-*/**` must either come before this one or restate these selectors.
   {
-    files: ['packages/*/src/**/*.ts'],
+    files: ['cascadia-*/src/**/*.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...likePatternRestrictions],
     },
@@ -294,10 +282,10 @@ export default [
   // above matches these files too and options override rather than merge.
   {
     files: [
-      'packages/*/src/components/**/*.ts',
-      'packages/*/src/components/**/*.tsx',
-      'packages/*/src/routes/**/*.ts',
-      'packages/*/src/routes/**/*.tsx',
+      'cascadia-*/src/components/**/*.ts',
+      'cascadia-*/src/components/**/*.tsx',
+      'cascadia-*/src/routes/**/*.ts',
+      'cascadia-*/src/routes/**/*.tsx',
     ],
     rules: {
       'no-restricted-syntax': [
@@ -341,8 +329,8 @@ export default [
   // files can appear here, so those are restated rather than dropped.
   {
     files: [
-      'packages/cascadia-web/src/components/vault/FilePreview.tsx',
-      'packages/cascadia-web/src/components/work-orders/useInstructionRun.ts',
+      'cascadia-web/src/components/vault/FilePreview.tsx',
+      'cascadia-web/src/components/work-orders/useInstructionRun.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...likePatternRestrictions],
@@ -377,15 +365,15 @@ export default [
   //    the edit context through the query client.
   {
     files: [
-      'packages/cascadia-web/src/components/change-orders/AddDesignToChangeOrderDialog.tsx',
-      'packages/cascadia-web/src/components/change-orders/ChangeOrderAffectedItemsPanel.tsx',
-      'packages/cascadia-web/src/components/change-orders/ParentPropagationDialog.tsx',
-      'packages/cascadia-web/src/components/designs/AddPartToStructureDialog.tsx',
-      'packages/cascadia-web/src/components/designs/MembersTab.tsx',
-      'packages/cascadia-web/src/components/software/SourceDiffDialog.tsx',
-      'packages/cascadia-web/src/components/software/SourceViewer.tsx',
-      'packages/cascadia-web/src/routes/work-instructions/$id/index.tsx',
-      'packages/design-engine/src/components/parts/GenerateCadDialog.tsx',
+      'cascadia-web/src/components/change-orders/AddDesignToChangeOrderDialog.tsx',
+      'cascadia-web/src/components/change-orders/ChangeOrderAffectedItemsPanel.tsx',
+      'cascadia-web/src/components/change-orders/ParentPropagationDialog.tsx',
+      'cascadia-web/src/components/designs/AddPartToStructureDialog.tsx',
+      'cascadia-web/src/components/designs/MembersTab.tsx',
+      'cascadia-web/src/components/software/SourceDiffDialog.tsx',
+      'cascadia-web/src/components/software/SourceViewer.tsx',
+      'cascadia-web/src/routes/work-instructions/$id/index.tsx',
+      'cascadia-design-engine/src/components/parts/GenerateCadDialog.tsx',
     ],
     rules: {
       'local/no-indirect-effect-fetch': 'off',
@@ -426,7 +414,7 @@ export default [
   },
   // Nudge API routes toward apiHandler/response builders instead of raw Response construction
   {
-    files: ['packages/*/src/routes/api/**/*.ts'],
+    files: ['cascadia-*/src/routes/api/**/*.ts'],
     rules: {
       'no-restricted-syntax': [
         'warn',
@@ -462,13 +450,13 @@ export default [
   //
   // Placed LAST deliberately. `no-restricted-syntax` options OVERRIDE per
   // matched file rather than merge, so this block has to come after every
-  // earlier block that matches these files — `packages/*/src/**/*.ts` does —
+  // earlier block that matches these files — `cascadia-*/src/**/*.ts` does —
   // and has to restate their selectors, which is what the spread below is for.
   // Adding this block anywhere above that one would silently disable the
   // LIKE-pattern restrictions for the dispatcher.
   {
-    files: ['packages/*/src/lib/events/webhooks/**/*.ts'],
-    ignores: ['packages/*/src/lib/events/webhooks/**/*.test.ts'],
+    files: ['cascadia-*/src/lib/events/webhooks/**/*.ts'],
+    ignores: ['cascadia-*/src/lib/events/webhooks/**/*.test.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',

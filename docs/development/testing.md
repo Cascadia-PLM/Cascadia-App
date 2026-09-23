@@ -44,7 +44,7 @@ npm run test:coverage # Run with coverage report
 npm run test:ui       # Open Vitest UI
 
 # Run a single file
-npx vitest run packages/cascadia-api/src/lib/services/BranchService.test.ts
+npx vitest run cascadia-api/src/lib/services/BranchService.test.ts
 
 # Run tests matching a pattern
 npx vitest run -t "should create branch"
@@ -67,17 +67,17 @@ npm run test:e2e:full     # Reset database + seed + run tests
 Tests are co-located with the code they test:
 
 ```
-packages/cascadia-api/src/lib/services/
+cascadia-api/src/lib/services/
 ├── BranchService.ts
 ├── BranchService.test.ts     # Co-located test
 ├── CheckoutService.ts
 ├── CheckoutService.test.ts
 ```
 
-Shared test infrastructure lives in `packages/cascadia-api/src/__tests__/`:
+Shared test infrastructure lives in `cascadia-api/src/__tests__/`:
 
 ```
-packages/cascadia-api/src/__tests__/
+cascadia-api/src/__tests__/
 ├── setup.ts              # Test setup (runs before each file)
 ├── global-setup.ts       # Global setup (runs once)
 ├── fixtures/             # Test data factories
@@ -98,7 +98,7 @@ packages/cascadia-api/src/__tests__/
 Vitest globals are enabled — `describe`, `it`, `expect`, `vi` are available without import.
 
 ```typescript
-// packages/cascadia-api/src/lib/services/BranchService.test.ts
+// cascadia-api/src/lib/services/BranchService.test.ts
 describe('BranchService', () => {
   describe('createChangeOrderBranch', () => {
     it('creates a branch named eco/{itemNumber}', async () => {
@@ -140,7 +140,7 @@ Integration tests use `TestDatabase` for transaction-based isolation:
 > passes while asserting the absence it was written to disprove. The rule, its
 > four commit-time disciplines, and the cleanup discipline that keeps parallel
 > files from eating each other's rows live in
-> [`packages/cascadia-api/src/__tests__/README.md`](../../packages/cascadia-api/src/__tests__/README.md#choosing-a-harness).
+> [`cascadia-api/src/__tests__/README.md`](../../cascadia-api/src/__tests__/README.md#choosing-a-harness).
 
 ```typescript
 import { TestDatabase } from '@/__tests__/helpers/db'
@@ -395,14 +395,14 @@ Avoid CSS selectors and index-based selectors.
 
 The Python workers have their own suite, run with pytest rather than Vitest.
 
-`workers/py-common` — the shared jobs/vault database layer both workers import —
+`cascadia-workers-commons` — the shared jobs/vault database layer both workers import —
 is the part that runs in CI. It needs pip and nothing else:
 
 ```bash
-pip install -r workers/py-common/requirements-dev.txt
+pip install -r cascadia-workers-commons/requirements-dev.txt
 
-pytest workers/py-common                 # everything, needs a database
-pytest workers/py-common -m 'not db'     # the pure half, needs nothing
+pytest cascadia-workers-commons                 # everything, needs a database
+pytest cascadia-workers-commons -m 'not db'     # the pure half, needs nothing
 ```
 
 The `db`-marked tests read **`TEST_DATABASE_URL`**, never `DATABASE_URL`, for the
@@ -416,17 +416,17 @@ they fail — a suite that silently skipped every database assertion would be a
 green check gating nothing.
 
 The package is consumed via `PYTHONPATH` and never installed as a distribution
-(both worker images copy `py-common/src` alongside their own `src`), so
-`workers/py-common/pyproject.toml` carries only a `[tool.pytest.ini_options]`
+(both worker images copy `cascadia-workers-commons/src` alongside their own `src`), so
+`cascadia-workers-commons/pyproject.toml` carries only a `[tool.pytest.ini_options]`
 section. Its `pythonpath = ["src"]` is what makes `import cascadia_worker_common`
 resolve with no install.
 
-The `workers/cad-converter` suite is **run locally only**. It imports
+The `cascadia-workers-cad` suite is **run locally only**. It imports
 `pythonocc-core`, which is conda-only, so it needs its own environment:
 
 ```bash
-conda env create -f workers/cad-converter/environment.yml
-conda run -n cad-converter pytest workers/cad-converter
+conda env create -f cascadia-workers-cad/environment.yml
+conda run -n cad-converter pytest cascadia-workers-cad
 ```
 
 State the run and its result in the pull request body when you change the
@@ -436,7 +436,7 @@ One file is an exception. `tests/test_worker_claim.py` covers how `_run_job`
 settles a RabbitMQ delivery and touches no geometry, so it stubs
 `pythonocc-core` when it is genuinely absent and runs under a plain
 `pip install pytest pydantic pydantic-settings`, with the worker's `src` and
-`py-common/src` on `PYTHONPATH`. An installed package always beats the stub, so
+`cascadia-workers-commons/src` on `PYTHONPATH`. An installed package always beats the stub, so
 the file behaves identically inside the conda environment.
 
 ## CI/CD

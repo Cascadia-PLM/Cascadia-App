@@ -75,12 +75,13 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { sql } from 'drizzle-orm'
 import { db, describeConnection } from '@cascadia/api/lib/db'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 
 // Resolved at runtime rather than imported by name — same reasoning as
 // truncate-all.ts: this script serves whichever edition the tree contains.
 const app = resolveApp()
-const drizzleDir = resolve(import.meta.dirname, '..', 'apps', app, 'drizzle')
+const dir = appDir(app)
+const drizzleDir = resolve(import.meta.dirname, '..', dir, 'drizzle')
 const checkOnly = process.argv.includes('--check')
 
 interface JournalEntry {
@@ -131,7 +132,7 @@ try {
   ) as { entries: Array<JournalEntry> }
 } catch {
   die(
-    `No migration journal at apps/${app}/drizzle/meta/_journal.json — ` +
+    `No migration journal at ${dir}/drizzle/meta/_journal.json — ` +
       'nothing to stamp. Baselines are minted at release time via db:generate.',
   )
 }
@@ -228,7 +229,7 @@ const migrations = entries.map((entry) => {
       .update(readFileSync(resolve(drizzleDir, `${tag}.sql`)))
       .digest('hex')
   } catch {
-    return die(`REFUSING to stamp: cannot read apps/${app}/drizzle/${tag}.sql.`)
+    return die(`REFUSING to stamp: cannot read ${dir}/drizzle/${tag}.sql.`)
   }
   let snapshot: DrizzleSnapshot
   try {
@@ -237,7 +238,7 @@ const migrations = entries.map((entry) => {
     ) as DrizzleSnapshot
   } catch {
     return die(
-      `REFUSING to stamp: cannot read apps/${app}/drizzle/meta/${snapshotName}. ` +
+      `REFUSING to stamp: cannot read ${dir}/drizzle/meta/${snapshotName}. ` +
         'The snapshot is how this script knows what the schema looked like at ' +
         `${tag}; without it the database's position cannot be established.`,
     )

@@ -25,23 +25,38 @@
 export const PROPRIETARY = []
 
 /**
- * The proprietary module packages, derived from PROPRIETARY's
- * `packages/<name>/**` patterns. Derived rather than written as `[]` so this
+ * Every workspace is a top-level `cascadia-<id>/` directory whose npm name is
+ * `@cascadia/<id>`: `cascadia-api` is `@cascadia/api`, a module package
+ * `cascadia-design-engine` would be `@cascadia/design-engine`. These two
+ * helpers are the only place that convention is spelled out.
+ */
+export const WORKSPACE_PREFIX = 'cascadia-'
+export const workspaceDir = (id) => `${WORKSPACE_PREFIX}${id}`
+export const workspaceId = (dir) =>
+  dir.startsWith(WORKSPACE_PREFIX) ? dir.slice(WORKSPACE_PREFIX.length) : null
+
+/**
+ * The application's own packages, by id — never a module, whatever the
+ * manifest says. The app workspaces (`cascadia-app*`) are excluded by the
+ * `app` prefix test below rather than listed, since an edition adds its own.
+ */
+const APP_PACKAGES = new Set(['api', 'web', 'commons', 'workers-job'])
+
+/**
+ * The proprietary module packages, by id, derived from PROPRIETARY's
+ * `cascadia-<id>/**` patterns. Derived rather than written as `[]` so this
  * says the same thing as the private manifest does: the list follows from the
  * classification. PROPRIETARY is empty here, so this is too — `boundary:check`
  * imports it and runs in CI.
  */
-/** The application's own packages — never a module, whatever the manifest says. */
-const APP_PACKAGES = new Set([
-  'cascadia-api',
-  'cascadia-web',
-  'cascadia-commons',
-])
-
 export const MODULE_PACKAGES = [
   ...new Set(
-    PROPRIETARY.map((p) => /^packages\/([^/]+)\//.exec(p)?.[1]).filter(
-      (name) => name !== undefined && !APP_PACKAGES.has(name),
+    PROPRIETARY.map((p) => workspaceId(/^([^/]+)\//.exec(p)?.[1] ?? '')).filter(
+      (id) =>
+        id !== null &&
+        id !== '' &&
+        !APP_PACKAGES.has(id) &&
+        !id.startsWith('app'),
     ),
   ),
 ]

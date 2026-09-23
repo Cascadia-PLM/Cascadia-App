@@ -9,7 +9,7 @@
  * This exists because the whole application once rendered as unstyled HTML in
  * both editions and every gate stayed green, including these E2E tests. Tailwind
  * v4 detects sources automatically, rooted at the Vite root; the Phase 2 split
- * moved that root to `apps/<app>/` while every component stayed in `packages/`,
+ * moved that root to the app directory while every component stayed in the web package,
  * so it found no class names and emitted preflight alone — resets and theme
  * variables, not one `.bg-*` rule.
  *
@@ -110,7 +110,7 @@ test.describe('Stylesheet', () => {
 
     expect(
       utilities,
-      'the page loaded a stylesheet with (almost) no utility classes — check the `@source` directives in packages/cascadia-web/src/styles.css',
+      'the page loaded a stylesheet with (almost) no utility classes — check the `@source` directives in cascadia-web/src/styles.css',
     ).toBeGreaterThan(50)
   })
 })

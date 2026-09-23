@@ -40,4 +40,4 @@
 # hiding content exactly when a concurrent-migration conflict needs a hand
 # re-mint) and deliberately not the .sql files: the SQL is the upgrade path
 # for released installs, and is precisely what review must see.
-apps/*/drizzle/meta/*.json linguist-generated=true
+cascadia-app*/drizzle/meta/*.json linguist-generated=true

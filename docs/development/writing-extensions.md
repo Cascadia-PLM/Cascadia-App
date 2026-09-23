@@ -39,7 +39,7 @@ fail the user's operation when your handler fails.
 ## A `consumed` extension
 
 ```typescript
-// packages/your-module/src/lib/your-module/run-alerts.ts
+// cascadia-your-module/src/lib/your-module/run-alerts.ts
 // The published extension surface, which is what a module relies on — not
 // the api's internal `lib/extensions` barrel. A module names the application
 // packages it reaches; `@/` inside a module is the module itself.
@@ -245,7 +245,7 @@ rows inside the consumer transaction, and a separate pump sends them.
 Register from your module's **composition root**, not from core:
 
 ```typescript
-// packages/your-module/src/register.server.ts
+// cascadia-your-module/src/register.server.ts
 export function registerYourModule(): void {
   registerYourModulePackage() // the catalog first — `enabled` reads it
   defineExtension(createRunAlertsConsumer())
@@ -270,7 +270,7 @@ The boundary checker fails on alias-root collisions, so a module file under
 Use `ConcurrentTestDatabase` for anything that reasons about committed `seq`
 values — the sequencing trigger assigns `seq` at COMMIT, and the gate harness
 rolls back, so a consumer there sees an empty log. See
-[the harness rule](../../packages/cascadia-api/src/__tests__/README.md#choosing-a-harness).
+[the harness rule](../../cascadia-api/src/__tests__/README.md#choosing-a-harness).
 
 Build the extension **through its options** so external effects are recorded
 stubs, and assert on durable rows plus recorded calls — never on a spy's call

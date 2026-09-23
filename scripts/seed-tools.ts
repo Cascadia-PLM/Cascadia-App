@@ -35,13 +35,7 @@ import { numberSequences } from '@cascadia/api/lib/db/schema/numbering'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
-const DATA_FILE = join(
-  REPO_ROOT,
-  'packages',
-  'cascadia-api',
-  'test-data',
-  'tools.json',
-)
+const DATA_FILE = join(REPO_ROOT, 'cascadia-api', 'test-data', 'tools.json')
 
 /** Mirrors the `Tool` interface in src/lib/items/types/tool.ts */
 interface ToolSeedRow {

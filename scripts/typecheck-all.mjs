@@ -30,18 +30,19 @@ const PROJECTS = [
   // Packages with route files use their `tsconfig.typecheck.json`, which
   // leaves those out — they are checked in the app projects, through the
   // generated tree that types them. See the comment in
-  // packages/cascadia-web/tsconfig.typecheck.json.
-  ['packages/cascadia-commons', 'tsconfig.json', null],
-  ['packages/cascadia-api', 'tsconfig.json', null],
-  ['packages/cascadia-web', 'tsconfig.typecheck.json', null],
-  ['packages/advanced-auditing', 'tsconfig.json', null],
-  ['packages/design-engine', 'tsconfig.typecheck.json', null],
-  ['packages/odoo-integration', 'tsconfig.json', null],
-  ['apps/cascadia', 'tsconfig.json', 'apps/cascadia/src/routeTree.gen.ts'],
+  // cascadia-web/tsconfig.typecheck.json.
+  ['cascadia-commons', 'tsconfig.json', null],
+  ['cascadia-api', 'tsconfig.json', null],
+  ['cascadia-web', 'tsconfig.typecheck.json', null],
+  ['cascadia-workers-job', 'tsconfig.json', null],
+  ['cascadia-advanced-auditing', 'tsconfig.json', null],
+  ['cascadia-design-engine', 'tsconfig.typecheck.json', null],
+  ['cascadia-odoo-integration', 'tsconfig.json', null],
+  ['cascadia-app', 'tsconfig.json', 'cascadia-app/src/routeTree.gen.ts'],
   [
-    'apps/cascadia-enterprise',
+    'cascadia-app-enterprise',
     'tsconfig.json',
-    'apps/cascadia-enterprise/src/routeTree.gen.ts',
+    'cascadia-app-enterprise/src/routeTree.gen.ts',
   ],
   ['.', 'tsconfig.json', null],
 ]

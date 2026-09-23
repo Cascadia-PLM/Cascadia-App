@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  // `@/` is this package. Commons is reachable by name; the web is not — no
+  // path for `@cascadia/web`, so server code cannot type-check an import of it.
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@cascadia/commons/*": ["../cascadia-commons/src/*"],
+      "@test/*": ["./src/__tests__/*"]
+    }
+  }
+}

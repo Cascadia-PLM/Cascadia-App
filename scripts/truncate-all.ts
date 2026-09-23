@@ -13,16 +13,15 @@
 import { getTableName, is, sql } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 import { db, describeConnection } from '@cascadia/api/lib/db'
-import { resolveApp } from './edition.mjs'
+import { appDir, resolveApp } from './edition.mjs'
 
 // Resolved at runtime rather than imported by name: naming the enterprise app
 // outright breaks a core-only tree, which is what `npm run core:standalone`
 // builds. This script serves whichever edition the tree actually contains.
 const app = resolveApp()
-const schema = (await import(`../apps/${app}/src/modules.schema.ts`)) as Record<
-  string,
-  unknown
->
+const schema = (await import(
+  `../${appDir(app)}/src/modules.schema.ts`
+)) as Record<string, unknown>
 
 console.log(`Target database: ${describeConnection()}  (edition: ${app})`)
 

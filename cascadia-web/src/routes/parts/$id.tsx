@@ -5,7 +5,10 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Part } from '@cascadia/commons/items/types/part'
-import type { PartDetailTab } from '@/components/parts/PartDetail'
+import type {
+  PartDeleteIntent,
+  PartDetailTab,
+} from '@/components/parts/PartDetail'
 import { PART_DETAIL_TABS, PartDetail } from '@/components/parts/PartDetail'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { entityQuery, useResourceMutation } from '@/query'
@@ -49,16 +52,52 @@ function PartDetailPage() {
     },
   })
 
-  // The navigation is why this one is a mutation rather than a plain handler:
-  // `useResourceMutation` registers the invalidation before running onSuccess,
-  // so /parts is already refetching when we land on it instead of rendering the
-  // pre-delete cache and then flickering.
+  // Delete means three different things depending on the selected version
+  // context. Main deletes the Part itself, a workspace records a branch
+  // deletion, and an ECO removes the Part from reviewed scope while
+  // explicitly discarding its working copy and checkout.
   const remove = useResourceMutation({
-    mutationFn: (deleted: Part) =>
-      apiFetch(`/api/v1/parts/${deleted.id}`, { method: 'DELETE' }),
-    invalidates: ['parts'],
-    onSuccess: (_data, deleted) => {
-      showSuccess('Part deleted', `${deleted.itemNumber} has been deleted`)
+    mutationFn: ({
+      deleted,
+      intent,
+    }: {
+      deleted: Part
+      intent: PartDeleteIntent
+    }) => {
+      if (intent.kind === 'change-order') {
+        const query = new URLSearchParams({
+          itemMasterId: intent.itemMasterId,
+          discardBranchChanges: 'true',
+        })
+        return apiFetch(
+          `/api/v1/change-orders/${intent.changeOrderId}/affected-items?${query}`,
+          { method: 'DELETE' },
+        )
+      }
+      if (intent.kind === 'branch') {
+        const query = new URLSearchParams({ branchId: intent.branchId })
+        return apiFetch(`/api/v1/items/${deleted.id}?${query}`, {
+          method: 'DELETE',
+        })
+      }
+      return apiFetch(`/api/v1/parts/${deleted.id}`, { method: 'DELETE' })
+    },
+    invalidates: ['parts', 'change-orders'],
+    onSuccess: (_data, { deleted, intent }) => {
+      if (intent.kind === 'change-order') {
+        showSuccess(
+          'Part removed from ECO',
+          `${deleted.itemNumber} is no longer an affected item`,
+        )
+        return
+      }
+
+      showSuccess(
+        intent.kind === 'branch' ? 'Branch deletion recorded' : 'Part deleted',
+        intent.kind === 'branch'
+          ? `${deleted.itemNumber} has been deleted on this branch`
+          : `${deleted.itemNumber} has been deleted`,
+      )
       navigate({ to: '/parts' })
     },
   })
@@ -70,9 +109,9 @@ function PartDetailPage() {
     await save.mutateAsync(updatedPart)
   }
 
-  const handleDelete = async () => {
+  const handleDelete = async (intent: PartDeleteIntent) => {
     if (!part.id) return
-    await remove.mutateAsync(part)
+    await remove.mutateAsync({ deleted: part, intent })
   }
 
   const handleCancel = () => {

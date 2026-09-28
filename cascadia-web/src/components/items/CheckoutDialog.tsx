@@ -38,7 +38,7 @@ interface Branch {
   branchType: 'main' | 'eco' | 'workspace' | 'release'
   isArchived: boolean
   isLocked: boolean
-  changeOrderItemId?: string
+  changeOrderItemId?: string | null
 }
 
 interface CheckoutDialogProps {
@@ -83,7 +83,14 @@ export function CheckoutDialog({
   const branches = useMemo(
     () =>
       (allBranches ?? []).filter(
-        (b) => !b.isArchived && !b.isLocked && b.branchType !== 'main',
+        (b) =>
+          !b.isArchived &&
+          !b.isLocked &&
+          b.branchType !== 'main' &&
+          // A deleted ECO created by an older server can leave a legacy live
+          // branch whose SET NULL owner is gone. It is not a checkout target.
+          (b.branchType !== BRANCH_TYPES.changeOrder ||
+            b.changeOrderItemId !== null),
       ),
     [allBranches],
   )
@@ -202,8 +209,9 @@ export function CheckoutDialog({
             Check Out Item
           </DialogTitle>
           <DialogDescription>
-            Check out <strong>{itemNumber}</strong> to a branch for editing.
-            Released items must be edited on an ECO or workspace branch.
+            Check out <strong>{itemNumber}</strong> to an ECO or workspace
+            branch for editing. On an ECO branch, the item is added to that
+            change order automatically.
           </DialogDescription>
         </DialogHeader>
 

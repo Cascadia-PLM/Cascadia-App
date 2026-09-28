@@ -11,6 +11,7 @@ export interface BranchDetail {
   name: string
   branchType: string
   designId: string | null
+  changeOrderItemId: string | null
 }
 
 /**

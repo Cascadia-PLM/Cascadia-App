@@ -15,6 +15,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
+import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import type { Part } from '@cascadia/commons/items/types/part'
 import type { Design } from '@cascadia/commons/types/design'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
@@ -141,6 +142,15 @@ export interface PartSaveOptions {
   attachments?: Array<File>
 }
 
+export type PartDeleteIntent =
+  | { kind: 'item' }
+  | { kind: 'branch'; branchId: string }
+  | {
+      kind: 'change-order'
+      changeOrderId: string
+      itemMasterId: string
+    }
+
 interface PartDetailProps {
   /** Existing part data, or undefined for create mode */
   part?: Part
@@ -157,8 +167,11 @@ interface PartDetailProps {
     branchId?: string,
     options?: PartSaveOptions,
   ) => Promise<void>
-  /** Callback when part is deleted */
-  onDelete?: () => Promise<void>
+  /**
+   * Delete the Part itself, delete it on a workspace branch, or remove it
+   * from the ECO represented by the selected version context.
+   */
+  onDelete?: (intent: PartDeleteIntent) => Promise<void>
   /** Callback when user cancels (navigates back) */
   onCancel: () => void
   /** Whether a save operation is in progress */
@@ -334,6 +347,9 @@ export function PartDetail({
     ),
   )
   const isWorkspaceContext = contextBranch?.branchType === 'workspace'
+  const isEcoContext =
+    contextBranch?.branchType === BRANCH_TYPES.changeOrder &&
+    Boolean(contextBranch.changeOrderItemId)
 
   // The part to display (version-aware for existing parts)
   const currentPart = isCreateMode ? part : displayedPart
@@ -385,18 +401,26 @@ export function PartDetail({
   }
 
   // Action handlers
-  // Released lineage on main is revised through a change order (the
-  // CheckoutDialog); membership comes from the lifecycle's mappings
+  // Once a design's main is protected, every Driven item enters a branch
+  // before editing. Released lineage is revised; an unreleased Draft is added
+  // to the selected ECO as a first release (or checked out to a workspace).
   const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
     'Part',
     currentPart.state,
   )
   const needsCheckout =
-    !isCreateMode && isReleasedLineage && context.type === 'main'
+    !isCreateMode &&
+    context.type === 'main' &&
+    (editContext?.isMainProtected ?? false)
+  const editButtonLabel = needsCheckout
+    ? isReleasedLineage
+      ? 'Revise'
+      : 'Edit on Branch'
+    : 'Edit'
 
   // The server-side edit lock behind the Edit button. The hook reads where the
-  // lock lives off `editContext`, so released-on-main resolves to no lock
-  // branch at all and the Edit button becomes Revise (the CheckoutDialog).
+  // lock lives off `editContext`, so protected main resolves to no lock
+  // branch at all and the Edit button opens the CheckoutDialog.
   const editLock = useEditLock({
     itemId: isCreateMode ? undefined : currentPart.id,
     context,
@@ -499,23 +523,59 @@ export function PartDetail({
   const handleDelete = () => {
     if (!onDelete || !currentPart.id) return
 
+    let intent: PartDeleteIntent = { kind: 'item' }
+    let title = 'Delete Part'
+    let description = `Are you sure you want to delete ${currentPart.itemNumber}? This action cannot be undone.`
+    let actionLabel = 'Delete'
+
+    if (
+      context.type === 'branch' &&
+      context.branchId &&
+      isEcoContext &&
+      contextBranch.changeOrderItemId &&
+      currentPart.masterId
+    ) {
+      intent = {
+        kind: 'change-order',
+        changeOrderId: contextBranch.changeOrderItemId,
+        itemMasterId: currentPart.masterId,
+      }
+      title = 'Remove Part from ECO'
+      description =
+        `Remove ${currentPart.itemNumber} from ${contextBranch.name}? ` +
+        'Its unreleased changes and checkout on this ECO will be discarded. ' +
+        'The Part on main will not be deleted.'
+      actionLabel = 'Remove from ECO'
+    } else if (context.type === 'branch' && context.branchId) {
+      intent = { kind: 'branch', branchId: context.branchId }
+      title = 'Delete Part on Branch'
+      description =
+        `Delete ${currentPart.itemNumber} on ${contextBranch?.name ?? 'this branch'}? ` +
+        'The Part on main will not be deleted until the branch is formally applied.'
+    }
+
     confirm({
-      title: 'Delete Part',
-      description: `Are you sure you want to delete ${currentPart.itemNumber}? This action cannot be undone.`,
-      actionLabel: 'Delete',
+      title,
+      description,
+      actionLabel,
       cancelLabel: 'Cancel',
       variant: 'destructive',
-      onConfirm: onDelete,
+      onConfirm: async () => {
+        await onDelete(intent)
+        if (intent.kind === 'change-order') {
+          setContext({ type: 'main' })
+        }
+      },
     })
   }
 
   // Get reason for disabled Edit button
   const getEditDisabledReason = (): string | undefined => {
     // Ordered by what actually stops the click. Someone else's lock stops
-    // every path including Revise, so it is asked first. Then Revise: a
-    // released item on a protected main is not blocked at all, since the
-    // button opens the CheckoutDialog and revises onto a branch. What is left
-    // is the context itself.
+    // every path including branch checkout, so it is asked first. A Driven
+    // item on protected main is not blocked by the context itself: the button
+    // opens CheckoutDialog, which either revises released lineage or adds an
+    // unreleased item to a branch for its first release.
     if (editLock.lockedByOther) {
       return `Checked out by ${editLock.lockHolderLabel}`
     }
@@ -690,16 +750,11 @@ export function PartDetail({
                               }
                             >
                               {needsCheckout ? (
-                                <>
-                                  <GitBranch className="h-4 w-4 mr-2" />
-                                  Revise
-                                </>
+                                <GitBranch className="h-4 w-4 mr-2" />
                               ) : (
-                                <>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </>
+                                <Edit className="h-4 w-4 mr-2" />
                               )}
+                              {editButtonLabel}
                             </Button>
                           </span>
                         </TooltipTrigger>
@@ -718,26 +773,24 @@ export function PartDetail({
                       }
                     >
                       {needsCheckout ? (
-                        <>
-                          <GitBranch className="h-4 w-4 mr-2" />
-                          Revise
-                        </>
+                        <GitBranch className="h-4 w-4 mr-2" />
                       ) : (
-                        <>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </>
+                        <Edit className="h-4 w-4 mr-2" />
                       )}
+                      {editButtonLabel}
                     </Button>
                   )}
                   {onDelete && (
                     <Button
                       variant="destructive"
                       onClick={handleDelete}
-                      disabled={!isEditable}
+                      disabled={
+                        !isEditable ||
+                        (context.type === 'branch' && !contextBranch)
+                      }
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      {isEcoContext ? 'Remove from ECO' : 'Delete'}
                     </Button>
                   )}
                   {!isCreateMode && (

@@ -36,6 +36,7 @@ import { setTestDb } from '@/db'
 import { takeFirst } from '@/db/take-first'
 import {
   branchItems,
+  branches,
   changeOrderAffectedItems,
   changeOrders,
   itemVersions,
@@ -1407,6 +1408,65 @@ describe('VersionResolver', () => {
       expect(
         contexts.branches.find((b) => b.id === changeOrderBranch.id)?.exists,
       ).toBe(true)
+    })
+
+    it('does not offer an orphaned legacy ECO branch', async () => {
+      const coMasterId = crypto.randomUUID()
+      const coItem = takeFirst(
+        await testDb.db
+          .insert(items)
+          .values({
+            masterId: coMasterId,
+            itemNumber: `${uniquePrefix}-ECO-ORPHAN`,
+            revision: 'A',
+            itemType: 'ChangeOrder',
+            name: 'Deleted legacy ECO',
+            state: 'Draft',
+            isCurrent: true,
+            createdBy: user.id,
+            modifiedBy: user.id,
+            designId,
+          })
+          .returning(),
+      )
+
+      await testDb.db.insert(changeOrders).values({
+        itemId: coItem.id,
+        changeType: 'ECO',
+        priority: 'Medium',
+      })
+      const orphan = await BranchService.createChangeOrderBranch(
+        designId,
+        coItem.id,
+        user.id,
+      )
+      await testDb.db.insert(branchItems).values({
+        branchId: orphan.id,
+        itemMasterId,
+        currentItemId: (
+          await testDb.db
+            .select()
+            .from(items)
+            .where(eq(items.masterId, itemMasterId))
+            .limit(1)
+        )[0]!.id,
+        changeType: 'modified',
+      })
+
+      // Old delete behavior let SET NULL detach the branch without archiving
+      // it. It must not remain an editable context even in an upgraded DB.
+      await testDb.db
+        .update(branches)
+        .set({ changeOrderItemId: null })
+        .where(eq(branches.id, orphan.id))
+
+      const contexts = await VersionResolver.getAvailableContextsForItem(
+        itemMasterId,
+        designId,
+      )
+      expect(contexts.branches.some((branch) => branch.id === orphan.id)).toBe(
+        false,
+      )
     })
 
     it('does not offer an ECO branch to an item outside its scope', async () => {

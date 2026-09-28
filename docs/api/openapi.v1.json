@@ -4122,8 +4122,41 @@
     },
     "/api/v1/change-orders/{id}/affected-items": {
       "delete": {
+        "description": "Address the affected-items row with itemId, or the logical item with itemMasterId. Set discardBranchChanges=true to discard its ECO working copy and checkout as well.",
         "operationId": "deleteApiV1ChangeOrdersByIdAffectedItems",
         "parameters": [
+          {
+            "in": "query",
+            "name": "itemId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "itemMasterId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "discardBranchChanges",
+            "required": false,
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "id",
@@ -4134,6 +4167,32 @@
           }
         ],
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -4150,6 +4209,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Remove an affected item from a change order",
         "tags": [
           "Change Orders"
         ]

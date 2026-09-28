@@ -528,6 +528,23 @@ const previewActionsSchema = z.object({
   itemIds: z.array(z.string().uuid()).min(1).max(500),
 })
 
+const removeAffectedItemQuerySchema = z
+  .object({
+    // Existing callers address the affected-items row directly. Item detail
+    // pages instead know the stable master id of the item on the selected ECO
+    // branch, so both identities are accepted but never at once.
+    itemId: z.string().uuid().optional(),
+    itemMasterId: z.string().uuid().optional(),
+    discardBranchChanges: z.enum(['true', 'false']).optional(),
+  })
+  .refine(
+    ({ itemId, itemMasterId }) => Boolean(itemId) !== Boolean(itemMasterId),
+    {
+      message: 'Provide exactly one of itemId or itemMasterId',
+      path: ['itemId'],
+    },
+  )
+
 // POST /api/change-orders/:id/affected-items/preview - what adding these
 // items would do, resolved from each item's lifecycle. Read-only; POST so a
 // large selection is not squeezed into a query string.
@@ -560,22 +577,44 @@ app.post(
 app.delete(
   '/:id/affected-items',
   adapt(
-    apiHandler<{ id: string }>(
-      { permission: ['change_orders', 'update'] },
-      async ({ params, request, user }) => {
-        await requireChangeOrderAccess(user.id, params.id)
-        const url = new URL(request.url)
-        const affectedItemId = url.searchParams.get('itemId')
-
-        if (!affectedItemId) {
-          throw new ValidationError('Missing itemId parameter')
+    apiHandler<
+      { id: string },
+      unknown,
+      z.infer<typeof removeAffectedItemQuerySchema>
+    >(
+      {
+        permission: ['change_orders', 'update'],
+        access: ({ params, user }) =>
+          requireChangeOrderAccess(user.id, params.id),
+        query: removeAffectedItemQuerySchema,
+        openapi: {
+          summary: 'Remove an affected item from a change order',
+          description:
+            'Address the affected-items row with itemId, or the logical item with itemMasterId. Set discardBranchChanges=true to discard its ECO working copy and checkout as well.',
+          responses: {
+            200: { schema: z.object({ success: z.boolean() }) },
+          },
+        },
+      },
+      async ({ params, query }) => {
+        const options = {
+          discardBranchChanges: query.discardBranchChanges === 'true',
         }
 
-        // Scoped to the ECO in the path: the row id alone is not authority
-        await ChangeOrderService.removeAffectedItem(params.id, affectedItemId, {
-          discardBranchChanges:
-            url.searchParams.get('discardBranchChanges') === 'true',
-        })
+        if (query.itemMasterId) {
+          await ChangeOrderService.removeAffectedItemByMasterId(
+            params.id,
+            query.itemMasterId,
+            options,
+          )
+        } else {
+          // The schema guarantees exactly one identity.
+          await ChangeOrderService.removeAffectedItem(
+            params.id,
+            query.itemId!,
+            options,
+          )
+        }
 
         return { success: true }
       },

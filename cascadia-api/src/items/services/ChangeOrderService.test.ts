@@ -964,9 +964,9 @@ describe('ChangeOrderService', () => {
           ),
         )
 
-      await ChangeOrderService.removeAffectedItem(
+      await ChangeOrderService.removeAffectedItemByMasterId(
         changeOrder.id,
-        affected.id!,
+        part.masterId,
         {
           discardBranchChanges: true,
         },
@@ -1004,7 +1004,17 @@ describe('ChangeOrderService', () => {
             .from(branchItemsTable)
             .where(eq(branchItemsTable.itemMasterId, part.masterId))
         : []
-      expect(remaining.filter((r) => r.changeType !== null)).toHaveLength(0)
+      expect(remaining).toHaveLength(0)
+
+      // Removing scope also removes the item-specific ECO context. A neutral
+      // branch_items row here would keep the deleted membership selectable.
+      const contexts = await VersionResolver.getAvailableContextsForItem(
+        part.masterId,
+        designId,
+      )
+      expect(
+        contexts.branches.some((branch) => branchIds.includes(branch.id)),
+      ).toBe(false)
     })
 
     it('refuses removal once ECO scope is locked', async () => {

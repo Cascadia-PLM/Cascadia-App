@@ -257,9 +257,17 @@ value; `targetRevision` remains a presentation prediction.
 
 ```
 DELETE /api/v1/change-orders/:id/affected-items?itemId=AFFECTED_ITEM_UUID
+DELETE /api/v1/change-orders/:id/affected-items?itemMasterId=ITEM_MASTER_UUID
 ```
 
-Removes an affected item record. Requires `change_orders.update` permission.
+Removes an affected item record. Exactly one identity is required: `itemId`
+addresses the affected-items row, while `itemMasterId` addresses the logical
+item and is useful from an item detail page. Requires `change_orders.update`
+permission.
+
+Pass `discardBranchChanges=true` to discard the ECO working copy and release
+any checkout together with the scope row. After removal, the item is no longer
+available in that ECO's version-context selector.
 
 ## Checkout Item to a Change Order
 

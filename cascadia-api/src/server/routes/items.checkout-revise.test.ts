@@ -45,7 +45,13 @@ import { DesignService } from '@/services/DesignService'
 import { BranchService } from '@/services/BranchService'
 import { SessionManager } from '@/auth/session'
 import { permissionService } from '@/auth/permission-service'
-import { itemVersions, items, programMembers, programs } from '@/db/schema'
+import {
+  branchItems,
+  itemVersions,
+  items,
+  programMembers,
+  programs,
+} from '@/db/schema'
 import { takeFirst } from '@/db/take-first'
 
 import '@/items/registerItemTypes.server'
@@ -56,6 +62,16 @@ interface CheckoutResponse {
       currentItemId: string | null
       changeType: string | null
       checkedOutBy: string | null
+    }
+  }
+}
+
+interface EditContextResponse {
+  data: {
+    editContext: {
+      lockBranchId: string | null
+      branchType: string | null
+      isMainProtected: boolean
     }
   }
 }
@@ -191,6 +207,32 @@ describe('revise-checkout → save', () => {
       await testDb.db.select().from(items).where(eq(items.id, id)).limit(1),
     )
   }
+
+  it('keeps main protected when an untouched branch row already tracks the item', async () => {
+    // This is the shape of an unreleased Draft immediately after checkout:
+    // the ECO owns the lock, but currentItemId still points at the shared main
+    // row until the first save mints a working copy.
+    await testDb.db.insert(branchItems).values({
+      branchId: changeOrderBranchId,
+      itemMasterId: part.masterId,
+      currentItemId: part.id,
+      baseItemId: part.id,
+      changeType: null,
+      checkedOutBy: admin.id,
+      checkedOutAt: new Date(),
+    })
+
+    const response = await request(
+      `/api/v1/items/${part.id}/edit-context`,
+      'GET',
+    )
+    expect(response.status).toBe(200)
+    const { editContext } = ((await response.json()) as EditContextResponse)
+      .data
+    expect(editContext.lockBranchId).toBe(changeOrderBranchId)
+    expect(editContext.branchType).toBe('eco')
+    expect(editContext.isMainProtected).toBe(true)
+  })
 
   it('checkout mints a working copy and reports its id; the released row is untouched', async () => {
     const res = await request(`/api/v1/items/${part.id}/checkout`, 'POST', {

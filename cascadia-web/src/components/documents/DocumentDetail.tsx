@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { Document } from '@cascadia/commons/items/types/document'
 import type { Design } from '@cascadia/commons/types/design'
+import type { ItemDeleteIntent } from '@/components/items/itemBranchActions'
 import { PageContainer } from '@/components/layout'
 import { DigitalThreadNavigator } from '@/components/thread'
 import { RelationshipSection } from '@/components/items/RelationshipSection'
@@ -30,6 +31,7 @@ import {
   useItemPreviewableFiles,
 } from '@/components/vault'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
+import { resolveItemBranchActions } from '@/components/items/itemBranchActions'
 import { useVersionContext } from '@/hooks/useVersionContext'
 import { useEditLock, useItemEditContext } from '@/hooks/useEditLock'
 import { WorkspaceContextBanner } from '@/components/workspaces/WorkspaceContextBanner'
@@ -133,7 +135,7 @@ interface DocumentDetailProps {
   designs?: Array<Design>
   defaultDesignId?: string
   onSave: (document: Document, branchId?: string) => Promise<void>
-  onDelete?: () => Promise<void>
+  onDelete?: (intent: ItemDeleteIntent) => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
   activeTab?: DocumentDetailTab
@@ -259,14 +261,21 @@ export function DocumentDetail({
     setDocument((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Released lineage on main is revised through a change order (the
-  // CheckoutDialog); membership comes from the lifecycle's mappings
   const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
     'Document',
     currentDocument.state,
   )
-  const needsCheckout =
-    !isCreateMode && isReleasedLineage && context.type === 'main'
+  const branchActions = resolveItemBranchActions({
+    itemLabel: 'Document',
+    itemNumber: currentDocument.itemNumber,
+    itemMasterId: currentDocument.masterId,
+    isCreateMode,
+    isReleasedFamily: isReleasedLineage,
+    isMainProtected: editContext?.isMainProtected ?? false,
+    context,
+    branch: contextBranch,
+  })
+  const { needsCheckout } = branchActions
 
   // The server-side edit lock behind the Edit button. The hook reads where the
   // lock lives off `editContext`, so released-on-main resolves to no lock
@@ -366,12 +375,17 @@ export function DocumentDetail({
     if (!onDelete || !currentDocument.id) return
 
     confirm({
-      title: 'Delete Document',
-      description: `Are you sure you want to delete ${currentDocument.itemNumber}? This action cannot be undone.`,
-      actionLabel: 'Delete',
+      title: branchActions.deleteTitle,
+      description: branchActions.deleteDescription,
+      actionLabel: branchActions.deleteButtonLabel,
       cancelLabel: 'Cancel',
       variant: 'destructive',
-      onConfirm: onDelete,
+      onConfirm: async () => {
+        await onDelete(branchActions.deleteIntent)
+        if (branchActions.deleteIntent.kind === 'change-order') {
+          setContext({ type: 'main' })
+        }
+      },
     })
   }
 
@@ -517,16 +531,11 @@ export function DocumentDetail({
                           }
                         >
                           {needsCheckout ? (
-                            <>
-                              <GitBranch className="h-4 w-4 mr-2" />
-                              Revise
-                            </>
+                            <GitBranch className="h-4 w-4 mr-2" />
                           ) : (
-                            <>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </>
+                            <Edit className="h-4 w-4 mr-2" />
                           )}
+                          {branchActions.editButtonLabel}
                         </Button>
                       </span>
                     </TooltipTrigger>
@@ -543,26 +552,24 @@ export function DocumentDetail({
                     }
                   >
                     {needsCheckout ? (
-                      <>
-                        <GitBranch className="h-4 w-4 mr-2" />
-                        Revise
-                      </>
+                      <GitBranch className="h-4 w-4 mr-2" />
                     ) : (
-                      <>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </>
+                      <Edit className="h-4 w-4 mr-2" />
                     )}
+                    {branchActions.editButtonLabel}
                   </Button>
                 )}
                 {onDelete && (
                   <Button
                     variant="destructive"
                     onClick={handleDelete}
-                    disabled={!isEditable}
+                    disabled={
+                      !isEditable ||
+                      (context.type === 'branch' && !contextBranch)
+                    }
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
+                    {branchActions.deleteButtonLabel}
                   </Button>
                 )}
               </>

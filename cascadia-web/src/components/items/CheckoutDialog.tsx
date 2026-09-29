@@ -83,14 +83,7 @@ export function CheckoutDialog({
   const branches = useMemo(
     () =>
       (allBranches ?? []).filter(
-        (b) =>
-          !b.isArchived &&
-          !b.isLocked &&
-          b.branchType !== 'main' &&
-          // A deleted ECO created by an older server can leave a legacy live
-          // branch whose SET NULL owner is gone. It is not a checkout target.
-          (b.branchType !== BRANCH_TYPES.changeOrder ||
-            b.changeOrderItemId !== null),
+        (b) => !b.isArchived && !b.isLocked && b.branchType !== 'main',
       ),
     [allBranches],
   )

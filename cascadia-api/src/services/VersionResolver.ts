@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, desc, eq, inArray, isNotNull, ne, or, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { db } from '../db'
 import {
@@ -1331,18 +1331,7 @@ export class VersionResolver {
       .select()
       .from(branches)
       .where(
-        and(
-          eq(branches.designId, designId),
-          eq(branches.isArchived, false),
-          // A live ECO branch always has an owning change order. Older
-          // versions let a deleted Draft ECO leave an unarchived branch
-          // behind after its FK was SET NULL. Such an orphan is history, not
-          // an editable item context, and must not remain in the picker.
-          or(
-            ne(branches.branchType, BRANCH_TYPES.changeOrder),
-            isNotNull(branches.changeOrderItemId),
-          ),
-        ),
+        and(eq(branches.designId, designId), eq(branches.isArchived, false)),
       )
 
     // Fetch all tags for the design

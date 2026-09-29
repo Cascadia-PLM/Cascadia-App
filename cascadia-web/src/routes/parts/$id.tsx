@@ -5,14 +5,13 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Part } from '@cascadia/commons/items/types/part'
-import type {
-  PartDeleteIntent,
-  PartDetailTab,
-} from '@/components/parts/PartDetail'
+import type { PartDetailTab } from '@/components/parts/PartDetail'
+import type { ItemDeleteIntent } from '@/components/items/itemBranchActions'
 import { PART_DETAIL_TABS, PartDetail } from '@/components/parts/PartDetail'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { entityQuery, useResourceMutation } from '@/query'
 import { apiFetch } from '@/api/client'
+import { deleteItemByIntent } from '@/components/items/itemBranchActions'
 
 // Search schema for version context URL params and tab
 const partDetailSearchSchema = z.object({
@@ -62,26 +61,13 @@ function PartDetailPage() {
       intent,
     }: {
       deleted: Part
-      intent: PartDeleteIntent
-    }) => {
-      if (intent.kind === 'change-order') {
-        const query = new URLSearchParams({
-          itemMasterId: intent.itemMasterId,
-          discardBranchChanges: 'true',
-        })
-        return apiFetch(
-          `/api/v1/change-orders/${intent.changeOrderId}/affected-items?${query}`,
-          { method: 'DELETE' },
-        )
-      }
-      if (intent.kind === 'branch') {
-        const query = new URLSearchParams({ branchId: intent.branchId })
-        return apiFetch(`/api/v1/items/${deleted.id}?${query}`, {
-          method: 'DELETE',
-        })
-      }
-      return apiFetch(`/api/v1/parts/${deleted.id}`, { method: 'DELETE' })
-    },
+      intent: ItemDeleteIntent
+    }) =>
+      deleteItemByIntent({
+        itemId: deleted.id!,
+        mainDeletePath: `/api/v1/parts/${deleted.id}`,
+        intent,
+      }),
     invalidates: ['parts', 'change-orders'],
     onSuccess: (_data, { deleted, intent }) => {
       if (intent.kind === 'change-order') {
@@ -109,7 +95,7 @@ function PartDetailPage() {
     await save.mutateAsync(updatedPart)
   }
 
-  const handleDelete = async (intent: PartDeleteIntent) => {
+  const handleDelete = async (intent: ItemDeleteIntent) => {
     if (!part.id) return
     await remove.mutateAsync({ deleted: part, intent })
   }

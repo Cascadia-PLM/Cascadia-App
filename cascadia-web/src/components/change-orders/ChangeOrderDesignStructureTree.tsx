@@ -24,7 +24,6 @@ import {
   changeOrderDesignStructureQuery,
   useInvalidateResources,
 } from '@/query'
-import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 interface ChangeOrderBranch {
   id: string
@@ -165,20 +164,11 @@ export function ChangeOrderDesignStructureTree({
 
   const hasActiveFilters = Object.keys(columnFilters).length > 0
 
-  // Selection hook — only eligible items can be selected. An item whose flow
-  // has ended (a final state of its lifecycle — obsolete, superseded, however
-  // named) is not added to an ECO. Parts dominate the tree; the Part
-  // lifecycle's flags decide.
-  const { data: partLifecycle } = useLifecyclePhases('Part')
-  const isEligible = useCallback(
-    (node: BOMTreeNode) => {
-      const final =
-        partLifecycle?.states.find((st) => st.id === node.state)?.isFinal ??
-        false
-      return !node.isInEco && !final
-    },
-    [partLifecycle],
-  )
+  // Selection only excludes items already in this ECO. The add dialogs ask
+  // the server for each item's configured lifecycle actions and explain why an
+  // item is blocked; using the Part lifecycle here incorrectly disabled
+  // Software, Documents, Requirements, and custom lifecycle assignments.
+  const isEligible = useCallback((node: BOMTreeNode) => !node.isInEco, [])
   const selection = useTreeSelection({ isEligible })
 
   // Node matching function for filters

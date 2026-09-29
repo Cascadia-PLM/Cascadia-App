@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Requirement } from '@cascadia/commons/items/types/requirement'
 import type { RequirementDetailTab } from '@/components/requirements/RequirementDetail'
+import type { ItemDeleteIntent } from '@/components/items/itemBranchActions'
+import { deleteItemByIntent } from '@/components/items/itemBranchActions'
 import {
   REQUIREMENT_DETAIL_TABS,
   RequirementDetail,
@@ -62,18 +64,32 @@ function RequirementDetailPage() {
     await invalidate('requirements')
   }
 
-  const handleDelete = async () => {
+  const handleDelete = async (intent: ItemDeleteIntent) => {
     if (!requirement.id) return
 
-    await apiFetch(`/api/v1/requirements/${requirement.id}`, {
-      method: 'DELETE',
+    await deleteItemByIntent({
+      itemId: requirement.id,
+      mainDeletePath: `/api/v1/requirements/${requirement.id}`,
+      intent,
     })
 
+    await invalidate('requirements', 'change-orders')
+    if (intent.kind === 'change-order') {
+      showSuccess(
+        'Requirement removed from ECO',
+        `${requirement.itemNumber} is no longer an affected item`,
+      )
+      return
+    }
+
     showSuccess(
-      'Requirement deleted',
-      `${requirement.itemNumber} has been deleted`,
+      intent.kind === 'branch'
+        ? 'Branch deletion recorded'
+        : 'Requirement deleted',
+      intent.kind === 'branch'
+        ? `${requirement.itemNumber} has been deleted on this branch`
+        : `${requirement.itemNumber} has been deleted`,
     )
-    await invalidate('requirements')
     navigate({ to: '/requirements' })
   }
 

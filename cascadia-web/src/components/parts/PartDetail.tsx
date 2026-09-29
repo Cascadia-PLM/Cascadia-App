@@ -15,11 +15,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import type { Part } from '@cascadia/commons/items/types/part'
 import type { Design } from '@cascadia/commons/types/design'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
 import type { EnrichmentSources } from '@/components/items/enrichment-sources'
+import type { ItemDeleteIntent } from '@/components/items/itemBranchActions'
 import { PageContainer } from '@/components/layout'
 import { PartRelationshipsTab } from '@/components/parts/PartRelationshipsTab'
 import { PartVariantsTab } from '@/components/variants/PartVariantsTab'
@@ -30,6 +30,7 @@ import { PhaseBadge } from '@/components/items/PhaseBadge'
 import { ImageGallery, useItemImages } from '@/components/vault'
 import { WorkInstructionsForPartPanel } from '@/components/work-instructions'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
+import { resolveItemBranchActions } from '@/components/items/itemBranchActions'
 import {
   PartCADHiddenPrompt,
   PartCADSection,
@@ -142,15 +143,6 @@ export interface PartSaveOptions {
   attachments?: Array<File>
 }
 
-export type PartDeleteIntent =
-  | { kind: 'item' }
-  | { kind: 'branch'; branchId: string }
-  | {
-      kind: 'change-order'
-      changeOrderId: string
-      itemMasterId: string
-    }
-
 interface PartDetailProps {
   /** Existing part data, or undefined for create mode */
   part?: Part
@@ -171,7 +163,7 @@ interface PartDetailProps {
    * Delete the Part itself, delete it on a workspace branch, or remove it
    * from the ECO represented by the selected version context.
    */
-  onDelete?: (intent: PartDeleteIntent) => Promise<void>
+  onDelete?: (intent: ItemDeleteIntent) => Promise<void>
   /** Callback when user cancels (navigates back) */
   onCancel: () => void
   /** Whether a save operation is in progress */
@@ -347,9 +339,6 @@ export function PartDetail({
     ),
   )
   const isWorkspaceContext = contextBranch?.branchType === 'workspace'
-  const isEcoContext =
-    contextBranch?.branchType === BRANCH_TYPES.changeOrder &&
-    Boolean(contextBranch.changeOrderItemId)
 
   // The part to display (version-aware for existing parts)
   const currentPart = isCreateMode ? part : displayedPart
@@ -408,16 +397,17 @@ export function PartDetail({
     'Part',
     currentPart.state,
   )
-  const needsCheckout =
-    !isCreateMode &&
-    context.type === 'main' &&
-    (editContext?.isMainProtected ?? false)
-  const editButtonLabel = needsCheckout
-    ? isReleasedLineage
-      ? 'Revise'
-      : 'Edit on Branch'
-    : 'Edit'
-
+  const branchActions = resolveItemBranchActions({
+    itemLabel: 'Part',
+    itemNumber: currentPart.itemNumber,
+    itemMasterId: currentPart.masterId,
+    isCreateMode,
+    isReleasedFamily: isReleasedLineage,
+    isMainProtected: editContext?.isMainProtected ?? false,
+    context,
+    branch: contextBranch,
+  })
+  const { needsCheckout, editButtonLabel } = branchActions
   // The server-side edit lock behind the Edit button. The hook reads where the
   // lock lives off `editContext`, so protected main resolves to no lock
   // branch at all and the Edit button opens the CheckoutDialog.
@@ -523,52 +513,20 @@ export function PartDetail({
   const handleDelete = () => {
     if (!onDelete || !currentPart.id) return
 
-    let intent: PartDeleteIntent = { kind: 'item' }
-    let title = 'Delete Part'
-    let description = `Are you sure you want to delete ${currentPart.itemNumber}? This action cannot be undone.`
-    let actionLabel = 'Delete'
-
-    if (
-      context.type === 'branch' &&
-      context.branchId &&
-      isEcoContext &&
-      contextBranch.changeOrderItemId &&
-      currentPart.masterId
-    ) {
-      intent = {
-        kind: 'change-order',
-        changeOrderId: contextBranch.changeOrderItemId,
-        itemMasterId: currentPart.masterId,
-      }
-      title = 'Remove Part from ECO'
-      description =
-        `Remove ${currentPart.itemNumber} from ${contextBranch.name}? ` +
-        'Its unreleased changes and checkout on this ECO will be discarded. ' +
-        'The Part on main will not be deleted.'
-      actionLabel = 'Remove from ECO'
-    } else if (context.type === 'branch' && context.branchId) {
-      intent = { kind: 'branch', branchId: context.branchId }
-      title = 'Delete Part on Branch'
-      description =
-        `Delete ${currentPart.itemNumber} on ${contextBranch?.name ?? 'this branch'}? ` +
-        'The Part on main will not be deleted until the branch is formally applied.'
-    }
-
     confirm({
-      title,
-      description,
-      actionLabel,
+      title: branchActions.deleteTitle,
+      description: branchActions.deleteDescription,
+      actionLabel: branchActions.deleteButtonLabel,
       cancelLabel: 'Cancel',
       variant: 'destructive',
       onConfirm: async () => {
-        await onDelete(intent)
-        if (intent.kind === 'change-order') {
+        await onDelete(branchActions.deleteIntent)
+        if (branchActions.deleteIntent.kind === 'change-order') {
           setContext({ type: 'main' })
         }
       },
     })
   }
-
   // Get reason for disabled Edit button
   const getEditDisabledReason = (): string | undefined => {
     // Ordered by what actually stops the click. Someone else's lock stops
@@ -790,7 +748,7 @@ export function PartDetail({
                       }
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      {isEcoContext ? 'Remove from ECO' : 'Delete'}
+                      {branchActions.deleteButtonLabel}
                     </Button>
                   )}
                   {!isCreateMode && (

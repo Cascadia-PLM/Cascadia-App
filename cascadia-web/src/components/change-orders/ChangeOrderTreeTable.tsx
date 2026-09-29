@@ -14,7 +14,6 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@/components/ui/ContextMenu'
-import { useLifecyclePhases } from '@/hooks/useLifecyclePhases'
 
 export type { BOMTreeNode }
 
@@ -107,15 +106,6 @@ export function ChangeOrderTreeTable({
   columnFilters,
   onColumnFilterChange,
 }: ChangeOrderTreeTableProps) {
-  // Lifecycles of the item types in this tree, for the final-state check on
-  // the add-to-ECO action. Parts dominate; other types resolve through the
-  // same per-type cache on demand.
-  const { data: partLifecycle } = useLifecyclePhases('Part')
-  const lifecycleByType: Record<
-    string,
-    { states: Array<{ id: string; isFinal?: boolean }> } | null
-  > = { Part: partLifecycle }
-
   const navigate = useNavigate()
 
   const columns: Array<ColumnDefinition> = [
@@ -221,12 +211,8 @@ export function ChangeOrderTreeTable({
 
   const renderContextMenu = (node: BOMTreeNode) => {
     const route = getItemDetailPath(node.itemType, node.itemId)
-    // An item whose flow has ended (a final state of its lifecycle —
-    // obsolete, superseded, whatever it is called) is not added to an ECO
-    const nodeLifecycle = lifecycleByType[node.itemType]
-    const nodeStateIsFinal =
-      nodeLifecycle?.states.find((st) => st.id === node.state)?.isFinal ?? false
-    const isEligibleForAdd = !node.isInEco && !nodeStateIsFinal
+    // The add dialog resolves the configured lifecycle action on the server.
+    const isEligibleForAdd = !node.isInEco
     const showAddChild =
       !readOnly && onAddChild && node.itemType === 'Part' && !node.isExternal
     const showAddToChangeOrder = !readOnly && isEligibleForAdd

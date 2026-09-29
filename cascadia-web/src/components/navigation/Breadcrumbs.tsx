@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { ChevronRight } from 'lucide-react'
 import { useBreadcrumbRouteInfo } from './useBreadcrumbRouteInfo'
 import { useBreadcrumbData } from './useBreadcrumbData'
@@ -9,6 +10,7 @@ import { BreadcrumbDropdown } from './BreadcrumbDropdown'
 import { BreadcrumbLink } from './BreadcrumbLink'
 import { useVersionContext } from '@/hooks/useVersionContext'
 import { VersionContextSelector } from '@/components/versioning/VersionContextSelector'
+import { lifecycleByItemTypeQuery } from '@/query'
 
 /**
  * Breadcrumbs - Hierarchical navigation showing Program > Design > Item
@@ -26,6 +28,8 @@ export function Breadcrumbs() {
 
   const {
     pathname,
+    itemType: routeItemType,
+    supportsVersionContext,
     isItemListPage,
     isItemDetailPage,
     isChangeOrderDetailPage,
@@ -41,6 +45,19 @@ export function Breadcrumbs() {
   // Get designId for detail pages from breadcrumb data
   const detailPageDesignId =
     breadcrumbData.item?.designId || breadcrumbData.design?.id
+
+  // Runtime configuration decides whether an item is ECO/branch controlled.
+  // The route registry supplies the type while the item crumb is loading; the
+  // returned item remains authoritative once available.
+  const itemType = breadcrumbData.item?.itemType ?? routeItemType
+  const { data: itemLifecycle } = useQuery({
+    ...lifecycleByItemTypeQuery(itemType ?? ''),
+    enabled:
+      supportsVersionContext &&
+      Boolean(itemType) &&
+      (isItemListPage || isItemDetailPage),
+  })
+  const hasDrivenLifecycle = itemLifecycle?.lifecycleType === 'Driven'
 
   // Version context - use selectedDesignId for list pages, detailPageDesignId for detail pages
   const activeDesignId = isListPageWithDropdowns
@@ -133,17 +150,20 @@ export function Breadcrumbs() {
               />
 
               {/* Version context selector - next breadcrumb after design */}
-              {selectedDesignId && isItemListPage && (
-                <>
-                  <ChevronRight className="h-4 w-4 text-slate-400" />
-                  <VersionContextSelector
-                    designId={selectedDesignId}
-                    value={context}
-                    onChange={setContext}
-                    variant="breadcrumb"
-                  />
-                </>
-              )}
+              {selectedDesignId &&
+                isItemListPage &&
+                supportsVersionContext &&
+                hasDrivenLifecycle && (
+                  <>
+                    <ChevronRight className="h-4 w-4 text-slate-400" />
+                    <VersionContextSelector
+                      designId={selectedDesignId}
+                      value={context}
+                      onChange={setContext}
+                      variant="breadcrumb"
+                    />
+                  </>
+                )}
             </>
           )}
         </>
@@ -178,7 +198,10 @@ export function Breadcrumbs() {
           )}
 
           {/* Version context selector for item/change-order detail pages */}
-          {(isItemDetailPage || isChangeOrderDetailPage) &&
+          {(isChangeOrderDetailPage ||
+            (isItemDetailPage &&
+              supportsVersionContext &&
+              hasDrivenLifecycle)) &&
             detailPageDesignId && (
               <>
                 <ChevronRight className="h-4 w-4 text-slate-400" />

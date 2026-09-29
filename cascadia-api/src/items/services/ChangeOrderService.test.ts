@@ -948,7 +948,7 @@ describe('ChangeOrderService', () => {
       const changeOrder = await createChangeOrder()
       const part = await createPart({ state: 'Released' })
 
-      const affected = await ChangeOrderService.addAffectedItem(
+      await ChangeOrderService.addAffectedItem(
         changeOrder.id,
         { affectedItemId: part.id, changeAction: 'revise' },
         user.id,

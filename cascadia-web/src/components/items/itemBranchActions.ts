@@ -41,7 +41,7 @@ export function resolveItemBranchActions({
   branch,
 }: {
   itemLabel: string
-  itemNumber: string
+  itemNumber?: string
   itemMasterId?: string
   isCreateMode: boolean
   isReleasedFamily: boolean
@@ -49,6 +49,7 @@ export function resolveItemBranchActions({
   context: VersionContext
   branch?: BranchDetail
 }): ItemBranchActions {
+  const itemDisplay = itemNumber || `this ${itemLabel.toLowerCase()}`
   const needsCheckout =
     !isCreateMode && context.type === 'main' && isMainProtected
   const editButtonLabel = needsCheckout
@@ -75,7 +76,7 @@ export function resolveItemBranchActions({
       },
       deleteTitle: `Remove ${itemLabel} from ECO`,
       deleteDescription:
-        `Remove ${itemNumber} from ${branch.name}? ` +
+        `Remove ${itemDisplay} from ${branch.name}? ` +
         `Its unreleased changes and checkout on this ECO will be discarded. ` +
         `The ${itemLabel} on main will not be deleted.`,
     }
@@ -89,7 +90,7 @@ export function resolveItemBranchActions({
       deleteIntent: { kind: 'branch', branchId: context.branchId },
       deleteTitle: `Delete ${itemLabel} on Branch`,
       deleteDescription:
-        `Delete ${itemNumber} on ${branch?.name ?? 'this branch'}? ` +
+        `Delete ${itemDisplay} on ${branch?.name ?? 'this branch'}? ` +
         `The ${itemLabel} on main will not be deleted until the branch is formally applied.`,
     }
   }
@@ -100,7 +101,7 @@ export function resolveItemBranchActions({
     deleteButtonLabel: 'Delete',
     deleteIntent: { kind: 'item' },
     deleteTitle: `Delete ${itemLabel}`,
-    deleteDescription: `Are you sure you want to delete ${itemNumber}? This action cannot be undone.`,
+    deleteDescription: `Are you sure you want to delete ${itemDisplay}? This action cannot be undone.`,
   }
 }
 

@@ -12,6 +12,7 @@ const ITEM_LIST_ROUTES: ReadonlyArray<RouteId> = [
   '/parts/',
   '/documents/',
   '/requirements/',
+  '/software/',
   '/tasks/',
   '/issues/',
 ]

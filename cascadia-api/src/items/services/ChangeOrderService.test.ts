@@ -1006,14 +1006,18 @@ describe('ChangeOrderService', () => {
         : []
       expect(remaining).toHaveLength(0)
 
-      // Removing scope also removes the item-specific ECO context. A neutral
-      // branch_items row here would keep the deleted membership selectable.
+      // Removing scope also makes the item-specific ECO context unavailable.
+      // The resolver returns every design branch annotated with `exists`, and
+      // the UI only offers contexts where that flag is not false. A neutral
+      // branch_items row here would incorrectly leave the context selectable.
       const contexts = await VersionResolver.getAvailableContextsForItem(
         part.masterId,
         designId,
       )
       expect(
-        contexts.branches.some((branch) => branchIds.includes(branch.id)),
+        contexts.branches.some(
+          (branch) => branchIds.includes(branch.id) && branch.exists,
+        ),
       ).toBe(false)
     })
 

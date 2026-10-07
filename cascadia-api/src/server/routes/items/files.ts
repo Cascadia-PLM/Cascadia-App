@@ -3,6 +3,10 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
+import {
+  makeCodeSchema,
+  optionApplicabilitySchema,
+} from '@cascadia/commons/types/variants'
 import { tagged } from '../../adapter'
 import { requirePermission } from '@/auth/server'
 import { ValidationError } from '@/errors'
@@ -12,6 +16,7 @@ import { ModelVersionService } from '@/services/ModelVersionService'
 import { apiHandler, created } from '@/api/handler'
 import { requireItemAccess } from '@/auth/access'
 import { FileService } from '@/vault/services/FileService'
+import { VariantService } from '@/services/VariantService'
 import {
   requireFileMutation,
   requireItemFileMutation,
@@ -27,6 +32,37 @@ const VIEWABLE_CAD_EXTENSIONS = new Set(['stl', 'obj', 'glb', 'gltf'])
 function isViewableCAD(fileName: string): boolean {
   const ext = fileName.toLowerCase().split('.').pop()
   return ext !== undefined && VIEWABLE_CAD_EXTENSIONS.has(ext)
+}
+
+function makeCodeFromUrl(url: URL): string | undefined {
+  const raw = url.searchParams.get('makeCode')
+  if (!raw) return undefined
+  const parsed = makeCodeSchema.safeParse(raw)
+  if (!parsed.success) {
+    throw new ValidationError(
+      parsed.error.issues[0]?.message ?? 'Invalid make code',
+    )
+  }
+  return parsed.data
+}
+
+function applicabilityFromForm(
+  formData: FormData,
+  key: string,
+): z.input<typeof optionApplicabilitySchema> | null {
+  const raw = formData.get(`${key}_applicability`)?.toString()
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as z.input<typeof optionApplicabilitySchema>
+  } catch {
+    throw new ValidationError(`Invalid applicability for ${key}`, [
+      {
+        field: `${key}_applicability`,
+        message: 'Applicability must be valid JSON',
+        code: 'APPLICABILITY_INVALID',
+      },
+    ])
+  }
 }
 
 /**
@@ -46,6 +82,7 @@ const vaultFileResponseSchema = z
     fileVersion: z.number().int(),
     isPrimaryModel: z.boolean().nullable(),
     isItemThumbnail: z.boolean(),
+    applicability: optionApplicabilitySchema.nullable(),
   })
   .passthrough()
 
@@ -64,7 +101,11 @@ app.get(
       const url = new URL(request.url)
       const branchId = url.searchParams.get('branchId') || undefined
       const mainBranchId = url.searchParams.get('mainBranchId') || undefined
-      const context = { branchId, mainBranchId }
+      const makeCode = makeCodeFromUrl(url)
+      const selections = makeCode
+        ? await VariantService.selectionsForMake(itemId, makeCode)
+        : undefined
+      const context = { branchId, mainBranchId, selections }
 
       // 1. Fetch direct files from this item
       const directFiles = await FileService.listItemFilesAtContext(
@@ -242,11 +283,15 @@ app.get(
         const url = new URL(request.url)
         const branchId = url.searchParams.get('branchId') || undefined
         const mainBranchId = url.searchParams.get('mainBranchId') || undefined
+        const makeCode = makeCodeFromUrl(url)
+        const selections = makeCode
+          ? await VariantService.selectionsForMake(itemId, makeCode)
+          : undefined
 
         // Use version-context-aware file listing if context provided
         const files = await FileService.listItemFilesAtContext(
           itemId,
-          { branchId, mainBranchId },
+          { branchId, mainBranchId, selections },
           false,
         )
 
@@ -262,11 +307,16 @@ app.get(
   adapt(
     apiHandler<{ itemId: string }>(
       { permission: ['documents', 'read'] },
-      async ({ params, user }) => {
+      async ({ request, params, user }) => {
         await requireItemAccess(user.id, params.itemId)
         const { itemId } = params
 
-        const file = await FileService.getPrimaryModel(itemId)
+        const makeCode = makeCodeFromUrl(new URL(request.url))
+        const selections = makeCode
+          ? await VariantService.selectionsForMake(itemId, makeCode)
+          : undefined
+
+        const file = await FileService.getPrimaryModel(itemId, selections)
 
         if (!file) {
           return { hasPrimary: false, file: null }
@@ -428,6 +478,12 @@ const fileUploadFormSchema = z
       .enum(['true', 'false'])
       .optional()
       .describe('`true` designates `file0` as the item thumbnail.'),
+    file0_applicability: z
+      .string()
+      .optional()
+      .describe(
+        'JSON OptionApplicability for `file0`; omit for a common file. Repeat for file1, file2, …',
+      ),
     branchId: z
       .string()
       .uuid()
@@ -451,8 +507,9 @@ app.post(
           description:
             '`multipart/form-data`. Every part carrying a file is uploaded; ' +
             'the part name is free, and the client uses `file0`, `file1`, ' +
-            'and so on. Two optional parts hang off each file part by name: ' +
-            '`<name>_description` and `<name>_isThumbnail` (the string `true`). ' +
+            'and so on. Optional parts hang off each file part by name: ' +
+            '`<name>_description`, `<name>_isThumbnail` (the string `true`), ' +
+            'and `<name>_applicability` (JSON; omitted means common to every execution). ' +
             'A single `branchId` part applies to the whole request. ' +
             'Uploading a STEP or IGES file does not convert it — call ' +
             'POST /api/v1/files/:fileId/convert with the returned id.',
@@ -524,6 +581,7 @@ app.post(
               uploadedBy: userId,
               isItemThumbnail:
                 formData.get(`${key}_isThumbnail`)?.toString() === 'true',
+              applicability: applicabilityFromForm(formData, key),
             })
 
             uploadedFiles.push(fileRecord)

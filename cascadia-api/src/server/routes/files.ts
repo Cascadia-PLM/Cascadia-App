@@ -16,6 +16,7 @@ import {
   createAnnotationSchema,
   updateAnnotationSchema,
 } from '@cascadia/commons/vault/annotations'
+import { optionApplicabilitySchema } from '@cascadia/commons/types/variants'
 import {
   resetNodeLinkSchema,
   setNodeLinkSchema,
@@ -98,6 +99,11 @@ const convertInputSchema = z.object({
 const setFileCategorySchema = z.object({
   /** `null` clears a manual override and falls back to auto-detection. */
   category: z.enum(FILE_CATEGORY_VALUES).nullable(),
+})
+
+const setFileApplicabilitySchema = z.object({
+  /** `null` makes the file common to every execution. */
+  applicability: optionApplicabilitySchema.nullable(),
 })
 
 const watermarkRequestSchema = z.object({
@@ -409,6 +415,38 @@ app.patch(
           user.id,
         )
 
+        return { file }
+      },
+    ),
+  ),
+)
+
+// PATCH /api/files/:fileId/applicability
+app.patch(
+  '/:fileId/applicability',
+  adapt(
+    apiHandler<{ fileId: string }, z.infer<typeof setFileApplicabilitySchema>>(
+      {
+        body: setFileApplicabilitySchema,
+        access: ({ params, request, user }) =>
+          requireFileMutation(request, params.fileId, user.id),
+        openapi: {
+          summary: "Set a file's product-configuration applicability",
+          description:
+            'The file remains owned and revisioned by its Part. Null makes it ' +
+            'common to every execution; otherwise it is effective when any ' +
+            'condition matches the Part selections.',
+          request: {
+            params: z.object({ fileId: z.string().uuid() }),
+          },
+        },
+      },
+      async ({ body, params, user }) => {
+        const file = await FileService.setFileApplicability(
+          params.fileId,
+          body.applicability,
+          user.id,
+        )
         return { file }
       },
     ),

@@ -15,6 +15,7 @@ export interface VariantLintFinding {
   severity: 'error' | 'warning'
   message: string
   relationshipId?: string
+  fileId?: string
   makeCode?: string
   family?: string
   value?: string

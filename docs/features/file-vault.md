@@ -21,6 +21,7 @@ The file vault is Cascadia's enterprise file management system. It provides PDM-
 - [Lock Hierarchy](#lock-hierarchy)
 - [Primary File Designation](#primary-file-designation)
 - [Multiple Files Per Item](#multiple-files-per-item)
+- [Product Configuration Applicability](#product-configuration-applicability)
 - [File Metadata](#file-metadata)
   - [Extracted Metadata](#extracted-metadata)
   - [File Categories](#file-categories)
@@ -74,6 +75,7 @@ The form data accepts:
 | `file_0`, `file_1`, ... | File   | Yes      | One or more files to upload            |
 | `branchId`              | string | No       | Branch context for version isolation   |
 | `file_0_description`    | string | No       | Description for the corresponding file |
+| `file_0_applicability`  | JSON   | No       | Option rules; omitted means common     |
 
 On upload, the vault performs these steps:
 
@@ -600,6 +602,30 @@ This endpoint traverses "CAD Doc" relationships to find viewable models attached
 
 ---
 
+## Product Configuration Applicability
+
+Files attached to a configurable Part may be common to every execution or
+effective only for selected option combinations. Applicability uses the same
+option-condition vocabulary as the Part's 150% BOM:
+
+- `null` applicability is a common file;
+- conditions inside `any` OR together;
+- families inside one condition AND together, while values within one family
+  OR together.
+
+The upload UI offers named MK executions as shortcuts and also accepts custom
+option rules. The stored value is option-based rather than tied to an MK code,
+so another execution with the same selections receives the same file. Viewing
+files for an MK returns common files plus matching conditional files.
+
+Applicability is revision-owned content: file versions, ECO copies and CAD
+conversion outputs inherit it. Removing option families or values that an
+attachment uses is rejected. A user-designated item thumbnail remains global
+and therefore must be a common file; primary CAD models may be designated per
+applicability scope, with the common primary acting as a fallback.
+
+---
+
 ## File Metadata
 
 ### Core Fields
@@ -626,6 +652,7 @@ Every file record in the vault contains:
 | `uploadedBy`       | UUID              | User who uploaded the file                                  |
 | `uploadedAt`       | timestamp         | Upload timestamp                                            |
 | `metadata`         | JSONB             | Extracted and user-provided metadata                        |
+| `applicability`    | JSONB or null     | Option rules; null means common to every execution          |
 | `fileCategory`     | string            | File category (detected at upload, correctable)             |
 | `categorySource`   | string            | `auto` while detected, `manual` once a person has set it    |
 | `isPrimaryModel`   | boolean           | Primary CAD model designation                               |
@@ -996,31 +1023,32 @@ The factory caches the storage instance and reuses it across requests. Call `Sto
 
 ### File Operations
 
-| Method | Endpoint                                             | Permission         | Description                                      |
-| ------ | ---------------------------------------------------- | ------------------ | ------------------------------------------------ |
-| POST   | `/api/v1/items/{itemId}/files/upload`                | Authenticated      | Upload files to an item                          |
-| GET    | `/api/v1/items/{itemId}/files`                       | Authenticated      | List files for an item (branch-aware)            |
-| GET    | `/api/v1/items/{itemId}/files/primary`               | `documents:read`   | Get primary CAD model                            |
-| PUT    | `/api/v1/items/{itemId}/files/primary`               | Authenticated      | Set primary CAD model                            |
-| GET    | `/api/v1/items/{itemId}/files/thumbnail`             | `documents:read`   | Get the designated thumbnail file, if any        |
-| PUT    | `/api/v1/items/{itemId}/files/thumbnail`             | `documents:update` | Designate an uploaded image as the thumbnail     |
-| DELETE | `/api/v1/items/{itemId}/files/thumbnail`             | `documents:update` | Clear the designation (falls back to generated)  |
-| GET    | `/api/v1/items/{itemId}/thumbnail`                   | `parts:read`       | Serve the item's resolved thumbnail image        |
-| GET    | `/api/v1/items/{itemId}/cad-files`                   | Authenticated      | List viewable CAD files (including related docs) |
-| GET    | `/api/v1/files/{fileId}/download`                    | `documents:read`   | Download a file                                  |
-| GET    | `/api/v1/files/{fileId}/content`                     | `documents:read`   | Stream a file inline for the in-app viewer       |
-| GET    | `/api/v1/files/{fileId}/annotations`                 | `documents:read`   | List markup on a file                            |
-| POST   | `/api/v1/files/{fileId}/annotations`                 | `documents:update` | Add markup (requires the item's checkout)        |
-| PATCH  | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Revise markup (author only)                      |
-| DELETE | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Remove markup                                    |
-| POST   | `/api/v1/files/{fileId}/watermark`                   | `documents:update` | Queue a watermark stamp (202, returns a job id)  |
-| POST   | `/api/v1/files/{fileId}/sign`                        | `documents:update` | Embed a signature (Advanced Auditing)            |
-| GET    | `/api/v1/files/{fileId}/metadata`                    | `documents:read`   | Get file metadata                                |
-| GET    | `/api/v1/files/{fileId}/versions`                    | `documents:read`   | List all versions                                |
-| GET    | `/api/v1/files/{fileId}/versions/{version}/download` | `documents:read`   | Download specific version                        |
-| GET    | `/api/v1/files/{fileId}/thumbnail`                   | `documents:read`   | Get file thumbnail                               |
-| PATCH  | `/api/v1/files/{fileId}/category`                    | `documents:update` | Set a file's category, or null to re-detect      |
-| DELETE | `/api/v1/files/{fileId}`                             | `documents:delete` | Soft-delete a file                               |
+| Method | Endpoint                                             | Permission         | Description                                            |
+| ------ | ---------------------------------------------------- | ------------------ | ------------------------------------------------------ |
+| POST   | `/api/v1/items/{itemId}/files/upload`                | Authenticated      | Upload files to an item                                |
+| GET    | `/api/v1/items/{itemId}/files`                       | Authenticated      | List files; optional `makeCode` resolves applicability |
+| GET    | `/api/v1/items/{itemId}/files/primary`               | `documents:read`   | Get primary CAD model                                  |
+| PUT    | `/api/v1/items/{itemId}/files/primary`               | Authenticated      | Set primary CAD model                                  |
+| GET    | `/api/v1/items/{itemId}/files/thumbnail`             | `documents:read`   | Get the designated thumbnail file, if any              |
+| PUT    | `/api/v1/items/{itemId}/files/thumbnail`             | `documents:update` | Designate an uploaded image as the thumbnail           |
+| DELETE | `/api/v1/items/{itemId}/files/thumbnail`             | `documents:update` | Clear the designation (falls back to generated)        |
+| GET    | `/api/v1/items/{itemId}/thumbnail`                   | `parts:read`       | Serve the item's resolved thumbnail image              |
+| GET    | `/api/v1/items/{itemId}/cad-files`                   | Authenticated      | List viewable CAD files (including related docs)       |
+| GET    | `/api/v1/files/{fileId}/download`                    | `documents:read`   | Download a file                                        |
+| GET    | `/api/v1/files/{fileId}/content`                     | `documents:read`   | Stream a file inline for the in-app viewer             |
+| GET    | `/api/v1/files/{fileId}/annotations`                 | `documents:read`   | List markup on a file                                  |
+| POST   | `/api/v1/files/{fileId}/annotations`                 | `documents:update` | Add markup (requires the item's checkout)              |
+| PATCH  | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Revise markup (author only)                            |
+| DELETE | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Remove markup                                          |
+| POST   | `/api/v1/files/{fileId}/watermark`                   | `documents:update` | Queue a watermark stamp (202, returns a job id)        |
+| POST   | `/api/v1/files/{fileId}/sign`                        | `documents:update` | Embed a signature (Advanced Auditing)                  |
+| GET    | `/api/v1/files/{fileId}/metadata`                    | `documents:read`   | Get file metadata                                      |
+| GET    | `/api/v1/files/{fileId}/versions`                    | `documents:read`   | List all versions                                      |
+| GET    | `/api/v1/files/{fileId}/versions/{version}/download` | `documents:read`   | Download specific version                              |
+| GET    | `/api/v1/files/{fileId}/thumbnail`                   | `documents:read`   | Get file thumbnail                                     |
+| PATCH  | `/api/v1/files/{fileId}/category`                    | `documents:update` | Set a file's category, or null to re-detect            |
+| PATCH  | `/api/v1/files/{fileId}/applicability`               | Owner `update`     | Set option rules, or null for a common file            |
+| DELETE | `/api/v1/files/{fileId}`                             | `documents:delete` | Soft-delete a file                                     |
 
 ### Lock Operations
 

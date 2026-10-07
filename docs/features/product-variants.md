@@ -16,9 +16,6 @@ Part version, conditions ride the BOM line, and both already get checkout,
 ECO merge, conflict detection and time travel. Two makes of one Part can never
 show different revisions because there is only one revisioned thing.
 
-Design rationale and the decisions behind this shape are in
-[`docs/proposals/product-variants.md`](../proposals/product-variants.md).
-
 ---
 
 ## Vocabulary
@@ -50,6 +47,7 @@ parts.product_family_code     text    lightweight family grouping
 parts.variant_code            text    variant within the family
 item_relationships.option     jsonb   condition on a BOM line; null = fixed
 item_relationships.target_make_code text execution of the target Part revision
+vault_files.applicability     jsonb   OR-list of conditions; null = common file
 designs.configuration         jsonb   how a Manufacturing design was resolved
 ```
 
@@ -188,6 +186,10 @@ makes a part configurable. After that:
 - **Target execution** on a BOM line, including add/edit dialogs and BOM
   tables. It renders the computed full designation without mutating the item
   number.
+- **File applicability** on configurable Parts. An attachment remains owned
+  and revisioned by the Part, but may carry one or more option conditions.
+  Null means common to every execution. The file list can be viewed as an MK,
+  yielding common files plus conditions that match that MK's selections.
 - **Configurable badge** in the part header and the part table.
 - The **MBOM dialog** shows the configuration it will derive with; the design
   header shows it afterwards.
@@ -207,6 +209,8 @@ page holds the edit lock.
 | POST   | `/api/v1/parts/:id/variants/resolve`  | Resolve selections or a make code to a 100 % BOM |
 | GET    | `/api/v1/parts/:id/variants/lint`     | Consistency findings over model, makes and lines |
 | POST   | `/api/v1/mbom`                        | Existing; accepts `configuration`                |
+| POST   | `/api/v1/items/:id/files/upload`      | Accepts per-file applicability in multipart data |
+| PATCH  | `/api/v1/files/:id/applicability`     | Changes an existing file's applicability         |
 
 BOM import accepts **Option Condition** and **Target Execution** columns; see
 [Import/Export](./import-export.md#bom-import-fields).
@@ -222,6 +226,12 @@ both alike. The split is a modelling choice about revisions:
   own lifecycle. A different PCB is usually a different Part.
 - An option stays a **make** when it is a selection among already-engineered
   alternatives. Colour is usually a make.
+
+Configuration-specific attachments are appropriate when they are approved and
+revised together with the owning Part (for example an execution drawing, label
+artwork or configuration image). Applicability does not give an MK an
+independent lifecycle. Content that must be released, certified or revised on
+its own remains a separate Part or Document and is selected through the BOM.
 
 The choice is not locked in: splitting later is an ECO that creates the new
 Part and moves lines onto it, and merging is the reverse.

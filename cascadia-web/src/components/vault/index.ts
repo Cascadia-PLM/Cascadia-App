@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 export * from './FileUploadZone'
+export * from './FileApplicabilityPicker'
 export * from './FileList'
 export * from './FilePreview'
 export * from './FilePreviewDialog'

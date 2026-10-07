@@ -2065,6 +2065,26 @@ export interface paths {
         patch: operations["patchApiV1FilesByFileIdAnnotationsByAnnotationId"];
         trace?: never;
     };
+    "/api/v1/files/{fileId}/applicability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set a file's product-configuration applicability
+         * @description The file remains owned and revisioned by its Part. Null makes it common to every execution; otherwise it is effective when any condition matches the Part selections.
+         */
+        patch: operations["patchApiV1FilesByFileIdApplicability"];
+        trace?: never;
+    };
     "/api/v1/files/{fileId}/cad-nodes": {
         parameters: {
             query?: never;
@@ -3067,7 +3087,7 @@ export interface paths {
         put?: never;
         /**
          * Upload one or more files to an item
-         * @description `multipart/form-data`. Every part carrying a file is uploaded; the part name is free, and the client uses `file0`, `file1`, and so on. Two optional parts hang off each file part by name: `<name>_description` and `<name>_isThumbnail` (the string `true`). A single `branchId` part applies to the whole request. Uploading a STEP or IGES file does not convert it — call POST /api/v1/files/:fileId/convert with the returned id.
+         * @description `multipart/form-data`. Every part carrying a file is uploaded; the part name is free, and the client uses `file0`, `file1`, and so on. Optional parts hang off each file part by name: `<name>_description`, `<name>_isThumbnail` (the string `true`), and `<name>_applicability` (JSON; omitted means common to every execution). A single `branchId` part applies to the whole request. Uploading a STEP or IGES file does not convert it — call POST /api/v1/files/:fileId/convert with the returned id.
          */
         post: operations["postApiV1ItemsByItemIdFilesUpload"];
         delete?: never;
@@ -9913,6 +9933,37 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    patchApiV1FilesByFileIdApplicability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    applicability: {
+                        any: {
+                            all: {
+                                family: string;
+                                values: string[];
+                            }[];
+                        }[];
+                    } | null;
+                };
+            };
+        };
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     getApiV1FilesByFileIdCadNodes: {
         parameters: {
             query?: {
@@ -12105,6 +12156,8 @@ export interface operations {
                      * @description First file. Repeat as file1, file2, …
                      */
                     file0?: string;
+                    /** @description JSON OptionApplicability for `file0`; omit for a common file. Repeat for file1, file2, … */
+                    file0_applicability?: string;
                     /** @description Description stored against `file0`. */
                     file0_description?: string;
                     /**
@@ -12128,6 +12181,14 @@ export interface operations {
                         data: {
                             count: number;
                             files: ({
+                                applicability: {
+                                    any: {
+                                        all: {
+                                            family: string;
+                                            values: string[];
+                                        }[];
+                                    }[];
+                                } | null;
                                 branchId: string | null;
                                 /** @description SHA-256 of the stored bytes */
                                 fileHash: string;
@@ -13476,6 +13537,7 @@ export interface operations {
                             findings: {
                                 code: string;
                                 family?: string;
+                                fileId?: string;
                                 makeCode?: string;
                                 message: string;
                                 relationshipId?: string;

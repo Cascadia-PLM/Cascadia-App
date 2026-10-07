@@ -3,6 +3,11 @@
 
 import { and, desc, eq, isNotNull, isNull, lt, ne, or } from 'drizzle-orm'
 import { THUMBNAIL_FILE_CATEGORY } from '@cascadia/commons/vault/file-categories'
+import {
+  applicabilityMatches,
+  findUndeclared,
+  optionApplicabilitySchema,
+} from '@cascadia/commons/types/variants'
 import { db } from '../../db'
 import {
   FILE_CHECKED_IN,
@@ -11,7 +16,13 @@ import {
   FILE_UPLOADED,
   publishDomainEvent,
 } from '../../events'
-import { items, users, vaultFileHistory, vaultFiles } from '../../db/schema'
+import {
+  items,
+  parts,
+  users,
+  vaultFileHistory,
+  vaultFiles,
+} from '../../db/schema'
 import { StorageFactory } from '../storage'
 import {
   detectFileCategory,
@@ -41,6 +52,7 @@ import type {
   FileRecord,
   FileRecordWithItem,
 } from '@cascadia/commons/vault/types'
+import type { OptionApplicability } from '@cascadia/commons/types/variants'
 import { vaultLogger } from '@/logging/logger'
 import { accessScopeCondition, notDeleted } from '@/db/filters'
 import { takeFirst } from '@/db/take-first'
@@ -83,6 +95,8 @@ export interface UploadFileOptions {
   allowDuplicates?: boolean
   /** Designate this upload as the item's thumbnail (image files only) */
   isItemThumbnail?: boolean
+  /** Null/omitted means common to every execution of the owning Part. */
+  applicability?: OptionApplicability | null
 }
 
 export interface CheckoutInfo {
@@ -120,6 +134,7 @@ export class FileService {
       maxSizeBytes = 100 * 1024 * 1024, // 100MB default
       allowDuplicates = true, // Opt-in: set false to reject files with duplicate SHA-256 hashes per item
       isItemThumbnail = false,
+      applicability = null,
     } = options
 
     // Validate file size
@@ -157,6 +172,25 @@ export class FileService {
 
     if (!item) {
       throw new NotFoundError('Item', itemId)
+    }
+
+    const normalizedApplicability = await this.normalizeApplicability(
+      itemId,
+      applicability,
+    )
+
+    if (isItemThumbnail && normalizedApplicability) {
+      throw new ValidationError(
+        'The item thumbnail must be common to every execution',
+        [
+          {
+            field: 'applicability',
+            message:
+              'A configuration-specific file cannot be the item thumbnail',
+            code: 'THUMBNAIL_NOT_COMMON',
+          },
+        ],
+      )
     }
 
     // Generate file hash
@@ -246,6 +280,9 @@ export class FileService {
             and(
               eq(vaultFiles.itemId, itemId),
               eq(vaultFiles.fileCategory, 'cad_model'),
+              normalizedApplicability
+                ? eq(vaultFiles.applicability, normalizedApplicability)
+                : isNull(vaultFiles.applicability),
               isNull(vaultFiles.deletedAt),
             ),
           )
@@ -286,6 +323,7 @@ export class FileService {
                 isCheckedOut: false,
                 uploadedBy,
                 metadata: combinedMetadata,
+                applicability: normalizedApplicability,
                 fileCategory,
                 isPrimaryModel,
                 isItemThumbnail,
@@ -309,6 +347,7 @@ export class FileService {
         fileSize: file.length,
         mimeType: metadata.mimeType,
         isItemThumbnail,
+        applicability: normalizedApplicability,
       },
     })
 
@@ -356,6 +395,7 @@ export class FileService {
                         fileName: metadata.originalFileName,
                         fileSize: file.length,
                         mimeType: metadata.mimeType,
+                        applicability: normalizedApplicability,
                       },
                       fieldCategory: 'attribute',
                     },
@@ -489,6 +529,198 @@ export class FileService {
   }
 
   /**
+   * Canonicalise file applicability and prove every referenced option belongs
+   * to the owning Part version. Non-Part items deliberately have no variant
+   * vocabulary and may only keep common files.
+   */
+  static async normalizeApplicability(
+    itemId: string,
+    applicability: OptionApplicability | null | undefined,
+    tx?: TransactionClient,
+  ): Promise<OptionApplicability | null> {
+    if (!applicability) return null
+
+    const parsed = optionApplicabilitySchema.safeParse(applicability)
+    if (!parsed.success) {
+      throw new ValidationError('Invalid file applicability', [
+        {
+          field: 'applicability',
+          message:
+            parsed.error.issues[0]?.message ?? 'Invalid file applicability',
+          code: 'APPLICABILITY_INVALID',
+        },
+      ])
+    }
+
+    const [part] = await (tx ?? db)
+      .select({ optionModel: parts.optionModel })
+      .from(parts)
+      .where(eq(parts.itemId, itemId))
+      .limit(1)
+
+    if (!part?.optionModel) {
+      throw new ValidationError(
+        'Only a Part with an option model can have configuration-specific files',
+        [
+          {
+            field: 'applicability',
+            message: 'The owning Part has no option model',
+            code: 'NO_OPTION_MODEL',
+          },
+        ],
+      )
+    }
+
+    const fieldErrors = parsed.data.any.flatMap((condition, index) => {
+      const problem = findUndeclared(part.optionModel!, condition)
+      return problem
+        ? [
+            {
+              field: `applicability.any.${index}`,
+              message: problem,
+              code: 'OPTION_NOT_DECLARED',
+            },
+          ]
+        : []
+    })
+    if (fieldErrors.length > 0) {
+      throw new ValidationError(fieldErrors[0]!.message, fieldErrors)
+    }
+
+    return parsed.data
+  }
+
+  /** Change which configurations use a file without changing its bytes. */
+  static async setFileApplicability(
+    fileId: string,
+    applicability: OptionApplicability | null,
+    userId: string,
+  ): Promise<FileRecord> {
+    const file = await this.getFileMetadata(fileId)
+    if (!file) throw new NotFoundError('File', fileId)
+    if (file.deletedAt) {
+      throw new ValidationError('Cannot change applicability of a deleted file')
+    }
+    if (!file.isLatestVersion) {
+      throw new ValidationError(
+        'Cannot change applicability of a historical file version',
+      )
+    }
+    if (file.fileCategory === THUMBNAIL_FILE_CATEGORY) {
+      throw new ValidationError(
+        'Generated thumbnails inherit applicability from their source file',
+      )
+    }
+
+    const normalized = await this.normalizeApplicability(
+      file.itemId,
+      applicability,
+    )
+    if (file.isItemThumbnail && normalized) {
+      throw new ValidationError(
+        'The item thumbnail must be common to every execution',
+      )
+    }
+
+    const updated = await db.transaction(async (tx) => {
+      // A Part may have one primary CAD model in each applicability scope.
+      // Moving a primary file into a scope therefore replaces that scope's
+      // existing primary without disturbing primaries for other executions.
+      if (file.isPrimaryModel) {
+        await tx
+          .update(vaultFiles)
+          .set({ isPrimaryModel: false })
+          .where(
+            and(
+              eq(vaultFiles.itemId, file.itemId),
+              ne(vaultFiles.id, fileId),
+              eq(vaultFiles.isPrimaryModel, true),
+              normalized
+                ? eq(vaultFiles.applicability, normalized)
+                : isNull(vaultFiles.applicability),
+            ),
+          )
+      }
+
+      const [row] = await tx
+        .update(vaultFiles)
+        .set({ applicability: normalized })
+        .where(eq(vaultFiles.id, fileId))
+        .returning()
+
+      // The generated thumbnail is an implementation detail of this model,
+      // so it follows the same configuration automatically.
+      if (file.thumbnailFileId) {
+        await tx
+          .update(vaultFiles)
+          .set({ applicability: normalized })
+          .where(eq(vaultFiles.id, file.thumbnailFileId))
+      }
+      return row
+    })
+
+    if (!updated) throw new NotFoundError('File', fileId)
+
+    await this.logAction({
+      fileId,
+      action: 'set_applicability',
+      performedBy: userId,
+      details: {
+        itemId: file.itemId,
+        fileName: file.originalFileName,
+        from: file.applicability,
+        to: normalized,
+      },
+    })
+
+    try {
+      const [item] = await db
+        .select({
+          designId: items.designId,
+          itemNumber: items.itemNumber,
+        })
+        .from(items)
+        .where(eq(items.id, file.itemId))
+        .limit(1)
+      if (item?.designId) {
+        const branchInfo = await ItemService.getItemBranchInfo(file.itemId)
+        const targetBranchId = file.branchId ?? branchInfo?.branchId ?? null
+        if (targetBranchId) {
+          await CommitService.create(
+            {
+              branchId: targetBranchId,
+              message: `File applicability changed on ${item.itemNumber || 'item'}: ${file.originalFileName}`,
+              itemChanges: [
+                {
+                  itemId: file.itemId,
+                  changeType: 'modified',
+                  fieldChanges: [
+                    {
+                      fieldName: 'file_applicability',
+                      fieldPath: `files.${fileId}.applicability`,
+                      oldValue: file.applicability,
+                      newValue: normalized,
+                      fieldCategory: 'attribute',
+                    },
+                  ],
+                },
+              ],
+            },
+            userId,
+          )
+        }
+      }
+    } catch (error) {
+      vaultLogger.warn(
+        { err: error, fileId },
+        'Failed to create commit for file applicability change',
+      )
+    }
+
+    return updated as FileRecord
+  }
+
+  /**
    * List all files for an item
    */
   static async listItemFiles(
@@ -532,12 +764,21 @@ export class FileService {
    */
   static async listItemFilesAtContext(
     itemId: string,
-    context: { branchId?: string; mainBranchId?: string },
+    context: {
+      branchId?: string
+      mainBranchId?: string
+      selections?: Record<string, string>
+    },
     includeDeleted: boolean = false,
   ): Promise<Array<FileRecord>> {
     // If no context provided, fall back to listing all files
     if (!context.branchId && !context.mainBranchId) {
-      return this.listItemFiles(itemId, includeDeleted)
+      const files = await this.listItemFiles(itemId, includeDeleted)
+      return context.selections
+        ? files.filter((file) =>
+            applicabilityMatches(file.applicability, context.selections!),
+          )
+        : files
     }
 
     // Build branch visibility conditions
@@ -574,7 +815,12 @@ export class FileService {
       .where(and(...baseConditions, or(...branchConditions)))
       .orderBy(desc(vaultFiles.uploadedAt))
 
-    return files as Array<FileRecord>
+    const records = files as Array<FileRecord>
+    return context.selections
+      ? records.filter((file) =>
+          applicabilityMatches(file.applicability, context.selections!),
+        )
+      : records
   }
 
   /**
@@ -669,6 +915,7 @@ export class FileService {
         uploadedBy: file.uploadedBy,
         uploadedAt: file.uploadedAt,
         metadata: file.metadata,
+        applicability: file.applicability,
         fileCategory: file.fileCategory,
         categorySource: file.categorySource,
         isPrimaryModel: file.isPrimaryModel,
@@ -1202,6 +1449,7 @@ export class FileService {
                 isCheckedOut: false,
                 uploadedBy: userId,
                 metadata: { ...extractedMetadata, ...metadata },
+                applicability: file.applicability,
                 // The category rides the version chain. A manual category is a
                 // person's answer about the file's role, which a new revision of
                 // the same file does not change; an auto category is re-detected,
@@ -1398,6 +1646,7 @@ export class FileService {
                 ...(file.metadata as Record<string, unknown> | null),
                 [action]: { at: new Date().toISOString(), ...args.details },
               },
+              applicability: file.applicability,
               fileCategory: file.fileCategory,
               categorySource: file.categorySource,
               isItemThumbnail: file.isItemThumbnail,
@@ -1494,8 +1743,11 @@ export class FileService {
    * Get the primary CAD model file for an item
    * Returns the file marked as isPrimaryModel, or null if none
    */
-  static async getPrimaryModel(itemId: string): Promise<FileRecord | null> {
-    const [file] = await db
+  static async getPrimaryModel(
+    itemId: string,
+    selections?: Record<string, string>,
+  ): Promise<FileRecord | null> {
+    const files = await db
       .select()
       .from(vaultFiles)
       .where(
@@ -1506,9 +1758,23 @@ export class FileService {
           isNull(vaultFiles.deletedAt),
         ),
       )
-      .limit(1)
+      .orderBy(desc(vaultFiles.uploadedAt))
 
-    return file as FileRecord | null
+    const records = files as Array<FileRecord>
+    if (!selections) {
+      return (
+        records.find((file) => !file.applicability) ?? records.at(0) ?? null
+      )
+    }
+
+    const effective = records.filter((file) =>
+      applicabilityMatches(file.applicability, selections),
+    )
+    return (
+      effective.find((file) => Boolean(file.applicability)) ??
+      effective.find((file) => !file.applicability) ??
+      null
+    )
   }
 
   /**
@@ -1546,7 +1812,7 @@ export class FileService {
     }
 
     // Then the primary model's generated thumbnail
-    const primary = await this.getPrimaryModel(itemId)
+    const primary = await this.getPrimaryModel(itemId, {})
     if (primary?.thumbnailFileId) {
       return primary.thumbnailFileId
     }
@@ -1559,6 +1825,7 @@ export class FileService {
         and(
           eq(vaultFiles.itemId, itemId),
           isNull(vaultFiles.deletedAt),
+          isNull(vaultFiles.applicability),
           isNotNull(vaultFiles.thumbnailFileId),
         ),
       )
@@ -1616,6 +1883,12 @@ export class FileService {
 
     if (file.deletedAt) {
       throw new ValidationError('Cannot use a deleted file as a thumbnail')
+    }
+
+    if (file.applicability) {
+      throw new ValidationError(
+        'The item thumbnail must be common to every execution',
+      )
     }
 
     if (!isThumbnailableImage(file.originalFileName, file.mimeType)) {
@@ -1734,9 +2007,21 @@ export class FileService {
     if (nextCategory !== 'cad_model') {
       isPrimaryModel = false
     } else if (!isPrimaryModel) {
-      // Truthiness, not `=== null`: getPrimaryModel destructures an empty
-      // result and hands back undefined despite its `| null` signature.
-      isPrimaryModel = !(await this.getPrimaryModel(file.itemId))
+      const [sameScopePrimary] = await db
+        .select({ id: vaultFiles.id })
+        .from(vaultFiles)
+        .where(
+          and(
+            eq(vaultFiles.itemId, file.itemId),
+            eq(vaultFiles.isPrimaryModel, true),
+            isNull(vaultFiles.deletedAt),
+            file.applicability
+              ? eq(vaultFiles.applicability, file.applicability)
+              : isNull(vaultFiles.applicability),
+          ),
+        )
+        .limit(1)
+      isPrimaryModel = !sameScopePrimary
     }
 
     const updated = (
@@ -1771,10 +2056,7 @@ export class FileService {
     return updated as FileRecord
   }
 
-  /**
-   * Set a file as the primary CAD model for its item
-   * Only one file per item can be primary - this unsets any existing primary
-   */
+  /** Set the primary CAD model within this file's applicability scope. */
   static async setPrimaryModel(fileId: string, userId: string): Promise<void> {
     const file = await this.getFileMetadata(fileId)
 
@@ -1786,7 +2068,7 @@ export class FileService {
       throw new ValidationError('Cannot set a deleted file as primary model')
     }
 
-    // Clear existing primary for this item
+    // A common primary remains the fallback for execution-specific scopes.
     await db
       .update(vaultFiles)
       .set({ isPrimaryModel: false })
@@ -1794,6 +2076,9 @@ export class FileService {
         and(
           eq(vaultFiles.itemId, file.itemId),
           eq(vaultFiles.isPrimaryModel, true),
+          file.applicability
+            ? eq(vaultFiles.applicability, file.applicability)
+            : isNull(vaultFiles.applicability),
         ),
       )
 

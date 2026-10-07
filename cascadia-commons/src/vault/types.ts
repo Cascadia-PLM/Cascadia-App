@@ -8,6 +8,8 @@
  * both re-export.
  */
 
+import type { OptionApplicability } from '../types/variants'
+
 /**
  * Information about the effective vault configuration
  */
@@ -80,6 +82,8 @@ export interface FileRecord {
   uploadedBy: string
   uploadedAt: Date
   metadata: any
+  /** Null means common to every execution of the owning Part revision. */
+  applicability: OptionApplicability | null
   cadMetadata: CadMetadata | null
   thumbnailFileId: string | null
   deletedAt: Date | null

@@ -10904,6 +10904,117 @@
         ]
       }
     },
+    "/api/v1/files/{fileId}/applicability": {
+      "patch": {
+        "description": "The file remains owned and revisioned by its Part. Null makes it common to every execution; otherwise it is effective when any condition matches the Part selections.",
+        "operationId": "patchApiV1FilesByFileIdApplicability",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "applicability": {
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "any": {
+                            "items": {
+                              "properties": {
+                                "all": {
+                                  "items": {
+                                    "properties": {
+                                      "family": {
+                                        "maxLength": 50,
+                                        "minLength": 1,
+                                        "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                                        "type": "string"
+                                      },
+                                      "values": {
+                                        "items": {
+                                          "maxLength": 50,
+                                          "minLength": 1,
+                                          "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                                          "type": "string"
+                                        },
+                                        "minItems": 1,
+                                        "type": "array"
+                                      }
+                                    },
+                                    "required": [
+                                      "family",
+                                      "values"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "minItems": 1,
+                                  "type": "array"
+                                }
+                              },
+                              "required": [
+                                "all"
+                              ],
+                              "type": "object"
+                            },
+                            "maxItems": 100,
+                            "minItems": 1,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "any"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "applicability"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Set a file's product-configuration applicability",
+        "tags": [
+          "Files"
+        ]
+      }
+    },
     "/api/v1/files/{fileId}/cad-nodes": {
       "get": {
         "description": "Each glTF node in the model, resolved to a PLM part by matching the CAD's own name against the assembly's BOM, with any recorded corrections applied. Empty for a model with no part structure.",
@@ -16513,7 +16624,7 @@
     },
     "/api/v1/items/{itemId}/files/upload": {
       "post": {
-        "description": "`multipart/form-data`. Every part carrying a file is uploaded; the part name is free, and the client uses `file0`, `file1`, and so on. Two optional parts hang off each file part by name: `<name>_description` and `<name>_isThumbnail` (the string `true`). A single `branchId` part applies to the whole request. Uploading a STEP or IGES file does not convert it — call POST /api/v1/files/:fileId/convert with the returned id.",
+        "description": "`multipart/form-data`. Every part carrying a file is uploaded; the part name is free, and the client uses `file0`, `file1`, and so on. Optional parts hang off each file part by name: `<name>_description`, `<name>_isThumbnail` (the string `true`), and `<name>_applicability` (JSON; omitted means common to every execution). A single `branchId` part applies to the whole request. Uploading a STEP or IGES file does not convert it — call POST /api/v1/files/:fileId/convert with the returned id.",
         "operationId": "postApiV1ItemsByItemIdFilesUpload",
         "parameters": [
           {
@@ -16556,6 +16667,10 @@
                     "format": "binary",
                     "type": "string"
                   },
+                  "file0_applicability": {
+                    "description": "JSON OptionApplicability for `file0`; omit for a common file. Repeat for file1, file2, …",
+                    "type": "string"
+                  },
                   "file0_description": {
                     "description": "Description stored against `file0`.",
                     "type": "string"
@@ -16592,6 +16707,63 @@
                           "items": {
                             "additionalProperties": {},
                             "properties": {
+                              "applicability": {
+                                "anyOf": [
+                                  {
+                                    "properties": {
+                                      "any": {
+                                        "items": {
+                                          "properties": {
+                                            "all": {
+                                              "items": {
+                                                "properties": {
+                                                  "family": {
+                                                    "maxLength": 50,
+                                                    "minLength": 1,
+                                                    "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                                                    "type": "string"
+                                                  },
+                                                  "values": {
+                                                    "items": {
+                                                      "maxLength": 50,
+                                                      "minLength": 1,
+                                                      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                                                      "type": "string"
+                                                    },
+                                                    "minItems": 1,
+                                                    "type": "array"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "family",
+                                                  "values"
+                                                ],
+                                                "type": "object"
+                                              },
+                                              "minItems": 1,
+                                              "type": "array"
+                                            }
+                                          },
+                                          "required": [
+                                            "all"
+                                          ],
+                                          "type": "object"
+                                        },
+                                        "maxItems": 100,
+                                        "minItems": 1,
+                                        "type": "array"
+                                      }
+                                    },
+                                    "required": [
+                                      "any"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "branchId": {
                                 "anyOf": [
                                   {
@@ -16660,7 +16832,8 @@
                               "fileHash",
                               "fileVersion",
                               "isPrimaryModel",
-                              "isItemThumbnail"
+                              "isItemThumbnail",
+                              "applicability"
                             ],
                             "type": "object"
                           },
@@ -20799,6 +20972,9 @@
                                 "type": "string"
                               },
                               "family": {
+                                "type": "string"
+                              },
+                              "fileId": {
                                 "type": "string"
                               },
                               "makeCode": {

@@ -9,11 +9,15 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+  applicabilityMatches,
+  conditionFromSelections,
   conditionMatches,
   formatOptionText,
   formatPartDesignation,
   makeCodeSchema,
+  normalizeOptionApplicability,
   normalizeOptionCondition,
+  optionApplicabilitySchema,
   optionConditionKey,
   optionConditionSchema,
   optionModelSchema,
@@ -169,6 +173,55 @@ describe('conditionMatches', () => {
   it('fails when a named family is not selected', () => {
     expect(conditionMatches(black, {})).toBe(false)
     expect(conditionMatches(blackWithDisplay, { color: 'black' })).toBe(false)
+  })
+})
+
+describe('option applicability', () => {
+  it('ORs conditions while null remains common to every configuration', () => {
+    const applicability = {
+      any: [
+        { all: [{ family: 'color', values: ['black'] }] },
+        { all: [{ family: 'buttons', values: ['8'] }] },
+      ],
+    }
+    expect(applicabilityMatches(null, {})).toBe(true)
+    expect(applicabilityMatches(applicability, { color: 'black' })).toBe(true)
+    expect(applicabilityMatches(applicability, { buttons: '8' })).toBe(true)
+    expect(
+      applicabilityMatches(applicability, {
+        color: 'white',
+        buttons: '2',
+      }),
+    ).toBe(false)
+  })
+
+  it('canonicalises, sorts and de-duplicates rules', () => {
+    expect(
+      normalizeOptionApplicability({
+        any: [
+          { all: [{ family: 'display', values: ['yes'] }] },
+          { all: [{ family: 'color', values: ['black'] }] },
+          { all: [{ family: 'Display', values: ['YES'] }] },
+        ],
+      }),
+    ).toEqual({
+      any: [
+        { all: [{ family: 'color', values: ['black'] }] },
+        { all: [{ family: 'display', values: ['yes'] }] },
+      ],
+    })
+  })
+
+  it('builds an exact condition from an execution and rejects no rules', () => {
+    expect(conditionFromSelections({ display: 'yes', color: 'black' })).toEqual(
+      {
+        all: [
+          { family: 'color', values: ['black'] },
+          { family: 'display', values: ['yes'] },
+        ],
+      },
+    )
+    expect(optionApplicabilitySchema.safeParse({ any: [] }).success).toBe(false)
   })
 })
 

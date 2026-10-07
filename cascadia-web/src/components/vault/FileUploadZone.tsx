@@ -3,7 +3,13 @@
 
 import { useRef, useState } from 'react'
 import { FileIcon, ImageIcon, Upload, X } from 'lucide-react'
+import { FileApplicabilityPicker } from './FileApplicabilityPicker'
 import type { ChangeEvent, DragEvent } from 'react'
+import type {
+  Make,
+  OptionApplicability,
+  OptionModel,
+} from '@cascadia/commons/types/variants'
 import { Button } from '@/components/ui'
 import { cn } from '@/utils'
 import { apiErrorFromResponse } from '@/api/client'
@@ -40,12 +46,16 @@ interface FileUploadZoneProps {
   className?: string
   /** Offer a "use as thumbnail" toggle on image files (default: true) */
   allowThumbnailSelection?: boolean
+  /** Product option vocabulary; omitted for non-configurable items. */
+  optionModel?: OptionModel | null
+  makes?: Array<Make> | null
 }
 
 interface FileWithPreview {
   file: File
   id: string
   preview?: string
+  applicability: OptionApplicability | null
 }
 
 export function FileUploadZone({
@@ -58,6 +68,8 @@ export function FileUploadZone({
   accept,
   className,
   allowThumbnailSelection = true,
+  optionModel,
+  makes,
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<Array<FileWithPreview>>([])
@@ -112,7 +124,7 @@ export function FileUploadZone({
         preview = URL.createObjectURL(file)
       }
 
-      return { file, id, preview }
+      return { file, id, preview, applicability: null }
     })
 
     setSelectedFiles((prev) => [...prev, ...newFiles])
@@ -131,6 +143,25 @@ export function FileUploadZone({
 
   const toggleThumbnail = (id: string) => {
     setThumbnailId((current) => (current === id ? null : id))
+    setSelectedFiles((current) =>
+      current.map((entry) =>
+        entry.id === id ? { ...entry, applicability: null } : entry,
+      ),
+    )
+  }
+
+  const setApplicability = (
+    id: string,
+    applicability: OptionApplicability | null,
+  ) => {
+    setSelectedFiles((current) =>
+      current.map((entry) =>
+        entry.id === id ? { ...entry, applicability } : entry,
+      ),
+    )
+    if (applicability) {
+      setThumbnailId((current) => (current === id ? null : current))
+    }
   }
 
   const handleUpload = async () => {
@@ -146,6 +177,12 @@ export function FileUploadZone({
 
     selectedFiles.forEach((fileWithPreview, index) => {
       formData.append(`file_${index}`, fileWithPreview.file)
+      if (fileWithPreview.applicability) {
+        formData.append(
+          `file_${index}_applicability`,
+          JSON.stringify(fileWithPreview.applicability),
+        )
+      }
       if (fileWithPreview.id === thumbnailId) {
         formData.append(`file_${index}_isThumbnail`, 'true')
       }
@@ -266,6 +303,18 @@ export function FileUploadZone({
                       </span>
                     )}
                   </p>
+                  {optionModel && optionModel.families.length > 0 && (
+                    <div className="mt-2">
+                      <FileApplicabilityPicker
+                        model={optionModel}
+                        makes={makes ?? []}
+                        value={fileWithPreview.applicability}
+                        onChange={(next) =>
+                          setApplicability(fileWithPreview.id, next)
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
                 {allowThumbnailSelection &&
                   canBeThumbnail(fileWithPreview.file) && (

@@ -19,6 +19,7 @@ import { users } from './users'
 import { items } from './items'
 import { branches } from './versioning'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
+import type { OptionApplicability } from '@cascadia/commons/types/variants'
 
 export const vaultFiles = pgTable(
   'vault_files',
@@ -51,6 +52,9 @@ export const vaultFiles = pgTable(
       .defaultNow()
       .notNull(),
     metadata: jsonb('metadata'), // Extracted metadata, file description
+    // Null means common to every configuration. Otherwise the file is visible
+    // when any condition matches the owning Part's selected options.
+    applicability: jsonb('applicability').$type<OptionApplicability>(),
 
     // File categorization for different file types
     fileCategory: varchar('file_category', { length: 50 }), // 'cad_model', 'drawing', 'specification', 'analysis', 'reference', 'other'
@@ -122,6 +126,7 @@ export const vaultFiles = pgTable(
       .where(sql`${table.isLatestVersion}`),
     index('idx_vault_files_deleted').on(table.deletedAt),
     index('idx_vault_files_category').on(table.fileCategory),
+    index('idx_vault_files_applicability').using('gin', table.applicability),
     // Partial, on itemId, for the same reason: the primary model is looked up
     // per item. Nullable, so the predicate has to be explicit rather than a
     // bare column reference.

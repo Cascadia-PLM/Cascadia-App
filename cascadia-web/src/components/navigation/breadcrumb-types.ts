@@ -17,6 +17,10 @@ export interface BreadcrumbData {
 
 export interface BreadcrumbRouteInfo {
   pathname: string
+  /** Registered item type represented by the current item route. */
+  itemType: string | undefined
+  /** The detail/list UI preserves and resolves branch, tag, and commit params. */
+  supportsVersionContext: boolean
   /** The `$id` of the detail page shown, or undefined on any other page. */
   detailId: string | undefined
   isItemListPage: boolean

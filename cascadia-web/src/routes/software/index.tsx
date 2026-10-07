@@ -2,14 +2,17 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 import type { Software } from '@cascadia/commons/items/types/software'
 import type { ItemFilters } from '@/query'
 import { PageContainer } from '@/components/layout'
 import { SoftwareTable } from '@/components/software/SoftwareTable'
+import { useVersionContext } from '@/hooks/useVersionContext'
 import { useServerDataGrid } from '@/hooks/useServerDataGrid'
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -20,6 +23,7 @@ import {
 import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
+  designListQuery,
   gridParamsFromSearch,
   itemCountsQuery,
   itemGridQuery,
@@ -39,30 +43,46 @@ const softwareSearchSchema = z.object({
   pageSize: z.coerce.number().int().positive().optional(),
   filter_softwareType: z.coerce.string().optional(),
   filter_state: z.coerce.string().optional(),
+  programId: z.string().uuid().optional(),
+  designId: z.string().uuid().optional(),
+  branch: z.string().uuid().optional(),
+  tag: z.string().uuid().optional(),
+  commit: z.string().uuid().optional(),
 })
 
-const SOFTWARE_FILTERS: ItemFilters = { itemType: 'Software' }
+type SoftwareSearch = z.infer<typeof softwareSearchSchema>
+
+function softwareFilters(search: SoftwareSearch): ItemFilters {
+  return {
+    itemType: 'Software',
+    programId: search.programId,
+    designId: search.designId,
+    branch: search.branch,
+    tag: search.tag,
+    commit: search.commit,
+  }
+}
 export const Route = createFileRoute('/software/')({
   validateSearch: softwareSearchSchema,
   component: SoftwareListPage,
   loaderDeps: ({ search }) => search,
   loader: async ({ context: { queryClient }, deps }) => {
+    const filters = softwareFilters(deps)
     const grid = gridParamsFromSearch(deps)
     await Promise.all([
-      queryClient.ensureQueryData(
-        itemListQuery<Software>(SOFTWARE_FILTERS, grid),
-      ),
+      queryClient.ensureQueryData(itemListQuery<Software>(filters, grid)),
       (async () => {
         const lifecycle = await queryClient.ensureQueryData(
           lifecycleByItemTypeQuery('Software'),
         )
         await queryClient.ensureQueryData(
           itemCountsQuery(
-            SOFTWARE_FILTERS,
+            filters,
             lifecycle.states.map((state) => state.id),
           ),
         )
       })(),
+      queryClient.ensureQueryData(designListQuery()),
     ])
   },
 })
@@ -72,13 +92,22 @@ function SoftwareListPage() {
   const { confirm } = useAlertDialog()
   const { handleError, showSuccess } = useErrorHandler()
   const invalidate = useInvalidateResources()
+  const searchParams = Route.useSearch()
+  const filters = softwareFilters(searchParams)
+  const { data: designs = [] } = useQuery(designListQuery())
+  const selectedDesignId = searchParams.designId
+  const selectedDesign = designs.find(
+    (design) => design.id === selectedDesignId,
+  )
+  const { context, contextLabel, isEditable } =
+    useVersionContext(selectedDesignId)
 
   const {
     items: softwareItems,
     total,
     dataGridProps,
   } = useServerDataGrid<Software>({
-    query: itemGridQuery<Software>(SOFTWARE_FILTERS),
+    query: itemGridQuery<Software>(filters),
   })
 
   const handleEdit = (sw: Software) => {
@@ -111,20 +140,43 @@ function SoftwareListPage() {
     })
   }
 
+  const getContextBadgeVariant = () => {
+    switch (context.type) {
+      case 'branch':
+        return 'secondary'
+      case 'tag':
+      case 'commit':
+        return 'outline'
+      case 'main':
+      default:
+        return 'default'
+    }
+  }
+
   return (
     <PageContainer>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
-            Software
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-white">
+              Software
+            </h1>
+            {selectedDesignId && (
+              <Badge variant={getContextBadgeVariant()} className="text-sm">
+                {contextLabel}
+              </Badge>
+            )}
+          </div>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
             Firmware and software configuration items with versioned source
           </p>
         </div>
-        <Link to="/software/new">
-          <Button>
+        <Link
+          to="/software/new"
+          search={selectedDesignId ? { designId: selectedDesignId } : undefined}
+        >
+          <Button disabled={!isEditable && context.type !== 'main'}>
             <Plus className="h-4 w-4 mr-2" />
             Create Software
           </Button>
@@ -134,7 +186,7 @@ function SoftwareListPage() {
       {/* Stats — one card per lifecycle state, from configuration */}
       <LifecycleStateCards
         itemType="Software"
-        filters={SOFTWARE_FILTERS}
+        filters={filters}
         total={total}
         totalLabel="Total"
       />
@@ -145,6 +197,11 @@ function SoftwareListPage() {
           <CardTitle>All Software</CardTitle>
           <CardDescription>
             {total} {total === 1 ? 'item' : 'items'} in the system
+            {selectedDesign && context.type !== 'main' && (
+              <span className="ml-2 text-amber-600 dark:text-amber-400">
+                (viewing {contextLabel})
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useMatches } from '@tanstack/react-router'
+import { ITEM_TYPE_DEFINITIONS } from '@cascadia/commons/items/item-type-definitions'
 import type { RegisteredRouter, RouteIds } from '@tanstack/react-router'
 import type { BreadcrumbRouteInfo } from './breadcrumb-types'
 
@@ -11,17 +12,35 @@ const ITEM_LIST_ROUTES: ReadonlyArray<RouteId> = [
   '/parts/',
   '/documents/',
   '/requirements/',
+  '/software/',
   '/tasks/',
   '/issues/',
 ]
 
-const ITEM_DETAIL_ROUTES: ReadonlyArray<RouteId> = [
-  '/parts/$id',
-  '/documents/$id',
-  '/requirements/$id',
-  '/tasks/$id',
-  '/issues/$id',
-]
+const ITEM_TYPE_BY_LIST_ROUTE = new Map<string, string>()
+const ITEM_TYPE_BY_DETAIL_ROUTE = new Map<string, string>()
+
+// These detail pages preserve branch/tag/commit in their route schemas and
+// resolve their displayed row through useVersionContext. Keep the capability
+// explicit until the remaining Item pages adopt the same edit/delete policy.
+const VERSION_CONTEXT_ITEM_TYPES: ReadonlySet<string> = new Set([
+  'Part',
+  'Software',
+  'Document',
+  'Requirement',
+  'TestPlan',
+  'TestCase',
+])
+
+for (const definition of Object.values(ITEM_TYPE_DEFINITIONS)) {
+  ITEM_TYPE_BY_LIST_ROUTE.set(`${definition.detailPath}/`, definition.name)
+  ITEM_TYPE_BY_DETAIL_ROUTE.set(`${definition.detailPath}/$id`, definition.name)
+  // Layout-backed detail pages use an index leaf with a trailing slash.
+  ITEM_TYPE_BY_DETAIL_ROUTE.set(
+    `${definition.detailPath}/$id/`,
+    definition.name,
+  )
+}
 
 /** A route's `$id` param, when it declares one. */
 function idParam(params: object | undefined): string | undefined {
@@ -51,9 +70,20 @@ export function useBreadcrumbRouteInfo(): BreadcrumbRouteInfo {
   const routeId = leaf?.routeId
   const pathname = leaf?.pathname ?? '/'
 
-  // Detect route type
+  // Item detail routes come from the shared registry, so adding a registered
+  // type cannot silently omit its breadcrumb. List pages remain explicit
+  // because only these routes currently implement Program/Design filtering.
+  const itemTypeFromListRoute = routeId
+    ? ITEM_TYPE_BY_LIST_ROUTE.get(routeId)
+    : undefined
+  const itemTypeFromDetailRoute = routeId
+    ? ITEM_TYPE_BY_DETAIL_ROUTE.get(routeId)
+    : undefined
+  const itemType = itemTypeFromDetailRoute ?? itemTypeFromListRoute
   const isItemListPage = ITEM_LIST_ROUTES.some((id) => id === routeId)
-  const isItemDetailPage = ITEM_DETAIL_ROUTES.some((id) => id === routeId)
+  const isItemDetailPage =
+    Boolean(itemTypeFromDetailRoute) &&
+    itemTypeFromDetailRoute !== 'ChangeOrder'
   const isDesignDetailPage = routeId === '/designs/$id'
   const isProgramDetailPage = routeId === '/programs/$id'
   const isChangeOrderDetailPage = routeId === '/change-orders/$id'
@@ -73,6 +103,9 @@ export function useBreadcrumbRouteInfo(): BreadcrumbRouteInfo {
 
   return {
     pathname,
+    itemType,
+    supportsVersionContext:
+      itemType !== undefined && VERSION_CONTEXT_ITEM_TYPES.has(itemType),
     detailId: isDetailPage ? idParam(leaf?.params) : undefined,
     isItemListPage,
     isItemDetailPage,

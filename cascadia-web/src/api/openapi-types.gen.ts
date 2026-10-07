@@ -948,6 +948,10 @@ export interface paths {
         put?: never;
         /** Add one or more affected items to a change order */
         post: operations["postApiV1ChangeOrdersByIdAffectedItems"];
+        /**
+         * Remove an affected item from a change order
+         * @description Address the affected-items row with itemId, or the logical item with itemMasterId. Set discardBranchChanges=true to discard its ECO working copy and checkout as well.
+         */
         delete: operations["deleteApiV1ChangeOrdersByIdAffectedItems"];
         options?: never;
         head?: never;
@@ -7461,7 +7465,11 @@ export interface operations {
     };
     deleteApiV1ChangeOrdersByIdAffectedItems: {
         parameters: {
-            query?: never;
+            query?: {
+                itemId?: string;
+                itemMasterId?: string;
+                discardBranchChanges?: "true" | "false";
+            };
             header?: never;
             path: {
                 id: string;
@@ -7470,6 +7478,19 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            success: boolean;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Software } from '@cascadia/commons/items/types/software'
 import type { SoftwareDetailTab } from '@/components/software/SoftwareDetail'
+import type { ItemDeleteIntent } from '@/components/items/itemBranchActions'
+import { deleteItemByIntent } from '@/components/items/itemBranchActions'
 import {
   SOFTWARE_DETAIL_TABS,
   SoftwareDetail,
@@ -80,15 +82,32 @@ function SoftwareDetailPage() {
     await invalidate('software')
   }
 
-  const handleDelete = async () => {
+  const handleDelete = async (intent: ItemDeleteIntent) => {
     if (!software.id) return
 
-    await apiFetch(`/api/v1/software/${software.id}`, {
-      method: 'DELETE',
+    await deleteItemByIntent({
+      itemId: software.id,
+      mainDeletePath: `/api/v1/software/${software.id}`,
+      intent,
     })
 
-    showSuccess('Software deleted', `${software.itemNumber} has been deleted`)
-    await invalidate('software')
+    await invalidate('software', 'change-orders')
+    if (intent.kind === 'change-order') {
+      showSuccess(
+        'Software removed from ECO',
+        `${software.itemNumber} is no longer an affected item`,
+      )
+      return
+    }
+
+    showSuccess(
+      intent.kind === 'branch'
+        ? 'Branch deletion recorded'
+        : 'Software deleted',
+      intent.kind === 'branch'
+        ? `${software.itemNumber} has been deleted on this branch`
+        : `${software.itemNumber} has been deleted`,
+    )
     navigate({ to: '/software' })
   }
 

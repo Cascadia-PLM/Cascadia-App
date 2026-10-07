@@ -19,6 +19,7 @@ import type { Part } from '@cascadia/commons/items/types/part'
 import type { Design } from '@cascadia/commons/types/design'
 import type { EnrichmentResult } from '@/components/items/useDropEnrichment'
 import type { EnrichmentSources } from '@/components/items/enrichment-sources'
+import type { ItemDeleteIntent } from '@/components/items/itemBranchActions'
 import { PageContainer } from '@/components/layout'
 import { PartRelationshipsTab } from '@/components/parts/PartRelationshipsTab'
 import { PartVariantsTab } from '@/components/variants/PartVariantsTab'
@@ -29,6 +30,7 @@ import { PhaseBadge } from '@/components/items/PhaseBadge'
 import { ImageGallery, useItemImages } from '@/components/vault'
 import { WorkInstructionsForPartPanel } from '@/components/work-instructions'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
+import { resolveItemBranchActions } from '@/components/items/itemBranchActions'
 import {
   PartCADHiddenPrompt,
   PartCADSection,
@@ -157,8 +159,11 @@ interface PartDetailProps {
     branchId?: string,
     options?: PartSaveOptions,
   ) => Promise<void>
-  /** Callback when part is deleted */
-  onDelete?: () => Promise<void>
+  /**
+   * Delete the Part itself, delete it on a workspace branch, or remove it
+   * from the ECO represented by the selected version context.
+   */
+  onDelete?: (intent: ItemDeleteIntent) => Promise<void>
   /** Callback when user cancels (navigates back) */
   onCancel: () => void
   /** Whether a save operation is in progress */
@@ -385,18 +390,27 @@ export function PartDetail({
   }
 
   // Action handlers
-  // Released lineage on main is revised through a change order (the
-  // CheckoutDialog); membership comes from the lifecycle's mappings
+  // Once a design's main is protected, every Driven item enters a branch
+  // before editing. Released lineage is revised; an unreleased Draft is added
+  // to the selected ECO as a first release (or checked out to a workspace).
   const { isReleasedFamily: isReleasedLineage } = useReleasedFamily(
     'Part',
     currentPart.state,
   )
-  const needsCheckout =
-    !isCreateMode && isReleasedLineage && context.type === 'main'
-
+  const branchActions = resolveItemBranchActions({
+    itemLabel: 'Part',
+    itemNumber: currentPart.itemNumber,
+    itemMasterId: currentPart.masterId,
+    isCreateMode,
+    isReleasedFamily: isReleasedLineage,
+    isMainProtected: editContext?.isMainProtected ?? false,
+    context,
+    branch: contextBranch,
+  })
+  const { needsCheckout, editButtonLabel } = branchActions
   // The server-side edit lock behind the Edit button. The hook reads where the
-  // lock lives off `editContext`, so released-on-main resolves to no lock
-  // branch at all and the Edit button becomes Revise (the CheckoutDialog).
+  // lock lives off `editContext`, so protected main resolves to no lock
+  // branch at all and the Edit button opens the CheckoutDialog.
   const editLock = useEditLock({
     itemId: isCreateMode ? undefined : currentPart.id,
     context,
@@ -500,22 +514,26 @@ export function PartDetail({
     if (!onDelete || !currentPart.id) return
 
     confirm({
-      title: 'Delete Part',
-      description: `Are you sure you want to delete ${currentPart.itemNumber}? This action cannot be undone.`,
-      actionLabel: 'Delete',
+      title: branchActions.deleteTitle,
+      description: branchActions.deleteDescription,
+      actionLabel: branchActions.deleteButtonLabel,
       cancelLabel: 'Cancel',
       variant: 'destructive',
-      onConfirm: onDelete,
+      onConfirm: async () => {
+        await onDelete(branchActions.deleteIntent)
+        if (branchActions.deleteIntent.kind === 'change-order') {
+          setContext({ type: 'main' })
+        }
+      },
     })
   }
-
   // Get reason for disabled Edit button
   const getEditDisabledReason = (): string | undefined => {
     // Ordered by what actually stops the click. Someone else's lock stops
-    // every path including Revise, so it is asked first. Then Revise: a
-    // released item on a protected main is not blocked at all, since the
-    // button opens the CheckoutDialog and revises onto a branch. What is left
-    // is the context itself.
+    // every path including branch checkout, so it is asked first. A Driven
+    // item on protected main is not blocked by the context itself: the button
+    // opens CheckoutDialog, which either revises released lineage or adds an
+    // unreleased item to a branch for its first release.
     if (editLock.lockedByOther) {
       return `Checked out by ${editLock.lockHolderLabel}`
     }
@@ -690,16 +708,11 @@ export function PartDetail({
                               }
                             >
                               {needsCheckout ? (
-                                <>
-                                  <GitBranch className="h-4 w-4 mr-2" />
-                                  Revise
-                                </>
+                                <GitBranch className="h-4 w-4 mr-2" />
                               ) : (
-                                <>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </>
+                                <Edit className="h-4 w-4 mr-2" />
                               )}
+                              {editButtonLabel}
                             </Button>
                           </span>
                         </TooltipTrigger>
@@ -718,26 +731,24 @@ export function PartDetail({
                       }
                     >
                       {needsCheckout ? (
-                        <>
-                          <GitBranch className="h-4 w-4 mr-2" />
-                          Revise
-                        </>
+                        <GitBranch className="h-4 w-4 mr-2" />
                       ) : (
-                        <>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </>
+                        <Edit className="h-4 w-4 mr-2" />
                       )}
+                      {editButtonLabel}
                     </Button>
                   )}
                   {onDelete && (
                     <Button
                       variant="destructive"
                       onClick={handleDelete}
-                      disabled={!isEditable}
+                      disabled={
+                        !isEditable ||
+                        (context.type === 'branch' && !contextBranch)
+                      }
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      {branchActions.deleteButtonLabel}
                     </Button>
                   )}
                   {!isCreateMode && (

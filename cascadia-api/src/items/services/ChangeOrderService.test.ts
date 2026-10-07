@@ -948,7 +948,7 @@ describe('ChangeOrderService', () => {
       const changeOrder = await createChangeOrder()
       const part = await createPart({ state: 'Released' })
 
-      const affected = await ChangeOrderService.addAffectedItem(
+      await ChangeOrderService.addAffectedItem(
         changeOrder.id,
         { affectedItemId: part.id, changeAction: 'revise' },
         user.id,
@@ -964,9 +964,9 @@ describe('ChangeOrderService', () => {
           ),
         )
 
-      await ChangeOrderService.removeAffectedItem(
+      await ChangeOrderService.removeAffectedItemByMasterId(
         changeOrder.id,
-        affected.id!,
+        part.masterId,
         {
           discardBranchChanges: true,
         },
@@ -1004,7 +1004,21 @@ describe('ChangeOrderService', () => {
             .from(branchItemsTable)
             .where(eq(branchItemsTable.itemMasterId, part.masterId))
         : []
-      expect(remaining.filter((r) => r.changeType !== null)).toHaveLength(0)
+      expect(remaining).toHaveLength(0)
+
+      // Removing scope also makes the item-specific ECO context unavailable.
+      // The resolver returns every design branch annotated with `exists`, and
+      // the UI only offers contexts where that flag is not false. A neutral
+      // branch_items row here would incorrectly leave the context selectable.
+      const contexts = await VersionResolver.getAvailableContextsForItem(
+        part.masterId,
+        designId,
+      )
+      expect(
+        contexts.branches.some(
+          (branch) => branchIds.includes(branch.id) && branch.exists,
+        ),
+      ).toBe(false)
     })
 
     it('refuses removal once ECO scope is locked', async () => {

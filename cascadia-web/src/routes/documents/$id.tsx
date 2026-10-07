@@ -6,6 +6,8 @@ import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Document } from '@cascadia/commons/items/types/document'
 import type { DocumentDetailTab } from '@/components/documents/DocumentDetail'
+import type { ItemDeleteIntent } from '@/components/items/itemBranchActions'
+import { deleteItemByIntent } from '@/components/items/itemBranchActions'
 import {
   DOCUMENT_DETAIL_TABS,
   DocumentDetail,
@@ -58,15 +60,32 @@ function DocumentDetailPage() {
     await invalidate('documents')
   }
 
-  const handleDelete = async () => {
+  const handleDelete = async (intent: ItemDeleteIntent) => {
     if (!document.id) return
 
-    await apiFetch(`/api/v1/documents/${document.id}`, {
-      method: 'DELETE',
+    await deleteItemByIntent({
+      itemId: document.id,
+      mainDeletePath: `/api/v1/documents/${document.id}`,
+      intent,
     })
 
-    showSuccess('Document deleted', `${document.itemNumber} has been deleted`)
-    await invalidate('documents')
+    await invalidate('documents', 'change-orders')
+    if (intent.kind === 'change-order') {
+      showSuccess(
+        'Document removed from ECO',
+        `${document.itemNumber} is no longer an affected item`,
+      )
+      return
+    }
+
+    showSuccess(
+      intent.kind === 'branch'
+        ? 'Branch deletion recorded'
+        : 'Document deleted',
+      intent.kind === 'branch'
+        ? `${document.itemNumber} has been deleted on this branch`
+        : `${document.itemNumber} has been deleted`,
+    )
     navigate({ to: '/documents' })
   }
 

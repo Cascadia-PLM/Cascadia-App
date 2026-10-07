@@ -399,15 +399,20 @@ app.get(
       let branchType: string | null = branchInfo?.branchType ?? null
       let isMainProtected = false
 
-      if (!branchInfo && item.designId) {
+      if (item.designId) {
+        // Protection describes main, independently of where this item's lock
+        // currently lives. A Draft checked out to an ECO can still point its
+        // branch row at the main item until the first save; treating the mere
+        // presence of that row as "main is unprotected" re-enabled the global
+        // Edit/Delete buttons when the Part was reopened without ?branch=.
+        //
         // Exempt types (work instructions) take the lock on main regardless of
         // protection — they are editable there by design, so reporting main as
-        // protected would push the client into a revise-through-an-ECO dialog
-        // for an item that needs no ECO.
+        // protected would push the client into an ECO flow they do not use.
         isMainProtected = (await isBranchProtectionExempt(item.itemType))
           ? false
           : await BranchService.isMainBranchProtected(item.designId)
-        if (!isMainProtected) {
+        if (!branchInfo && !isMainProtected) {
           const mainBranch = await BranchService.getMainBranch(item.designId)
           lockBranchId = mainBranch?.id ?? null
           branchType = lockBranchId ? 'main' : null

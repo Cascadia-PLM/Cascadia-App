@@ -38,7 +38,7 @@ interface Branch {
   branchType: 'main' | 'eco' | 'workspace' | 'release'
   isArchived: boolean
   isLocked: boolean
-  changeOrderItemId?: string
+  changeOrderItemId?: string | null
 }
 
 interface CheckoutDialogProps {
@@ -202,8 +202,9 @@ export function CheckoutDialog({
             Check Out Item
           </DialogTitle>
           <DialogDescription>
-            Check out <strong>{itemNumber}</strong> to a branch for editing.
-            Released items must be edited on an ECO or workspace branch.
+            Check out <strong>{itemNumber}</strong> to an ECO or workspace
+            branch for editing. On an ECO branch, the item is added to that
+            change order automatically.
           </DialogDescription>
         </DialogHeader>
 

@@ -1496,6 +1496,33 @@ export class ChangeOrderService {
   }
 
   /**
+   * Remove an item from a change order by logical item identity.
+   *
+   * Item detail pages know the item's master and the ECO that owns the
+   * selected branch, not the synthetic affected-items row id. Keeping this
+   * lookup in the service preserves the same change-order scoping as the
+   * row-id entry point and avoids exposing a second client-side list/read
+   * race merely to discover that implementation id.
+   */
+  static async removeAffectedItemByMasterId(
+    changeOrderId: string,
+    itemMasterId: string,
+    options?: { discardBranchChanges?: boolean },
+  ): Promise<void> {
+    const affected = await this.findExistingAffectedItem(
+      changeOrderId,
+      itemMasterId,
+    )
+    if (!affected?.id) {
+      throw new NotFoundError('Affected item', itemMasterId, {
+        operation: 'removeAffectedItemByMasterId',
+      })
+    }
+
+    await this.removeAffectedItem(changeOrderId, affected.id, options)
+  }
+
+  /**
    * Remove an affected item from a change order.
    *
    * Scoped to the owning change order: an affected-item row id alone is not
@@ -1540,64 +1567,60 @@ export class ChangeOrderService {
     }
     const changeOrderBranchIds = [...designIdByBranch.keys()]
 
-    const branchChanges =
-      affected.affectedItemMasterId && changeOrderBranchIds.length > 0
-        ? await db
-            .select()
-            .from(branchItems)
-            .where(
-              and(
-                inArray(branchItems.branchId, changeOrderBranchIds),
-                eq(branchItems.itemMasterId, affected.affectedItemMasterId),
-                isNotNull(branchItems.changeType),
-              ),
-            )
-        : []
-
-    if (branchChanges.length > 0 && !options?.discardBranchChanges) {
-      throw new ValidationError(
-        'This item has unreleased changes on the ECO branch. Removing it from the ' +
-          'affected items list alone would leave those changes to release anyway. ' +
-          'Discard the branch changes explicitly to remove it.',
-        undefined,
-        { operation: 'removeAffectedItem', itemId: affectedItemId },
-      )
-    }
-
     await db.transaction(async (tx) => {
-      for (const branchChange of branchChanges) {
+      // The scope row and every tracking row for this master leave together.
+      // A null-change row still matters: it can carry the checkout that the
+      // user took before leaving the page, and leaving it behind keeps the ECO
+      // in the item's context picker even though the item is no longer in the
+      // reviewed scope.
+      const trackedRows =
+        affected.affectedItemMasterId && changeOrderBranchIds.length > 0
+          ? await tx
+              .select()
+              .from(branchItems)
+              .where(
+                and(
+                  inArray(branchItems.branchId, changeOrderBranchIds),
+                  eq(branchItems.itemMasterId, affected.affectedItemMasterId),
+                ),
+              )
+              .for('update')
+          : []
+
+      if (
+        trackedRows.some((row) => row.changeType !== null) &&
+        !options?.discardBranchChanges
+      ) {
+        throw new ValidationError(
+          'This item has unreleased changes on the ECO branch. Removing it from the ' +
+            'affected items list alone would leave those changes to release anyway. ' +
+            'Discard the branch changes explicitly to remove it.',
+          undefined,
+          { operation: 'removeAffectedItem', itemId: affectedItemId },
+        )
+      }
+
+      for (const trackedRow of trackedRows) {
         // A lock on the change goes with it, recorded as a cancellation: the
         // edits it guarded are being discarded.
-        const designId = designIdByBranch.get(branchChange.branchId)
+        const designId = designIdByBranch.get(trackedRow.branchId)
         if (designId) {
           await releaseBranchLocks(
             tx,
             {
-              branchId: branchChange.branchId,
+              branchId: trackedRow.branchId,
               designId,
-              itemMasterIds: [branchChange.itemMasterId],
+              itemMasterIds: [trackedRow.itemMasterId],
             },
             'checkout_cancelled',
           )
         }
 
-        if (branchChange.changeType === 'added') {
-          // Nothing on main to fall back to - drop the tracking row outright
-          await tx
-            .delete(branchItems)
-            .where(eq(branchItems.id, branchChange.id))
-        } else {
-          // Reset to the version the branch forked from
-          await tx
-            .update(branchItems)
-            .set({
-              currentItemId: branchChange.baseItemId,
-              changeType: null,
-              checkedOutBy: null,
-              checkedOutAt: null,
-            })
-            .where(eq(branchItems.id, branchChange.id))
-        }
+        // Removing the item from an ECO means the branch no longer carries
+        // it. Resetting a revised row to changeType=null used to leave a
+        // baseline tracking row behind; VersionResolver then correctly saw a
+        // branch row and continued offering the removed ECO on the Part.
+        await tx.delete(branchItems).where(eq(branchItems.id, trackedRow.id))
       }
 
       await tx

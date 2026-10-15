@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type {
@@ -15,6 +15,7 @@ import {
   gridUrlStateFromSearch,
   toGridParams,
 } from '@/query/grid-params'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 
 export type { GridParams as ServerDataGridParams } from '@/query/grid-params'
 export type {
@@ -99,21 +100,7 @@ export function useServerDataGrid<T>(
     [searchParams, defaultPageSize],
   )
 
-  // Debounced global search state
-  const [debouncedSearch, setDebouncedSearch] = useState(urlState.search)
-  const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
-
-  // Update debounced search when URL search changes
-  useEffect(() => {
-    clearTimeout(debounceTimerRef.current)
-    debounceTimerRef.current = setTimeout(() => {
-      setDebouncedSearch(urlState.search)
-    }, searchDebounceMs)
-
-    return () => {
-      clearTimeout(debounceTimerRef.current)
-    }
-  }, [urlState.search, searchDebounceMs])
+  const debouncedSearch = useDebouncedValue(urlState.search, searchDebounceMs)
 
   // Build the server-facing params that form the query key
   const gridParams: GridParams = useMemo(

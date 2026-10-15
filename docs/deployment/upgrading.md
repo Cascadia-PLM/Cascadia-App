@@ -304,32 +304,33 @@ after an upgrade.
 
 ## Consolidating unpublished migrations
 
-A migration that has never been published has never reached a database
-other than a development one upstream. Before it is first published, a run
-of them may be folded into a single file — which is what happened to the
+A migration is _unpublished_, in this document's sense, while `main` has
+never carried it: it has reached no database other than a development one.
+Before it first lands on `main`, a run of them may be folded into a single
+file — which is what happened to the
 twenty-five (nineteen in the community edition) that the two remediation
 programs produced after `v0.5.0`. It happened in two passes: the first
 program's were folded while the second was still running, and the result was
 folded again with the second's into the same `0001_remediation`. Folding a
-file that is itself a fold is fine; what matters is that nothing in it was
-ever published.
+file that is itself a fold is fine; what matters is that nothing in it had
+ever reached `main`.
 
 This is the standing practice, not an occasional cleanup: each wave of
-development arrives in this repository as **one** new migration per edition,
-folded from however many the work minted upstream. Development iterates
-freely there; what publishes is the consolidated result.
+development reaches `main` as **one** new migration per edition, folded from
+however many the work minted on its branch. Development iterates freely
+there; what lands is the consolidated result.
 
 This is allowed because it is not an edit in the sense above: no database
 that ran those files ends up disagreeing with one that runs the consolidated
 one. Three things make that true, and all three have to hold:
 
-1. **Every folded migration is unpublished.** A release tag is not the line —
-   publication is. A production database can only be tracking what this
-   repository's `main` has carried, tagged or not, so check what `main`
-   already holds under `cascadia-app*/drizzle/`: anything there stays where it is,
-   forever. (This is stricter than the release check the first fold used —
+1. **Every folded migration is one `main` has never carried.** A release tag
+   is not the line — `main` is. A production database can only be tracking
+   what `main` has carried, tagged or not, so check what `main` already holds
+   under `cascadia-app*/drizzle/`: anything there stays where it is, forever.
+   (This is stricter than the release check the first fold used —
    `git ls-tree -r --name-only v0.5.0 -- cascadia-app*/drizzle/` — which is only
-   equivalent while nothing has been published since the tag.)
+   equivalent while nothing has landed since the tag.)
 2. **The consolidated file keeps the `when` of the _last_ migration it
    folds.** Drizzle applies on `created_at < folderMillis`, so the timestamp
    chosen decides exactly which databases skip the file, and only one choice
@@ -416,8 +417,8 @@ for.
   new migration.
 - **Consolidating unpublished migrations is the one exception**, and it is a
   deliberate operation rather than an edit — see "Consolidating unpublished
-  migrations" above. It happens once per wave, right before the publish that
-  ships it, so each publish carries at most one new migration per edition.
+  migrations" above. It happens once per wave, right before the release that
+  ships it, so each release carries at most one new migration per edition.
 - The enterprise migrations are proprietary (they name module tables) and
-  never publish; the community migrations under `cascadia-app/drizzle/`
-  ship to the public repo. the publish pipeline's verification step checks both directions.
+  exist only in that edition's fork; the community migrations under
+  `cascadia-app/drizzle/` are developed here, and the fork merges them.

@@ -18,11 +18,11 @@ This is `Cascadia-PLM/Cascadia-App`, the **public AGPL edition** of Cascadia PLM
 It is dual licensed by Cascadia PLM LLC: this repository is the AGPL v3 half, and
 a proprietary edition adds separately licensed modules on top of the same core.
 
-**This tree is generated.** The `cascadia-*` packages and `cascadia-app` are composed and
-published from the upstream repository, so a change lands there first and arrives
-here through the publish pipeline. Contributions are still made by pull request
-against this repository — see [CONTRIBUTING.md](./CONTRIBUTING.md) for how an
-accepted one reaches `main`, and why it is closed rather than merged.
+**This repository is the upstream for core.** Every change to the `cascadia-*`
+packages and `cascadia-app` lands here first, by pull request, and merges here.
+The proprietary edition is a fork of this repository that adds its modules on
+top of the same core and merges `main` from here; nothing flows the other way.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to contribute.
 
 An edition that composes extra modules keeps its own guide beside its
 composition root (`cascadia-app-enterprise/CLAUDE.md`). When that file exists,

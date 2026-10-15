@@ -64,9 +64,9 @@ jobs:
         run: npm run format:check
 
       # Every file carries the SPDX header its edition requires. This matters
-      # because the OSS publish pipeline copies core files downstream verbatim —
-      # there is no header-rewriting step, by design — so a wrong header here
-      # becomes a wrong licence there.
+      # because the proprietary edition merges these files verbatim — there is
+      # no header-rewriting step, by design — so a wrong header here becomes a
+      # wrong licence there.
       - name: Check license headers
         run: npm run license:check
 

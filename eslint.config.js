@@ -127,15 +127,15 @@ export default [
       '@typescript-eslint/require-await': 'warn',
     },
   },
-  // The plain-ESM tooling: every script, and the publish pipeline.
+  // The plain-ESM tooling: every script.
   //
-  // All 22 of these were matched by `'**/*.mjs'` in `ignores` — including
-  // `publish/overlay.mjs`, the file that decides what reaches the public
-  // repository. A duplicate `SUBSTITUTE` key there silently discarded a rule and
-  // left `ARG APP=cascadia-enterprise` in both published Dockerfiles;
-  // `no-dupe-keys` is a core rule and would have said so the moment it was
-  // written. The most consequential file in the repository was the least
-  // checked.
+  // All of these were matched by `'**/*.mjs'` in `ignores` — including, when
+  // this edition was still published from a private tree, the overlay that
+  // decided what reached it. A duplicate `SUBSTITUTE` key there silently
+  // discarded a rule and left `ARG APP=cascadia-enterprise` in both published
+  // Dockerfiles; `no-dupe-keys` is a core rule and would have said so the
+  // moment it was written. The most consequential file in the repository was
+  // the least checked.
   //
   // Type-aware rules stay off. `checkJs` is unset, so the program carries no
   // real types for these files and the type-directed rules either crash for
@@ -143,7 +143,7 @@ export default [
   // them: duplicate keys, unused variables and undefined references are all
   // syntactic.
   {
-    files: ['scripts/**/*.mjs', 'publish/**/*.mjs'],
+    files: ['scripts/**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
     rules: {
       ...tseslint.configs.disableTypeChecked.rules,

@@ -14,9 +14,9 @@
  * script naming all of them would fail there with a compose build error about
  * a missing context.
  *
- * Presence on disk is the test rather than a flag, for the same reason
- * `core:standalone` deletes the packages instead of unimporting them: a
- * directory that is not there cannot be misconfigured into being there.
+ * Presence on disk is the test rather than a flag, for the same reason the
+ * edition itself is resolved by probing for its directory: a directory that
+ * is not there cannot be misconfigured into being there.
  */
 
 import { execFileSync } from 'node:child_process'

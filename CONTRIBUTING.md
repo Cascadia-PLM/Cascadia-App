@@ -40,34 +40,15 @@ This project adheres to the [Contributor Covenant Code of Conduct](./CODE_OF_CON
 
 ### How your pull request gets merged
 
-Your pull request merges here, on `main`, as the merge button says. It is worth
-knowing what happens afterwards, because one step is unusual.
+Your pull request merges here, on `main`, as the merge button says, and that is
+the end of it: this repository is the upstream for Cascadia's core. Review, CI
+and discussion all happen here, in public, on your branch; a maintainer merges
+it, and your commits stay yours, author and all.
 
-This repository is **generated**. Cascadia is dual licensed, and both editions
-are built from a single upstream tree in which this AGPL edition is one package.
-Publishing copies that package here; it does not merge in the other direction.
-So a change that lands only here would be reverted by the next publish, and the
-publisher refuses to run until the upstream tree reproduces it.
-
-What that means in practice:
-
-1. You open the pull request here, as normal. Review, CI and discussion all
-   happen here, in public, on your branch.
-2. A maintainer merges it. Your commits are yours — the merge preserves the
-   author on every one of them — and the review thread stays attached to them.
-3. The maintainer cherry-picks the same commits upstream, again preserving you
-   as the author, and the next publish confirms that upstream and this
-   repository now hold the same tree.
-
-Step 3 is a maintainer's chore, not yours, and nothing about it changes your
-pull request. If it turns up something that has to change — a conflict with
-unreleased upstream work, usually — you will hear about it on the thread.
-
-A **branch** here whose commits you did not push is a maintainer's, not a
-mistake: work in progress and contributors' branches both get published to
-`feature/…` and `fix/…` so they can be read and reviewed in the open before
-anything reaches `main`. Only `main` is generated in the strict sense; those
-branches are for looking at.
+Cascadia is dual licensed. The proprietary edition is a fork of this repository
+that adds separately licensed modules on top of the same core and merges `main`
+from here. Nothing flows the other way: a core change is made here or it is not
+made, so there is no second tree for your change to be reconciled with.
 
 ## Development Setup
 

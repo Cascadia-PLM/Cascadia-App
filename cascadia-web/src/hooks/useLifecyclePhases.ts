@@ -1,77 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useEffect, useState } from 'react'
-import type {
-  ChangeActionMappings,
+import { useQuery } from '@tanstack/react-query'
+import type { LifecyclePhaseConfig } from '@cascadia/commons/types/lifecycle'
+import { lifecycleByItemTypeQuery } from '@/query'
+
+export type PhaseInfo = Pick<
   LifecyclePhaseConfig,
-  RevisionScheme,
-} from '@cascadia/commons/types/lifecycle'
-import type { LifecycleState } from '@cascadia/commons/lifecycles/types'
-import { apiFetch } from '@/api/client'
-
-interface LifecycleData {
-  lifecycleId: string | null
-  name: string | null
-  lifecycleType?: 'Free' | 'Driven' | 'Driving' | null
-  phases: Array<LifecyclePhaseConfig>
-  states: Array<LifecycleState>
-  revisionScheme: RevisionScheme | null
-  changeActionMappings?: ChangeActionMappings
-}
-
-export interface PhaseInfo {
-  id: string
-  name: string
-  color?: string
-  order: number
-}
-
-// Module-level cache: deduplicates requests across multiple hook instances
-const lifecycleCache = new Map<string, Promise<LifecycleData | null>>()
-
-function fetchLifecycle(itemType: string): Promise<LifecycleData | null> {
-  const existing = lifecycleCache.get(itemType)
-  if (existing) return existing
-
-  const promise = apiFetch<{ data: LifecycleData }>(
-    `/api/v1/lifecycles/by-item-type/${encodeURIComponent(itemType)}`,
-  )
-    .then((res) => res.data)
-    .catch(() => null)
-
-  lifecycleCache.set(itemType, promise)
-  return promise
-}
+  'id' | 'name' | 'color' | 'order'
+>
 
 /**
- * Client-side hook for efficient lifecycle phase resolution.
- * Fetches lifecycle definition once per item type using a module-level cache
- * so data grids with many rows only make one API call.
+ * Resolve phases through the same query used by route loaders and lifecycle
+ * editing. Invalidation refreshes every badge instead of leaving a second
+ * module cache with the old definition for the rest of the session.
  */
 export function useLifecyclePhases(itemType?: string) {
-  const [data, setData] = useState<LifecycleData | null>(null)
-  const [loading, setLoading] = useState(!!itemType)
-
-  useEffect(() => {
-    if (!itemType) {
-      setLoading(false)
-      return
-    }
-
-    let cancelled = false
-
-    fetchLifecycle(itemType).then((result) => {
-      if (!cancelled) {
-        setData(result)
-        setLoading(false)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [itemType])
+  const query = useQuery({
+    ...lifecycleByItemTypeQuery(itemType ?? ''),
+    enabled: Boolean(itemType),
+  })
+  const data = query.data ?? null
+  const loading = Boolean(itemType) && query.isPending
 
   /**
    * Resolve the phase for a given state. Stored item state is a state ID
@@ -80,7 +30,7 @@ export function useLifecyclePhases(itemType?: string) {
    * Returns null if no phase is assigned to that state.
    */
   const resolvePhase = (state: string): PhaseInfo | null => {
-    if (!data?.phases || data.phases.length === 0) return null
+    if (!data?.phases.length) return null
 
     const match = data.states.find((s) => s.id === state || s.name === state)
     if (!match?.phaseId) return null

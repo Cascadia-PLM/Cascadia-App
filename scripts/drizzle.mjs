@@ -40,8 +40,8 @@ import { reconcileIndexPredicates } from './reconcile-index-predicates.mjs'
 // editions. Load the root file here instead; the child inherits `process.env`.
 //
 // A real environment variable still wins: dotenv does not overwrite what is
-// already set, which is what lets CI and `verify-oss.mjs` pass a scratch
-// database without a file on disk.
+// already set, which is what lets CI pass a scratch database without a file
+// on disk.
 loadEnv({ path: resolve(import.meta.dirname, '..', '.env'), quiet: true })
 
 const args = process.argv.slice(2)

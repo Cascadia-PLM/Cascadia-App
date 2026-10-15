@@ -33,10 +33,9 @@ export default defineConfig({
     // and route tests that never touch a DOM; only the .test.tsx component
     // files get jsdom. The split is the file extension — name a component
     // test `.test.tsx` or it runs under node and `document` is undefined.
-    // Include patterns: `publish/` is not a package, but the overlay that
-    // turns this tree into the public one is exactly the sort of thing that
-    // rots unnoticed — nothing else exercises it until a publish. `scripts/`
-    // is there for the same reason.
+    // Include patterns: `scripts/` is not a package, but root tooling is
+    // exactly the sort of thing that rots unnoticed, so its tests run here
+    // too.
     projects: [
       {
         extends: true,
@@ -46,7 +45,6 @@ export default defineConfig({
           setupFiles: ['./cascadia-api/src/__tests__/setup.node.ts'],
           include: [
             'cascadia-*/src/**/*.{test,spec}.ts',
-            'publish/*.{test,spec}.ts',
             // Recursive, and `.mjs` as well as `.ts`, so the two hand-written
             // ESLint rules' RuleTester suites run. They sit in
             // `scripts/eslint-rules/` and are `.mjs` because the rules they

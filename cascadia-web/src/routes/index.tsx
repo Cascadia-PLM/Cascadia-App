@@ -57,7 +57,7 @@ function DashboardPage() {
 
   // Trigger guided tour for first-time users after login
   useEffect(() => {
-    triggerFirstTimeTour()
+    return triggerFirstTimeTour()
   }, [triggerFirstTimeTour])
 
   // Get recent parts (last 5)

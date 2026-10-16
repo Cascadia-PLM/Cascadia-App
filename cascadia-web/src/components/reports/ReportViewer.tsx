@@ -27,6 +27,7 @@ import {
 } from '@/components/ui'
 import { reportExecutionQuery } from '@/query'
 import { apiErrorFromResponse } from '@/api/client'
+import { downloadBlob } from '@/utils/download'
 
 interface ReportViewerProps {
   report: Report
@@ -76,16 +77,7 @@ export function ReportViewer({ report }: ReportViewerProps) {
         }
       }
 
-      // Download the file
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      downloadBlob(await response.blob(), filename)
     } catch (exportFailure) {
       setExportError(
         exportFailure instanceof Error

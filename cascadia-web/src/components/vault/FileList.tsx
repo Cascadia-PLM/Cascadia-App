@@ -56,6 +56,7 @@ import { FileApplicabilityPicker } from '@/components/vault/FileApplicabilityPic
 import { OptionConditionChips } from '@/components/variants/OptionConditionChips'
 import { Slot } from '@/ui/slot-registry'
 import { apiErrorFromResponse } from '@/api/client'
+import { downloadBlob } from '@/utils/download'
 
 export interface FileRecord {
   id: string
@@ -158,18 +159,7 @@ export function FileList({
         throw new Error('Download failed')
       }
 
-      // Create a blob from the response
-      const blob = await response.blob()
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = file.originalFileName
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      downloadBlob(await response.blob(), file.originalFileName)
     } catch (err) {
       handleError(err, { title: 'Download failed' })
     }

@@ -6,6 +6,7 @@ import {
   formatPartDesignation,
 } from '@cascadia/commons/types/variants'
 import type { BOMTreeNode } from './types'
+import { downloadDatedCsv } from '@/utils/download'
 
 interface ExportOptions {
   filename?: string
@@ -154,15 +155,7 @@ export function exportBomTreeToCsv(
     ...rows.map((row) => row.join(',')),
   ].join('\n')
 
-  // Create and download file
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(link.href)
+  downloadDatedCsv(csvContent, filename)
 }
 
 /**
@@ -211,12 +204,5 @@ export function exportAffectedItemsToCsv(
     ...rows.map((row) => row.join(',')),
   ].join('\n')
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(link.href)
+  downloadDatedCsv(csvContent, filename)
 }

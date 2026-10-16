@@ -68,6 +68,7 @@ import type {
 } from '@tanstack/react-table'
 import type { ReactNode, SetStateAction } from 'react'
 import { cn } from '@/utils'
+import { downloadDatedCsv } from '@/utils/download'
 
 // Per-column presentation hints read by DataGrid when rendering headers/cells.
 // TanStack ships ColumnMeta as an empty interface for consumers to augment.
@@ -802,15 +803,7 @@ export function DataGrid<T>({
       ...csvRows.map((row) => row.join(',')),
     ].join('\n')
 
-    // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `${exportFilename}-${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(link.href)
+    downloadDatedCsv(csvContent, exportFilename)
   }, [table, columns, exportFilename])
 
   return (

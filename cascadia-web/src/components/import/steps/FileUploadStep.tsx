@@ -21,6 +21,7 @@ import type {
 import { Badge, Button } from '@/components/ui'
 import { cn } from '@/utils'
 import { apiErrorFromResponse } from '@/api/client'
+import { downloadBlob } from '@/utils/download'
 
 interface FileUploadStepProps {
   itemType?: ImportItemType
@@ -118,15 +119,10 @@ export function FileUploadStep({
         )
       }
 
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${config.pluralLabel.toLowerCase()}-import-template.csv`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      downloadBlob(
+        await response.blob(),
+        `${config.pluralLabel.toLowerCase()}-import-template.csv`,
+      )
     } catch {
       setError('Failed to download template')
     }

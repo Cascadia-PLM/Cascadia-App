@@ -21,6 +21,7 @@ import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { fileListQuery, useInvalidateResources } from '@/query'
 import { apiErrorFromResponse, apiFetch } from '@/api/client'
+import { downloadBlob } from '@/utils/download'
 
 // Search schema for URL validation
 const filesSearchSchema = z.object({
@@ -76,18 +77,7 @@ function FilesListPage() {
         throw await apiErrorFromResponse(response, 'Download failed')
       }
 
-      // Create a blob from the response
-      const blob = await response.blob()
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = file.originalFileName
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      downloadBlob(await response.blob(), file.originalFileName)
     } catch (error) {
       handleError(error, { title: 'Failed to download file' })
     }

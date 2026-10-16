@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { VersionContext } from '@/hooks/useVersionContext'
 import { apiFetch } from '@/api/client'
-import { itemEditContextQuery } from '@/query'
+import { authSessionQuery, itemEditContextQuery } from '@/query'
+import { itemCheckoutQuery } from '@/query/options/checkout'
 
 export interface EditLockStatus {
   isCheckedOut: boolean
@@ -77,30 +78,11 @@ export function useEditLock({
   editContext,
   currentUserId,
 }: UseEditLockOptions) {
-  const [status, setStatus] = useState<EditLockStatus | null>(null)
-  const [sessionUserId, setSessionUserId] = useState<string | undefined>(
-    undefined,
-  )
-
-  // Resolve the current user for "checked out by you" when not provided
-  useEffect(() => {
-    if (currentUserId) return
-    let cancelled = false
-    apiFetch<{ data: { authenticated: boolean; user?: { id: string } } }>(
-      '/api/v1/auth/session',
-    )
-      .then((res) => {
-        if (!cancelled) setSessionUserId(res.data.user?.id)
-      })
-      .catch(() => {
-        if (!cancelled) setSessionUserId(undefined)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [currentUserId])
-
-  const effectiveUserId = currentUserId ?? sessionUserId
+  const { data: session } = useQuery({
+    ...authSessionQuery(),
+    enabled: !currentUserId,
+  })
+  const effectiveUserId = currentUserId ?? session?.user?.id
 
   // The version context decides which branch is being edited; the server
   // decides whether that branch can hold a lock. On main both halves come
@@ -114,28 +96,22 @@ export function useEditLock({
         ? (editContext?.lockBranchId ?? undefined)
         : undefined
 
+  const {
+    data: checkoutStatus,
+    isError,
+    refetch,
+  } = useQuery({
+    ...itemCheckoutQuery(itemId ?? '', lockBranchId ?? ''),
+    retry: false,
+  })
+  // A missing branch item answers 404; there is no lock to show.
+  const status = isError ? null : (checkoutStatus ?? null)
   const refreshStatus =
     useCallback(async (): Promise<EditLockStatus | null> => {
-      if (!itemId || !lockBranchId) {
-        setStatus(null)
-        return null
-      }
-      try {
-        const res = await apiFetch<{ data: { status: EditLockStatus } }>(
-          `/api/v1/items/${itemId}/checkout?branchId=${lockBranchId}`,
-        )
-        setStatus(res.data.status)
-        return res.data.status
-      } catch {
-        // Item may not be tracked on this branch yet — treat as unlocked
-        setStatus(null)
-        return null
-      }
-    }, [itemId, lockBranchId])
-
-  useEffect(() => {
-    void refreshStatus()
-  }, [refreshStatus])
+      if (!itemId || !lockBranchId) return null
+      const result = await refetch()
+      return result.isError ? null : (result.data ?? null)
+    }, [itemId, lockBranchId, refetch])
 
   /** Acquire the edit lock (the Edit button). Throws if held by another user. */
   const acquire = useCallback(async () => {

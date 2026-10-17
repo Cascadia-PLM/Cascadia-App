@@ -42,7 +42,10 @@
 #     the dev compose's cascadia-* volumes.
 #   * The app port is published on 127.0.0.1 only. Running the demo on a remote
 #     VM? Set DEMO_BIND=0.0.0.0 (the admin credential above is public knowledge
-#     — do not do this on an untrusted network).
+#     — do not do this on an untrusted network). The stack serves plain HTTP,
+#     which is why the app runs with COOKIE_SECURE=false: a Secure session
+#     cookie is discarded by the browser on any host but localhost, and every
+#     sign-in at http://<vm>:3000 would loop back to the login page.
 
 name: cascadia-demo
 
@@ -99,6 +102,9 @@ services:
       DATABASE_SSL: disable
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cascadia
       BASE_URL: http://localhost:3000
+      # Plain HTTP, so no Secure flag on the session cookie — see the note on
+      # DEMO_BIND at the top of this file.
+      COOKIE_SECURE: 'false'
       FILE_STORAGE_PATH: /app/storage/files
       VAULT_TYPE: local
       VAULT_ROOT: /app/vault

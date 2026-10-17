@@ -24,6 +24,11 @@ services:
       # Declared, not inherited: a variable this file does not list never
       # reaches the container, whatever .env says.
       TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-0}
+      # Leave unset unless the app is served over plain HTTP on a host other
+      # than localhost (an intranet install with no TLS): there, set it to
+      # false, or the browser discards the session cookie and every sign-in
+      # loops back to the login page. See docs/orchestration/configuration.md.
+      COOKIE_SECURE: ${COOKIE_SECURE:-}
 
       # Vault - local storage (or configure S3)
       VAULT_MODE: embedded

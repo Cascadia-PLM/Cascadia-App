@@ -5,7 +5,7 @@
  * Session cookie builders with conditional Secure flag.
  *
  * In production, cookies include the Secure flag to ensure
- * they are only sent over HTTPS connections.
+ * they are only sent over HTTPS connections — see `secureCookies()`.
  */
 
 interface CookieOptions {
@@ -28,13 +28,34 @@ function buildCookie(options: CookieOptions): string {
   return parts.join('; ')
 }
 
+/**
+ * Whether cookies carry the Secure flag: in production, unless
+ * `COOKIE_SECURE=false` (or `0`) turns it off.
+ *
+ * A browser discards a Secure cookie set over plain HTTP on any host but
+ * localhost, so a deployment served that way — a demo opened by its LAN
+ * address, an intranet install with no TLS — answers sign-in with 200, the
+ * browser stores nothing, and the next page lands back on /login. Such a
+ * deployment has to opt out; one served over HTTPS never should.
+ *
+ * A variable of its own, because `NODE_ENV` cannot be changed on a built
+ * image: the server bundle inlines it at build time (scripts/build-app.mjs)
+ * and the production entry sets it before the app loads. Read per call rather
+ * than at module load, so a test can flip it in-process.
+ */
+export function secureCookies(): boolean {
+  const raw = process.env.COOKIE_SECURE
+  if (raw === 'false' || raw === '0') return false
+  return process.env.NODE_ENV === 'production'
+}
+
 export function buildSessionCookie(token: string): string {
   return buildCookie({
     name: 'session',
     value: token,
     path: '/',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: secureCookies(),
     sameSite: 'Strict',
     maxAge: 28800,
   })
@@ -46,7 +67,7 @@ export function buildClearSessionCookie(): string {
     value: '',
     path: '/',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: secureCookies(),
     sameSite: 'Strict',
     maxAge: 0,
   })

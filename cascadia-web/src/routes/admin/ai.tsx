@@ -25,6 +25,7 @@ import {
 } from '@cascadia/commons/ai/model-catalog'
 import type { AiProviderSettings, AiSettingsEnvVars } from '@/query'
 import type { AiProviderType } from '@cascadia/commons/ai/model-catalog'
+import type { AiSettingsForm } from '@/hooks/useAiSettings'
 import { useAiModels, withSelectedModel } from '@/hooks/useAiModels'
 import { PageContainer } from '@/components/layout'
 import { Slot } from '@/ui/slot-registry'
@@ -45,8 +46,8 @@ import {
   SelectValue,
   Switch,
 } from '@/components/ui'
-import { aiSettingsQuery, useInvalidateResources } from '@/query'
-import { apiFetch } from '@/api/client'
+import { aiSettingsQuery } from '@/query'
+import { useAiSettings } from '@/hooks/useAiSettings'
 
 export const Route = createFileRoute('/admin/ai')({
   component: AISettingsPage,
@@ -54,13 +55,8 @@ export const Route = createFileRoute('/admin/ai')({
     queryClient.ensureQueryData(aiSettingsQuery()),
 })
 
-interface AISettings {
+interface AISettings extends AiSettingsForm {
   id?: string
-  enabled: boolean
-  provider: AiProviderType
-  apiKey: string
-  model: string
-  baseURL?: string
 }
 
 function toProviderType(value: string | undefined): AiProviderType {
@@ -125,23 +121,15 @@ function AIProviderForm({
   initialSettings: AiProviderSettings | null
   envVarsDetected: AiSettingsEnvVars
 }) {
-  const invalidate = useInvalidateResources()
+  const aiSettings = useAiSettings()
   const [settings, setSettings] = useState<AISettings>(() =>
     toFormState(initialSettings),
   )
   const [originalSettings, setOriginalSettings] = useState<AISettings | null>(
     () => (initialSettings ? toFormState(initialSettings) : null),
   )
-  const [saving, setSaving] = useState(false)
-  const [testing, setTesting] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>(
-    'idle',
-  )
-  const [testStatus, setTestStatus] = useState<
-    'idle' | 'success' | 'error' | 'testing'
-  >('idle')
-  const [errorMessage, setErrorMessage] = useState('')
-  const [testMessage, setTestMessage] = useState('')
+  const { saving, testing, saveStatus, testStatus, saveMessage, testMessage } =
+    aiSettings
   const [showApiKey, setShowApiKey] = useState(false)
 
   // A key is reachable server-side when one is stored for this provider or
@@ -170,72 +158,14 @@ function AIProviderForm({
   }
 
   const handleSave = async () => {
-    try {
-      setSaving(true)
-      setSaveStatus('idle')
-      setErrorMessage('')
-
-      const result = await apiFetch<{ data: { settings: { id: string } } }>(
-        '/api/v1/admin/ai-settings',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            enabled: settings.enabled,
-            provider: settings.provider,
-            config: {
-              provider: settings.provider,
-              apiKey: settings.apiKey,
-              model: settings.model,
-              baseURL: settings.baseURL || undefined,
-            },
-          }),
-        },
-      )
-
-      const id = result.data.settings.id
-      setOriginalSettings({ ...settings, id })
-      setSettings((prev) => ({ ...prev, id }))
-      setSaveStatus('success')
-      await invalidate('admin')
-      setTimeout(() => setSaveStatus('idle'), 3000)
-    } catch (error) {
-      console.error('Error saving AI settings:', error)
-      setSaveStatus('error')
-      setErrorMessage((error as Error).message)
-    } finally {
-      setSaving(false)
-    }
+    const id = await aiSettings.save(settings)
+    if (!id) return
+    setOriginalSettings({ ...settings, id })
+    setSettings((prev) => ({ ...prev, id }))
   }
 
   const handleTestConnection = async () => {
-    try {
-      setTesting(true)
-      setTestStatus('testing')
-      setTestMessage('')
-
-      const result = await apiFetch<{ data: { message?: string } }>(
-        '/api/v1/admin/ai-settings/test',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            provider: settings.provider,
-            apiKey: settings.apiKey,
-            model: settings.model,
-            baseURL: settings.baseURL || undefined,
-          }),
-        },
-      )
-
-      setTestStatus('success')
-      setTestMessage(result.data.message ?? 'Connection successful!')
-      setTimeout(() => setTestStatus('idle'), 5000)
-    } catch (error) {
-      console.error('Error testing AI connection:', error)
-      setTestStatus('error')
-      setTestMessage((error as Error).message)
-    } finally {
-      setTesting(false)
-    }
+    await aiSettings.testConnection(settings)
   }
 
   const hasChanges =
@@ -542,7 +472,7 @@ function AIProviderForm({
         {saveStatus === 'error' && (
           <span className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
             <AlertCircle className="w-4 h-4" />
-            {errorMessage}
+            {saveMessage}
           </span>
         )}
       </div>

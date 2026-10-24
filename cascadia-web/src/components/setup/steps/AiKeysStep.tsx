@@ -17,10 +17,10 @@ import {
   DEFAULT_OLLAMA_BASE_URL,
   PROVIDER_LABELS,
 } from '@cascadia/commons/ai/model-catalog'
-import { useAiSettings } from '../hooks/useAiSettings'
 import { strings } from '../strings'
-import type { AiSettingsForm } from '../hooks/useAiSettings'
+import type { AiSettingsForm } from '@/hooks/useAiSettings'
 import type { AiProviderType } from '@cascadia/commons/ai/model-catalog'
+import { useAiSettings } from '@/hooks/useAiSettings'
 import {
   Button,
   Card,

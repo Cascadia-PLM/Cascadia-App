@@ -50,6 +50,20 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 Adjust `script-src` and `style-src` to remove `'unsafe-inline'` if your deployment supports nonce-based or hash-based CSP.
 
+### Session Cookie
+
+| Variable        | Default | Description                                                                                                                  |
+| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `COOKIE_SECURE` | unset   | `false` (or `0`) drops the `Secure` flag from the session cookie. Unset, empty or any other value leaves it on in production |
+
+The session cookie is `HttpOnly`, `SameSite=Strict` and, in production, `Secure`, so the browser sends it over HTTPS only. A browser also refuses to _store_ a `Secure` cookie that arrives over plain HTTP from any host but `localhost`. An install served at `http://plm-server` or `http://192.0.2.10:3000` therefore answers sign-in with 200, the browser keeps no cookie, and the next page lands back on the login screen.
+
+Serve it over HTTPS — a reverse proxy that terminates TLS, with `TRUSTED_PROXY_COUNT` set as below. Where that is not an option and the network is trusted, set `COOKIE_SECURE=false`. Never set it on a deployment that is also reachable over HTTPS: the cookie would then travel over any plain-HTTP request to the same host.
+
+`NODE_ENV` is not a substitute. The production server bundle has it compiled in, so setting it on a built image changes nothing, and the cookie stays `Secure`.
+
+The demo compose files set `COOKIE_SECURE=false`, since they serve plain HTTP. The root `docker-compose.yml`, the compose templates under `docs/orchestration/deployments/` and the compose files the installer generates pass it through, empty unless `.env` sets it. The Kubernetes manifests do not list it: their Ingress is the place to terminate TLS. Google sign-in's state and PKCE cookies follow the same setting.
+
 ### Reverse Proxy Trust
 
 `TRUSTED_PROXY_COUNT` is how a deployment tells the app that reverse proxies sit in front of it. Two headers depend on it, and a caller can write both, so the app believes them only as far as you declare.

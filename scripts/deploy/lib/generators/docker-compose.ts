@@ -26,6 +26,15 @@ import type {
 const TRUSTED_PROXY_ENV = { TRUSTED_PROXY_COUNT: '${TRUSTED_PROXY_COUNT:-0}' }
 
 /**
+ * `COOKIE_SECURE`, listed beside it for the same reason. Empty by default,
+ * which the app reads as unset: the session cookie stays Secure. An install
+ * served over plain HTTP on a host other than localhost sets it to `false` in
+ * `.env`, or the browser discards that cookie and every sign-in loops back to
+ * the login page.
+ */
+const COOKIE_SECURE_ENV = { COOKIE_SECURE: '${COOKIE_SECURE:-}' }
+
+/**
  * Generate docker-compose.yml for single-server deployment
  */
 export function generateSingleServerCompose(
@@ -67,6 +76,7 @@ export function generateSingleServerCompose(
           DATABASE_URL: '${DATABASE_URL}',
           BASE_URL: '${BASE_URL}',
           ...TRUSTED_PROXY_ENV,
+          ...COOKIE_SECURE_ENV,
           VAULT_MODE: '${VAULT_MODE:-embedded}',
           VAULT_TYPE: '${VAULT_TYPE:-local}',
           VAULT_ROOT: '${VAULT_ROOT:-/app/vault}',
@@ -264,6 +274,7 @@ export function generateDistributedCompose(
             DATABASE_URL: '${DATABASE_URL}',
             BASE_URL: '${BASE_URL}',
             ...TRUSTED_PROXY_ENV,
+            ...COOKIE_SECURE_ENV,
             VAULT_MODE: '${VAULT_MODE:-embedded}',
             VAULT_TYPE: '${VAULT_TYPE:-s3}',
             S3_ENDPOINT: '${S3_ENDPOINT}',
@@ -377,6 +388,7 @@ export function generateCloudDatabaseCompose(
           DATABASE_URL: '${DATABASE_URL}',
           BASE_URL: '${BASE_URL}',
           ...TRUSTED_PROXY_ENV,
+          ...COOKIE_SECURE_ENV,
           VAULT_MODE: '${VAULT_MODE:-embedded}',
           VAULT_TYPE: '${VAULT_TYPE:-local}',
           JOBS_MODE: '${JOBS_MODE:-embedded}',

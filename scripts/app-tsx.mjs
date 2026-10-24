@@ -15,6 +15,7 @@
 // tsconfig, which maps `@/` exactly as the root one does.
 
 import { spawnSync } from 'node:child_process'
+import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { appTsconfig } from './edition.mjs'
 
@@ -43,10 +44,16 @@ function tsxCommand() {
   }
 }
 
+// Absolute, because the path outlives this process. tsx hands `--tsconfig` to
+// everything the entry spawns as TSX_TSCONFIG_PATH, and a child that runs
+// tsx again resolves it against its own working directory: boot-migrate runs
+// drizzle-kit from the app directory, which loads its config through tsx and
+// looked for `cascadia-app/cascadia-app/tsconfig.json`, so every compose boot
+// died at the migration step.
 const tsx = tsxCommand()
 const result = spawnSync(
   tsx.cmd,
-  [...tsx.args, '--tsconfig', appTsconfig(), entry, ...args],
+  [...tsx.args, '--tsconfig', resolve(appTsconfig()), entry, ...args],
   { stdio: 'inherit', shell: tsx.shell },
 )
 if (result.error) {

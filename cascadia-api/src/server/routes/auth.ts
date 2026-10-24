@@ -13,7 +13,11 @@ import { hashSessionToken } from '@/auth/password'
 import { SessionManager } from '@/auth/session'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { permissionService } from '@/auth/permission-service'
-import { buildClearSessionCookie, buildSessionCookie } from '@/auth/cookie'
+import {
+  buildClearSessionCookie,
+  buildSessionCookie,
+  secureCookies,
+} from '@/auth/cookie'
 import { getSessionTokenFromRequest } from '@/auth/server'
 import {
   getAllowedGoogleDomains,
@@ -123,7 +127,7 @@ function buildOAuthCookie(name: string, value: string, maxAge = 600): string {
     // navigation from the provider, and Strict would withhold the cookie.
     'SameSite=Lax',
   ]
-  if (process.env.NODE_ENV === 'production') parts.push('Secure')
+  if (secureCookies()) parts.push('Secure')
   return parts.join('; ')
 }
 

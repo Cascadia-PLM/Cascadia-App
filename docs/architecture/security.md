@@ -130,7 +130,7 @@ export function buildSessionCookie(token: string): string {
     value: token,
     path: '/',
     httpOnly: true, // Not accessible to JavaScript
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    secure: secureCookies(), // HTTPS only in production, unless COOKIE_SECURE=false
     sameSite: 'Strict', // Not sent on cross-site requests
     maxAge: 28800, // 8 hours
   })
@@ -138,7 +138,7 @@ export function buildSessionCookie(token: string): string {
 ```
 
 - **HttpOnly**: Cookie cannot be read by client-side JavaScript (prevents XSS token theft)
-- **Secure**: Only transmitted over HTTPS in production
+- **Secure**: Only transmitted over HTTPS in production. `COOKIE_SECURE=false` removes it, for an install served over plain HTTP on a host other than `localhost`, where a browser would discard a Secure cookie and every sign-in would loop back to the login page — see [Session Cookie](../orchestration/configuration.md#session-cookie)
 - **SameSite=Strict**: Cookie is never sent on cross-origin requests (strongest CSRF protection at the cookie level)
 
 ### Auth Event Logging

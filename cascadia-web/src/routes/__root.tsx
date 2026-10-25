@@ -142,7 +142,7 @@ function RootLayout() {
             <ToastProvider>
               <AlertDialogProvider>
                 <ChatPanelProvider>
-                  <TourProvider>
+                  <TourProvider enabled={!isChromelessPage}>
                     <ErrorBoundary>
                       {isMounted && !isChromelessPage && <Header />}
                       {isChromelessPage ? (

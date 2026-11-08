@@ -330,7 +330,7 @@ envelope rather than the per-line shape above:
 {
   "error": {
     "code": "VALIDATION_FAILED",
-    "message": "A relationship may appear only once per (sourceId, targetId, relationshipType); combine the duplicate lines and sum their quantities",
+    "message": "A relationship may appear only once per source, target, type, option condition, target execution and (on a BOM line) reference designators; combine the duplicate lines and sum their quantities",
     "fieldErrors": [
       {
         "field": "relationships[2]",
@@ -345,28 +345,49 @@ envelope rather than the per-line shape above:
 ### Behavior Notes
 
 - **Edge identity**: see [Edge identity](#edge-identity) — a batch listing the
-  same child twice is rejected with `DUPLICATE_RELATIONSHIP` before anything is
-  written.
+  same line twice is rejected with `DUPLICATE_RELATIONSHIP` before anything is
+  written. The same child at two reference designators is two lines.
 - **All or nothing**: validation runs over the whole request before the first
   write, and replacement shares one transaction with the insert. A rejected
   batch changes nothing — in particular it does not leave a parent whose BOM
   was deleted and not rebuilt.
-- **Duplicate detection**: If `replaceExisting` is false (default), relationships already stored with the same source/target/type are skipped (counted in `skipped`) and keep their stored quantity and find number — a skip is not an update.
+- **Duplicate detection**: If `replaceExisting` is false (default), relationships already stored with the same [edge identity](#edge-identity) are skipped (counted in `skipped`) and keep their stored quantity and find number — a skip is not an update.
 - **Replace mode**: If `replaceExisting` is true, existing relationships are deleted for each (source, type) pair the batch actually writes, before creating the new ones. This is useful for rebuilding a BOM. A source whose every line was rejected is left alone.
 - **Cycle detection**: Creating a relationship that would form a circular reference results in a `422` error with code `ITEM_RELATIONSHIP_CYCLE`.
 
 ## Edge identity
 
-A relationship is identified by `(sourceId, targetId, relationshipType)`, which
-`item_relationships` enforces with a unique constraint. One parent therefore
-has **one line per child per relationship type**: a BOM that would list the same
-screw under two find numbers ("4 here, 12 there") has to carry a single line
-with the summed quantity, and `referenceDesignator` for where they go.
+A relationship is identified by
+`(sourceId, targetId, relationshipType, option, targetMakeCode)` and, on a
+**BOM** line, its `referenceDesignator` — the `item_relationships_edge_unique`
+index. So one child may sit on a parent's BOM several times, as long as each
+line differs in its option condition, its target execution or its reference
+designators:
 
-This is what every consumer of the structure assumes — merge, conflict
-detection, impact analysis and where-used all treat a parent/child pair as one
-edge — so the constraint is deliberate rather than incidental. Splitting a child
-across lines would need those consumers to agree on a line identity first.
+| Lines for one parent → one child         | Allowed? |
+| ---------------------------------------- | -------- |
+| `R1` and `R2`                            | Yes      |
+| `R1` and no designator                   | Yes      |
+| `R1` and `R1 ` (padding)                 | No       |
+| no designator and `""` (blank)           | No       |
+| no designator, twice, different find no. | No       |
+| `color=black` and `color=white`          | Yes      |
+
+Designators are stored trimmed, with a blank as none, and compared as text:
+`R1, R2` and `R2, R1` are two different values, and nothing checks that two
+lines' lists do not overlap. Lines that differ only in find number are one
+line twice — give them designators, or carry a single line with the summed
+quantity.
+
+On every other relationship type the designator does not take part, so a trace
+link (`SATISFIES`, `VERIFIED_BY`, …) stays one per pair whatever the field
+says.
+
+Every consumer that groups lines — the merge, conflict detection, structure
+trees, thread comparison, MBOM derivation and design clone — keys them on this
+same identity (`ItemRelationshipService.edgeKey` server side,
+`referenceDesignatorKey` in `@cascadia/commons/types/bom` for the designator
+part), so a line that the index admits is never folded into its sibling.
 
 ## Metadata
 
@@ -389,9 +410,10 @@ on `PUT`, and returned on every read.
   other fields. A change is recorded in the item's history
   (`bom_metadata_changed`) and named in the `relationship.updated` event's
   `changedFields` as `metadata`; the event does not carry the value.
-- Like `referenceDesignator`, it is not part of the BOM's conflict signature:
-  two change orders that both edit one line's metadata do not conflict, and
-  the one released second carries its own branch's value.
+- Unlike `referenceDesignator`, which tells a line from its siblings, it is
+  not part of the BOM's conflict signature: two change orders that both edit
+  one line's metadata do not conflict, and the one released second carries
+  its own branch's value.
 
 ## Relationship Types
 

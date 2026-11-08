@@ -22,6 +22,7 @@ interface FlattenedNode {
   itemType: string
   quantity?: number
   findNumber?: number
+  referenceDesignator?: string
   option?: string
   targetMakeCode?: string
   designation: string
@@ -50,6 +51,7 @@ function flattenBomTree(
       itemType: node.itemType,
       quantity: node.quantity,
       findNumber: node.findNumber,
+      referenceDesignator: node.referenceDesignator ?? undefined,
       option: formatOptionText(node.option) || undefined,
       targetMakeCode: node.targetMakeCode ?? undefined,
       designation: formatPartDesignation({
@@ -114,6 +116,7 @@ export function exportBomTreeToCsv(
     'Type',
     'Quantity',
     'Find Number',
+    'Reference Designator',
     'Option',
     'Target Execution',
     'Design',
@@ -136,6 +139,7 @@ export function exportBomTreeToCsv(
       node.itemType,
       node.quantity ?? '',
       node.findNumber ?? '',
+      node.referenceDesignator ?? '',
       node.option ?? '',
       node.targetMakeCode ?? '',
       node.designCode ?? '',

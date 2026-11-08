@@ -14,12 +14,22 @@ import { StateBadge } from '@/components/items/StateBadge'
  * on the tab being open.
  */
 export function WhereUsedView({
-  nodes: whereUsedData,
+  nodes,
   loading: whereUsedLoading,
 }: {
   nodes: Array<WhereUsedNode>
   loading: boolean
 }) {
+  // The endpoint answers one row per BOM line, and a parent may use this item
+  // on several — at R1 and R2, or under two option conditions — which also
+  // repeats every assembly above it. This table lists assemblies, so each
+  // appears once per depth.
+  const whereUsedData = [
+    ...new Map(
+      nodes.map((node) => [`${node.itemId}-${node.depth}`, node]),
+    ).values(),
+  ]
+
   return (
     <Card>
       <CardContent className="pt-6">

@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq } from 'drizzle-orm'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { db } from '../db'
 import { itemRelationships } from '../db/schema'
@@ -20,7 +21,12 @@ import { itemRelationships } from '../db/schema'
 export interface BomStructure {
   /** Number of BOM lines, for display */
   lineCount: number
-  /** Order-independent identity of the line set: child, quantity, find number, option */
+  /**
+   * Order-independent identity of the line set: child, quantity, find number,
+   * option, execution, reference designators. The designators count because
+   * they tell two lines of one child apart; left out, a designator edited on
+   * both sides compared equal and main's edit was released over.
+   */
   signature: string
 }
 
@@ -35,6 +41,7 @@ export async function bomStructureOf(
       findNumber: itemRelationships.findNumber,
       option: itemRelationships.option,
       targetMakeCode: itemRelationships.targetMakeCode,
+      referenceDesignator: itemRelationships.referenceDesignator,
     })
     .from(itemRelationships)
     .where(
@@ -44,12 +51,20 @@ export async function bomStructureOf(
       ),
     )
 
+  // JSON rather than a joined string: a designator is free text and may hold
+  // any separator a join could pick.
   return {
     lineCount: rows.length,
     signature: rows
-      .map(
-        (r) =>
-          `${r.targetId}:${r.quantity ?? ''}:${r.findNumber ?? ''}:${optionConditionKey(r.option)}:${r.targetMakeCode ?? ''}`,
+      .map((r) =>
+        JSON.stringify([
+          r.targetId,
+          r.quantity ?? '',
+          r.findNumber ?? '',
+          optionConditionKey(r.option),
+          r.targetMakeCode ?? '',
+          referenceDesignatorKey('BOM', r.referenceDesignator),
+        ]),
       )
       .sort()
       .join('|'),

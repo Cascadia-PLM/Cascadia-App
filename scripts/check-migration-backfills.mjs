@@ -2270,7 +2270,143 @@ const SCENARIOS = [
       expectEqual(others.n, 0, 'no other requirement gained a waiver')
     },
   },
+  {
+    tag: REFDES_EDGES_TAG(),
+    name: 'BOM lines are told apart by reference designators, and the stored designators are tidied first',
+    async seed(sql) {
+      await exec(sql, refdesEdgesSeed())
+    },
+    async assert(sql) {
+      const designators = new Map(
+        (
+          await sql.unsafe(
+            `select id, reference_designator as r from item_relationships
+              where source_id = '${id(1300)}'`,
+          )
+        ).map((row) => [row.id, row.r]),
+      )
+      expectEqual(designators.size, 4, 'every pre-existing edge survives')
+      expectEqual(
+        designators.get(id(1310)),
+        null,
+        'a blank designator is stored as none',
+      )
+      expectEqual(
+        designators.get(id(1311)),
+        'R7',
+        'a padded designator is stored trimmed',
+      )
+      expectEqual(
+        designators.get(id(1312)),
+        'X1',
+        'a designator that needed nothing is left alone',
+      )
+
+      for (const old of [
+        'item_relationships_fixed_edge_unique',
+        'item_relationships_fixed_make_edge_unique',
+        'item_relationships_option_edge_unique',
+        'item_relationships_option_make_edge_unique',
+      ]) {
+        expect(!(await relationExists(sql, old)), `${old} should be gone`)
+      }
+      expect(
+        await relationExists(sql, 'item_relationships_edge_unique'),
+        'the edge index should exist',
+      )
+
+      const line = (n, target, type, refdes, option = 'null') =>
+        `insert into item_relationships
+           (id, source_id, target_id, relationship_type, quantity,
+            reference_designator, option, created_by)
+         values ('${id(n)}', '${id(1300)}', '${id(target)}', '${type}', '1',
+                 ${refdes === null ? 'null' : `'${refdes}'`}, ${option}, '${U1}')`
+      const refusedByEdgeIndex = async (text, what) => {
+        const error = await refused(sql, text)
+        expectEqual(error.code, '23505', `SQLSTATE for ${what}`)
+        expectEqual(
+          error.constraint_name,
+          'item_relationships_edge_unique',
+          `the edge index refuses ${what}`,
+        )
+      }
+
+      // The tidied blank is "no designator", so a second unlabelled line on
+      // the same child is still one line twice.
+      await refusedByEdgeIndex(
+        line(1320, 1302, 'BOM', null),
+        'a second unlabelled line',
+      )
+      // The point of the change: the same child at two positions.
+      await sql.unsafe(line(1321, 1302, 'BOM', 'R1'))
+      await sql.unsafe(line(1322, 1302, 'BOM', 'R2'))
+      await refusedByEdgeIndex(
+        line(1323, 1302, 'BOM', 'R1'),
+        'the same position twice',
+      )
+      // The tidied padding is what makes these collide.
+      await refusedByEdgeIndex(
+        line(1324, 1304, 'BOM', 'R7'),
+        'a position a padded designator already holds',
+      )
+      // Only a BOM line is told apart this way; a trace link stays one per
+      // pair whatever its designator field says.
+      await refusedByEdgeIndex(
+        line(1325, 1302, 'Reference', 'X2'),
+        'a second Reference link to one child',
+      )
+      // A condition still takes part in the identity as before.
+      await refusedByEdgeIndex(
+        line(1326, 1304, 'BOM', null, BLACK_CONDITION),
+        'the same condition twice',
+      )
+    },
+  },
 ]
+
+/**
+ * The migration that adds reference designators to a BOM line's identity,
+ * named by the index it builds for the same reason as the helpers below.
+ */
+function REFDES_EDGES_TAG() {
+  const found = migrations.find((m) =>
+    m.sql.some((s) => s.includes('item_relationships_edge_unique')),
+  )
+  if (!found) {
+    throw new Error(
+      'No migration creates item_relationships_edge_unique — the reference-designator scenario names a file that no longer exists.',
+    )
+  }
+  return found.tag
+}
+
+const BLACK_CONDITION = `'{"all":[{"family":"color","values":["black"]}]}'::jsonb`
+
+/**
+ * One assembly over two children, with a BOM line whose designator is blank,
+ * one whose designator is padded, a Reference link carrying a designator, and
+ * a conditioned line — every shape the tidy-up and the new index treat
+ * differently.
+ */
+function refdesEdgesSeed() {
+  return `
+    ${USERS}
+    insert into items
+      (id, master_id, item_number, revision, item_type, state, created_by, modified_by)
+    values
+      ('${id(1300)}', '${id(1301)}', 'FIX-RD-ASSY', 'A', 'Part', 'Released', '${U1}', '${U1}'),
+      ('${id(1302)}', '${id(1303)}', 'FIX-RD-C1', 'A', 'Part', 'Released', '${U1}', '${U1}'),
+      ('${id(1304)}', '${id(1305)}', 'FIX-RD-C2', 'A', 'Part', 'Released', '${U1}', '${U1}');
+
+    insert into item_relationships
+      (id, source_id, target_id, relationship_type, quantity, reference_designator, option, created_by)
+    values
+      ('${id(1310)}', '${id(1300)}', '${id(1302)}', 'BOM', '1', '', null, '${U1}'),
+      ('${id(1311)}', '${id(1300)}', '${id(1304)}', 'BOM', '1', '  R7 ', null, '${U1}'),
+      ('${id(1312)}', '${id(1300)}', '${id(1302)}', 'Reference', null, 'X1', null, '${U1}'),
+      ('${id(1313)}', '${id(1300)}', '${id(1304)}', 'BOM', '2', null, ${BLACK_CONDITION}, '${U1}');
+  `
+}
 
 /**
  * The product-variants migration, named by the index it builds: the tag

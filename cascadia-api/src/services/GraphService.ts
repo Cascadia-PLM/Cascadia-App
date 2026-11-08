@@ -21,6 +21,7 @@
  */
 
 import { and, eq, inArray, isNull, ne, or } from 'drizzle-orm'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { UsageService } from './UsageService'
 import type { OptionCondition } from '@cascadia/commons/types/variants'
@@ -928,6 +929,7 @@ export class GraphService {
         rel.relationshipType,
         optionConditionKey(rel.option),
         rel.targetMakeCode ?? '',
+        referenceDesignatorKey(rel.relationshipType, rel.referenceDesignator),
       ].join('\u0000')
       if (!addedEdges.has(edgeId)) {
         addedEdges.add(edgeId)

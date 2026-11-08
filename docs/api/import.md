@@ -161,11 +161,12 @@ When `bomRelationships` are provided, the endpoint:
 3. Processes each relationship, creating `BOM` type links via `ItemService.addRelationship`
 4. Reports relationship successes and failures separately in the response
 
-A parent lists a child **once**: `item_relationships` is unique on
-`(source, target, type)`, so a file naming the same child on two lines has one
-edge to give. The first line is created and each later one is reported in
-`failedRelationships`, named by both item numbers — combine the lines and sum
-their quantities. See
+A parent lists a child once per distinct line: two rows naming the same child
+are two lines only when they differ in reference designators, option
+condition or target execution. Otherwise the file has one edge to give — the
+first line is created and each later one is reported in `failedRelationships`,
+named by both item numbers; combine the lines and sum their quantities, or
+give each its own designators. See
 [Edge identity](./relationships.md#edge-identity). The import wizard flags
 this in the validation preview, before anything is uploaded.
 

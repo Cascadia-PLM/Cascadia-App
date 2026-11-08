@@ -51,7 +51,7 @@ item_relationships
 ├── modifiedBy      UUID → users.id
 ```
 
-**Unique constraint**: `(sourceId, targetId, relationshipType)` -- a parent can only have one BOM link to a given child. A BOM that would list the same child on two lines (the same screw under two find numbers) carries **one** line with the summed quantity instead; `POST /api/v1/relationships/batch-create` rejects the second line with `DUPLICATE_RELATIONSHIP` rather than writing a partial structure. See [Edge identity](../api/relationships.md#edge-identity).
+**Unique index** (`item_relationships_edge_unique`): `(sourceId, targetId, relationshipType, option, targetMakeCode)` plus, on a BOM line, `referenceDesignator`. A parent can list one child on several lines when each sits at its own reference designators (`R1` and `R2`), or under its own option condition or target execution. Two lines with the same designators (or none) are one line twice, whatever their find numbers: `POST /api/v1/relationships/batch-create` rejects the second with `DUPLICATE_RELATIONSHIP` rather than writing a partial structure. See [Edge identity](../api/relationships.md#edge-identity).
 
 **Indexes**: `sourceId`, `targetId`, `relationshipType`, and a composite index on `(sourceDesignId, targetDesignId)` for cross-design queries.
 
@@ -116,7 +116,8 @@ A text field used primarily for electrical and electronic components to identify
 - Optional field
 - Examples: `R1`, `R2`, `C1`, `U1`, `J1-J4`
 - Supports comma-separated lists for multiple instances
-- Stored as free text to accommodate various naming conventions
+- Stored as free text to accommodate various naming conventions, trimmed, with a blank stored as none
+- Part of a BOM line's identity: the same child may appear on a parent once per distinct designator value, so `R1` (qty 1) and `R2` (qty 1) can be two lines, or one line `R1, R2` (qty 2). Values are compared as text — overlapping lists such as `R1, R2` and `R2, R3` are not detected
 
 ### History Tracking
 

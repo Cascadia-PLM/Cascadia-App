@@ -739,6 +739,67 @@ describe('ChangeOrderMergeService', () => {
       expect(targets).not.toContain(dropChild.id)
     })
 
+    it('releases every line of a child that the branch places at several reference designators', async () => {
+      // Both the checkout copy and the release rebuild insert with ON CONFLICT
+      // DO NOTHING, so a line the edge identity cannot tell from its sibling
+      // is dropped without a word. Designators are what tell them apart.
+      const assembly = await createPart('rd-assy')
+      const resistor = await createPart('rd-res')
+      for (const p of [assembly, resistor]) {
+        await testDb.db
+          .update(items)
+          .set({ state: 'Released' })
+          .where(eq(items.id, p.id))
+      }
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: assembly.id,
+        targetId: resistor.id,
+        relationshipType: 'BOM',
+        quantity: '1',
+        referenceDesignator: 'R1',
+        createdBy: user.id,
+      })
+
+      const changeOrder = await createChangeOrder()
+      const { workingCopyId } = await ChangeOrderService.addAffectedItem(
+        changeOrder.id,
+        { affectedItemId: assembly.id, changeAction: 'revise' },
+        user.id,
+      )
+      await testDb.db.insert(itemRelationships).values({
+        sourceId: workingCopyId!,
+        targetId: resistor.id,
+        relationshipType: 'BOM',
+        quantity: '1',
+        referenceDesignator: 'R2',
+        createdBy: user.id,
+      })
+
+      await approveChangeOrder(changeOrder.id)
+      await ChangeOrderMergeService.merge(changeOrder.id, user.id)
+
+      const released = await testDb.db
+        .select()
+        .from(items)
+        .where(
+          and(eq(items.masterId, assembly.masterId), eq(items.isCurrent, true)),
+        )
+        .then((r) => r.at(0))
+      expect(released).toBeDefined()
+      const lines = await testDb.db
+        .select()
+        .from(itemRelationships)
+        .where(eq(itemRelationships.sourceId, released!.id))
+      expect(lines.map((line) => line.targetId)).toEqual([
+        resistor.id,
+        resistor.id,
+      ])
+      expect(lines.map((line) => line.referenceDesignator).sort()).toEqual([
+        'R1',
+        'R2',
+      ])
+    })
+
     it('releases an intentionally emptied structure as empty', async () => {
       // Deleting EVERY line on the branch used to be indistinguishable from a
       // working copy that never carried relationships, and the merge restored

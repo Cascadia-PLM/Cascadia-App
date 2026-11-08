@@ -88,12 +88,13 @@ text form used by CSV import and export, tooltips and the AI tools is
 
 ### Edge identity
 
-A BOM edge is `(source, target, type, option, targetMakeCode)`. One child may appear on a
-parent's BOM under two different conditions with different quantities; it
-still cannot appear twice with the same condition and target execution.
-Four partial indexes cover fixed/conditioned lines with/without a target
-execution; this preserves SQL null semantics without treating distinct MK
-targets as duplicate edges.
+A BOM edge is `(source, target, type, option, targetMakeCode, referenceDesignator)`.
+One child may appear on a parent's BOM under two different conditions with
+different quantities; it still cannot appear twice with the same condition,
+target execution and reference designators. One unique index,
+`item_relationships_edge_unique`, covers it, with each nullable part
+`COALESCE`d so a fixed line collides with a fixed line. See
+[Edge identity](../api/relationships.md#edge-identity).
 
 ### What travels with a condition
 

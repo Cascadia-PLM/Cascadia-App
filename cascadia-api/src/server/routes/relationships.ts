@@ -268,16 +268,18 @@ app.post(
         })
 
         // A BOM that repeats the same complete edge identity is one line twice.
-        // Conditions and target executions are part of that identity, so the
-        // same child may still appear in several valid configurations.
+        // Conditions, target executions and a BOM line's reference
+        // designators are part of that identity, so the same child may still
+        // appear in several valid configurations, or at several positions.
         const duplicates = ItemRelationshipService.findDuplicateEdges(
           candidates.map((c) => c.relData),
         )
         if (duplicates.length > 0) {
           throw new ValidationError(
             'A relationship may appear only once per source, target, type, ' +
-              'option condition and target execution; combine the duplicate ' +
-              'lines and sum their quantities',
+              'option condition, target execution and (on a BOM line) ' +
+              'reference designators; combine the duplicate lines and sum ' +
+              'their quantities',
             duplicates.map(({ index, firstIndex, edge }) => ({
               field: `relationships[${candidates[index]!.index}]`,
               message:
@@ -316,6 +318,7 @@ app.post(
               relationshipType: itemRelationships.relationshipType,
               option: itemRelationships.option,
               targetMakeCode: itemRelationships.targetMakeCode,
+              referenceDesignator: itemRelationships.referenceDesignator,
             })
             .from(itemRelationships)
             .where(inArray(itemRelationships.sourceId, sourceIds))
@@ -362,6 +365,7 @@ app.post(
                 relationshipType,
                 option,
                 targetMakeCode,
+                referenceDesignator,
               }),
             )
           ) {

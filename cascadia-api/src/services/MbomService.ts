@@ -3,6 +3,7 @@
 
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import {
   formatOptionText,
   makeCodeSchema,
@@ -831,6 +832,7 @@ export class MbomService {
         rel.relationshipType,
         optionConditionKey(copiedOption),
         rel.targetMakeCode ?? '',
+        referenceDesignatorKey(rel.relationshipType, rel.referenceDesignator),
       ].join('\u0000')
       if (copiedRelationships.has(relKey)) {
         continue

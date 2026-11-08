@@ -462,7 +462,7 @@ function BomTreeNodeGrid<T extends BOMTreeNode>({
         <>
           {node.children!.map((child) => (
             <BomTreeNodeGrid
-              key={child.itemId}
+              key={child.relationshipId ?? child.itemId}
               node={child as T}
               depth={depth + 1}
               expandedNodes={expandedNodes}
@@ -593,7 +593,7 @@ function BomTreeNodeFlow<T extends BOMTreeNode>({
         <div>
           {node.children!.map((child) => (
             <BomTreeNodeFlow
-              key={child.itemId}
+              key={child.relationshipId ?? child.itemId}
               node={child as T}
               depth={depth + 1}
               expandedNodes={expandedNodes}

@@ -85,6 +85,13 @@
       "when": 1791852039761,
       "tag": "0011_ai_dialogs_verification_and_system_elements",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794163033593,
+      "tag": "0012_bom_reference_designator_lines",
+      "breakpoints": true
     }
   ]
 }

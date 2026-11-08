@@ -121,6 +121,7 @@ Creates a new relationship from the specified item (source) to a target item. Au
 | `quantity`            | number  | No       | Quantity of child in parent (BOM)                       |
 | `findNumber`          | integer | No       | Find number for BOM ordering                            |
 | `referenceDesignator` | string  | No       | Reference designator(s), comma-separated                |
+| `metadata`            | object  | No       | Free-form JSON (see [Metadata](#metadata))              |
 
 ### Example
 
@@ -171,13 +172,17 @@ Updates relationship properties. Auth required.
 
 ### Request Body
 
-All fields are optional:
+All fields are optional. An absent field leaves the column alone; `null`
+clears it.
 
-| Field                 | Type    | Description                     |
-| --------------------- | ------- | ------------------------------- |
-| `quantity`            | number  | Updated quantity                |
-| `findNumber`          | integer | Updated find number             |
-| `referenceDesignator` | string  | Updated reference designator(s) |
+| Field                 | Type    | Description                                                               |
+| --------------------- | ------- | ------------------------------------------------------------------------- |
+| `quantity`            | number  | Updated quantity                                                          |
+| `findNumber`          | integer | Updated find number                                                       |
+| `referenceDesignator` | string  | Updated reference designator(s)                                           |
+| `metadata`            | object  | Replaces the edge's metadata keys as a whole (see [Metadata](#metadata))  |
+| `option`              | object  | Product variants: the option condition; `null` makes the line fixed again |
+| `targetMakeCode`      | string  | Active execution of the target Part revision; `null` clears the pin       |
 
 ### Example
 
@@ -186,7 +191,8 @@ curl -X PUT /api/v1/relationships/REL_UUID \
   -H "Content-Type: application/json" \
   -d '{
     "quantity": 6,
-    "referenceDesignator": "R1,R2,R3,R4,R5,R6"
+    "referenceDesignator": "R1,R2,R3,R4,R5,R6",
+    "metadata": { "supplierRef": "DK-311-10.0KCRCT-ND" }
   }'
 ```
 
@@ -244,15 +250,15 @@ Create multiple relationships in a single request. Limited to 500 relationships 
 
 Each relationship object:
 
-| Field                 | Type    | Required | Description             |
-| --------------------- | ------- | -------- | ----------------------- |
-| `sourceId`            | UUID    | Yes      | Source (parent) item ID |
-| `targetId`            | UUID    | Yes      | Target (child) item ID  |
-| `relationshipType`    | string  | Yes      | Relationship type       |
-| `quantity`            | number  | No       | Quantity                |
-| `referenceDesignator` | string  | No       | Reference designator(s) |
-| `findNumber`          | integer | No       | Find number             |
-| `metadata`            | object  | No       | Arbitrary metadata      |
+| Field                 | Type    | Required | Description               |
+| --------------------- | ------- | -------- | ------------------------- |
+| `sourceId`            | UUID    | Yes      | Source (parent) item ID   |
+| `targetId`            | UUID    | Yes      | Target (child) item ID    |
+| `relationshipType`    | string  | Yes      | Relationship type         |
+| `quantity`            | number  | No       | Quantity                  |
+| `referenceDesignator` | string  | No       | Reference designator(s)   |
+| `findNumber`          | integer | No       | Find number               |
+| `metadata`            | object  | No       | See [Metadata](#metadata) |
 
 ### Example
 
@@ -361,6 +367,31 @@ This is what every consumer of the structure assumes — merge, conflict
 detection, impact analysis and where-used all treat a parent/child pair as one
 edge — so the constraint is deliberate rather than incidental. Splitting a child
 across lines would need those consumers to agree on a line identity first.
+
+## Metadata
+
+Every relationship carries a `metadata` JSON object for whatever its own
+columns do not hold: a supplier's line reference, a note on an evidence link,
+an integration's correlation id. It is written on create (single or batch) and
+on `PUT`, and returned on every read.
+
+- **Replaced, not merged.** A `PUT` that sends `metadata` sets the edge's keys
+  to exactly that object; send the full set, not just the key that changed.
+  `null` clears them. A `PUT` that omits `metadata` leaves it alone.
+- **Server-maintained keys are not writable.** The server keeps its own
+  bookkeeping in the same object — `affirmed`, the review record of a trace
+  link (see [suspect links](../features/requirements-and-vv.md#suspect-links)). A value
+  sent under such a key is ignored and the stored one kept, so a client may
+  send back what it read without forging or erasing a trace link's
+  affirmation, and clearing `metadata` never clears it.
+- **Versioned with the item.** Metadata rides the edge, so it is copied onto a
+  working copy at checkout and released with the change order like the line's
+  other fields. A change is recorded in the item's history
+  (`bom_metadata_changed`) and named in the `relationship.updated` event's
+  `changedFields` as `metadata`; the event does not carry the value.
+- Like `referenceDesignator`, it is not part of the BOM's conflict signature:
+  two change orders that both edit one line's metadata do not conflict, and
+  the one released second carries its own branch's value.
 
 ## Relationship Types
 

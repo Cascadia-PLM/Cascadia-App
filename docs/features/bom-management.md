@@ -125,6 +125,7 @@ All three fields are tracked in the commit history. When a relationship field ch
 - `bom_quantity_changed` -- quantity was modified
 - `bom_refdes_changed` -- reference designator was modified
 - `bom_findnumber_changed` -- find number was modified
+- `bom_metadata_changed` -- the line's custom attributes (its `metadata`) were modified
 - `bom_added` / `bom_removed` -- entire relationship was added or removed
 
 ---
@@ -596,13 +597,13 @@ The `upstreamChanges` table tracks when the source EBOM changes, allowing the MB
 
 ### Relationship CRUD
 
-| Method | Endpoint                             | Description                                                            |
-| ------ | ------------------------------------ | ---------------------------------------------------------------------- |
-| GET    | `/api/v1/items/:id/relationships`    | Get relationships for an item (optional `?type=BOM&branch=<id>`)       |
-| POST   | `/api/v1/items/:id/relationships`    | Add a relationship                                                     |
-| PUT    | `/api/v1/relationships/:id`          | Update relationship fields (quantity, findNumber, referenceDesignator) |
-| DELETE | `/api/v1/relationships/:id`          | Remove a relationship                                                  |
-| POST   | `/api/v1/relationships/batch-create` | Batch create up to 500 relationships                                   |
+| Method | Endpoint                             | Description                                                                      |
+| ------ | ------------------------------------ | -------------------------------------------------------------------------------- |
+| GET    | `/api/v1/items/:id/relationships`    | Get relationships for an item (optional `?type=BOM&branch=<id>`)                 |
+| POST   | `/api/v1/items/:id/relationships`    | Add a relationship                                                               |
+| PUT    | `/api/v1/relationships/:id`          | Update relationship fields (quantity, findNumber, referenceDesignator, metadata) |
+| DELETE | `/api/v1/relationships/:id`          | Remove a relationship                                                            |
+| POST   | `/api/v1/relationships/batch-create` | Batch create up to 500 relationships                                             |
 
 ### Design Structure
 

@@ -17181,6 +17181,11 @@
                   "findNumber": {
                     "type": "number"
                   },
+                  "metadata": {
+                    "additionalProperties": {},
+                    "description": "Free-form JSON object. Keys the server maintains (`affirmed`, a trace link's affirmation) are not writable: a value sent under one is ignored and the stored one kept.",
+                    "type": "object"
+                  },
                   "option": {
                     "anyOf": [
                       {
@@ -24475,6 +24480,7 @@
                         },
                         "metadata": {
                           "additionalProperties": {},
+                          "description": "Free-form JSON object. Keys the server maintains (`affirmed`, a trace link's affirmation) are not writable: a value sent under one is ignored and the stored one kept.",
                           "type": "object"
                         },
                         "option": {
@@ -24787,6 +24793,19 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "metadata": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": {},
+                        "description": "Free-form JSON object. Keys the server maintains (`affirmed`, a trace link's affirmation) are not writable: a value sent under one is ignored and the stored one kept.",
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Replaces the edge's caller-owned metadata keys as a whole; null clears them. Server-maintained keys (`affirmed`) are kept either way."
                   },
                   "option": {
                     "anyOf": [

@@ -138,7 +138,11 @@ export type RelationshipUpdatedPayload = z.infer<
 
 /**
  * A structure edge's own properties changed — quantity, reference designator,
- * find number, option condition, target execution.
+ * find number, metadata, option condition, target execution.
+ *
+ * `metadata` is named in `changedFields` but its value is not carried: it is
+ * a free-form document of any size, not one of the line's scalars, so a
+ * consumer that cares reads the edge.
  *
  * Never emitted when nothing changed: a save that submits the same values is
  * not an edit, and the schema forbids an empty `changedFields` anyway. Same
@@ -148,7 +152,7 @@ export const RELATIONSHIP_UPDATED = defineDomainEvent({
   type: 'relationship.updated',
   schemaVersion: 1,
   description:
-    "A structure edge's quantity, position, condition or execution pin changed",
+    "A structure edge's quantity, position, metadata, condition or execution pin changed",
   subjectType: 'item',
   payloadSchema: relationshipUpdatedPayloadSchema,
 })

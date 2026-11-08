@@ -4,6 +4,11 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { catalogEndMismatch } from '@cascadia/commons/items/relationships/catalog'
+import {
+  sameUserMetadata,
+  userMetadataOf,
+  withUserMetadata,
+} from '@cascadia/commons/items/relationships/metadata'
 import { isWorkingRevisionValue } from '@cascadia/commons/types/lifecycle'
 import {
   makeCodeSchema,
@@ -1285,6 +1290,9 @@ export class ItemRelationshipService {
    * field updates: requireContentEditable throws unless the caller may edit
    * the source item right now. System flows (materialization, import) that
    * manage their own consistency pass options.bypassEditGuard.
+   *
+   * `data.metadata` is the caller's own keys; a reserved key in it is dropped
+   * (see `items/relationships/metadata.ts` in commons).
    */
   static async addRelationship(
     sourceId: string,
@@ -1295,6 +1303,7 @@ export class ItemRelationshipService {
       quantity?: string
       referenceDesignator?: string
       findNumber?: number
+      metadata?: Record<string, unknown> | null
       option?: OptionCondition | null
       targetMakeCode?: string | null
     },
@@ -1374,7 +1383,7 @@ export class ItemRelationshipService {
               // A trace claim is born affirmed by its author, against the
               // rows it names — see items/trace-affirmation.ts.
               metadata: stampInitialAffirmation(
-                null,
+                userMetadataOf(data?.metadata),
                 { sourceId, targetId, relationshipType },
                 userId,
               ),
@@ -1666,8 +1675,10 @@ export class ItemRelationshipService {
               quantity: r.data?.quantity ?? null,
               referenceDesignator: r.data?.referenceDesignator ?? null,
               findNumber: r.data?.findNumber ?? null,
+              // Caller keys only: a reserved key in a line's metadata would
+              // otherwise land verbatim on any edge type that is not stamped.
               metadata: stampInitialAffirmation(
-                r.data?.metadata ?? null,
+                userMetadataOf(r.data?.metadata),
                 r,
                 r.userId,
               ),
@@ -2022,8 +2033,13 @@ export class ItemRelationshipService {
 
   /**
    * Update a relationship's properties (quantity, referenceDesignator,
-   * findNumber, option and targetMakeCode). `option: null` makes the line fixed
-   * again; `targetMakeCode: null` removes the execution pin.
+   * findNumber, metadata, option and targetMakeCode). `option: null` makes the
+   * line fixed again; `targetMakeCode: null` removes the execution pin.
+   *
+   * `metadata` replaces the caller's keys as a whole — an object is the new
+   * set, `null` clears them — and never touches a reserved key: a trace
+   * claim's affirmation survives any metadata edit, and cannot be forged or
+   * erased through one (see `items/relationships/metadata.ts` in commons).
    */
   static async updateRelationship(
     relationshipId: string,
@@ -2032,6 +2048,7 @@ export class ItemRelationshipService {
       quantity?: string | null
       referenceDesignator?: string | null
       findNumber?: number | null
+      metadata?: Record<string, unknown> | null
       option?: OptionCondition | null
       targetMakeCode?: string | null
     },
@@ -2066,6 +2083,10 @@ export class ItemRelationshipService {
             existing.relationshipType,
             data.targetMakeCode,
           )
+    const metadata =
+      data.metadata === undefined
+        ? undefined
+        : withUserMetadata(existing.metadata, data.metadata)
     const nextOption = option === undefined ? existing.option : option
     const nextTargetMakeCode =
       targetMakeCode === undefined ? existing.targetMakeCode : targetMakeCode
@@ -2120,6 +2141,7 @@ export class ItemRelationshipService {
     if (data.referenceDesignator !== undefined)
       updateData.referenceDesignator = data.referenceDesignator
     if (data.findNumber !== undefined) updateData.findNumber = data.findNumber
+    if (metadata !== undefined) updateData.metadata = metadata
     if (option !== undefined) updateData.option = option
     if (targetMakeCode !== undefined) updateData.targetMakeCode = targetMakeCode
 
@@ -2128,6 +2150,8 @@ export class ItemRelationshipService {
     // inside a design *and* a branch resolution that does not run for an edge
     // whose source has no design — so the event needs its own, available to
     // both.
+    const metadataChanged =
+      metadata !== undefined && !sameUserMetadata(existing.metadata, metadata)
     const changedFields = (
       [
         ['quantity', existing.quantity, data.quantity],
@@ -2146,7 +2170,9 @@ export class ItemRelationshipService {
       ] as const
     )
       .filter(([, before, after]) => after !== undefined && before !== after)
-      .map(([field]) => field)
+      .map(([field]): string => field)
+    // A JSON document, so compared by content rather than by reference.
+    if (metadataChanged) changedFields.push('metadata')
 
     const sourceItem = await ItemService.findById(existing.sourceId)
     const targetItem = await ItemService.findById(existing.targetId)
@@ -2292,6 +2318,24 @@ export class ItemRelationshipService {
               newValue: {
                 targetItemNumber: targetLabel,
                 findNumber: data.findNumber,
+              },
+              fieldCategory: 'relationship',
+            })
+          }
+
+          // The caller's keys only, on both sides: the reserved ones did not
+          // change, and an affirmation in a diff would read as if they had.
+          if (metadataChanged) {
+            fieldChanges.push({
+              fieldName: `bom_metadata_changed`,
+              fieldPath: `relationships.${existing.relationshipType}`,
+              oldValue: {
+                targetItemNumber: targetLabel,
+                metadata: userMetadataOf(existing.metadata),
+              },
+              newValue: {
+                targetItemNumber: targetLabel,
+                metadata: userMetadataOf(metadata),
               },
               fieldCategory: 'relationship',
             })

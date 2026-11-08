@@ -2,6 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { useState } from 'react'
+import {
+  sameUserMetadata,
+  userMetadataOf,
+} from '@cascadia/commons/items/relationships/metadata'
 import type {
   Make,
   OptionCondition,
@@ -25,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
+import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { BOM_RELATIONSHIP_TYPE } from '@/components/items/bom-target-scope'
 import { isValidQuantity } from '@/components/items/bom-quantity'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -40,6 +45,11 @@ export interface EditableRelationship {
   quantity: string | null
   referenceDesignator: string | null
   findNumber: number | null
+  /**
+   * The edge's `metadata` column as read. Only its caller-owned keys are shown
+   * and sent; the server keeps its own (a trace link's affirmation).
+   */
+  metadata?: Record<string, unknown> | null
   /** Product variants: shown here, edited from the row's option icon. */
   option?: OptionCondition | null
   targetMakeCode?: string | null
@@ -61,7 +71,8 @@ interface EditRelationshipDialogProps {
 
 /**
  * Edit the line properties of an existing relationship — quantity, reference
- * designator, find number — via `PUT /api/v1/relationships/:id`. Before this
+ * designator, find number, custom attributes (the edge's `metadata`) — via
+ * `PUT /api/v1/relationships/:id`. Before this
  * existed the only way to correct a quantity was deleting the line and
  * re-adding it, which is a structural change, not a correction.
  *
@@ -88,6 +99,9 @@ export function EditRelationshipDialog({
   const [targetMakeCode, setTargetMakeCode] = useState(
     relationship.targetMakeCode ?? '__none__',
   )
+  const [metadata, setMetadata] = useState<Record<string, unknown>>(
+    () => userMetadataOf(relationship.metadata) ?? {},
+  )
 
   const isBom = relationship.relationshipType === BOM_RELATIONSHIP_TYPE
   // A BOM line requires a quantity; on any line, a non-empty value must be a
@@ -108,6 +122,13 @@ export function EditRelationshipDialog({
           referenceDesignator: referenceDesignator.trim() || null,
           findNumber: findNumber ? parseInt(findNumber, 10) : null,
           targetMakeCode: targetMakeCode === '__none__' ? null : targetMakeCode,
+          // Replaced whole server-side, so only sent when edited: a save of
+          // the quantity must not overwrite attributes changed meanwhile.
+          ...(sameUserMetadata(relationship.metadata, metadata)
+            ? {}
+            : {
+                metadata: Object.keys(metadata).length > 0 ? metadata : null,
+              }),
         }),
       })
       await invalidate('relationships')
@@ -221,6 +242,14 @@ export function EditRelationshipDialog({
             </p>
           </div>
         )}
+
+        <AttributesEditor
+          value={metadata}
+          onChange={setMetadata}
+          disabled={saving}
+          emptyMessage="No custom attributes on this line."
+          compact
+        />
 
         <DialogFooter>
           <Button

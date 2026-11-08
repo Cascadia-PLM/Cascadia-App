@@ -19,6 +19,10 @@ interface AttributesEditorProps {
   disabled?: boolean
   /** Additional classes for the outer border wrapper (use 'border-0' to suppress when inside a Card) */
   className?: string
+  /** Shown when there is nothing to list. */
+  emptyMessage?: string
+  /** A small heading and tighter padding, for use inside a dialog. */
+  compact?: boolean
 }
 
 /**
@@ -58,6 +62,8 @@ export function AttributesEditor({
   onChange,
   disabled = false,
   className,
+  emptyMessage = 'No custom attributes defined. Add attributes to store additional metadata on this item.',
+  compact = false,
 }: AttributesEditorProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -103,9 +109,19 @@ export function AttributesEditor({
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className={cn('border rounded-lg', className)}>
-        <CollapsibleTrigger className="flex w-full items-center justify-between p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+        <CollapsibleTrigger
+          className={cn(
+            'flex w-full items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors',
+            compact ? 'px-3 py-2' : 'p-4',
+          )}
+        >
           <div className="flex items-center gap-3">
-            <span className="text-2xl font-semibold leading-none tracking-tight">
+            <span
+              className={cn(
+                'font-semibold leading-none tracking-tight',
+                compact ? 'text-sm' : 'text-2xl',
+              )}
+            >
               Custom Attributes
             </span>
             {attributeCount > 0 && (
@@ -115,11 +131,10 @@ export function AttributesEditor({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="px-4 pb-4 space-y-3">
+          <div className={cn('space-y-3', compact ? 'px-3 pb-3' : 'px-4 pb-4')}>
             {entries.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">
-                No custom attributes defined. Add attributes to store additional
-                metadata on this item.
+                {emptyMessage}
               </p>
             ) : (
               <div className="space-y-2">

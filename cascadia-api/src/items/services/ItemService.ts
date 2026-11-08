@@ -1655,6 +1655,7 @@ export class ItemService {
       quantity?: string
       referenceDesignator?: string
       findNumber?: number
+      metadata?: Record<string, unknown> | null
       option?: OptionCondition | null
       targetMakeCode?: string | null
     },
@@ -1687,7 +1688,8 @@ export class ItemService {
   }
 
   /**
-   * Update a relationship's properties (quantity, referenceDesignator, findNumber)
+   * Update a relationship's properties (quantity, referenceDesignator,
+   * findNumber, metadata, option, targetMakeCode)
    * @delegate ItemRelationshipService.updateRelationship
    */
   static async updateRelationship(
@@ -1697,6 +1699,7 @@ export class ItemService {
       quantity?: string | null
       referenceDesignator?: string | null
       findNumber?: number | null
+      metadata?: Record<string, unknown> | null
       option?: OptionCondition | null
       targetMakeCode?: string | null
     },

@@ -41,6 +41,7 @@ interface Relationship {
   quantity: string | null
   referenceDesignator: string | null
   findNumber: number | null
+  metadata?: Record<string, unknown> | null
   targetItem: {
     id: string
     itemNumber: string

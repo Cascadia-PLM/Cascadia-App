@@ -9,6 +9,7 @@ import {
   optionConditionSchema,
 } from '@cascadia/commons/types/variants'
 import { hasPermission } from '@cascadia/commons/auth/permissions'
+import { relationshipMetadataSchema } from '@cascadia/commons/items/relationships/metadata'
 import { tagged } from '../adapter'
 import type { OptionCondition } from '@cascadia/commons/types/variants'
 import { db } from '@/db'
@@ -51,7 +52,7 @@ const relationshipDataSchema = z.object({
   quantity: z.union([z.number(), z.string()]).optional(),
   referenceDesignator: z.string().optional(),
   findNumber: z.number().optional(),
-  metadata: z.record(z.string(), z.any()).optional(),
+  metadata: relationshipMetadataSchema.optional(),
   option: optionConditionSchema.nullish(),
   targetMakeCode: makeCodeSchema
     .nullish()
@@ -419,12 +420,15 @@ app.post(
 
 // PUT /api/relationships/:relationshipId
 /**
- * The three fields an edge's own row carries. All optional — an absent key
- * leaves the column alone, `null` clears it.
+ * The fields an edge's own row carries. All optional — an absent key leaves
+ * the column alone, `null` clears it.
  *
  * `quantity` is stored as text and a number is accepted for it (a client
  * sending `2` rather than `"2"` has always worked), so it is coerced here
  * rather than at the driver.
+ *
+ * `metadata` is replaced whole, not merged key by key: send the full set the
+ * edge should carry. The server's own keys are outside it either way.
  */
 const relationshipEditSchema = z.object({
   quantity: z
@@ -433,6 +437,12 @@ const relationshipEditSchema = z.object({
     .nullish(),
   referenceDesignator: z.string().max(200).nullish(),
   findNumber: z.number().int().min(0).max(1_000_000).nullish(),
+  metadata: relationshipMetadataSchema
+    .nullish()
+    .describe(
+      "Replaces the edge's caller-owned metadata keys as a whole; null " +
+        'clears them. Server-maintained keys (`affirmed`) are kept either way.',
+    ),
   option: optionConditionSchema
     .nullish()
     .describe('Product variants: null makes the line fixed again.'),

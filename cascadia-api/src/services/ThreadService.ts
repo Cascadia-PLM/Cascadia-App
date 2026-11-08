@@ -793,6 +793,7 @@ export class ThreadService {
         quantity: rel.quantity,
         option: rel.option ?? null,
         targetMakeCode: rel.targetMakeCode ?? null,
+        referenceDesignator: rel.referenceDesignator ?? null,
         derivationMethod: null,
       })
 

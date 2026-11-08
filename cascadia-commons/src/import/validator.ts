@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { referenceDesignatorKey } from '../types/bom'
 import { isWorkingRevisionValue } from '../types/lifecycle'
+import { optionConditionKey, parseOptionText } from '../types/variants'
 import { importPartRowSchema } from './types'
 import { importDocumentRowSchema } from './types/document'
 import { importIssueRowSchema } from './types/issue'
@@ -399,17 +401,25 @@ export function validateBomStructure(
     }
   }
 
-  // Check for a child listed twice under one parent. `item_relationships` is
-  // unique on (source, target, type), so the second line has nowhere to go —
-  // the import would report it as a per-line failure after upload. Say so in
-  // the preview, where the fix is to merge the two lines.
+  // Check for a child listed twice under one parent as the same line. A child
+  // may repeat under a different option condition, target execution or
+  // reference designators — the identity `item_relationships_edge_unique`
+  // keys on — but a true repeat has nowhere to go, and the import would
+  // report it as a per-line failure after upload. Say so in the preview,
+  // where the fix is to merge the two lines.
   const seenEdges = new Set<string>()
   for (const rel of relationships) {
-    const edgeKey = `${rel.parentItemNumber.toLowerCase()}\u0000${rel.childItemNumber.toLowerCase()}`
+    const edgeKey = [
+      rel.parentItemNumber.toLowerCase(),
+      rel.childItemNumber.toLowerCase(),
+      optionTextKey(rel.option),
+      rel.targetMakeCode?.trim().toUpperCase() ?? '',
+      referenceDesignatorKey('BOM', rel.referenceDesignator),
+    ].join('\u0000')
     if (seenEdges.has(edgeKey)) {
       errors.push({
         type: 'duplicate_relationship',
-        message: `${rel.parentItemNumber} lists ${rel.childItemNumber} more than once — combine the lines and sum their quantities`,
+        message: `${rel.parentItemNumber} lists ${rel.childItemNumber} more than once — combine the lines and sum their quantities, or give each line its own reference designators`,
         itemNumber: rel.childItemNumber,
       })
       continue
@@ -418,4 +428,18 @@ export function validateBomStructure(
   }
 
   return { errors, warnings }
+}
+
+/**
+ * An option condition's identity from its import text, so `color=black` and
+ * ` color = black ` are one condition. Text that does not parse keys as
+ * itself: that line fails on its own at import.
+ */
+function optionTextKey(text: string | undefined): string {
+  if (!text) return ''
+  try {
+    return optionConditionKey(parseOptionText(text))
+  } catch {
+    return text.trim()
+  }
 }

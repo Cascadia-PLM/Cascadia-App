@@ -741,6 +741,10 @@ export const itemRelationships = pgTable(
       .references(() => items.id, { onDelete: 'cascade' }),
     relationshipType: varchar('relationship_type', { length: 50 }).notNull(),
     quantity: decimal('quantity', { precision: 10, scale: 3 }),
+    /**
+     * Stored trimmed, a blank as null (`normalizeReferenceDesignator`). On a
+     * BOM line it is part of the edge's identity — see the unique index below.
+     */
     referenceDesignator: text('reference_designator'),
     findNumber: integer('find_number'),
     metadata: jsonb('metadata'),
@@ -786,43 +790,24 @@ export const itemRelationships = pgTable(
     derivationNotes: text('derivation_notes'),
   },
   (table) => [
-    // An edge is (source, target, type) — plus its option condition and
-    // selected target execution, so one
-    // child can appear on a parent's BOM under two conditions with different
-    // quantities. Postgres never equates NULLs, so a single index over the
-    // five columns would let fixed lines duplicate; four partial indexes keep
-    // every null/non-null combination unique. Their names carry the
-    // `item_relationships_` prefix that
-    // `isUniqueViolation(error, { table })` matches on.
-    uniqueIndex('item_relationships_fixed_edge_unique')
-      .on(table.sourceId, table.targetId, table.relationshipType)
-      .where(sql`${table.option} IS NULL AND ${table.targetMakeCode} IS NULL`),
-    uniqueIndex('item_relationships_fixed_make_edge_unique')
-      .on(
-        table.sourceId,
-        table.targetId,
-        table.relationshipType,
-        table.targetMakeCode,
-      )
-      .where(
-        sql`${table.option} IS NULL AND ${table.targetMakeCode} IS NOT NULL`,
-      ),
-    uniqueIndex('item_relationships_option_edge_unique')
-      .on(table.sourceId, table.targetId, table.relationshipType, table.option)
-      .where(
-        sql`${table.option} IS NOT NULL AND ${table.targetMakeCode} IS NULL`,
-      ),
-    uniqueIndex('item_relationships_option_make_edge_unique')
-      .on(
-        table.sourceId,
-        table.targetId,
-        table.relationshipType,
-        table.option,
-        table.targetMakeCode,
-      )
-      .where(
-        sql`${table.option} IS NOT NULL AND ${table.targetMakeCode} IS NOT NULL`,
-      ),
+    // An edge is (source, target, type) — plus its option condition, its
+    // selected target execution and, on a BOM line, its reference
+    // designators. So one child can appear on a parent's BOM under two
+    // conditions with different quantities, or at R1 and at R2 as two lines.
+    // Postgres never equates NULLs, so each nullable part is COALESCEd to a
+    // value no canonical row stores — an empty condition object, an empty
+    // code, an empty designator — and a missing value collides with a missing
+    // value. Mirrors `ItemRelationshipService.edgeKey`. The name carries the
+    // `item_relationships_` prefix that `isUniqueViolation(error, { table })`
+    // matches on.
+    uniqueIndex('item_relationships_edge_unique').on(
+      table.sourceId,
+      table.targetId,
+      table.relationshipType,
+      sql`COALESCE(${table.option}, '{}'::jsonb)`,
+      sql`COALESCE(${table.targetMakeCode}, '')`,
+      sql`(CASE WHEN ${table.relationshipType} = 'BOM' THEN COALESCE(${table.referenceDesignator}, '') ELSE '' END)`,
+    ),
     index('idx_source').on(table.sourceId),
     index('idx_target').on(table.targetId),
     index('idx_relationship_type').on(table.relationshipType),

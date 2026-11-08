@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
 import { catalogEndMismatch } from '@cascadia/commons/items/relationships/catalog'
 import {
@@ -9,6 +9,10 @@ import {
   userMetadataOf,
   withUserMetadata,
 } from '@cascadia/commons/items/relationships/metadata'
+import {
+  normalizeReferenceDesignator,
+  referenceDesignatorKey,
+} from '@cascadia/commons/types/bom'
 import { isWorkingRevisionValue } from '@cascadia/commons/types/lifecycle'
 import {
   makeCodeSchema,
@@ -112,12 +116,35 @@ function relationshipExistsError(
   sourceId: string,
   targetId: string,
   relationshipType: string,
+  referenceDesignator?: string | null,
 ): AlreadyExistsError {
+  const at = referenceDesignatorKey(relationshipType, referenceDesignator)
   return new AlreadyExistsError(
     'Relationship',
-    `${sourceId} → ${targetId} (${relationshipType})`,
-    { sourceId, targetId, relationshipType },
+    `${sourceId} → ${targetId} (${relationshipType}${at ? ` at ${at}` : ''})`,
+    {
+      sourceId,
+      targetId,
+      relationshipType,
+      ...(at ? { referenceDesignator: at } : {}),
+    },
   )
+}
+
+/**
+ * The stored-row half of an edge's reference-designator identity, for a
+ * lookup that has to agree with `item_relationships_edge_unique`: on a BOM
+ * line the designator must match, a missing one matching only a missing one;
+ * on any other relationship it does not take part, so no condition at all.
+ */
+function referenceDesignatorMatches(
+  relationshipType: string,
+  referenceDesignator: string | null,
+) {
+  if (relationshipType !== 'BOM') return undefined
+  return referenceDesignator
+    ? eq(itemRelationships.referenceDesignator, referenceDesignator)
+    : isNull(itemRelationships.referenceDesignator)
 }
 
 /**
@@ -920,12 +947,14 @@ export class ItemRelationshipService {
 
   /**
    * An edge is identified by (sourceId, targetId, relationshipType, option,
-   * targetMakeCode) — the partial unique indexes on `item_relationships`. Two BOM lines
-   * naming the same child under different find numbers but the same option
-   * condition are therefore the *same* edge, and the quantity has to be
-   * aggregated onto one line; the same child under two different conditions
-   * is two lines. Callers use this to say so
-   * before the database does, because the driver's answer is a wall of SQL.
+   * targetMakeCode) and, on a BOM line, its reference designators — the
+   * `item_relationships_edge_unique` index. The same child at R1 and at R2,
+   * or under two different conditions, is two lines. Two BOM lines naming
+   * the same child with the same designators (or none) and the same
+   * condition are the *same* edge, however their find numbers differ, and
+   * the quantity has to be aggregated onto one line. Callers use this to say
+   * so before the database does, because the driver's answer is a wall of
+   * SQL.
    */
   static edgeKey(edge: {
     sourceId: string
@@ -933,6 +962,7 @@ export class ItemRelationshipService {
     relationshipType: string
     option?: OptionCondition | null
     targetMakeCode?: string | null
+    referenceDesignator?: string | null
   }): string {
     // NUL separates: it cannot occur in a uuid, a relationship type or the
     // canonical JSON of a condition, so no pair of distinct tuples can
@@ -943,6 +973,7 @@ export class ItemRelationshipService {
       edge.relationshipType,
       optionConditionKey(edge.option),
       edge.targetMakeCode?.toUpperCase() ?? '',
+      referenceDesignatorKey(edge.relationshipType, edge.referenceDesignator),
     ].join('\u0000')
   }
 
@@ -960,6 +991,7 @@ export class ItemRelationshipService {
       relationshipType: string
       option?: OptionCondition | null
       targetMakeCode?: string | null
+      referenceDesignator?: string | null
     },
   >(edges: Array<T>): Array<{ index: number; firstIndex: number; edge: T }> {
     const firstSeenAt = new Map<string, number>()
@@ -1322,6 +1354,9 @@ export class ItemRelationshipService {
       relationshipType,
       data?.targetMakeCode,
     )
+    const referenceDesignator = normalizeReferenceDesignator(
+      data?.referenceDesignator,
+    )
 
     const sourceItem = await ItemService.findById(sourceId)
     // Read before the transaction so the emit inside it has both ends. The
@@ -1359,12 +1394,18 @@ export class ItemRelationshipService {
           targetMakeCode
             ? eq(itemRelationships.targetMakeCode, targetMakeCode)
             : isNull(itemRelationships.targetMakeCode),
+          referenceDesignatorMatches(relationshipType, referenceDesignator),
         ),
       )
       .limit(1)
 
     if (existing.length > 0) {
-      throw relationshipExistsError(sourceId, targetId, relationshipType)
+      throw relationshipExistsError(
+        sourceId,
+        targetId,
+        relationshipType,
+        referenceDesignator,
+      )
     }
 
     let relationship: typeof itemRelationships.$inferSelect
@@ -1378,7 +1419,7 @@ export class ItemRelationshipService {
               targetId,
               relationshipType,
               quantity: data?.quantity,
-              referenceDesignator: data?.referenceDesignator,
+              referenceDesignator,
               findNumber: data?.findNumber,
               // A trace claim is born affirmed by its author, against the
               // rows it names — see items/trace-affirmation.ts.
@@ -1429,7 +1470,12 @@ export class ItemRelationshipService {
     } catch (error) {
       // The check above is not a lock; a concurrent insert still lands here.
       if (isUniqueViolation(error, { table: 'item_relationships' })) {
-        throw relationshipExistsError(sourceId, targetId, relationshipType)
+        throw relationshipExistsError(
+          sourceId,
+          targetId,
+          relationshipType,
+          referenceDesignator,
+        )
       }
       throw error
     }
@@ -1471,6 +1517,7 @@ export class ItemRelationshipService {
                         targetItemNumber: targetItem?.itemNumber,
                         quantity: data?.quantity,
                         findNumber: data?.findNumber,
+                        referenceDesignator,
                         targetMakeCode,
                       },
                       fieldCategory: 'relationship',
@@ -1549,11 +1596,14 @@ export class ItemRelationshipService {
         r.relationshipType,
         r.data.targetMakeCode,
       )
+      r.data.referenceDesignator =
+        normalizeReferenceDesignator(r.data.referenceDesignator) ?? undefined
     }
     const withOption = relationships.map((r) => ({
       ...r,
       option: r.data?.option ?? null,
       targetMakeCode: r.data?.targetMakeCode ?? null,
+      referenceDesignator: r.data?.referenceDesignator ?? null,
     }))
 
     // Duplicates inside the batch collide with each other, not with anything
@@ -1561,7 +1611,9 @@ export class ItemRelationshipService {
     const duplicates = this.findDuplicateEdges(withOption)
     if (duplicates.length > 0) {
       throw new ValidationError(
-        'A relationship may appear only once per (source, target, type)',
+        'A relationship may appear only once per source, target, type, ' +
+          'option condition, target execution and (on a BOM line) reference ' +
+          'designators',
         duplicates.map(({ index, firstIndex, edge }) => ({
           field: `relationships[${index}]`,
           message:
@@ -1746,8 +1798,9 @@ export class ItemRelationshipService {
       // the whole INSERT with every bound parameter. Report neither.
       if (isUniqueViolation(error, { table: 'item_relationships' })) {
         throw new ValidationError(
-          'One or more relationships already exist (source, target and type ' +
-            'must be unique)',
+          'One or more relationships already exist (a child may repeat on a ' +
+            'parent only under a different option condition, target ' +
+            'execution or, on a BOM line, reference designators)',
           undefined,
           { relationshipCount: relationships.length },
         )
@@ -1819,6 +1872,7 @@ export class ItemRelationshipService {
               targetItemNumber: targetItem?.itemNumber,
               quantity: rel.data?.quantity,
               findNumber: rel.data?.findNumber,
+              referenceDesignator: rel.data?.referenceDesignator,
               targetMakeCode: rel.data?.targetMakeCode,
             },
             fieldCategory: 'relationship' as const,
@@ -2001,6 +2055,7 @@ export class ItemRelationshipService {
                           targetItemNumber: targetItem?.itemNumber,
                           quantity: relationship.quantity,
                           findNumber: relationship.findNumber,
+                          referenceDesignator: relationship.referenceDesignator,
                           targetMakeCode: relationship.targetMakeCode,
                         },
                         newValue: null,
@@ -2087,20 +2142,37 @@ export class ItemRelationshipService {
       data.metadata === undefined
         ? undefined
         : withUserMetadata(existing.metadata, data.metadata)
+    const referenceDesignator =
+      data.referenceDesignator === undefined
+        ? undefined
+        : normalizeReferenceDesignator(data.referenceDesignator)
     const nextOption = option === undefined ? existing.option : option
     const nextTargetMakeCode =
       targetMakeCode === undefined ? existing.targetMakeCode : targetMakeCode
+    const nextReferenceDesignator =
+      referenceDesignator === undefined
+        ? existing.referenceDesignator
+        : referenceDesignator
     if (
       optionConditionKey(nextOption) !== optionConditionKey(existing.option) ||
-      nextTargetMakeCode !== existing.targetMakeCode
+      nextTargetMakeCode !== existing.targetMakeCode ||
+      referenceDesignatorKey(
+        existing.relationshipType,
+        nextReferenceDesignator,
+      ) !==
+        referenceDesignatorKey(
+          existing.relationshipType,
+          existing.referenceDesignator,
+        )
     ) {
-      // Changing the condition can collide with a sibling line on the same
-      // child; say so before the index does.
+      // Changing the condition or the designators can collide with a sibling
+      // line on the same child; say so before the index does.
       const collision = await db
         .select({ id: itemRelationships.id })
         .from(itemRelationships)
         .where(
           and(
+            ne(itemRelationships.id, existing.id),
             eq(itemRelationships.sourceId, existing.sourceId),
             eq(itemRelationships.targetId, existing.targetId),
             eq(itemRelationships.relationshipType, existing.relationshipType),
@@ -2110,6 +2182,10 @@ export class ItemRelationshipService {
             nextTargetMakeCode
               ? eq(itemRelationships.targetMakeCode, nextTargetMakeCode)
               : isNull(itemRelationships.targetMakeCode),
+            referenceDesignatorMatches(
+              existing.relationshipType,
+              nextReferenceDesignator,
+            ),
           ),
         )
         .limit(1)
@@ -2118,6 +2194,7 @@ export class ItemRelationshipService {
           existing.sourceId,
           existing.targetId,
           existing.relationshipType,
+          nextReferenceDesignator,
         )
       }
     }
@@ -2138,8 +2215,8 @@ export class ItemRelationshipService {
       modifiedAt: new Date(),
     }
     if (data.quantity !== undefined) updateData.quantity = data.quantity
-    if (data.referenceDesignator !== undefined)
-      updateData.referenceDesignator = data.referenceDesignator
+    if (referenceDesignator !== undefined)
+      updateData.referenceDesignator = referenceDesignator
     if (data.findNumber !== undefined) updateData.findNumber = data.findNumber
     if (metadata !== undefined) updateData.metadata = metadata
     if (option !== undefined) updateData.option = option
@@ -2158,7 +2235,7 @@ export class ItemRelationshipService {
         [
           'referenceDesignator',
           existing.referenceDesignator,
-          data.referenceDesignator,
+          referenceDesignator,
         ],
         ['findNumber', existing.findNumber, data.findNumber],
         [
@@ -2186,13 +2263,14 @@ export class ItemRelationshipService {
           .where(eq(itemRelationships.id, relationshipId))
           .returning()
       } catch (error) {
-        // Changing the condition can collide with a sibling line on the same
-        // child; translate the index's refusal.
+        // Changing the condition or the designators can collide with a
+        // sibling line on the same child; translate the index's refusal.
         if (isUniqueViolation(error, { table: 'item_relationships' })) {
           throw relationshipExistsError(
             existing.sourceId,
             existing.targetId,
             existing.relationshipType,
+            nextReferenceDesignator,
           )
         }
         throw error
@@ -2286,8 +2364,8 @@ export class ItemRelationshipService {
           }
 
           if (
-            data.referenceDesignator !== undefined &&
-            existing.referenceDesignator !== data.referenceDesignator
+            referenceDesignator !== undefined &&
+            existing.referenceDesignator !== referenceDesignator
           ) {
             fieldChanges.push({
               fieldName: `bom_refdes_changed`,
@@ -2298,7 +2376,7 @@ export class ItemRelationshipService {
               },
               newValue: {
                 targetItemNumber: targetLabel,
-                referenceDesignator: data.referenceDesignator,
+                referenceDesignator,
               },
               fieldCategory: 'relationship',
             })

@@ -75,6 +75,39 @@ describe('bomStructureOf', () => {
     expect(a.signature).not.toBe(b.signature)
   })
 
+  it('distinguishes two structures that differ only in where a child sits', async () => {
+    // Designators tell two lines of one child apart, so R1+R2 against R1+R3
+    // is a real divergence — the same quantities, find numbers and children.
+    const parentA = await insertTestPart(testDb.db, null, userId)
+    const parentB = await insertTestPart(testDb.db, null, userId)
+    const child = await insertTestPart(testDb.db, null, userId)
+    const line = (sourceId: string, referenceDesignator: string) => ({
+      sourceId,
+      targetId: child.item.id,
+      relationshipType: 'BOM',
+      quantity: '1',
+      referenceDesignator,
+      createdBy: userId,
+    })
+
+    await testDb.db
+      .insert(itemRelationships)
+      .values([
+        line(parentA.item.id, 'R1'),
+        line(parentA.item.id, 'R2'),
+        line(parentB.item.id, 'R1'),
+        line(parentB.item.id, 'R3'),
+      ])
+
+    const [a, b] = await Promise.all([
+      bomStructureOf(parentA.item.id, testDb.db),
+      bomStructureOf(parentB.item.id, testDb.db),
+    ])
+    expect(a.lineCount).toBe(2)
+    expect(b.lineCount).toBe(2)
+    expect(a.signature).not.toBe(b.signature)
+  })
+
   it('gives the same signature to one option written in two orders', async () => {
     const parentA = await insertTestPart(testDb.db, null, userId)
     const parentB = await insertTestPart(testDb.db, null, userId)

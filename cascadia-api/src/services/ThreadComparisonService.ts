@@ -3,6 +3,7 @@
 
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { db } from '../db'
 import {
@@ -570,10 +571,11 @@ export class ThreadComparisonService {
 
   /**
    * Compute edge diffs between two sets of relationships.
-   * Exact identity includes the option condition and target execution. When an
-   * edge has changed one of those fields, a second pass pairs the remaining
-   * edge in the same source/target/type group so the UI can show a modification
-   * rather than losing one of several parallel BOM lines in a Map.
+   * Exact identity includes the option condition, target execution and a BOM
+   * line's reference designators. When an edge has changed one of those
+   * fields, a second pass pairs the remaining edge in the same
+   * source/target/type group so the UI can show a modification rather than
+   * losing one of several parallel BOM lines in a Map.
    */
   private static computeEdgeDiffs(
     beforeEdges: Array<ThreadEdge>,
@@ -586,6 +588,7 @@ export class ThreadComparisonService {
         baseKey(edge),
         optionConditionKey(edge.option),
         edge.targetMakeCode ?? '',
+        referenceDesignatorKey(edge.relationshipType, edge.referenceDesignator),
       ].join('\u0000')
 
     const beforeByExact = new Map<string, Array<number>>()
@@ -647,12 +650,22 @@ export class ThreadComparisonService {
         const targetMakeChanged =
           (beforeEdge.targetMakeCode ?? null) !==
           (afterEdge.targetMakeCode ?? null)
+        const referenceDesignatorChanged =
+          referenceDesignatorKey(
+            beforeEdge.relationshipType,
+            beforeEdge.referenceDesignator,
+          ) !==
+          referenceDesignatorKey(
+            afterEdge.relationshipType,
+            afterEdge.referenceDesignator,
+          )
 
         if (
           quantityChanged ||
           derivationMethodChanged ||
           optionChanged ||
-          targetMakeChanged
+          targetMakeChanged ||
+          referenceDesignatorChanged
         ) {
           diffs.push({
             edge: afterEdge,
@@ -663,6 +676,7 @@ export class ThreadComparisonService {
               derivationMethodChanged,
               optionChanged,
               targetMakeChanged,
+              referenceDesignatorChanged,
             },
             sourceContext: 'both',
           })

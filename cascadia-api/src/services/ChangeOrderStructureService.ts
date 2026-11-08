@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { ChangeOrderService } from '../items/services/ChangeOrderService'
 import { withholdUnreadableNodes } from '../items/design-structure-visibility'
@@ -465,6 +466,7 @@ export class ChangeOrderStructureService {
         findNumber?: number
         option?: OptionCondition | null
         targetMakeCode?: string | null
+        referenceDesignator?: string | null
       }>
     >()
     const hasParent = new Set<string>()
@@ -485,6 +487,7 @@ export class ChangeOrderStructureService {
         findNumber?: number
         option?: OptionCondition | null
         targetMakeCode?: string | null
+        referenceDesignator?: string | null
       },
     ) => {
       let recorded = childKeysBySource.get(sourceMasterId)
@@ -496,6 +499,7 @@ export class ChangeOrderStructureService {
         child.childMasterId,
         optionConditionKey(child.option),
         child.targetMakeCode ?? '',
+        referenceDesignatorKey('BOM', child.referenceDesignator),
       ].join('\u0000')
       if (recorded.has(childKey)) return
       recorded.add(childKey)
@@ -570,6 +574,7 @@ export class ChangeOrderStructureService {
           findNumber: r.rel.findNumber ?? undefined,
           option: r.rel.option ?? null,
           targetMakeCode: r.rel.targetMakeCode ?? null,
+          referenceDesignator: r.rel.referenceDesignator ?? null,
         })
       }
     }
@@ -624,6 +629,7 @@ export class ChangeOrderStructureService {
             node.relationshipId = c.relationshipId
             node.option = c.option ?? null
             node.targetMakeCode = c.targetMakeCode ?? null
+            node.referenceDesignator = c.referenceDesignator ?? null
           }
           return node
         })

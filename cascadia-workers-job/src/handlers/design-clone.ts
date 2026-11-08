@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { db } from '@cascadia/api/db'
 import { takeFirst } from '@cascadia/api/db/take-first'
@@ -464,6 +465,10 @@ export const cloneDesignHandler: JobHandler<
             rel.relationshipType,
             optionConditionKey(rel.option),
             rel.targetMakeCode ?? '',
+            referenceDesignatorKey(
+              rel.relationshipType,
+              rel.referenceDesignator,
+            ),
           ].join('\u0000')
           if (copiedRelationships.has(relKey)) {
             skippedDuplicate++

@@ -4,6 +4,34 @@
 import type { OptionCondition } from './variants'
 
 /**
+ * A reference designator as it is stored and compared: trimmed, with a blank
+ * meaning none. Canonical on the way in, so `item_relationships_edge_unique`
+ * can compare the column as it stands — `'R1 '` beside `'R1'`, or `''` beside
+ * null, would otherwise be two lines that read as one.
+ */
+export function normalizeReferenceDesignator(
+  value: string | null | undefined,
+): string | null {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === '' ? null : trimmed
+}
+
+/**
+ * The reference designator's share of a relationship's identity; `''` for
+ * none. On a BOM line it tells two lines of one child apart — `R1` and `R2`
+ * are two positions on the board, each its own line. On any other
+ * relationship it does not count, so a trace link stays one per pair whatever
+ * is typed into the field. Mirrors the expression in the unique index.
+ */
+export function referenceDesignatorKey(
+  relationshipType: string,
+  value: string | null | undefined,
+): string {
+  if (relationshipType !== 'BOM') return ''
+  return normalizeReferenceDesignator(value) ?? ''
+}
+
+/**
  * The shape of a BOM tree as it crosses the wire.
  *
  * Two endpoints build one — `GET /designs/:id/structure` and
@@ -45,6 +73,11 @@ export interface BOMTreeNode {
   option?: OptionCondition | null
   /** Execution pinned on the incoming BOM line. */
   targetMakeCode?: string | null
+  /**
+   * Reference designators on the incoming BOM line. Two lines of one child
+   * under one parent are told apart by these. Absent on roots.
+   */
+  referenceDesignator?: string | null
   /** Display-only item number + revision + execution. */
   designation?: string
   children?: Array<BOMTreeNode>

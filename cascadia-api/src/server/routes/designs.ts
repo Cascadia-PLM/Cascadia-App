@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { REQUIREMENT_SHEET_FIELDS } from '@cascadia/commons/import'
 import { tagged } from '../adapter'
@@ -2528,6 +2529,7 @@ app.get(
           findNumber?: number
           option?: OptionCondition | null
           targetMakeCode?: string | null
+          referenceDesignator?: string | null
         }>
       >()
       const hasParent = new Set<string>()
@@ -2580,7 +2582,13 @@ app.get(
           const resolvedTargetId = resolveItemId(rel.targetId)
 
           // Deduplicate by resolved source-target pair
-          const relKey = `${resolvedSourceId}:${resolvedTargetId}:${optionConditionKey(rel.option)}:${rel.targetMakeCode ?? ''}`
+          const relKey = JSON.stringify([
+            resolvedSourceId,
+            resolvedTargetId,
+            optionConditionKey(rel.option),
+            rel.targetMakeCode ?? '',
+            referenceDesignatorKey('BOM', rel.referenceDesignator),
+          ])
           if (addedRelationships.has(relKey)) continue
           addedRelationships.add(relKey)
 
@@ -2594,6 +2602,7 @@ app.get(
             findNumber: rel.findNumber ?? undefined,
             option: rel.option ?? null,
             targetMakeCode: rel.targetMakeCode ?? null,
+            referenceDesignator: rel.referenceDesignator ?? null,
           })
           hasParent.add(resolvedTargetId)
         }
@@ -2650,6 +2659,7 @@ app.get(
               node.relationshipId = c.relationshipId
               node.option = c.option ?? null
               node.targetMakeCode = c.targetMakeCode ?? null
+              node.referenceDesignator = c.referenceDesignator ?? null
             }
             return node
           })
@@ -2773,7 +2783,13 @@ app.get(
 
           // Add relationships
           for (const rel of childRels) {
-            const relKey = `${rel.sourceId}:${rel.targetId}:${optionConditionKey(rel.option)}:${rel.targetMakeCode ?? ''}`
+            const relKey = JSON.stringify([
+              rel.sourceId,
+              rel.targetId,
+              optionConditionKey(rel.option),
+              rel.targetMakeCode ?? '',
+              referenceDesignatorKey('BOM', rel.referenceDesignator),
+            ])
             if (!addedRelationships.has(relKey)) {
               addedRelationships.add(relKey)
               if (!childrenMap.has(rel.sourceId)) {
@@ -2786,6 +2802,7 @@ app.get(
                 findNumber: rel.findNumber ?? undefined,
                 option: rel.option ?? null,
                 targetMakeCode: rel.targetMakeCode ?? null,
+                referenceDesignator: rel.referenceDesignator ?? null,
               })
               hasParent.add(rel.targetId)
             }

@@ -14,6 +14,7 @@ import {
   importRequirementsRequestSchema,
   planRequirementHierarchy,
 } from '@cascadia/commons/import'
+import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import {
   optionConditionKey,
   parseOptionText,
@@ -517,8 +518,9 @@ app.post(
           }
 
           // Keep this identity aligned with ItemRelationshipService.edgeKey
-          // and the partial unique indexes: one child may occur more than
-          // once when its option condition or selected execution differs.
+          // and the unique index: one child may occur more than once when its
+          // option condition, selected execution or reference designators
+          // differ.
           const seenEdges = new Set<string>()
 
           // Process each relationship
@@ -557,6 +559,7 @@ app.post(
                 rel.childItemNumber.toLowerCase(),
                 optionConditionKey(option),
                 rel.targetMakeCode?.trim().toUpperCase() ?? '',
+                referenceDesignatorKey('BOM', rel.referenceDesignator),
               ].join('\u0000')
               if (seenEdges.has(edgeKey)) {
                 result.relationshipsFailed++
@@ -565,7 +568,7 @@ app.post(
                   childItemNumber: rel.childItemNumber,
                   error:
                     `${rel.parentItemNumber} already lists ${rel.childItemNumber} ` +
-                    'with the same option condition and target execution on an earlier line; combine the lines and sum their quantities',
+                    'with the same option condition, target execution and reference designators on an earlier line; combine the lines and sum their quantities, or give each its own reference designators',
                 })
                 continue
               }

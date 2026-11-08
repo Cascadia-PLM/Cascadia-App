@@ -157,6 +157,30 @@ export function useStructureColumns(
           ),
         })
       }
+      // Reference designators are what tell two lines of one child apart, so
+      // a tree that carries any shows them.
+      if (
+        roots.some((root) => {
+          const hasRefDes = (node: BOMTreeNode): boolean =>
+            Boolean(node.referenceDesignator) ||
+            Boolean(node.children?.some(hasRefDes))
+          return hasRefDes(root)
+        })
+      ) {
+        columns.splice(4, 0, {
+          id: 'refdes',
+          label: 'Ref Des',
+          width: 'w-28 flex-shrink-0',
+          renderCell: (node) => (
+            <span
+              className="truncate text-xs font-mono text-slate-500"
+              title={node.referenceDesignator ?? undefined}
+            >
+              {node.referenceDesignator ?? '—'}
+            </span>
+          ),
+        })
+      }
       if (
         roots.some((root) => {
           const hasExecution = (node: BOMTreeNode): boolean =>

@@ -46,6 +46,8 @@ export interface ThreadEdge {
   option?: OptionCondition | null
   /** Execution pinned on a BOM edge's target Part revision. */
   targetMakeCode?: string | null
+  /** Reference designators on a BOM line; they tell two lines of one child apart. */
+  referenceDesignator?: string | null
 }
 
 /**
@@ -125,6 +127,7 @@ export interface ThreadEdgeDiff {
     derivationMethodChanged?: boolean
     optionChanged?: boolean
     targetMakeChanged?: boolean
+    referenceDesignatorChanged?: boolean
   }
   sourceContext: 'before' | 'after' | 'both'
 }

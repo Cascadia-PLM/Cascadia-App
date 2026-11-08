@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { catalogValues } from '@cascadia/commons/items/relationships/catalog'
+import { AFFIRMATION_KEY } from '@cascadia/commons/items/relationships/metadata'
 
 import type { SuspectReason } from '@cascadia/commons/items/suspect-reason'
 
@@ -59,8 +60,11 @@ export function isSuspectable(relationshipType: string): boolean {
   return SUSPECTABLE_RELATIONSHIP_TYPES.has(relationshipType)
 }
 
-/** The key under which an edge's `metadata` holds its affirmation. */
-export const AFFIRMATION_KEY = 'affirmed'
+/**
+ * The key under which an edge's `metadata` holds its affirmation. Declared in
+ * commons with the other reserved metadata keys, which no caller may write.
+ */
+export { AFFIRMATION_KEY }
 
 export interface TraceAffirmation {
   /** The version row the edge hung off when the claim was affirmed. */

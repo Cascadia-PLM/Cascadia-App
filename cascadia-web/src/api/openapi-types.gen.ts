@@ -12426,6 +12426,10 @@ export interface operations {
             content: {
                 "application/json": {
                     findNumber?: number;
+                    /** @description Free-form JSON object. Keys the server maintains (`affirmed`, a trace link's affirmation) are not writable: a value sent under one is ignored and the stored one kept. */
+                    metadata?: {
+                        [key: string]: unknown;
+                    };
                     /** @description Product variants: the option selections that admit this BOM line. Omit or null for a fixed line. */
                     option?: {
                         all: {
@@ -15014,6 +15018,7 @@ export interface operations {
                 "application/json": {
                     relationships: {
                         findNumber?: number;
+                        /** @description Free-form JSON object. Keys the server maintains (`affirmed`, a trace link's affirmation) are not writable: a value sent under one is ignored and the stored one kept. */
                         metadata?: {
                             [key: string]: unknown;
                         };
@@ -15100,6 +15105,10 @@ export interface operations {
             content: {
                 "application/json": {
                     findNumber?: number | null;
+                    /** @description Replaces the edge's caller-owned metadata keys as a whole; null clears them. Server-maintained keys (`affirmed`) are kept either way. */
+                    metadata?: {
+                        [key: string]: unknown;
+                    } | null;
                     /** @description Product variants: null makes the line fixed again. */
                     option?: {
                         all: {

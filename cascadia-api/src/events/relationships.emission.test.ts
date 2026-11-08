@@ -261,6 +261,36 @@ describe('structure event emission', () => {
   })
 
   /**
+   * Metadata is a JSON document, and Postgres reorders a `jsonb` object's keys
+   * on the way in — so a resubmission compared by serialization would read as
+   * a change every time, and one compared by reference always would.
+   */
+  it('a metadata-only edit is an update naming metadata; the same document reordered is not', async () => {
+    const parent = await part('mparent')
+    const child = await part('mchild')
+    const edge = await ItemRelationshipService.addRelationship(
+      parent.id,
+      child.id,
+      'BOM',
+      user.id,
+      { quantity: '1.000', metadata: { supplierRef: 'S-1', bin: 'A4' } },
+    )
+
+    await ItemRelationshipService.updateRelationship(edge.id, user.id, {
+      metadata: { bin: 'A4', supplierRef: 'S-1' },
+    })
+    expect(await structureEvents(parent.id)).toHaveLength(1)
+
+    await ItemRelationshipService.updateRelationship(edge.id, user.id, {
+      metadata: { bin: 'B2', supplierRef: 'S-1' },
+    })
+    const events = await structureEvents(parent.id)
+    expect(events).toHaveLength(2)
+    const update = events.find((e) => e.type === 'relationship.updated')
+    expect(update?.payload).toMatchObject({ changedFields: ['metadata'] })
+  })
+
+  /**
    * The batch path recorded nothing at all. With `replaceExisting` it clears a
    * parent's lines and writes new ones in one transaction, and a consumer has
    * to hear both halves: the lines that went, and the lines that came.

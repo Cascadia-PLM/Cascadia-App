@@ -28,6 +28,7 @@ import {
 } from '@/components/ui'
 import { designBranchesQuery, itemHistoryQuery } from '@/query'
 import { SourceChangesList } from '@/components/software/SourceChangesList'
+import { formatAttributeValue } from '@/components/items/AttributesEditor'
 
 interface FieldChange {
   fieldName: string
@@ -139,7 +140,8 @@ function RelationshipChange({ change }: { change: FieldChange }) {
   }
 
   if (fieldName.endsWith('_changed')) {
-    // Property update (quantity, ref designator, find number changed)
+    // Property update (quantity, ref designator, find number, custom
+    // attributes changed)
     const oldVal = change.oldValue as Record<string, unknown> | null
     const newVal = change.newValue as Record<string, unknown> | null
     const targetLabel =
@@ -161,6 +163,18 @@ function RelationshipChange({ change }: { change: FieldChange }) {
                   : key
             changedProps.push(`${label}: ${o ?? '(empty)'} → ${n ?? '(empty)'}`)
           }
+        }
+      }
+      // The line's custom attributes (`bom_metadata_changed`), one entry per
+      // key that moved.
+      if ('metadata' in oldVal || 'metadata' in newVal) {
+        const oldMeta = (oldVal.metadata ?? {}) as Record<string, unknown>
+        const newMeta = (newVal.metadata ?? {}) as Record<string, unknown>
+        const keys = new Set([...Object.keys(oldMeta), ...Object.keys(newMeta)])
+        for (const key of keys) {
+          const o = formatAttributeValue(oldMeta[key]) || '(empty)'
+          const n = formatAttributeValue(newMeta[key]) || '(empty)'
+          if (o !== n) changedProps.push(`${key}: ${o} → ${n}`)
         }
       }
     }

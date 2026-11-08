@@ -8,6 +8,7 @@ import {
   makeCodeSchema,
   optionConditionSchema,
 } from '@cascadia/commons/types/variants'
+import { relationshipMetadataSchema } from '@cascadia/commons/items/relationships/metadata'
 import { tagged } from '../../adapter'
 import { requirePermission } from '@/auth/server'
 import { NotFoundError, PermissionDeniedError } from '@/errors'
@@ -658,6 +659,7 @@ const addRelationshipSchema = z.object({
     ),
   referenceDesignator: z.string().optional(),
   findNumber: z.number().optional(),
+  metadata: relationshipMetadataSchema.optional(),
   option: optionConditionSchema
     .nullish()
     .describe(
@@ -721,6 +723,7 @@ app.post(
               data.quantity === undefined ? undefined : String(data.quantity),
             referenceDesignator: data.referenceDesignator,
             findNumber: data.findNumber,
+            metadata: data.metadata,
             option: data.option ?? null,
             targetMakeCode: data.targetMakeCode ?? null,
           },

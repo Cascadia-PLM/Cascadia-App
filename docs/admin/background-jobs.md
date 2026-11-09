@@ -157,6 +157,24 @@ Converts STEP/IGES CAD files to STL and GLB formats using pythonocc-core. The ha
 
 Clones an entire design including all items, branches, and relationships. Runs at high priority because the user is typically waiting for the result.
 
+### Imports and Batch Create
+
+| Property     | Value                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------ |
+| Types        | `import.parts`, `import.documents`, `import.requirements`, `import.issues`, `items.batch-create` |
+| Labels       | Import Parts, Import Documents, Import Requirements, Import Issues, Batch Create Items           |
+| Routing Keys | `jobs.<type>` (e.g. `jobs.import.parts`)                                                         |
+| Timeout      | 3,600,000 ms (1 hour)                                                                            |
+| Max Attempts | 1 (never retried)                                                                                |
+| Priority     | high                                                                                             |
+| Handler      | Node.js worker                                                                                   |
+
+The sheet imports (`POST /api/v1/import/*`) and `POST /api/v1/items/batch-create`. The route authorizes the request and queues it; the job creates the rows one at a time, reporting progress as `Processed N of M rows`. There is no row limit.
+
+A run is **never retried**: one that fails part-way has already created rows, and a second run would only fail them again as duplicate item numbers. Cancelling one from this page stops it between rows; the rows it already created are kept, and its last progress message records how far it got. Without a running Node.js worker these jobs stay `queued`, and without RabbitMQ the routes answer `503`.
+
+The jobs list leaves out every job's payload and result — an import's payload is its whole sheet — and the detail dialog shows the first 20,000 characters of each.
+
 ### Workflow Transition Notification
 
 | Property     | Value                              |

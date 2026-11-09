@@ -154,6 +154,25 @@ any API; `testPlanId` on the wire is unchanged.
 `npm run db:check-backfills` replays each of these against seeded rows — see
 [Preflight the data-dependent migrations](#preflight-the-data-dependent-migrations).
 
+Two more changes are operational rather than schema:
+
+**Imports and item batch-create now run on the jobs worker.** The four
+`POST /api/v1/import/*` routes and `POST /api/v1/items/batch-create` queue
+their work as background jobs and answer `202` with a job id, which is what
+lifts their 500-row and 100-item caps. An install therefore needs RabbitMQ
+and the Node.js jobs worker for import to work at all: without the queue
+these routes answer `503`, and without a worker their jobs wait in `queued`.
+An API client or script that called them must change to poll
+`GET /api/v1/jobs/{id}` and read the completed job's `result`, which is the
+body these routes used to return — see
+[How an import runs](../api/import.md#how-an-import-runs).
+
+**The worker's derived queue name changes again**, because the jobs worker
+now handles five more job types (`import.parts`, `import.documents`,
+`import.requirements`, `import.issues`, `items.batch-create`). As in
+v0.6.0, the old queue survives, still bound and accumulating messages nobody
+consumes: **delete it after the upgrade**, or pin `WORKER_QUEUE_NAME`.
+
 ## Upgrading an install created before v0.5.0
 
 Pre-0.5 databases were created by `db:push`, which writes no migration

@@ -285,7 +285,13 @@ export type {
   EventTypeSummary,
 } from './options/events'
 export { jobDetailQuery, jobListQuery, jobStatusQuery } from './options/jobs'
-export type { Job, JobDetail, JobLog, JobStatusSnapshot } from './options/jobs'
+export type {
+  Job,
+  JobDetail,
+  JobLog,
+  JobStatusSnapshot,
+  JobSummary,
+} from './options/jobs'
 export { packageListQuery } from './options/packages'
 export { itemCheckoutQuery } from './options/checkout'
 export {

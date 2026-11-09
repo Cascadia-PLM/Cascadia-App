@@ -419,6 +419,8 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 | Assess change-order impact on items                       | `ImpactAssessmentService`                    |
 | AI chatbot conversations                                  | `SessionService` from `@/ai`                 |
 | Submit background jobs                                    | `JobService.submit()`                        |
+| Queue a route's work and answer 202 (503 if no queue)     | `submitForRequest()` + `jobAccepted()`       |
+| Write a sheet import / item batch-create (worker side)    | `ImportService` / `BatchCreateService`       |
 | Register job types                                        | `JobTypeRegistry.register()`                 |
 | Wrap an API route handler                                 | `apiHandler()` from `@/api/handler`          |
 | Parse & validate query params                             | `parseQuery(request, zodSchema)`             |

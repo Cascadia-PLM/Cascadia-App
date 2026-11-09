@@ -21,6 +21,13 @@ import { eventsPruneHandler } from './handlers/events-prune'
 import { sessionCleanupHandler } from './handlers/session-cleanup'
 import { wiPartChangedHandler } from './handlers/workinstruction'
 import { watermarkPdfHandler } from './handlers/watermark'
+import {
+  batchCreateHandler,
+  importDocumentsHandler,
+  importIssuesHandler,
+  importPartsHandler,
+  importRequirementsHandler,
+} from './handlers/bulk-create'
 
 JobTypeRegistry.registerHandler(workflowTransitionHandler)
 JobTypeRegistry.registerHandler(cloneDesignHandler)
@@ -29,3 +36,8 @@ JobTypeRegistry.registerHandler(eventsPruneHandler)
 JobTypeRegistry.registerHandler(sessionCleanupHandler)
 JobTypeRegistry.registerHandler(wiPartChangedHandler)
 JobTypeRegistry.registerHandler(watermarkPdfHandler)
+JobTypeRegistry.registerHandler(importPartsHandler)
+JobTypeRegistry.registerHandler(importDocumentsHandler)
+JobTypeRegistry.registerHandler(importRequirementsHandler)
+JobTypeRegistry.registerHandler(importIssuesHandler)
+JobTypeRegistry.registerHandler(batchCreateHandler)

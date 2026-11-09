@@ -2,11 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import * as ExcelJS from 'exceljs'
-import {
-  ACCEPTED_EXTENSIONS,
-  MAX_FILE_SIZE,
-  MAX_IMPORT_ROWS,
-} from './constants'
+import { ACCEPTED_EXTENSIONS, MAX_FILE_SIZE } from './constants'
 import type { ParsedFile } from './types'
 
 /**
@@ -119,14 +115,6 @@ function processRows(
 
   // Extract data rows (skip header row)
   const dataRows = rawData.slice(1)
-
-  // Check row count
-  if (dataRows.length > MAX_IMPORT_ROWS) {
-    throw new ParseError(
-      `File contains ${dataRows.length} rows, but maximum allowed is ${MAX_IMPORT_ROWS}`,
-      'TOO_MANY_ROWS',
-    )
-  }
 
   // Convert arrays to objects using headers as keys
   const rows = dataRows.map((row) => {

@@ -4,7 +4,6 @@
 import { z } from 'zod'
 import { jsonValueSchema } from '../items/types/base'
 import { makeCodeSchema } from '../types/variants'
-import { MAX_IMPORT_RELATIONSHIPS } from './constants'
 
 /**
  * Supported item types for import
@@ -192,10 +191,7 @@ export type ImportPartRow = z.infer<typeof importPartRowSchema>
 export const importPartsRequestSchema = z.object({
   designId: z.string().uuid({ message: 'Design ID is required' }),
   branchId: z.string().uuid().optional(),
-  rows: z
-    .array(importPartRowSchema)
-    .min(1, 'At least one row is required')
-    .max(500, 'Maximum 500 rows per import'),
+  rows: z.array(importPartRowSchema).min(1, 'At least one row is required'),
   bypassBranchProtection: z.boolean().optional().default(false),
   importAsReleased: z.boolean().optional().default(false),
 })
@@ -255,10 +251,7 @@ export type BomRelationshipRequest = z.infer<typeof bomRelationshipSchema>
  * Extended import request with BOM relationships
  */
 export const importPartsWithBomRequestSchema = importPartsRequestSchema.extend({
-  bomRelationships: z
-    .array(bomRelationshipSchema)
-    .max(MAX_IMPORT_RELATIONSHIPS)
-    .optional(),
+  bomRelationships: z.array(bomRelationshipSchema).optional(),
 })
 
 export type ImportPartsWithBomRequest = z.infer<

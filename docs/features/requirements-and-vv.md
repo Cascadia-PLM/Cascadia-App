@@ -213,8 +213,8 @@ to the design's Requirements tab.
 
 A design's requirements travel as a sheet. `POST /api/v1/import/requirements`
 takes CSV or XLSX through the same wizard as parts, documents and issues:
-column auto-mapping on the requirement fields, a validation preview, up to
-500 rows, custom attributes from unmapped columns, and the hierarchy in one
+column auto-mapping on the requirement fields, a validation preview, any
+number of rows, custom attributes from unmapped columns, and the hierarchy in one
 sheet — each row names its parent by item number, another row of the sheet
 or a requirement the design already holds, in any order. A loop, a
 self-parent or a parent nobody holds fails that row alone and the rest still

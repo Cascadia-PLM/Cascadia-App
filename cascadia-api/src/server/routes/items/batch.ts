@@ -17,19 +17,16 @@ import {
   batchUpdateRequestSchema,
   itemUpdateSchemaFor,
 } from '@/api/schemas'
+import {
+  jobAccepted,
+  jobAcceptedSchema,
+  submitForRequest,
+} from '@/jobs/accepted'
+import { BATCH_CREATE_JOB_TYPE } from '@/jobs/definitions/import/config'
 
 const adapt = tagged('Items')
 
 const app = new Hono()
-
-interface BatchCreateResponse {
-  created: Array<BaseItem>
-  errors: Array<{
-    itemNumber: string
-    error: string
-    details?: string
-  }>
-}
 
 interface BatchDeleteResult {
   deleted: Array<{
@@ -53,21 +50,41 @@ interface BatchUpdateResult {
 }
 
 // POST /api/items/batch-create
+//
+// Queues the batch as a background job and answers 202 — there is no size
+// limit, because the rows are no longer written inside this request. Every
+// check below runs first, against the whole batch, so a batch is either
+// refused here or queued whole.
 app.post(
   '/batch-create',
   adapt(
     apiHandler(
-      { body: batchCreateRequestSchema },
+      {
+        body: batchCreateRequestSchema,
+        openapi: {
+          summary: 'Create many items in one request',
+          description:
+            'Queues the batch as a background job and answers 202 with its ' +
+            'id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` ' +
+            "header); once it completes, the job's `result` is " +
+            '`{ created, errors }` — every created item, and every row that ' +
+            'failed with the reason. There is no size limit. The whole batch ' +
+            'is authorized before it is queued: the create permission for ' +
+            'each item type in it, access to every design and branch it ' +
+            'names, and `system:manage` for `bypassBranchProtection`. Runs ' +
+            'on the jobs worker: answers 503 when the job queue cannot be ' +
+            'reached.',
+          responses: {
+            202: { schema: jobAcceptedSchema, description: 'Batch queued' },
+          },
+        },
+      },
       async ({ request, user, body }) => {
         const userId = user.id
 
         const { items: requestItems, bypassBranchProtection } = body
 
-        if (requestItems.length > 100) {
-          throw new ValidationError('Batch size limited to 100 items')
-        }
-
-        // Gate every distinct item type up front, before any row is written —
+        // Gate every distinct item type up front, before anything is queued —
         // a mixed batch must not half-apply and then 403.
         const requiredResources = new Set(
           requestItems.map((i) => getResourceType(i.itemType)),
@@ -134,68 +151,15 @@ app.post(
           await requireDesignAccess(userId, designId)
         }
 
-        const createdItems: Array<BaseItem> = []
-        const errors: Array<{
-          itemNumber: string
-          error: string
-          details?: string
-        }> = []
-
-        for (const itemRequest of requestItems) {
-          try {
-            const { itemType, data } = itemRequest
-
-            // Create the item using ItemService
-            // Use createOnBranch if branchId is provided (for ECO/workspace branches)
-            let createdItem: BaseItem
-            const itemData = data as unknown as BaseItem & {
-              branchId?: string
-              commitMessage?: string
-            }
-
-            if (itemData.branchId) {
-              const result = await ItemService.createOnBranch(
-                itemType,
-                itemData,
-                itemData.branchId,
-                itemData.commitMessage || `Created ${itemType}`,
-                userId,
-              )
-              createdItem = result.item
-            } else {
-              createdItem = await ItemService.create(
-                itemType,
-                itemData,
-                userId,
-                {
-                  bypassBranchProtection,
-                },
-              )
-            }
-            createdItems.push(createdItem)
-          } catch (error) {
-            const itemData = itemRequest.data as { itemNumber?: string }
-            errors.push({
-              itemNumber: itemData.itemNumber || 'unknown',
-              error: 'Failed to create item',
-              details: (error as Error).message,
-            })
-          }
-        }
-
-        const response: BatchCreateResponse = {
-          created: createdItems,
-          errors,
-        }
-
-        let status = 201
-        if (errors.length > 0 && createdItems.length > 0) {
-          status = 207
-        } else if (errors.length > 0 && createdItems.length === 0) {
-          status = 400
-        }
-
-        return jsonResponse(response, status)
+        // Admitted whole: every row of the batch is one this caller may
+        // write. The rows are written on the jobs worker
+        // (`BatchCreateService`), which re-checks none of the above.
+        const job = await submitForRequest(
+          BATCH_CREATE_JOB_TYPE,
+          { userId, request: body },
+          userId,
+        )
+        return jobAccepted(job)
       },
     ),
   ),

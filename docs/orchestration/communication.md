@@ -59,11 +59,11 @@ env:
 
 All service URLs are configurable via environment:
 
-| Variable       | Purpose               | Default              |
-| -------------- | --------------------- | -------------------- |
-| `DATABASE_URL` | PostgreSQL connection | Required             |
-| `RABBITMQ_URL` | Message broker        | None (jobs disabled) |
-| `REDIS_URL`    | Cache layer           | None (no cache)      |
+| Variable       | Purpose               | Default                                                  |
+| -------------- | --------------------- | -------------------------------------------------------- |
+| `DATABASE_URL` | PostgreSQL connection | Required                                                 |
+| `RABBITMQ_URL` | Message broker        | None (jobs disabled; import and batch-create answer 503) |
+| `REDIS_URL`    | Cache layer           | None (no cache)                                          |
 
 File storage is embedded in the Core App — it talks directly to local disk or
 S3-compatible storage (`VAULT_TYPE`, `S3_*` variables), not to a separate

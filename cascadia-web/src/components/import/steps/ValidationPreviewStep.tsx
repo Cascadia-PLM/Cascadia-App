@@ -33,6 +33,9 @@ interface ValidationPreviewStepProps {
 
 type FilterType = 'all' | 'valid' | 'invalid'
 
+/** The most rows the preview table renders; the counts cover the whole sheet. */
+const PREVIEW_ROW_LIMIT = 200
+
 /**
  * Step 4: Review validation results before import.
  */
@@ -77,6 +80,11 @@ export function ValidationPreviewStep({
         return validatedRows
     }
   }, [validatedRows, filter])
+
+  // A sheet has no row limit, so the table shows a sample: every row is
+  // validated and counted above, but a DOM row per sheet row freezes the tab
+  // long before an import gets large.
+  const shownRows = filteredRows.slice(0, PREVIEW_ROW_LIMIT)
 
   // Get the columns to display (from mapped data keys)
   const displayColumns = useMemo(() => {
@@ -306,7 +314,7 @@ export function ValidationPreviewStep({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {filteredRows.map((row) => (
+              {shownRows.map((row) => (
                 <tr
                   key={row.rowNumber}
                   className={cn(
@@ -367,7 +375,9 @@ export function ValidationPreviewStep({
 
       {/* Pagination info */}
       <div className="text-sm text-slate-500 text-center">
-        Showing {filteredRows.length} of {summary.totalRows} rows
+        {shownRows.length < filteredRows.length
+          ? `Showing the first ${shownRows.length.toLocaleString()} of ${filteredRows.length.toLocaleString()} rows. Every row is checked; filter by status to see the rows that need fixing.`
+          : `Showing ${filteredRows.length.toLocaleString()} of ${summary.totalRows.toLocaleString()} rows`}
       </div>
 
       {/* Info about what will be imported */}

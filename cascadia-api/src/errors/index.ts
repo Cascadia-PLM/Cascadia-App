@@ -433,11 +433,11 @@ export class ConstraintViolationError extends AppError {
  * Thrown when an external service is unavailable.
  */
 export class ExternalServiceUnavailableError extends AppError {
-  constructor(serviceName: string, context?: ErrorContext) {
+  constructor(serviceName: string, context?: ErrorContext, cause?: Error) {
     super(
       ErrorCode.EXTERNAL_SERVICE_UNAVAILABLE,
       `External service '${serviceName}' is currently unavailable`,
-      { context: { ...context, serviceName } },
+      { context: { ...context, serviceName }, cause },
     )
   }
 }

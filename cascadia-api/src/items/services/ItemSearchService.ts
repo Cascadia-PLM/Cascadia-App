@@ -126,6 +126,12 @@ export interface GlobalSearchRow extends BaseItem {
 }
 
 /**
+ * Item numbers per query in `findIdsByItemNumbers`: well under Postgres's
+ * 65,535 bind parameters, leaving room for the design ids beside them.
+ */
+const ITEM_NUMBER_LOOKUP_CHUNK = 10_000
+
+/**
  * Service layer for item search operations
  * Extracted from ItemService to keep search logic separate from CRUD operations
  */
@@ -332,6 +338,10 @@ export class ItemSearchService {
    * and hope their targets are on the first page. Lookup is by exact number,
    * so the result is complete for the set asked about however large the
    * design is.
+   *
+   * The set is looked up in chunks. Each number is a bind parameter, and an
+   * import has no row cap, so one `IN (…)` over a large enough sheet would
+   * pass Postgres's 65,535-parameter limit and fail the whole lookup.
    */
   static async findIdsByItemNumbers(
     itemNumbers: Array<string>,
@@ -342,37 +352,39 @@ export class ItemSearchService {
         itemNumbers.map((n) => n.trim().toLowerCase()).filter(Boolean),
       ),
     ]
-    if (wanted.length === 0) return new Map()
-
-    const conditions = [
-      inArray(sql`lower(${items.itemNumber})`, wanted),
-      notDeleted(),
-    ]
-
-    if (options?.currentOnly !== false) {
-      conditions.push(eq(items.isCurrent, true))
-    }
-
-    if (options?.designIds) {
-      conditions.push(
-        options.designIds.length > 0
-          ? inArray(items.designId, options.designIds)
-          : sql`false`,
-      )
-    }
-
-    const rows = await db
-      .select({ id: items.id, itemNumber: items.itemNumber })
-      .from(items)
-      .where(and(...conditions))
-
     const byNumber = new Map<string, string>()
-    for (const row of rows) {
-      if (!row.itemNumber) continue
-      const key = row.itemNumber.toLowerCase()
-      // First writer wins, so a caller's own freshly-created items (seeded
-      // into the map before this lookup) are never displaced by an older one
-      if (!byNumber.has(key)) byNumber.set(key, row.id)
+
+    for (let i = 0; i < wanted.length; i += ITEM_NUMBER_LOOKUP_CHUNK) {
+      const chunk = wanted.slice(i, i + ITEM_NUMBER_LOOKUP_CHUNK)
+      const conditions = [
+        inArray(sql`lower(${items.itemNumber})`, chunk),
+        notDeleted(),
+      ]
+
+      if (options?.currentOnly !== false) {
+        conditions.push(eq(items.isCurrent, true))
+      }
+
+      if (options?.designIds) {
+        conditions.push(
+          options.designIds.length > 0
+            ? inArray(items.designId, options.designIds)
+            : sql`false`,
+        )
+      }
+
+      const rows = await db
+        .select({ id: items.id, itemNumber: items.itemNumber })
+        .from(items)
+        .where(and(...conditions))
+
+      for (const row of rows) {
+        if (!row.itemNumber) continue
+        const key = row.itemNumber.toLowerCase()
+        // First writer wins, so a caller's own freshly-created items (seeded
+        // into the map before this lookup) are never displaced by an older one
+        if (!byNumber.has(key)) byNumber.set(key, row.id)
+      }
     }
     return byNumber
   }

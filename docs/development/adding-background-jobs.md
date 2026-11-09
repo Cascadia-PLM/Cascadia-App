@@ -542,14 +542,16 @@ of the sweep's way.
 
 ## Existing Job Types for Reference
 
-| Job Type                           | Routing Key                   | Handler | Description                                |
-| ---------------------------------- | ----------------------------- | ------- | ------------------------------------------ |
-| `notification.workflow.transition` | `jobs.notification.workflow`  | Node.js | Email on state change                      |
-| `design.clone`                     | `jobs.design.clone`           | Node.js | Clone a design with all items              |
-| `maintenance.cache.cleanup`        | `jobs.maintenance.cache`      | Node.js | Periodic cache cleanup                     |
-| `maintenance.events.prune`         | `jobs.maintenance.events`     | Node.js | Prunes the event and webhook delivery logs |
-| `workinstruction.part.changed`     | `jobs.workinstruction.part`   | Node.js | Alert on part change                       |
-| `cad.conversion.process`           | `jobs.cad.conversion`         | Python  | STEP/IGES to STL/GLB                       |
-| `cad.parametric.generate`          | `jobs.cad.parametric`         | Python  | Parametric CAD generation                  |
-| `generation.cad.freecad`           | `jobs.generation.cad.freecad` | Python  | FreeCAD script execution                   |
-| `generation.cad.ai`                | `jobs.generation.cad.ai`      | Node.js | AI CAD generation (FreeCAD)                |
+| Job Type                                                      | Routing Key                   | Handler | Description                                |
+| ------------------------------------------------------------- | ----------------------------- | ------- | ------------------------------------------ |
+| `notification.workflow.transition`                            | `jobs.notification.workflow`  | Node.js | Email on state change                      |
+| `design.clone`                                                | `jobs.design.clone`           | Node.js | Clone a design with all items              |
+| `import.parts` (and `.documents`, `.requirements`, `.issues`) | `jobs.import.parts` (etc.)    | Node.js | Sheet import, no row limit; never retried  |
+| `items.batch-create`                                          | `jobs.items.batch-create`     | Node.js | `POST /items/batch-create`; never retried  |
+| `maintenance.cache.cleanup`                                   | `jobs.maintenance.cache`      | Node.js | Periodic cache cleanup                     |
+| `maintenance.events.prune`                                    | `jobs.maintenance.events`     | Node.js | Prunes the event and webhook delivery logs |
+| `workinstruction.part.changed`                                | `jobs.workinstruction.part`   | Node.js | Alert on part change                       |
+| `cad.conversion.process`                                      | `jobs.cad.conversion`         | Python  | STEP/IGES to STL/GLB                       |
+| `cad.parametric.generate`                                     | `jobs.cad.parametric`         | Python  | Parametric CAD generation                  |
+| `generation.cad.freecad`                                      | `jobs.generation.cad.freecad` | Python  | FreeCAD script execution                   |
+| `generation.cad.ai`                                           | `jobs.generation.cad.ai`      | Node.js | AI CAD generation (FreeCAD)                |

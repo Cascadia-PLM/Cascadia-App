@@ -5,56 +5,29 @@ import { Hono } from 'hono'
 import {
   DOCUMENT_FIELDS,
   ISSUE_FIELDS,
-  MAX_IMPORT_ROWS,
   PART_FIELDS,
   REQUIREMENT_FIELDS,
   importDocumentsRequestSchema,
   importIssuesRequestSchema,
   importPartsWithBomRequestSchema,
   importRequirementsRequestSchema,
-  planRequirementHierarchy,
 } from '@cascadia/commons/import'
-import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
-import {
-  optionConditionKey,
-  parseOptionText,
-} from '@cascadia/commons/types/variants'
 import { tagged } from '../adapter'
-import type { BaseItem } from '@cascadia/commons/items/types/base'
-import type {
-  BomImportResult,
-  ImportRequirementsResult,
-  ImportResult,
-  ItemFieldConfig,
-} from '@cascadia/commons/import'
+import type { ItemFieldConfig } from '@cascadia/commons/import'
+import type { OpenApiMetadata } from '@/api/openapi-helpers'
 import { generateXlsxTemplate } from '@/import/xlsx-template'
-import { ItemService } from '@/items/services/ItemService'
 import { DesignService } from '@/services/DesignService'
 import { AccessControlService } from '@/auth/AccessControlService'
-import { apiHandler, jsonResponse } from '@/api/handler'
-import {
-  AlreadyExistsError,
-  AppError,
-  PermissionDeniedError,
-  ValidationError,
-} from '@/errors'
+import { apiHandler } from '@/api/handler'
+import { PermissionDeniedError, ValidationError } from '@/errors'
 import { requireBranchAccess, requireDesignAccess } from '@/auth/access'
 import { requireRole } from '@/auth/server'
-import '@/items/registerItemTypes.server'
-
-/**
- * The message a failed row or relationship may carry back to the caller.
- *
- * These handlers passed `error.message` through verbatim, which for anything
- * the service layer did not classify is the driver's exception — the full
- * INSERT with its column list and every bound parameter, once per failed row,
- * inside a 207 that a human is meant to read. An AppError's message is ours
- * and is written to be read; anything else gets the generic fallback and stays
- * in the log, where the query text belongs.
- */
-function importErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof AppError ? error.message : fallback
-}
+import {
+  jobAccepted,
+  jobAcceptedSchema,
+  submitForRequest,
+} from '@/jobs/accepted'
+import { IMPORT_JOB_TYPES } from '@/jobs/definitions/import/config'
 
 const adapt = tagged('Import')
 
@@ -75,7 +48,79 @@ const app = new Hono()
  * which consults the key's role scope — a distinct axis from these
  * permissions. The two together are what a narrowly-scoped key needs to be
  * genuinely narrow.
+ *
+ * **Every write route here queues its work and answers 202.** An import is
+ * a background job on the jobs worker (`ImportService` does the writing), so
+ * its size is not bounded by an HTTP request; these routes were capped at 500
+ * rows when the rows were written inside one. What stays here is everything
+ * that must answer before anything is queued: the request's shape, the
+ * permission above, design and branch access, the administrator role for an
+ * override, and the post-release branch requirement. The worker writes as the
+ * submitting user and re-checks none of it.
  */
+function importOpenApi(what: string, resultName: string): OpenApiMetadata {
+  return {
+    summary: `Import ${what} from a sheet`,
+    description:
+      `Queues the import as a background job and answers 202 with its id. ` +
+      `Poll \`GET /api/v1/jobs/{id}\` (also given in the \`Location\` header) ` +
+      `for its status and progress; once it completes, the job's \`result\` ` +
+      `is the import's row-by-row outcome (\`${resultName}\`). There is no ` +
+      `row limit. Runs on the jobs worker: answers 503 when the job queue ` +
+      `cannot be reached.`,
+    responses: {
+      202: { schema: jobAcceptedSchema, description: 'Import queued' },
+    },
+  }
+}
+
+/**
+ * The checks every design-scoped import makes before it is queued.
+ *
+ * A post-release design takes changes only through a branch, so an import
+ * into one without a branch is refused here rather than failing every row on
+ * the worker. `importAsReleased` records an existing formal release and so
+ * writes to main, which is why it may not name a branch at all.
+ */
+async function authorizeDesignImport(
+  request: Request,
+  userId: string,
+  body: {
+    designId: string
+    branchId?: string
+    bypassBranchProtection: boolean
+    importAsReleased: boolean
+  },
+): Promise<void> {
+  const { designId, branchId, bypassBranchProtection, importAsReleased } = body
+
+  if (importAsReleased && branchId) {
+    throw new ValidationError(
+      'Existing formal releases must be imported directly to main; do not provide a branch ID',
+    )
+  }
+
+  await requireDesignAccess(userId, designId)
+  if (branchId) {
+    await requireBranchAccess(userId, branchId)
+  }
+
+  // Bypass branch protection requires Administrator role
+  if (bypassBranchProtection || importAsReleased) {
+    await requireRole(request, 'Administrator')
+  }
+
+  const designStatus = await DesignService.getProtectionStatus(designId)
+  const isPostRelease = designStatus.phase === 'post-release'
+  if (
+    isPostRelease &&
+    !bypassBranchProtection &&
+    !importAsReleased &&
+    !branchId
+  ) {
+    throw new ValidationError('Branch ID is required for post-release designs')
+  }
+}
 
 // POST /api/import/documents
 app.post(
@@ -85,141 +130,16 @@ app.post(
       {
         permission: ['documents', 'create'],
         body: importDocumentsRequestSchema,
+        openapi: importOpenApi('documents', 'ImportResult'),
       },
       async ({ body, request, user }) => {
-        const userId = user.id
-
-        // Parse and validate request body
-        const {
-          designId,
-          branchId,
-          rows,
-          bypassBranchProtection,
-          importAsReleased,
-        } = body
-
-        if (importAsReleased && branchId) {
-          throw new ValidationError(
-            'Existing formal releases must be imported directly to main; do not provide a branch ID',
-          )
-        }
-
-        // Verify design access
-        await requireDesignAccess(user.id, designId)
-
-        // Verify branch access if specified
-        if (branchId) {
-          await requireBranchAccess(user.id, branchId)
-        }
-
-        // Bypass branch protection requires Administrator role
-        if (bypassBranchProtection || importAsReleased) {
-          await requireRole(request, 'Administrator')
-        }
-
-        // Validate row count
-        if (rows.length > MAX_IMPORT_ROWS) {
-          throw new ValidationError(
-            `Maximum ${MAX_IMPORT_ROWS} rows per import`,
-          )
-        }
-
-        // Check design exists and get protection status
-        const designStatus = await DesignService.getProtectionStatus(designId)
-        const isPostRelease = designStatus.phase === 'post-release'
-
-        // If post-release and no bypass, require branchId
-        if (
-          isPostRelease &&
-          !bypassBranchProtection &&
-          !importAsReleased &&
-          !branchId
-        ) {
-          throw new ValidationError(
-            'Branch ID is required for post-release designs',
-          )
-        }
-
-        // Process import
-        const result: ImportResult = {
-          totalRows: rows.length,
-          successCount: 0,
-          errorCount: 0,
-          createdItems: [],
-          failedRows: [],
-        }
-
-        // Import each row
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i]!
-          const rowNumber = i + 2 // Row 1 is header, data starts at row 2
-
-          try {
-            // Prepare document data
-            const documentData = {
-              itemType: 'Document' as const,
-              designId,
-              name: row.name,
-              revision: row.revision || '-',
-              itemNumber: row.itemNumber,
-              description: row.description,
-              docType: row.docType,
-              fileName: row.fileName,
-              mimeType: row.mimeType,
-              attributes: row.attributes,
-            }
-
-            let createdItem: BaseItem
-
-            if (branchId && !bypassBranchProtection && !importAsReleased) {
-              // Create on branch (post-release)
-              const branchResult = await ItemService.createOnBranch(
-                'Document',
-                documentData,
-                branchId,
-                `Imported document: ${row.name}`,
-                userId,
-              )
-              createdItem = branchResult.item
-            } else {
-              // Create directly (pre-release or bypass)
-              createdItem = await ItemService.create(
-                'Document',
-                documentData,
-                userId,
-                {
-                  bypassBranchProtection:
-                    bypassBranchProtection || importAsReleased,
-                  importAsReleased,
-                },
-              )
-            }
-
-            result.successCount++
-            result.createdItems.push({
-              rowNumber,
-              itemId: createdItem.id!,
-              itemNumber: createdItem.itemNumber!,
-            })
-          } catch (error) {
-            console.error(`Import row ${rowNumber} failed:`, error)
-            result.errorCount++
-            result.failedRows.push({
-              rowNumber,
-              errors: [importErrorMessage(error, 'Failed to create document')],
-            })
-          }
-        }
-
-        // Determine response status
-        let status = 201
-        if (result.errorCount > 0 && result.successCount > 0) {
-          status = 207 // Multi-Status
-        } else if (result.errorCount > 0 && result.successCount === 0) {
-          status = 400
-        }
-
-        return jsonResponse({ result }, status)
+        await authorizeDesignImport(request, user.id, body)
+        const job = await submitForRequest(
+          IMPORT_JOB_TYPES.documents,
+          { userId: user.id, request: body },
+          user.id,
+        )
+        return jobAccepted(job)
       },
     ),
   ),
@@ -230,109 +150,29 @@ app.post(
   '/issues',
   adapt(
     apiHandler(
-      { permission: ['issues', 'create'], body: importIssuesRequestSchema },
+      {
+        permission: ['issues', 'create'],
+        body: importIssuesRequestSchema,
+        openapi: importOpenApi('issues', 'ImportResult'),
+      },
       async ({ body, user }) => {
-        const userId = user.id
-
-        // Parse and validate request body
-        const { programId, rows } = body
-
         // Verify program membership if programId is provided
-        if (programId) {
+        if (body.programId) {
           const canAccess = await AccessControlService.canAccessProgram(
             user.id,
-            programId,
+            body.programId,
           )
           if (!canAccess) {
             throw new PermissionDeniedError('program', 'access')
           }
         }
 
-        // Validate row count
-        if (rows.length > MAX_IMPORT_ROWS) {
-          throw new ValidationError(
-            `Maximum ${MAX_IMPORT_ROWS} rows per import`,
-          )
-        }
-
-        // Process import
-        const result: ImportResult = {
-          totalRows: rows.length,
-          successCount: 0,
-          errorCount: 0,
-          createdItems: [],
-          failedRows: [],
-        }
-
-        // Import each row
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i]!
-          const rowNumber = i + 2 // Row 1 is header, data starts at row 2
-
-          try {
-            // Prepare issue data
-            // Issues use free lifecycle - created directly with 'Open' state
-            // Issues don't follow Part/Document versioning, so revision is always '-'
-
-            // Convert date strings to Date objects for Drizzle timestamp columns.
-            // Import rows are parsed from CSV/JSON, so this is always a string.
-            const reportedDate = row.reportedDate
-              ? new Date(row.reportedDate)
-              : undefined
-
-            const issueData = {
-              itemType: 'Issue' as const,
-              name: row.name,
-              state: 'Open',
-              revision: '-',
-              itemNumber: row.itemNumber,
-              description: row.description,
-              severity: row.severity,
-              priority: row.priority,
-              category: row.category,
-              reportedDate:
-                reportedDate && !isNaN(reportedDate.getTime())
-                  ? reportedDate
-                  : undefined,
-              resolution: row.resolution,
-              rootCause: row.rootCause,
-              programId,
-              attributes: row.attributes,
-            }
-
-            // Issues don't have branch protection - create directly
-            const createdItem: BaseItem = await ItemService.create(
-              'Issue',
-              issueData,
-              userId,
-              { bypassBranchProtection: true },
-            )
-
-            result.successCount++
-            result.createdItems.push({
-              rowNumber,
-              itemId: createdItem.id!,
-              itemNumber: createdItem.itemNumber!,
-            })
-          } catch (error) {
-            console.error(`Import row ${rowNumber} failed:`, error)
-            result.errorCount++
-            result.failedRows.push({
-              rowNumber,
-              errors: [importErrorMessage(error, 'Failed to create issue')],
-            })
-          }
-        }
-
-        // Determine response status
-        let status = 201
-        if (result.errorCount > 0 && result.successCount > 0) {
-          status = 207 // Multi-Status
-        } else if (result.errorCount > 0 && result.successCount === 0) {
-          status = 400
-        }
-
-        return jsonResponse({ result }, status)
+        const job = await submitForRequest(
+          IMPORT_JOB_TYPES.issues,
+          { userId: user.id, request: body },
+          user.id,
+        )
+        return jobAccepted(job)
       },
     ),
   ),
@@ -346,284 +186,16 @@ app.post(
       {
         permission: ['parts', 'create'],
         body: importPartsWithBomRequestSchema,
+        openapi: importOpenApi('parts and their BOM', 'BomImportResult'),
       },
       async ({ body, request, user }) => {
-        const userId = user.id
-
-        // Parse and validate request body (supports BOM relationships)
-        const {
-          designId,
-          branchId,
-          rows,
-          bypassBranchProtection,
-          importAsReleased,
-          bomRelationships,
-        } = body
-
-        if (importAsReleased && branchId) {
-          throw new ValidationError(
-            'Existing formal releases must be imported directly to main; do not provide a branch ID',
-          )
-        }
-
-        // Verify design access
-        await requireDesignAccess(user.id, designId)
-
-        // Verify branch access if specified
-        if (branchId) {
-          await requireBranchAccess(user.id, branchId)
-        }
-
-        // Bypass branch protection requires Administrator role
-        if (bypassBranchProtection || importAsReleased) {
-          await requireRole(request, 'Administrator')
-        }
-
-        // Validate row count
-        if (rows.length > MAX_IMPORT_ROWS) {
-          throw new ValidationError(
-            `Maximum ${MAX_IMPORT_ROWS} rows per import`,
-          )
-        }
-
-        // Check design exists and get protection status
-        const designStatus = await DesignService.getProtectionStatus(designId)
-        const isPostRelease = designStatus.phase === 'post-release'
-
-        // If post-release and no bypass, require branchId
-        if (
-          isPostRelease &&
-          !bypassBranchProtection &&
-          !importAsReleased &&
-          !branchId
-        ) {
-          throw new ValidationError(
-            'Branch ID is required for post-release designs',
-          )
-        }
-
-        // Process import
-        const result: BomImportResult = {
-          totalRows: rows.length,
-          successCount: 0,
-          errorCount: 0,
-          createdItems: [],
-          failedRows: [],
-          relationshipsCreated: 0,
-          relationshipsFailed: 0,
-          failedRelationships: [],
-        }
-
-        // Import each row
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i]!
-          const rowNumber = i + 2 // Row 1 is header, data starts at row 2
-
-          try {
-            // Prepare part data
-            const partData = {
-              itemType: 'Part' as const,
-              designId,
-              name: row.name,
-              revision: row.revision || '-',
-              itemNumber: row.itemNumber,
-              description: row.description,
-              partType: row.partType,
-              material: row.material,
-              weight: row.weight,
-              weightUnit: row.weightUnit,
-              cost: row.cost,
-              costCurrency: row.costCurrency,
-              leadTimeDays: row.leadTimeDays,
-              attributes: row.attributes,
-            }
-
-            let createdItem: BaseItem
-
-            if (branchId && !bypassBranchProtection && !importAsReleased) {
-              // Create on branch (post-release)
-              const branchResult = await ItemService.createOnBranch(
-                'Part',
-                partData,
-                branchId,
-                `Imported part: ${row.name}`,
-                userId,
-              )
-              createdItem = branchResult.item
-            } else {
-              // Create directly (pre-release or bypass)
-              createdItem = await ItemService.create('Part', partData, userId, {
-                bypassBranchProtection:
-                  bypassBranchProtection || importAsReleased,
-                importAsReleased,
-              })
-            }
-
-            result.successCount++
-            result.createdItems.push({
-              rowNumber,
-              itemId: createdItem.id!,
-              itemNumber: createdItem.itemNumber!,
-            })
-          } catch (error) {
-            console.error(`Import row ${rowNumber} failed:`, error)
-            result.errorCount++
-            result.failedRows.push({
-              rowNumber,
-              errors: [importErrorMessage(error, 'Failed to create part')],
-            })
-          }
-        }
-
-        // Process BOM relationships if provided and parts were created
-        if (
-          bomRelationships &&
-          bomRelationships.length > 0 &&
-          result.successCount > 0
-        ) {
-          // Build itemNumber -> itemId map from created items
-          const itemNumberToId = new Map<string, string>()
-          for (const item of result.createdItems) {
-            itemNumberToId.set(item.itemNumber.toLowerCase(), item.itemId)
-          }
-
-          // Resolve the parents/children this import references but did not
-          // create. Looked up by exact item number rather than by paging a
-          // search: a page cap here silently mapped nothing for designs
-          // larger than the page, and every such relationship then failed
-          // with a "not found" naming an item that plainly existed.
-          const referenced = bomRelationships.flatMap((rel) => [
-            rel.parentItemNumber,
-            rel.childItemNumber,
-          ])
-          // `.toLowerCase()` with no trim, matching how this map is keyed
-          // above and read below
-          const unresolved = referenced.filter(
-            (n) => !itemNumberToId.has(n.toLowerCase()),
-          )
-
-          if (unresolved.length > 0) {
-            // A failure here makes every external reference look missing, so
-            // it fails the request rather than degrading to a misleading
-            // per-relationship error.
-            const existing = await ItemService.findIdsByItemNumbers(
-              unresolved,
-              { designIds: [designId], currentOnly: true },
-            )
-            for (const [itemNumber, id] of existing) {
-              if (!itemNumberToId.has(itemNumber)) {
-                itemNumberToId.set(itemNumber, id)
-              }
-            }
-          }
-
-          // Keep this identity aligned with ItemRelationshipService.edgeKey
-          // and the unique index: one child may occur more than once when its
-          // option condition, selected execution or reference designators
-          // differ.
-          const seenEdges = new Set<string>()
-
-          // Process each relationship
-          for (const rel of bomRelationships) {
-            const parentId = itemNumberToId.get(
-              rel.parentItemNumber.toLowerCase(),
-            )
-            const childId = itemNumberToId.get(
-              rel.childItemNumber.toLowerCase(),
-            )
-
-            if (!parentId) {
-              result.relationshipsFailed++
-              result.failedRelationships.push({
-                parentItemNumber: rel.parentItemNumber,
-                childItemNumber: rel.childItemNumber,
-                error: `Parent item not found: ${rel.parentItemNumber}`,
-              })
-              continue
-            }
-
-            if (!childId) {
-              result.relationshipsFailed++
-              result.failedRelationships.push({
-                parentItemNumber: rel.parentItemNumber,
-                childItemNumber: rel.childItemNumber,
-                error: `Child item not found: ${rel.childItemNumber}`,
-              })
-              continue
-            }
-
-            try {
-              const option = rel.option ? parseOptionText(rel.option) : null
-              const edgeKey = [
-                rel.parentItemNumber.toLowerCase(),
-                rel.childItemNumber.toLowerCase(),
-                optionConditionKey(option),
-                rel.targetMakeCode?.trim().toUpperCase() ?? '',
-                referenceDesignatorKey('BOM', rel.referenceDesignator),
-              ].join('\u0000')
-              if (seenEdges.has(edgeKey)) {
-                result.relationshipsFailed++
-                result.failedRelationships.push({
-                  parentItemNumber: rel.parentItemNumber,
-                  childItemNumber: rel.childItemNumber,
-                  error:
-                    `${rel.parentItemNumber} already lists ${rel.childItemNumber} ` +
-                    'with the same option condition, target execution and reference designators on an earlier line; combine the lines and sum their quantities, or give each its own reference designators',
-                })
-                continue
-              }
-              seenEdges.add(edgeKey)
-
-              // Bulk import wires up items it just created — a system flow,
-              // exempt from the per-user edit lock.
-              await ItemService.addRelationship(
-                parentId,
-                childId,
-                'BOM',
-                userId,
-                {
-                  quantity: String(rel.quantity),
-                  findNumber: rel.findNumber,
-                  referenceDesignator: rel.referenceDesignator,
-                  option,
-                  targetMakeCode: rel.targetMakeCode,
-                },
-                { bypassEditGuard: true },
-              )
-              result.relationshipsCreated++
-            } catch (error) {
-              result.relationshipsFailed++
-              result.failedRelationships.push({
-                parentItemNumber: rel.parentItemNumber,
-                childItemNumber: rel.childItemNumber,
-                // The service names the edge by item id, which is meaningless
-                // to someone looking at the spreadsheet they uploaded.
-                error:
-                  error instanceof AlreadyExistsError
-                    ? `${rel.parentItemNumber} already lists ${rel.childItemNumber}`
-                    : importErrorMessage(
-                        error,
-                        'Failed to create relationship',
-                      ),
-              })
-            }
-          }
-        }
-
-        // Determine response status
-        // 201 if all succeeded
-        // 207 if some succeeded and some failed
-        // 400 if all failed
-        let status = 201
-        const totalErrors = result.errorCount + result.relationshipsFailed
-        const totalSuccesses = result.successCount + result.relationshipsCreated
-        if (totalErrors > 0 && totalSuccesses > 0) {
-          status = 207 // Multi-Status
-        } else if (result.errorCount > 0 && result.successCount === 0) {
-          status = 400
-        }
-
-        return jsonResponse({ result }, status)
+        await authorizeDesignImport(request, user.id, body)
+        const job = await submitForRequest(
+          IMPORT_JOB_TYPES.parts,
+          { userId: user.id, request: body },
+          user.id,
+        )
+        return jobAccepted(job)
       },
     ),
   ),
@@ -637,188 +209,19 @@ app.post(
       {
         permission: ['requirements', 'create'],
         body: importRequirementsRequestSchema,
+        openapi: importOpenApi(
+          'requirements and their hierarchy',
+          'ImportRequirementsResult',
+        ),
       },
       async ({ body, request, user }) => {
-        const userId = user.id
-        const {
-          designId,
-          branchId,
-          rows,
-          bypassBranchProtection,
-          importAsReleased,
-        } = body
-
-        if (importAsReleased && branchId) {
-          throw new ValidationError(
-            'Existing formal releases must be imported directly to main; do not provide a branch ID',
-          )
-        }
-
-        await requireDesignAccess(user.id, designId)
-        if (branchId) {
-          await requireBranchAccess(user.id, branchId)
-        }
-        if (bypassBranchProtection || importAsReleased) {
-          await requireRole(request, 'Administrator')
-        }
-        if (rows.length > MAX_IMPORT_ROWS) {
-          throw new ValidationError(
-            `Maximum ${MAX_IMPORT_ROWS} rows per import`,
-          )
-        }
-
-        const designStatus = await DesignService.getProtectionStatus(designId)
-        const isPostRelease = designStatus.phase === 'post-release'
-        if (
-          isPostRelease &&
-          !bypassBranchProtection &&
-          !importAsReleased &&
-          !branchId
-        ) {
-          throw new ValidationError(
-            'Branch ID is required for post-release designs',
-          )
-        }
-
-        const result: ImportRequirementsResult = {
-          totalRows: rows.length,
-          successCount: 0,
-          errorCount: 0,
-          createdItems: [],
-          failedRows: [],
-          parentsLinked: 0,
-        }
-        const failedRowNumbers = new Set<number>()
-        const fail = (rowNumber: number, message: string) => {
-          result.errorCount++
-          result.failedRows.push({ rowNumber, errors: [message] })
-          failedRowNumbers.add(rowNumber)
-        }
-
-        // Parents first. The plan orders the sheet so a parent is created
-        // before its children, and names the rows no order can satisfy — a
-        // row that is its own parent, a chain of parents that loops.
-        const plan = planRequirementHierarchy(
-          rows.map((row, i) => ({
-            rowNumber: i + 2,
-            itemNumber: row.itemNumber,
-            parentItemNumber: row.parentItemNumber,
-          })),
+        await authorizeDesignImport(request, user.id, body)
+        const job = await submitForRequest(
+          IMPORT_JOB_TYPES.requirements,
+          { userId: user.id, request: body },
+          user.id,
         )
-        for (const [rowNumber, message] of plan.errors) fail(rowNumber, message)
-
-        // A parent the sheet names but does not define is one the design
-        // already holds — looked up by exact item number, current rows only,
-        // the way the BOM import resolves an external parent.
-        const existingByNumber =
-          plan.externalParents.length > 0
-            ? await ItemService.findIdsByItemNumbers(plan.externalParents, {
-                designIds: [designId],
-                currentOnly: true,
-              })
-            : new Map<string, string>()
-        const createdByNumber = new Map<string, string>()
-
-        for (const rowNumber of plan.order) {
-          const row = rows[rowNumber - 2]!
-          let parentRequirementId: string | undefined
-          if (row.parentItemNumber) {
-            const key = row.parentItemNumber.trim().toLowerCase()
-            const parentRow = plan.parentRow.get(rowNumber)
-            if (parentRow !== undefined) {
-              if (failedRowNumbers.has(parentRow)) {
-                fail(
-                  rowNumber,
-                  `Parent requirement ${row.parentItemNumber} (row ${parentRow}) was not imported`,
-                )
-                continue
-              }
-              parentRequirementId = createdByNumber.get(key)
-            } else {
-              parentRequirementId = existingByNumber.get(key)
-            }
-            if (!parentRequirementId) {
-              fail(
-                rowNumber,
-                `Parent requirement not found: ${row.parentItemNumber}`,
-              )
-              continue
-            }
-          }
-
-          try {
-            const requirementData = {
-              itemType: 'Requirement' as const,
-              designId,
-              name: row.name,
-              revision: row.revision || '-',
-              itemNumber: row.itemNumber,
-              description: row.description,
-              type: row.type,
-              priority: row.priority,
-              category: row.category,
-              source: row.source,
-              acceptanceCriteria: row.acceptanceCriteria,
-              verificationMethod: row.verificationMethod,
-              parentRequirementId,
-              attributes: row.attributes,
-            }
-
-            let createdItem: BaseItem
-            if (branchId && !bypassBranchProtection && !importAsReleased) {
-              const branchResult = await ItemService.createOnBranch(
-                'Requirement',
-                requirementData,
-                branchId,
-                `Imported requirement: ${row.name}`,
-                userId,
-              )
-              createdItem = branchResult.item
-            } else {
-              createdItem = await ItemService.create(
-                'Requirement',
-                requirementData,
-                userId,
-                {
-                  bypassBranchProtection:
-                    bypassBranchProtection || importAsReleased,
-                  importAsReleased,
-                },
-              )
-            }
-
-            result.successCount++
-            result.createdItems.push({
-              rowNumber,
-              itemId: createdItem.id!,
-              itemNumber: createdItem.itemNumber!,
-            })
-            if (parentRequirementId) result.parentsLinked++
-            if (createdItem.itemNumber) {
-              createdByNumber.set(
-                createdItem.itemNumber.trim().toLowerCase(),
-                createdItem.id!,
-              )
-            }
-          } catch (error) {
-            console.error(`Import row ${rowNumber} failed:`, error)
-            fail(
-              rowNumber,
-              importErrorMessage(error, 'Failed to create requirement'),
-            )
-          }
-        }
-
-        // The sheet's order back, so a caller reads failures top to bottom.
-        result.failedRows.sort((a, b) => a.rowNumber - b.rowNumber)
-
-        let status = 201
-        if (result.errorCount > 0 && result.successCount > 0) {
-          status = 207
-        } else if (result.errorCount > 0 && result.successCount === 0) {
-          status = 400
-        }
-        return jsonResponse({ result }, status)
+        return jobAccepted(job)
       },
     ),
   ),

@@ -103,8 +103,6 @@ export {
   getAutoGenerateFieldsByType,
   ACCEPTED_FILE_TYPES,
   ACCEPTED_EXTENSIONS,
-  MAX_IMPORT_ROWS,
-  MAX_IMPORT_RELATIONSHIPS,
   MAX_FILE_SIZE,
 } from './constants'
 

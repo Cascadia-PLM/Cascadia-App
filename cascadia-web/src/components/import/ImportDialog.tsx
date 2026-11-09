@@ -130,6 +130,11 @@ export function ImportDialog({
   // Loading state for validation
   const [isProcessing, setIsProcessing] = useState(false)
 
+  // Whether the import step ended without completing — the job queue was
+  // unreachable, or the job failed or was cancelled. The footer then offers a
+  // way out (and Back to the review, to try again) instead of a spinner.
+  const [importFailed, setImportFailed] = useState(false)
+
   // Reset all state when dialog closes
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
@@ -143,6 +148,7 @@ export function ImportDialog({
         setBomFormat(null)
         setBomRelationships([])
         setImportResult(null)
+        setImportFailed(false)
       }
       onOpenChange(newOpen)
     },
@@ -172,7 +178,11 @@ export function ImportDialog({
 
   const canGoBack = () => {
     const idx = getCurrentStepIndex()
-    return idx > 0 && currentStep !== 'importing' && currentStep !== 'complete'
+    return (
+      idx > 0 &&
+      (currentStep !== 'importing' || importFailed) &&
+      currentStep !== 'complete'
+    )
   }
 
   const goBack = () => {
@@ -289,6 +299,7 @@ export function ImportDialog({
         }
         break
       case 'validation':
+        setImportFailed(false)
         setCurrentStep('importing')
         break
     }
@@ -358,6 +369,7 @@ export function ImportDialog({
               setImportResult(result)
               setCurrentStep('complete')
             }}
+            onFailed={() => setImportFailed(true)}
           />
         )
 
@@ -450,6 +462,10 @@ export function ImportDialog({
               <Button onClick={handleClose}>
                 Done
                 <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            ) : currentStep === 'importing' && importFailed ? (
+              <Button variant="ghost" onClick={handleClose}>
+                Close
               </Button>
             ) : currentStep === 'importing' ? (
               <Button disabled>

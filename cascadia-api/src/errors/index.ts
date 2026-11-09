@@ -128,13 +128,23 @@ export class ValidationError extends AppError {
     zodError: ZodError,
     context?: ErrorContext,
   ): ValidationError {
-    // Zod v4 uses .issues, Zod v3 uses .errors
-    const issues = zodError.issues
-    const fieldErrors: Array<FieldError> = issues.map((err: any) => ({
-      field: err.path.join('.'),
-      message: err.message,
-      code: err.code,
-    }))
+    const fieldErrors = zodError.issues.flatMap((issue): Array<FieldError> => {
+      const path = issue.path.map(String)
+      // Zod reports every unknown key of one object as a single issue at the
+      // object's path. Split it so each key gets its own entry with its own
+      // field path — the same shape a form or a client reads for any other
+      // invalid field, rather than one entry at the parent saying "keys".
+      if (issue.code === 'unrecognized_keys') {
+        return issue.keys.map((key) => ({
+          field: [...path, key].join('.'),
+          message: `Unknown field '${key}'`,
+          code: issue.code,
+        }))
+      }
+      return [
+        { field: path.join('.'), message: issue.message, code: issue.code },
+      ]
+    })
     return new ValidationError('Validation failed', fieldErrors, context)
   }
 }

@@ -10,6 +10,8 @@ import type { ChangeOrder } from '@cascadia/commons/items/types/change-order'
 import type { SessionUser } from '@/auth/session'
 import { requireRole } from '@/auth/server'
 import { ApprovalRegistry } from '@/lifecycles/approval-registry'
+import { assertNoUnknownKeys } from '@/api/strict-body'
+import { ItemTypeRegistry } from '@/items/registry'
 import { ItemService } from '@/items/services/ItemService'
 import { LifecycleService } from '@/services/LifecycleService'
 import { ChangeOrderService } from '@/items/services/ChangeOrderService'
@@ -23,6 +25,7 @@ import { LifecycleDefinitionService } from '@/lifecycles/LifecycleDefinitionServ
 import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 import { ApprovalService } from '@/lifecycles/ApprovalService'
 import { apiHandler, created, jsonResponse } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import {
   AlreadyExistsError,
   NotFoundError,
@@ -336,6 +339,17 @@ app.post(
           }
         }
 
+        // The envelope is passthrough; the rest is the ChangeOrder type's to
+        // validate, and its parse strips what it does not declare. Reject
+        // unknown keys here so a misspelled field is a 400, not a dropped one.
+        const typeConfig = ItemTypeRegistry.getType('ChangeOrder')
+        if (typeConfig) {
+          assertNoUnknownKeys(typeConfig.schema, {
+            ...data,
+            itemType: 'ChangeOrder',
+          })
+        }
+
         // Designs, branches and the running workflow are all part of the
         // creation; a failure in any of them leaves no change order behind
         const changeOrder = await ChangeOrderService.create(
@@ -387,6 +401,7 @@ app.put(
       {
         permission: ['change_orders', 'update'],
         body: changeOrderUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('ChangeOrder'),
         access: ({ params, user }) =>
           requireChangeOrderAccess(user.id, params.id),
       },

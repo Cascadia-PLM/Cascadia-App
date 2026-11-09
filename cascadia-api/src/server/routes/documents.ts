@@ -7,6 +7,7 @@ import type { Document } from '@cascadia/commons/items/types/document'
 import { ItemService } from '@/items/services/ItemService'
 import { NotFoundError } from '@/errors'
 import { apiHandler } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { documentUpdateSchema } from '@/api/schemas'
 import { requireItemAccess } from '@/auth/access'
 // Register item types (server-side version)
@@ -42,6 +43,7 @@ app.put(
         permission: ['documents', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: documentUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('Document'),
       },
       // The schema permits `null` where the column is nullable, which the
       // Document interface spells as an absent optional.

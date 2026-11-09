@@ -26,6 +26,7 @@ import {
 } from '@cascadia/commons/items/types/requirement'
 import { jsonValueSchema } from '@cascadia/commons/items/types/base'
 import { systemElementKindSchema } from '@cascadia/commons/items/types/system-element'
+import { taskPrioritySchema } from '@cascadia/commons/items/types/task'
 import { testStepSchema } from '@cascadia/commons/items/types/testcase'
 import {
   issueCategories,
@@ -184,6 +185,8 @@ export const documentUpdateSchema = z.object({
   description: z.string().max(5000).nullable().optional(),
   fileId: z.string().uuid().nullable().optional(),
   fileName: z.string().max(500).nullable().optional(),
+  // Edited on the detail page; dropped until update bodies were strict.
+  mimeType: z.string().max(100).nullable().optional(),
 })
 
 export type DocumentCreate = z.infer<typeof documentCreateSchema>
@@ -242,8 +245,13 @@ export const requirementUpdateSchema = z.object({
   // No `verificationStatus`: it is derived from the verifying tests'
   // executions (services/verification-rollup.ts) and a waiver is its own
   // request (`POST /requirements/:id/waive`). A page that echoes the item it
-  // read sends the key; it is stripped here, which is the intent.
+  // read sends the key; the route ignores it as a read echo (see
+  // `itemReadEchoFields`), which is the intent.
   acceptanceCriteria: z.string().max(10000).nullable().optional(),
+  // Both edited on the detail page and written by the type handler, and both
+  // dropped until update bodies were strict.
+  source: z.string().max(200).nullable().optional(),
+  category: z.string().max(100).nullable().optional(),
 })
 
 export type RequirementCreate = z.infer<typeof requirementCreateSchema>
@@ -253,7 +261,11 @@ export type RequirementUpdate = z.infer<typeof requirementUpdateSchema>
 // Task Schemas
 // =============================================================================
 
-export const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'critical'])
+// The shared enum, never a copy — the requirement schemas above learned this
+// first. A lowercase set declared here matched no task the create path, the
+// detail page or the AI tools write ('Medium', …), so saving any task with a
+// priority from its detail page answered 400.
+export { taskPrioritySchema }
 
 /**
  * Schema for creating a new task.
@@ -280,12 +292,22 @@ export const taskCreateSchema = z.object({
  * echoes back the whole item it read. Without that, saving an item that simply
  * has an empty field 400s.
  */
+/** A `decimal(6, 2)` hours column, as the page sends it or a read returns it. */
+const hoursSchema = z.union([
+  z.number().min(0).max(9999.99),
+  z.string().regex(/^\d{0,4}(\.\d{0,2})?$/, 'Hours must be a number'),
+])
+
 export const taskUpdateSchema = z.object({
   ...itemUpdateBaseFields,
   description: z.string().max(10000).nullable().optional(),
   priority: taskPrioritySchema.nullable().optional(),
   dueDate: clearableDate().optional(),
   assignee: z.string().uuid().nullable().optional(),
+  // Edited on the detail page — as a number there, read back as the decimal
+  // column's string — and dropped until update bodies were strict.
+  estimatedHours: hoursSchema.nullable().optional(),
+  actualHours: hoursSchema.nullable().optional(),
 })
 
 export type TaskCreate = z.infer<typeof taskCreateSchema>

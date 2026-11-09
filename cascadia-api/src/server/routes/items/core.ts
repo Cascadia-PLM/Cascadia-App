@@ -38,6 +38,9 @@ import { VersionResolver } from '@/services/VersionResolver'
 import { CheckoutService } from '@/services/CheckoutService'
 import { apiHandler, created, parseQuery } from '@/api/handler'
 import { itemUpdateSchemaFor } from '@/api/schemas'
+import { itemReadEchoFields } from '@/api/item-read-echo'
+import { assertNoUnknownKeys, rejectUnknownKeys } from '@/api/strict-body'
+import { ItemTypeRegistry } from '@/items/registry'
 import { requireDesignAccess, requireItemAccess } from '@/auth/access'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { db } from '@/db'
@@ -77,6 +80,23 @@ const createItemEnvelopeSchema = z
   .passthrough()
 
 const app = new Hono()
+
+/**
+ * A PUT body without the keys an item read returns that the type's update
+ * schema does not declare. See `itemReadEchoFields`.
+ */
+function withoutReadEcho(
+  raw: unknown,
+  itemType: string,
+  schema: z.ZodType,
+): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw
+  const shape = (schema._zod.def as { shape?: object }).shape ?? {}
+  const echo = itemReadEchoFields(itemType)
+  return Object.fromEntries(
+    Object.entries(raw).filter(([key]) => key in shape || !echo.has(key)),
+  )
+}
 
 type DesignScope = 'current' | 'all' | 'library'
 
@@ -761,6 +781,16 @@ app.post(
         const resourceType = getResourceType(itemType)
         await requirePermission(request, resourceType, 'create')
 
+        // The envelope above is passthrough, and `ItemService.create` strips
+        // whatever its type's schema does not declare — so without this a
+        // misspelled or unsupported field is a 201 that silently drops it.
+        // Only unknown keys are checked here; every other problem with the
+        // body stays the service's to report, naming the type.
+        const typeConfig = ItemTypeRegistry.getType(itemType)
+        if (typeConfig) {
+          assertNoUnknownKeys(typeConfig.schema, { ...rest, itemType })
+        }
+
         // A work instruction has no design of its own — it borrows the one its
         // output part lives in, so parametric blocks, MBOM inheritance, and part
         // lookups all resolve in the right design. Resolved before the access
@@ -1022,8 +1052,10 @@ app.put(
             'The body is validated against the update schema of the stored ' +
             'item’s own type — resolved at request time, so no single static ' +
             'schema can be documented here. Type-invalid values are rejected ' +
-            'with 400 and `fieldErrors`; fields outside the type’s schema ' +
-            '(including server-managed columns) are stripped. See the ' +
+            'with 400 and `fieldErrors`, and so are fields outside the ' +
+            'type’s schema — except the keys an item read returns (`id`, ' +
+            '`revision`, `createdAt` and the other server-managed columns), ' +
+            'which may be echoed back and are ignored. See the ' +
             'per-type `*UpdateSchema` shapes in the type-specific routes. ' +
             'All schemas accept `commitMessage` for branch saves.',
         },
@@ -1052,7 +1084,13 @@ app.put(
         // because the schema depends on the stored item's type, which is only
         // known after the lookup above. Both write paths below receive only
         // what the type's schema admits.
-        const parseResult = itemUpdateSchemaFor(item.itemType).safeParse(raw)
+        // Strict: a key the type's schema does not declare is a 400, except
+        // the columns a read returns, which are dropped here so a whole-object
+        // echo still saves. See `itemReadEchoFields`.
+        const updateSchema = itemUpdateSchemaFor(item.itemType)
+        const parseResult = rejectUnknownKeys(updateSchema).safeParse(
+          withoutReadEcho(raw, item.itemType, updateSchema),
+        )
         if (!parseResult.success) {
           throw ValidationError.fromZodError(parseResult.error)
         }

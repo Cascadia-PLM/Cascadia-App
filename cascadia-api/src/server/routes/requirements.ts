@@ -15,6 +15,7 @@ import {
   requireItemsAccess,
 } from '@/auth/access'
 import { apiHandler, created } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { requirementUpdateSchema } from '@/api/schemas'
 // Register item types (server-side version)
 import '@/items/registerItemTypes.server'
@@ -123,6 +124,7 @@ app.put(
         permission: ['requirements', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: requirementUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('Requirement'),
       },
       async ({ params, body, user }) => {
         // The schema permits `null` where the column is nullable, which the

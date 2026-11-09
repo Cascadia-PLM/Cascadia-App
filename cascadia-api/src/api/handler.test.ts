@@ -167,12 +167,29 @@ describe('apiHandler body schemas', () => {
     expect(await response.json()).toEqual({ data: { name: 'WIDGET' } })
   })
 
-  it('strips keys the schema does not declare', async () => {
+  it('rejects keys the schema does not declare, naming each one', async () => {
+    // A stripped key is a silent failure: the caller gets a 200 and the field
+    // they sent simply did not happen. A 400 naming it is the contract.
+    const response = await post(
+      JSON.stringify({ name: 'widget', itemNumber: 'SMUGGLED', nmae: 'typo' }),
+    )
+
+    expect(response.status).toBe(400)
+    const payload = (await response.json()) as ValidationEnvelope
+    expect(payload.error.code).toBe(ErrorCode.VALIDATION_FAILED)
+    expect(payload.error.fieldErrors?.map((e) => e.field).sort()).toEqual([
+      'itemNumber',
+      'nmae',
+    ])
+  })
+
+  it('lets a schema that opts into passthrough forward extra keys', async () => {
     const app = new Hono().post(
       '/widgets',
       adapt(
-        apiHandler({ public: true, body: widgetSchema }, ({ body }) =>
-          Promise.resolve({ received: body }),
+        apiHandler(
+          { public: true, body: widgetSchema.passthrough() },
+          ({ body }) => Promise.resolve({ received: body }),
         ),
       ),
     )
@@ -180,11 +197,11 @@ describe('apiHandler body schemas', () => {
     const response = await app.request('/widgets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'widget', itemNumber: 'SMUGGLED' }),
+      body: JSON.stringify({ name: 'widget', moduleField: 1 }),
     })
 
     expect(await response.json()).toEqual({
-      data: { received: { name: 'widget' } },
+      data: { received: { name: 'widget', moduleField: 1 } },
     })
   })
 

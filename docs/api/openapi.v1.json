@@ -789,6 +789,7 @@
                   "dimensions": {
                     "anyOf": [
                       {
+                        "additionalProperties": {},
                         "properties": {
                           "depth": {
                             "type": "number"
@@ -886,6 +887,7 @@
                   "mountingFeatures": {
                     "default": [],
                     "items": {
+                      "additionalProperties": {},
                       "properties": {
                         "specs": {
                           "additionalProperties": {},
@@ -1238,6 +1240,7 @@
                         "dimensions": {
                           "anyOf": [
                             {
+                              "additionalProperties": {},
                               "properties": {
                                 "depth": {
                                   "type": "number"
@@ -1335,6 +1338,7 @@
                         "mountingFeatures": {
                           "default": [],
                           "items": {
+                            "additionalProperties": {},
                             "properties": {
                               "specs": {
                                 "additionalProperties": {},
@@ -1568,6 +1572,7 @@
                   "dimensions": {
                     "anyOf": [
                       {
+                        "additionalProperties": {},
                         "properties": {
                           "depth": {
                             "type": "number"
@@ -1665,6 +1670,7 @@
                   "mountingFeatures": {
                     "default": [],
                     "items": {
+                      "additionalProperties": {},
                       "properties": {
                         "specs": {
                           "additionalProperties": {},
@@ -9941,6 +9947,17 @@
                       }
                     ]
                   },
+                  "mimeType": {
+                    "anyOf": [
+                      {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "name": {
                     "anyOf": [
                       {
@@ -16506,7 +16523,7 @@
         ]
       },
       "put": {
-        "description": "The body is validated against the update schema of the stored item’s own type — resolved at request time, so no single static schema can be documented here. Type-invalid values are rejected with 400 and `fieldErrors`; fields outside the type’s schema (including server-managed columns) are stripped. See the per-type `*UpdateSchema` shapes in the type-specific routes. All schemas accept `commitMessage` for branch saves.",
+        "description": "The body is validated against the update schema of the stored item’s own type — resolved at request time, so no single static schema can be documented here. Type-invalid values are rejected with 400 and `fieldErrors`, and so are fields outside the type’s schema — except the keys an item read returns (`id`, `revision`, `createdAt` and the other server-managed columns), which may be echoed back and are ignored. See the per-type `*UpdateSchema` shapes in the type-specific routes. All schemas accept `commitMessage` for branch saves.",
         "operationId": "putApiV1ItemsById",
         "parameters": [
           {
@@ -26005,6 +26022,17 @@
                     "additionalProperties": {},
                     "type": "object"
                   },
+                  "category": {
+                    "anyOf": [
+                      {
+                        "maxLength": 100,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "commitMessage": {
                     "maxLength": 500,
                     "type": "string"
@@ -26051,6 +26079,17 @@
                     "anyOf": [
                       {
                         "maxLength": 50,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
                         "type": "string"
                       },
                       {
@@ -29562,6 +29601,26 @@
             "application/json": {
               "schema": {
                 "properties": {
+                  "actualHours": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "maximum": 9999.99,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          {
+                            "pattern": "^\\d{0,4}(\\.\\d{0,2})?$",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "assignee": {
                     "anyOf": [
                       {
@@ -29604,6 +29663,26 @@
                       }
                     ]
                   },
+                  "estimatedHours": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "maximum": 9999.99,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          {
+                            "pattern": "^\\d{0,4}(\\.\\d{0,2})?$",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "name": {
                     "anyOf": [
                       {
@@ -29619,10 +29698,10 @@
                     "anyOf": [
                       {
                         "enum": [
-                          "low",
-                          "medium",
-                          "high",
-                          "critical"
+                          "Low",
+                          "Medium",
+                          "High",
+                          "Critical"
                         ],
                         "type": "string"
                       },
@@ -33868,6 +33947,18 @@
                       }
                     },
                     "type": "object"
+                  },
+                  "operationId": {
+                    "anyOf": [
+                      {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "orderIndex": {
                     "maximum": 100000,

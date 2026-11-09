@@ -132,8 +132,19 @@ function EditLifecyclePage() {
     try {
       await apiFetch(`/api/v1/lifecycles/${definition.id}`, {
         method: 'PUT',
+        // The fields the update accepts, named rather than spread: the
+        // definition here is the read, and its id, version and timestamps are
+        // not writable. (`workflowType` is not either — the update has never
+        // persisted it.)
         body: JSON.stringify({
-          ...definition,
+          name: definition.name,
+          description: definition.description,
+          states: definition.states,
+          applicableItemTypes: definition.applicableItemTypes,
+          changeActionMappings: definition.changeActionMappings,
+          isActive: definition.isActive,
+          revisionScheme: definition.revisionScheme,
+          phases: definition.phases,
           lifecycleType,
           drivers: lifecycleType === 'Driven' ? drivers : [],
           // For Driven lifecycles, clear transitions (states only)

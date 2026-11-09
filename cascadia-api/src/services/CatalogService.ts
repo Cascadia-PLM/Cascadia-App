@@ -43,14 +43,21 @@ export const catalogEntryCreateSchema = z.object({
       diameter: z.number().optional(),
       weight: z.number().optional(),
     })
+    // Open: the catalog's own seed data carries `length`, `thickness`, `unit`,
+    // shaft and body dimensions, … and the edit form sends them back.
+    .passthrough()
     .nullable()
     .optional(),
   mountingFeatures: z
     .array(
-      z.object({
-        type: z.string(),
-        specs: z.record(z.string(), z.unknown()).optional().default({}),
-      }),
+      z
+        .object({
+          type: z.string(),
+          specs: z.record(z.string(), z.unknown()).optional().default({}),
+        })
+        // Open for the same reason: seeded features carry their measurements
+        // (`holeDiameter`, `nutSize`, `leadSpacing`, …) beside `specs`.
+        .passthrough(),
     )
     .optional()
     .default([]),

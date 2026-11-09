@@ -17,6 +17,7 @@ import { ItemService } from '@/items/services/ItemService'
 import { ThreadComparisonService } from '@/services/ThreadComparisonService'
 import { NotFoundError } from '@/errors'
 import { apiHandler, created } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { AccessControlService } from '@/auth/AccessControlService'
 import {
   requirePartMasterAccess,
@@ -274,6 +275,7 @@ app.patch(
     apiHandler<{ id: string }, z.infer<typeof physicalPartUpdateSchema>>(
       {
         body: physicalPartUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('PhysicalPart'),
         permission: ['physical_parts', 'update'],
         openapi: {
           summary: 'Update a physical part (state, notes, source, ERP ref)',

@@ -207,7 +207,7 @@ describe('by-id item routes — program isolation', () => {
     // The step write goes to work_instruction_steps directly, so
     // ItemService.update's design check is not in this path at all — the
     // route gate is the only one there is.
-    const body = { title: 'Smuggled step', description: 'from outside' }
+    const body = { title: 'Smuggled step from outside' }
 
     await expectDenied(
       await as(outsider).post(

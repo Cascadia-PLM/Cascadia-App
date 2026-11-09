@@ -28,6 +28,15 @@ Deliberate v1 behaviors that look like accidents until written down:
   added to it (a semantically strict `PUT`/`PATCH` split is v2 material).
   Omitted fields are left unchanged; explicit `null` clears where the field
   is nullable.
+- **Unknown body fields are rejected.** A JSON body field the endpoint does
+  not declare is a `400 VALIDATION_FAILED`, with one `fieldErrors` entry per
+  unknown key (`code: "unrecognized_keys"`, `field` the key's path) — not
+  silently ignored, so a misspelled or unsupported field cannot look like a
+  successful write. The one tolerance: `PUT /api/v1/items/:id` accepts the
+  server-assigned identity columns a read returns (`id`, `masterId`,
+  `itemNumber`, `revision`, …) and ignores them, so a read-modify-write that
+  echoes the whole object still saves. Query strings are not covered by this
+  rule.
 - **Listing goes through `/api/v1/items`.** Type-specific route modules
   (`/parts`, `/documents`, `/requirements`, …) serve detail and actions from
   `GET /:id` up; enumerating items of a type is the items API's job

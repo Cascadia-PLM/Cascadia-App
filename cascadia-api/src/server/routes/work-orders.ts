@@ -26,6 +26,7 @@ import { QualificationService } from '@/services/QualificationService'
 import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { apiHandler } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { requireItemAccess, requireWorkOrderAccess } from '@/auth/access'
 
 /** Step data or progress for a run in flight; either half may be sent alone. */
@@ -229,6 +230,7 @@ app.put(
         access: ({ params, user }) =>
           requireWorkOrderAccess(user.id, params.id),
         body: workOrderUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('WorkOrder'),
       },
       async ({ params, body, user }) => {
         // Repointing the order at another part is a read of that part, exactly

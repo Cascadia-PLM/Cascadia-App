@@ -13,6 +13,7 @@ import { ItemService } from '@/items/services/ItemService'
 import { SoftwareSourceService } from '@/services/SoftwareSourceService'
 import { NotFoundError, ValidationError } from '@/errors'
 import { apiHandler, parseQuery } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { softwareUpdateSchema } from '@/api/schemas'
 import { requireItemAccess } from '@/auth/access'
 import '@/items/registerItemTypes.server'
@@ -96,6 +97,7 @@ app.put(
         permission: ['software', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: softwareUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('Software'),
         openapi: {
           summary: 'Update a software item',
           request: { params: softwareIdParamSchema },

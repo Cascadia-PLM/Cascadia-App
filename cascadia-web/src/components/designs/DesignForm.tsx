@@ -94,7 +94,9 @@ export function DesignForm({
         name: value.name,
         code: value.code.toUpperCase(),
         description: value.description || undefined,
-        designType: value.designType,
+        // Fixed at creation (the select is disabled when editing), and the
+        // update endpoint rejects it — so an edit does not send it.
+        designType: design?.id ? undefined : value.designType,
         programId: value.programId || null,
         parentDesignId: value.parentDesignId || null,
         plannedQuantity: value.plannedQuantity

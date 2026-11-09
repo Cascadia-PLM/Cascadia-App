@@ -12,6 +12,7 @@ import { VerificationService } from '@/services/VerificationService'
 import { ParametricResolutionService } from '@/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/errors'
 import { apiHandler, created } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { requireItemAccess, requireItemsAccess } from '@/auth/access'
 import { mountRoutes } from '@/api/route-registry'
 import { partUpdateSchema } from '@/api/schemas'
@@ -75,6 +76,7 @@ app.put(
       {
         permission: ['parts', 'update'],
         body: partUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('Part'),
         openapi: {
           summary: 'Update a part',
           request: { params: partIdParamSchema },

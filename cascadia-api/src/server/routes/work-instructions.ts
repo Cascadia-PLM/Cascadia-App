@@ -15,6 +15,7 @@ import { WorkInstructionChangeAlertService } from '@/services/WorkInstructionCha
 import { ParametricResolutionService } from '@/services/ParametricResolutionService'
 import { NotFoundError, ValidationError } from '@/errors'
 import { apiHandler } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { workInstructionUpdateSchema } from '@/api/schemas'
 import { requireItemAccess } from '@/auth/access'
 import { db } from '@/db'
@@ -92,6 +93,10 @@ const stepCreateSchema = z.object({
   title: z.string().max(500).nullish(),
   content: stepContentSchema.optional(),
   orderIndex: z.number().int().min(0).max(100000).optional(),
+  // The operation the step is added under. The editor has always sent it, and
+  // until bodies were strict it was dropped: a step added inside an operation
+  // landed ungrouped.
+  operationId: z.string().uuid().nullish(),
 })
 
 const stepUpdateSchema = z.object({
@@ -163,6 +168,7 @@ app.put(
         permission: ['work_instructions', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: workInstructionUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('WorkInstruction'),
       },
       async ({ params, body, user }) => {
         // The schema permits `null` where the column is nullable, which the
@@ -977,6 +983,22 @@ app.post(
             )
         }
 
+        if (data.operationId) {
+          const [operation] = await db
+            .select({ id: workInstructionOperations.id })
+            .from(workInstructionOperations)
+            .where(
+              and(
+                eq(workInstructionOperations.id, data.operationId),
+                eq(workInstructionOperations.workInstructionId, params.id),
+              ),
+            )
+            .limit(1)
+          if (!operation) {
+            throw new NotFoundError('Operation', data.operationId)
+          }
+        }
+
         const stepId = randomUUID()
         const content: StepContent = data.content || { blocks: [] }
 
@@ -989,6 +1011,7 @@ app.post(
               orderIndex: newOrderIndex,
               title: data.title || null,
               content,
+              operationId: data.operationId ?? null,
             })
             .returning(),
         )

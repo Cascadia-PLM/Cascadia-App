@@ -13,6 +13,7 @@ import {
   requireItemsAccess,
 } from '@/auth/access'
 import { apiHandler, created } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { systemElementUpdateSchema } from '@/api/schemas'
 
 // Register item types (server-side version)
@@ -87,6 +88,7 @@ app.put(
         permission: ['system_elements', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: systemElementUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('SystemElement'),
       },
       async ({ params, body, user }) => {
         // The schema permits `null` where the column is nullable, which the

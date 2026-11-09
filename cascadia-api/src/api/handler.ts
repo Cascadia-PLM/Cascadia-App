@@ -11,6 +11,7 @@ import {
 } from './rate-limit'
 import { applySecurityHeaders, getAllowedOrigins, requestOrigin } from './cors'
 import { resolveClientIp } from './client-ip'
+import { rejectUnknownKeys } from './strict-body'
 import type { RateLimitConfig } from './rate-limit'
 import type { OpenApiMetadata } from './openapi-helpers'
 import type { z } from 'zod'
@@ -104,6 +105,14 @@ interface HandlerOptions<
    * route's OpenAPI metadata below, so the spec cannot drift from what runs.
    */
   body?: z.ZodType<TBody>
+  /**
+   * Top-level body keys to accept and drop before the strict parse, resolved
+   * on first use. For item updates, whose clients PUT back the whole object a
+   * read returned: see `itemReadEchoFields`. A key the body schema declares is
+   * never dropped — it is validated like any other — so this can only widen
+   * what is tolerated, never what is written.
+   */
+  ignoreKeys?: () => ReadonlySet<string>
   /**
    * Query-string schema, the exact counterpart of `body:` above. When set the
    * search params are validated before the handler runs and arrive as
@@ -265,6 +274,14 @@ async function readJsonBody(request: Request): Promise<unknown> {
   return JSON.parse(raw)
 }
 
+/** The top-level keys an object body schema declares; empty for any other. */
+function declaredKeys(schema: z.ZodType | undefined): ReadonlySet<string> {
+  const def = schema?._zod.def as { type?: string; shape?: object } | undefined
+  return new Set(
+    def?.type === 'object' && def.shape ? Object.keys(def.shape) : [],
+  )
+}
+
 /**
  * Make the schema that runs be the schema that is documented.
  *
@@ -391,6 +408,23 @@ export function apiHandler<
     options.rateLimit && typeof options.rateLimit === 'object'
       ? new RateLimiter(options.rateLimit)
       : null
+
+  // Also built once per route: the body schema with every object that never
+  // chose an unknown-key policy made strict, so a key the route does not
+  // declare is a 400 rather than silently dropped. See `strict-body.ts`.
+  const strictBody = options.body ? rejectUnknownKeys(options.body) : undefined
+  const declared = declaredKeys(options.body)
+  const dropIgnoredKeys = (raw: unknown): unknown => {
+    if (!options.ignoreKeys) return raw
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw))
+      return raw
+    const ignored = options.ignoreKeys()
+    return Object.fromEntries(
+      Object.entries(raw).filter(
+        ([key]) => declared.has(key) || !ignored.has(key),
+      ),
+    )
+  }
 
   const wrapped: AnnotatedHandler<TParams> = async ({ params, request }) => {
     const requestId = getRequestId(request)
@@ -572,8 +606,8 @@ export function apiHandler<
       // After auth, permission and access, so a caller who cannot reach the
       // route cannot use the shape of a 400 to learn what it accepts, and
       // before the handler, so nothing downstream sees an unvalidated body.
-      const body = options.body
-        ? options.body.parse(await readJsonBody(request))
+      const body = strictBody
+        ? strictBody.parse(dropIgnoredKeys(await readJsonBody(request)))
         : (undefined as TBody)
 
       // Same position as the body, for the same reason: a caller who cannot

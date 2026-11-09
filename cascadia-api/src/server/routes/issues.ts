@@ -8,6 +8,7 @@ import { ItemService } from '@/items/services/ItemService'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { NotFoundError, PermissionDeniedError } from '@/errors'
 import { apiHandler } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { issueUpdateSchema } from '@/api/schemas'
 import { requireItemAccess } from '@/auth/access'
 // Register item types (server-side version)
@@ -43,6 +44,7 @@ app.put(
         permission: ['issues', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: issueUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('Issue'),
       },
       // The schema permits `null` where the column is nullable, which the
       // Issue interface spells as an absent optional; both the service and the

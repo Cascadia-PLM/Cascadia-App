@@ -23,6 +23,7 @@ import { ItemService } from '@/items/services/ItemService'
 import { ItemRelationshipService } from '@/items/services/ItemRelationshipService'
 import { getResourceType } from '@/items/item-type-resources'
 import { apiHandler, jsonResponse } from '@/api/handler'
+import { rejectUnknownKeys } from '@/api/strict-body'
 // Register item types (server-side version)
 import '@/items/registerItemTypes.server'
 
@@ -67,6 +68,8 @@ type RelationshipData = z.infer<typeof relationshipDataSchema>
  * `relationshipDataSchema` above; per-line rejection into `errors[]` is what a
  * batch endpoint is for.
  */
+const strictRelationshipDataSchema = rejectUnknownKeys(relationshipDataSchema)
+
 const batchCreateBodySchema = z.object({
   relationships: z.array(z.record(z.string(), z.unknown())).min(1).max(500),
   replaceExisting: z.boolean().optional(),
@@ -253,7 +256,9 @@ app.post(
           []
 
         body.relationships.forEach((rawRelationship, index) => {
-          const parsed = relationshipDataSchema.safeParse(rawRelationship)
+          // Strict, like every `body:` schema: an unknown key on a line
+          // rejects that line instead of being dropped from it.
+          const parsed = strictRelationshipDataSchema.safeParse(rawRelationship)
           if (!parsed.success) {
             errors.push({
               relationship: rawRelationship,

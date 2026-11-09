@@ -583,7 +583,6 @@ export function StepEditor({
   const handleAddStep = async () => {
     const newOrderIndex = steps.length
     await onAddStep({
-      workInstructionId,
       orderIndex: newOrderIndex,
       title: '',
       content: { blocks: [] },

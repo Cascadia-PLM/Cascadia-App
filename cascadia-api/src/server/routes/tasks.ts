@@ -7,6 +7,7 @@ import type { Task } from '@cascadia/commons/items/types/task'
 import { ItemService } from '@/items/services/ItemService'
 import { NotFoundError } from '@/errors'
 import { apiHandler } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { taskUpdateSchema } from '@/api/schemas'
 import { requireItemAccess } from '@/auth/access'
 // Register item types (server-side version)
@@ -42,6 +43,7 @@ app.put(
         permission: ['tasks', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: taskUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('Task'),
       },
       // The schema permits `null` where the column is nullable, which the
       // Task interface spells as an absent optional; both the service and the

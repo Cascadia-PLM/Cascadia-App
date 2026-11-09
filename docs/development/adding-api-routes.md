@@ -259,6 +259,23 @@ app.put(
 The same schema is written into the route's OpenAPI metadata, so the spec
 cannot drift from what actually runs.
 
+**Unknown keys are a 400.** A plain `z.object()` strips keys it does not
+declare, which on a request body is a silent failure: the caller gets a 200
+and the field they sent simply did not happen. The wrapper therefore runs every
+`body:` schema through `rejectUnknownKeys()` (`cascadia-api/src/api/strict-body.ts`)
+once, at route construction — nested objects, arrays, unions and optionals
+included — and each unknown key comes back as its own `fieldErrors` entry
+(`code: 'unrecognized_keys'`). You write ordinary `z.object()` schemas; do not
+add `.strict()` by hand.
+
+A schema that genuinely forwards keys it does not know — the item-create
+envelope, whose remainder is the item type's to validate, or the approval vote
+that carries module fields — says so with `.passthrough()`, and is left alone.
+A route that validates in the handler instead of through `body:` (see the
+exceptions below) must make the same check itself: `rejectUnknownKeys(schema)`
+for a full parse, or `assertNoUnknownKeys(schema, value)` when a service runs
+the real parse and should keep its own error messages.
+
 Four things this replaced, none of which should come back:
 
 - `await request.json()` followed by hand-rolled `if (!x) throw new

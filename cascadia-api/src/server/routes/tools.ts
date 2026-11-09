@@ -7,6 +7,7 @@ import type { Tool } from '@cascadia/commons/items/types/tool'
 import { ItemService } from '@/items/services/ItemService'
 import { NotFoundError } from '@/errors'
 import { apiHandler } from '@/api/handler'
+import { itemReadEchoFields } from '@/api/item-read-echo'
 import { toolUpdateSchema } from '@/api/schemas'
 import { requireItemAccess } from '@/auth/access'
 import '@/items/registerItemTypes.server'
@@ -41,6 +42,7 @@ app.put(
         permission: ['tools', 'update'],
         access: ({ params, user }) => requireItemAccess(user.id, params.id),
         body: toolUpdateSchema,
+        ignoreKeys: () => itemReadEchoFields('Tool'),
       },
       // The schema permits `null` where the column is nullable, which the
       // Tool interface spells as an absent optional; both the service and the

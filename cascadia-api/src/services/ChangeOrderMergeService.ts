@@ -516,8 +516,8 @@ export class ChangeOrderMergeService {
    * another change order may have released a newer one since this branch was
    * cut.
    *
-   * `baseRevision` is null when the master has no released row on main at
-   * all — the caller decides what to show for "current"; `newRevision` still
+   * `baseRevision` is null when the master has no released version at all —
+   * the caller decides what to show for "current"; `newRevision` still
    * mirrors what the merge would mint.
    */
   private static async resolveModifiedRevision(
@@ -550,7 +550,27 @@ export class ChangeOrderMergeService {
       .limit(1)
       .then((r) => r.at(0)?.item)
 
-    const mainRevision = mainCurrentItem?.revision
+    // Main may not track the master at all. Released rows that never passed
+    // through a merge — a baseline import, a seed — carry their revision on
+    // the row without a main `branch_items` entry. Falling straight through to
+    // the scheme's start then minted B for an item imported at C: a revision
+    // *behind* the one it superseded. The version in service is the base
+    // instead; working copies are never `isCurrent` and never carry a released
+    // revision, so neither can be mistaken for it.
+    const mainRevision =
+      mainCurrentItem?.revision ??
+      (await run
+        .select({ revision: items.revision })
+        .from(items)
+        .where(
+          and(
+            eq(items.masterId, itemMasterId),
+            eq(items.isCurrent, true),
+            notWorkingRevision(),
+          ),
+        )
+        .limit(1)
+        .then((r) => r.at(0)?.revision))
     if (!mainRevision) {
       return {
         baseRevision: null,

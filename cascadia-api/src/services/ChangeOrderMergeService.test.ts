@@ -2830,6 +2830,137 @@ describe('ChangeOrderMergeService', () => {
     })
   })
 
+  describe('items imported as released revisions', () => {
+    // A baseline import records a release that happened in the source system:
+    // the item lands on main at its source revision (here C). The next ECO
+    // continues that sequence — it must mint D, never restart at A or B.
+    // Built through the real services only: no hand-inserted main branch row,
+    // because whether main tracks the import is exactly what is under test.
+    async function importAtRevision(suffix: string, revision: string) {
+      return ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-${suffix}`,
+          revision,
+          name: `Imported ${suffix}`,
+          designId,
+        } as any,
+        user.id,
+        { bypassBranchProtection: true, importAsReleased: true },
+      )
+    }
+
+    async function currentRevisionOf(masterId: string) {
+      const current = takeFirst(
+        await testDb.db
+          .select()
+          .from(items)
+          .where(and(eq(items.masterId, masterId), eq(items.isCurrent, true))),
+      )
+      return current.revision
+    }
+
+    // Check the import out to a fresh ECO branch, edit it, approve, and
+    // return the letter the preview promised for it.
+    async function editOnChangeOrder(part: PersistedItem) {
+      const changeOrder = await createChangeOrder()
+      const { branch } = await BranchService.getOrCreateChangeOrderBranch(
+        designId,
+        changeOrder.id,
+        user.id,
+      )
+      await testDb.db.insert(changeOrderDesigns).values({
+        changeOrderId: changeOrder.id,
+        designId,
+        branchId: branch.id,
+        mergeStatus: 'pending',
+      })
+      await CheckoutService.checkout(
+        { itemMasterId: part.masterId, branchId: branch.id },
+        user.id,
+      )
+      await CheckoutService.saveChanges(
+        {
+          branchId: branch.id,
+          itemId: part.id,
+          changes: { name: 'Edited after import' },
+          commitMessage: 'edit',
+        },
+        user.id,
+      )
+      await approveChangeOrder(changeOrder.id)
+
+      const preview = await ChangeOrderMergeService.previewMerge(changeOrder.id)
+      const previewed = preview.designs
+        .flatMap((d) => d.items)
+        .find((i) => i.itemNumber === part.itemNumber)?.newRevision
+      return { changeOrder, previewed }
+    }
+
+    it('tracks the import on main as the version in service', async () => {
+      const part = await importAtRevision('imp-tracked', 'C')
+      const mainBranch = await BranchService.getMainBranch(designId)
+
+      const tracked = await testDb.db
+        .select()
+        .from(branchItems)
+        .where(
+          and(
+            eq(branchItems.branchId, mainBranch!.id),
+            eq(branchItems.itemMasterId, part.masterId),
+          ),
+        )
+      expect(tracked).toHaveLength(1)
+      expect(tracked[0]!.currentItemId).toBe(part.id)
+    })
+
+    it('a checked-out, edited import releases at the next revision after the imported one', async () => {
+      const part = await importAtRevision('imp-branch', 'C')
+      expect(part.revision).toBe('C')
+
+      const { changeOrder, previewed } = await editOnChangeOrder(part)
+      expect(previewed).toBe('D')
+
+      await ChangeOrderMergeService.merge(changeOrder.id, user.id)
+      expect(await currentRevisionOf(part.masterId)).toBe('D')
+    })
+
+    it('an import main never tracked still releases forward, not from the scheme start', async () => {
+      // Imports made before the import wrote main's row: the released row
+      // carries C, main has no branch_items entry for it. Releasing an edit
+      // used to fall through to the scheme's start and mint B.
+      const part = await importAtRevision('imp-untracked', 'C')
+      await testDb.db
+        .delete(branchItems)
+        .where(eq(branchItems.itemMasterId, part.masterId))
+
+      const { changeOrder, previewed } = await editOnChangeOrder(part)
+      expect(previewed).toBe('D')
+
+      await ChangeOrderMergeService.merge(changeOrder.id, user.id)
+      expect(await currentRevisionOf(part.masterId)).toBe('D')
+    })
+
+    it('a revise affected-item action on an import mints the next revision', async () => {
+      const part = await importAtRevision('imp-revise', 'C')
+
+      const changeOrder = await createChangeOrder()
+      await testDb.db.insert(changeOrderAffectedItems).values({
+        changeOrderId: changeOrder.id,
+        affectedItemId: part.id,
+        affectedItemMasterId: part.masterId,
+        changeAction: 'revise',
+        currentState: 'Released',
+        currentRevision: 'C',
+        createdBy: user.id,
+      })
+      await approveChangeOrder(changeOrder.id)
+
+      await ChangeOrderMergeService.merge(changeOrder.id, user.id)
+      expect(await currentRevisionOf(part.masterId)).toBe('D')
+    })
+  })
+
   describe('upstream change notification to derived MBOMs', () => {
     it('notifies MBOMs derived from the design when an ECO branch merges', async () => {
       // Regression: notifyDerivedMboms had no caller anywhere, so

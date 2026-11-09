@@ -461,6 +461,29 @@ export class ItemService {
           }
         }
 
+        // An imported release is main's current version of this master, and
+        // main has to say so the way every merge-released version does: a
+        // `branch_items` row. The merge reads that row to find the revision a
+        // change order builds on; without it an item imported at C released
+        // its first ECO at B. Inside the transaction and outside the
+        // best-effort commit block above — an import that cannot be tracked
+        // must not land as a release main does not know about.
+        if (options?.importAsReleased && item.designId) {
+          const mainBranch = await BranchService.getMainBranch(item.designId)
+          if (!mainBranch) {
+            throw new NotFoundError('Main branch', item.designId, {
+              operation: 'importBaselineRelease',
+            })
+          }
+          await tx.insert(branchItems).values({
+            branchId: mainBranch.id,
+            itemMasterId: item.masterId,
+            currentItemId: item.id,
+            baseItemId: item.id,
+            changeType: null,
+          })
+        }
+
         // Record the fact on the domain event log, atomically with the insert.
         // Publishing takes no lock: `seq` is assigned when this transaction
         // commits.

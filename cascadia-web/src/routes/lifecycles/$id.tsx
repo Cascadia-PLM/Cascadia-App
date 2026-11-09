@@ -9,7 +9,6 @@ import { resolveLifecycleType } from '@cascadia/commons/lifecycles/normalize'
 import type {
   LifecycleDefinition,
   LifecycleType,
-  WorkflowType,
 } from '@cascadia/commons/lifecycles/types'
 import { LifecycleTypeSelector } from '@/components/lifecycles/LifecycleTypeSelector'
 import { DriverSelector } from '@/components/lifecycles/DriverSelector'
@@ -251,12 +250,10 @@ function EditLifecyclePage() {
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Mode</Label>
-                  <Select
-                    value={definition.workflowType}
-                    onValueChange={(value: WorkflowType) =>
-                      handleChange({ ...definition, workflowType: value })
-                    }
-                  >
+                  {/* Mode is fixed at creation: a flexible instance copies the
+                      structure into itself when it starts, so flipping the
+                      mode would strand running instances on the wrong one. */}
+                  <Select value={definition.workflowType} disabled>
                     <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
@@ -265,6 +262,10 @@ function EditLifecyclePage() {
                       <SelectItem value="flexible">Flexible</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Set when the lifecycle is created and can&apos;t be changed.
+                    To switch modes, create a new lifecycle.
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">

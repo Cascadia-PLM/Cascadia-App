@@ -217,6 +217,9 @@ function NewLifecyclePage() {
                       <SelectItem value="flexible">Flexible</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Can&apos;t be changed after the lifecycle is created.
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">

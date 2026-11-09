@@ -104,6 +104,15 @@ function request(path: string, method: string, body: unknown) {
   })
 }
 
+/** A part on main named 'Before', typed with the id every created row has. */
+function createPart(): Promise<{ id: string }> {
+  return ItemService.create(
+    'Part',
+    { itemNumber: `PN-UF-${Date.now()}`, name: 'Before', designId } as never,
+    admin.id,
+  )
+}
+
 async function rejectedFields(res: Response): Promise<Array<string>> {
   expect(res.status).toBe(400)
   const payload = (await res.json()) as ErrorEnvelope
@@ -129,11 +138,7 @@ it('POST /items rejects an unknown field and creates nothing', async () => {
 })
 
 it('PUT /items/:id rejects an unknown field and changes nothing', async () => {
-  const part = await ItemService.create(
-    'Part',
-    { itemNumber: `PN-UF-${Date.now()}`, name: 'Before', designId } as never,
-    admin.id,
-  )
+  const part = await createPart()
 
   const res = await request(`/api/v1/items/${part.id}`, 'PUT', {
     name: 'After',
@@ -151,11 +156,7 @@ it.each([
 ])(
   '%s: still saves the whole read echoed back, as the detail pages do',
   async (base) => {
-    const part = await ItemService.create(
-      'Part',
-      { itemNumber: `PN-UF-${Date.now()}`, name: 'Before', designId } as never,
-      admin.id,
-    )
+    const part = await createPart()
     // Exactly what a page holds: the read as JSON, every column of both rows
     // plus the computed `usageCount`, with one field edited.
     const read = JSON.parse(
@@ -174,11 +175,7 @@ it.each([
 )
 
 it('PUT /parts/:id rejects a field no read could have returned', async () => {
-  const part = await ItemService.create(
-    'Part',
-    { itemNumber: `PN-UF-${Date.now()}`, name: 'Before', designId } as never,
-    admin.id,
-  )
+  const part = await createPart()
 
   const res = await request(`/api/v1/parts/${part.id}`, 'PUT', {
     name: 'After',

@@ -2795,7 +2795,7 @@ export interface paths {
         get: operations["getApiV1ItemsById"];
         /**
          * Update an item
-         * @description The body is validated against the update schema of the stored item’s own type — resolved at request time, so no single static schema can be documented here. Type-invalid values are rejected with 400 and `fieldErrors`; fields outside the type’s schema (including server-managed columns) are stripped. See the per-type `*UpdateSchema` shapes in the type-specific routes. All schemas accept `commitMessage` for branch saves.
+         * @description The body is validated against the update schema of the stored item’s own type — resolved at request time, so no single static schema can be documented here. Type-invalid values are rejected with 400 and `fieldErrors`, and so are fields outside the type’s schema — except the keys an item read returns (`id`, `revision`, `createdAt` and the other server-managed columns), which may be echoed back and are ignored. See the per-type `*UpdateSchema` shapes in the type-specific routes. All schemas accept `commitMessage` for branch saves.
          */
         put: operations["putApiV1ItemsById"];
         post?: never;
@@ -6201,13 +6201,15 @@ export interface operations {
                     categoryId: string;
                     description?: string | null;
                     designNotes?: string | null;
-                    dimensions?: {
+                    dimensions?: ({
                         depth?: number;
                         diameter?: number;
                         height?: number;
                         weight?: number;
                         width?: number;
-                    } | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                     electrical?: {
                         current?: string | null;
                         interface?: string | null;
@@ -6221,13 +6223,15 @@ export interface operations {
                      */
                     entryType?: "component" | "raw_stock";
                     /** @default [] */
-                    mountingFeatures?: {
+                    mountingFeatures?: ({
                         /** @default {} */
                         specs?: {
                             [key: string]: unknown;
                         };
                         type: string;
-                    }[];
+                    } & {
+                        [key: string]: unknown;
+                    })[];
                     name: string;
                     /** @default {} */
                     specs?: {
@@ -6363,13 +6367,15 @@ export interface operations {
                         categorySlug?: string;
                         description?: string | null;
                         designNotes?: string | null;
-                        dimensions?: {
+                        dimensions?: ({
                             depth?: number;
                             diameter?: number;
                             height?: number;
                             weight?: number;
                             width?: number;
-                        } | null;
+                        } & {
+                            [key: string]: unknown;
+                        }) | null;
                         electrical?: {
                             current?: string | null;
                             interface?: string | null;
@@ -6383,13 +6389,15 @@ export interface operations {
                          */
                         entryType?: "component" | "raw_stock";
                         /** @default [] */
-                        mountingFeatures?: {
+                        mountingFeatures?: ({
                             /** @default {} */
                             specs?: {
                                 [key: string]: unknown;
                             };
                             type: string;
-                        }[];
+                        } & {
+                            [key: string]: unknown;
+                        })[];
                         name: string;
                         /** @default {} */
                         specs?: {
@@ -6456,13 +6464,15 @@ export interface operations {
                     categoryId?: string;
                     description?: string | null;
                     designNotes?: string | null;
-                    dimensions?: {
+                    dimensions?: ({
                         depth?: number;
                         diameter?: number;
                         height?: number;
                         weight?: number;
                         width?: number;
-                    } | null;
+                    } & {
+                        [key: string]: unknown;
+                    }) | null;
                     electrical?: {
                         current?: string | null;
                         interface?: string | null;
@@ -6476,13 +6486,15 @@ export interface operations {
                      */
                     entryType?: "component" | "raw_stock";
                     /** @default [] */
-                    mountingFeatures?: {
+                    mountingFeatures?: ({
                         /** @default {} */
                         specs?: {
                             [key: string]: unknown;
                         };
                         type: string;
-                    }[];
+                    } & {
+                        [key: string]: unknown;
+                    })[];
                     name?: string;
                     /** @default {} */
                     specs?: {
@@ -9868,6 +9880,7 @@ export interface operations {
                     description?: string | null;
                     fileId?: string | null;
                     fileName?: string | null;
+                    mimeType?: string | null;
                     name?: string | null;
                     state?: string;
                 };
@@ -15479,11 +15492,13 @@ export interface operations {
                     attributes?: {
                         [key: string]: unknown;
                     };
+                    category?: string | null;
                     commitMessage?: string;
                     description?: string | null;
                     name?: string | null;
                     priority?: ("MustHave" | "ShouldHave" | "CouldHave" | "WontHave") | null;
                     requirementType?: string | null;
+                    source?: string | null;
                     state?: string;
                     type?: string | null;
                     verificationMethod?: ("Analysis" | "Inspection" | "Demonstration" | "Test" | "Documentation") | null;
@@ -16921,6 +16936,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    actualHours?: (number | string) | null;
                     assignee?: string | null;
                     attributes?: {
                         [key: string]: unknown;
@@ -16928,8 +16944,9 @@ export interface operations {
                     commitMessage?: string;
                     description?: string | null;
                     dueDate?: string | null;
+                    estimatedHours?: (number | string) | null;
                     name?: string | null;
-                    priority?: ("low" | "medium" | "high" | "critical") | null;
+                    priority?: ("Low" | "Medium" | "High" | "Critical") | null;
                     state?: string;
                 };
             };
@@ -18426,6 +18443,7 @@ export interface operations {
                             unit?: string;
                         }[];
                     };
+                    operationId?: string | null;
                     orderIndex?: number;
                     title?: string | null;
                 };

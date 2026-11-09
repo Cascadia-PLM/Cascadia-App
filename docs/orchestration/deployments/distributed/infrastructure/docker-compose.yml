@@ -83,7 +83,7 @@ services:
 
   # Optional: pgAdmin
   pgadmin:
-    image: docker.io/dpage/pgadmin4:latest@sha256:c332c5f6dfba995d9ebc4af261d93506d6876085d712eaaa3defc8dd1a3f26de
+    image: docker.io/dpage/pgadmin4:latest@sha256:3591b3d02910dcd817dec6fcaa681c278ba6966945283dd0ea0042731c330c83
     container_name: cascadia-pgadmin
     restart: unless-stopped
     profiles:

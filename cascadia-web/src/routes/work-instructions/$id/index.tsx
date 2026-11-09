@@ -193,6 +193,11 @@ function WorkInstructionDetailView({
 
   const handleStartEditing = useCallback(async () => {
     if (!workInstruction.id) return
+    // Any edit session — Edit button or ?edit=true — uses up the URL's
+    // one-shot auto-edit. Otherwise a tab switch writes edit=true into the
+    // URL, and the effect below re-acquires the lock the moment Done Editing
+    // or a save releases it.
+    setAutoEditAttempted(true)
 
     const ctx = editContext ?? (await loadEditContext())
     if (!ctx) {
@@ -318,9 +323,18 @@ function WorkInstructionDetailView({
     if (!workInstruction.id) return
     setIsSubmitting(true)
     try {
+      // Only the item's own editable columns. A cleared field is sent as
+      // `null` — omitting it would leave the stored value in place.
       await apiFetch(`/api/v1/work-instructions/${workInstruction.id}`, {
         method: 'PUT',
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: data.name || null,
+          description: data.description || null,
+          estimatedTime: data.estimatedTime ?? null,
+          difficulty: data.difficulty ?? null,
+          safetyNotes: data.safetyNotes || null,
+          requiredTools: data.requiredTools || null,
+        }),
       })
 
       showSuccess(

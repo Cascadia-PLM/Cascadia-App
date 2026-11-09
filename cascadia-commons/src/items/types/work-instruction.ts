@@ -136,7 +136,9 @@ export const workInstructionEditSchema = baseItemSchema.extend({
  * straight across without going near Zod.
  */
 export const workInstructionSchema = workInstructionEditSchema.extend({
-  outputPartId: z.string().uuid({ message: 'Output part is required' }),
+  outputPartId: z
+    .string({ error: 'Output part is required' })
+    .uuid({ message: 'Output part is required' }),
 })
 
 // Operation validation schema

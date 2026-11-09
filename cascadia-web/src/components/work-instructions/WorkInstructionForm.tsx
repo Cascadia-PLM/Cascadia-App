@@ -20,6 +20,7 @@ import {
   Textarea,
 } from '@/components/ui'
 import { ItemNumberField } from '@/components/items/ItemNumberField'
+import { zodValidator } from '@/form-validation'
 
 interface WorkInstructionFormProps {
   workInstruction?: Partial<WorkInstruction>
@@ -42,40 +43,37 @@ export function WorkInstructionForm({
   isSubmitting,
   showOutputPart = false,
 }: WorkInstructionFormProps) {
+  const isEdit = Boolean(workInstruction?.id)
+
+  // Seed the form from the fields it edits, never from the whole item. A
+  // loaded item carries its server-side columns too — dates as JSON strings,
+  // empty columns as `null` — and validating those against the item schema
+  // failed every edit before it reached the network (issue #125).
   const form = useForm({
     defaultValues: {
       itemType: 'WorkInstruction' as const,
-      itemNumber: '',
-      name: '',
-      description: '',
-      estimatedTime: undefined as number | undefined,
-      difficulty: undefined as 'Easy' | 'Medium' | 'Hard' | undefined,
-      safetyNotes: '',
-      requiredTools: '',
+      itemNumber: workInstruction?.itemNumber ?? '',
+      name: workInstruction?.name ?? '',
+      description: workInstruction?.description ?? '',
+      estimatedTime: workInstruction?.estimatedTime ?? undefined,
+      difficulty: workInstruction?.difficulty ?? undefined,
+      safetyNotes: workInstruction?.safetyNotes ?? '',
+      requiredTools: workInstruction?.requiredTools ?? '',
       outputPartId: undefined as string | undefined,
-      ...workInstruction,
     },
-    onSubmit: async ({ value }) => {
-      const submissionData = {
-        ...value,
-        itemNumber: value.itemNumber || undefined,
-      } as WorkInstruction
-
+    validators: {
       // Creating requires the output part; editing does not restate it, since
       // it lives on an attachment rather than on the item.
-      if (showOutputPart && !submissionData.outputPartId) {
-        throw new Error('Select the part this work instruction builds')
-      }
-
-      // Validate after transforming empty strings to undefined
-      const result = (
-        showOutputPart ? workInstructionSchema : workInstructionEditSchema
-      ).safeParse(submissionData)
-      if (!result.success) {
-        throw result.error
-      }
-
-      await onSubmit(submissionData)
+      onSubmit: zodValidator(
+        showOutputPart ? workInstructionSchema : workInstructionEditSchema,
+      ),
+    },
+    onSubmit: async ({ value }) => {
+      await onSubmit({
+        ...value,
+        itemNumber: value.itemNumber || undefined,
+        outputPartId: showOutputPart ? value.outputPartId : undefined,
+      })
     },
   })
 
@@ -84,7 +82,7 @@ export function WorkInstructionForm({
       onSubmit={(e) => {
         e.preventDefault()
         e.stopPropagation()
-        form.handleSubmit()
+        void form.handleSubmit()
       }}
       className="space-y-6"
     >
@@ -100,6 +98,8 @@ export function WorkInstructionForm({
               onChange={field.handleChange}
               onBlur={field.handleBlur}
               error={field.state.meta.errors[0]}
+              // Assigned at creation; the update endpoint does not take it.
+              disabled={isEdit || isSubmitting}
             />
           )}
         </form.Field>
@@ -155,29 +155,6 @@ export function WorkInstructionForm({
                 rows={3}
                 error={!!field.state.meta.errors.length}
               />
-            </FormField>
-          )}
-        </form.Field>
-
-        {/* State */}
-        <form.Field name="state">
-          {(field) => (
-            <FormField label="State" error={field.state.meta.errors[0]}>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value)}
-              >
-                <SelectTrigger error={!!field.state.meta.errors.length}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="InReview">In Review</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Released">Released</SelectItem>
-                  <SelectItem value="Obsolete">Obsolete</SelectItem>
-                </SelectContent>
-              </Select>
             </FormField>
           )}
         </form.Field>
@@ -285,7 +262,7 @@ export function WorkInstructionForm({
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting
             ? 'Saving...'
-            : workInstruction?.id
+            : isEdit
               ? 'Update Work Instruction'
               : 'Create Work Instruction'}
         </Button>

@@ -15,7 +15,11 @@
  *   - a loop and a self-parent are refused by row, and the rest still imports
  *   - a design's export imports into another design and exports identically
  *
- * Run: npx vitest run src/server/routes/import.requirements.test.ts
+ * The import runs on the jobs worker (`POST /api/v1/import/requirements`
+ * only authorizes and queues it), so these call `ImportService` the way the
+ * worker's handler does; the export is still the design route.
+ *
+ * Run: npx vitest run cascadia-api/src/import/ImportService.requirements.test.ts
  */
 
 import {
@@ -32,13 +36,14 @@ import { eq, inArray } from 'drizzle-orm'
 import {
   applyMappings,
   autoDetectMappings,
+  importRequirementsRequestSchema,
   parseFile,
   validateRequirementHierarchy,
   validateRows,
 } from '@cascadia/commons/import'
-import importRoutes from './import'
-import designRoutes from './designs'
+import { ImportService } from './ImportService'
 import type { PersistedItem } from '@cascadia/commons/items/types/base'
+import designRoutes from '@/server/routes/designs'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
 import { DesignService } from '@/services/DesignService'
@@ -49,27 +54,9 @@ import { items, programMembers, programs, requirements } from '@/db/schema'
 import { takeFirst } from '@/db/take-first'
 import '@/items/registerItemTypes.server'
 
-interface ImportBody {
-  data: {
-    result: {
-      successCount: number
-      errorCount: number
-      parentsLinked: number
-      createdItems: Array<{
-        rowNumber: number
-        itemId: string
-        itemNumber: string
-      }>
-      failedRows: Array<{ rowNumber: number; errors: Array<string> }>
-    }
-  }
-}
-
 describe('requirement import', () => {
   const testDb = new TestDatabase()
-  const app = new Hono()
-    .route('/api/v1/import', importRoutes)
-    .route('/api/v1/designs', designRoutes)
+  const app = new Hono().route('/api/v1/designs', designRoutes)
   let cookie: string
   let userId: string
   let programId: string
@@ -127,12 +114,12 @@ describe('requirement import', () => {
     return design.id
   }
 
+  /** The request exactly as the route would have parsed it, defaults applied. */
   function importRequirements(body: Record<string, unknown>) {
-    return app.request('/api/v1/import/requirements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: cookie },
-      body: JSON.stringify({ designId, ...body }),
-    })
+    return ImportService.importRequirements(
+      importRequirementsRequestSchema.parse({ designId, ...body }),
+      userId,
+    )
   }
 
   const req = (
@@ -174,7 +161,7 @@ describe('requirement import', () => {
   }
 
   it('imports a hierarchy in any row order, parents by item number', async () => {
-    const response = await importRequirements({
+    const result = await importRequirements({
       rows: [
         req('REQ-1-D1', 'Child', 'REQ-1'),
         req('REQ-1', 'Parent'),
@@ -182,13 +169,11 @@ describe('requirement import', () => {
         req('REQ-2', 'Another root'),
       ],
     })
-    expect(response.status).toBe(201)
-    const { data } = (await response.json()) as ImportBody
-    expect(data.result.successCount).toBe(4)
-    expect(data.result.errorCount).toBe(0)
-    expect(data.result.parentsLinked).toBe(2)
+    expect(result.successCount).toBe(4)
+    expect(result.errorCount).toBe(0)
+    expect(result.parentsLinked).toBe(2)
 
-    const parents = await parentsOf(data.result.createdItems)
+    const parents = await parentsOf(result.createdItems)
     expect(parents.get('REQ-1')).toBeNull()
     expect(parents.get('REQ-1-D1')).toBe('REQ-1')
     expect(parents.get('REQ-1-D1-D1')).toBe('REQ-1-D1')
@@ -207,18 +192,16 @@ describe('requirement import', () => {
       userId,
     )
 
-    const response = await importRequirements({
+    const result = await importRequirements({
       rows: [
         req('REQ-E-D1', 'Child of the existing one', existing.itemNumber),
         req('REQ-N-D1', 'Orphan', 'REQ-NOBODY'),
         req('REQ-3', 'Root'),
       ],
     })
-    expect(response.status).toBe(207)
-    const { data } = (await response.json()) as ImportBody
-    expect(data.result.successCount).toBe(2)
-    expect(data.result.parentsLinked).toBe(1)
-    expect(data.result.failedRows).toEqual([
+    expect(result.successCount).toBe(2)
+    expect(result.parentsLinked).toBe(1)
+    expect(result.failedRows).toEqual([
       { rowNumber: 3, errors: ['Parent requirement not found: REQ-NOBODY'] },
     ])
 
@@ -231,7 +214,7 @@ describe('requirement import', () => {
   })
 
   it('refuses a loop and a self-parent by row, and imports the rest', async () => {
-    const response = await importRequirements({
+    const result = await importRequirements({
       rows: [
         req('REQ-A', 'a', 'REQ-B'),
         req('REQ-B', 'b', 'REQ-A'),
@@ -240,18 +223,14 @@ describe('requirement import', () => {
         req('REQ-D', 'd'),
       ],
     })
-    expect(response.status).toBe(207)
-    const { data } = (await response.json()) as ImportBody
-    expect(data.result.successCount).toBe(1)
-    expect(data.result.createdItems[0]?.itemNumber).toBe('REQ-D')
-    expect(data.result.failedRows.map((row) => row.rowNumber)).toEqual([
-      2, 3, 4, 5,
-    ])
-    expect(data.result.failedRows[0]?.errors[0]).toContain('loops back')
-    expect(data.result.failedRows[2]?.errors[0]).toBe(
+    expect(result.successCount).toBe(1)
+    expect(result.createdItems[0]?.itemNumber).toBe('REQ-D')
+    expect(result.failedRows.map((row) => row.rowNumber)).toEqual([2, 3, 4, 5])
+    expect(result.failedRows[0]?.errors[0]).toContain('loops back')
+    expect(result.failedRows[2]?.errors[0]).toBe(
       'A requirement cannot be its own parent',
     )
-    expect(data.result.failedRows[3]?.errors[0]).toBe(
+    expect(result.failedRows[3]?.errors[0]).toBe(
       'Parent requirement on row 4 cannot be imported',
     )
   })
@@ -276,7 +255,7 @@ describe('requirement import', () => {
         req('REQ-11', 'E-stop', undefined, { priority: 'MustHave' }),
       ],
     })
-    expect(seeded.status).toBe(201)
+    expect(seeded.errorCount).toBe(0)
 
     const exported = await app.request(
       `/api/v1/designs/${designId}/requirements-export`,
@@ -310,21 +289,19 @@ describe('requirement import', () => {
     expect(validated.every((row) => row.isValid)).toBe(true)
 
     const targetDesignId = await createDesign('B')
-    const imported = await app.request('/api/v1/import/requirements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: cookie },
-      body: JSON.stringify({
+    const imported = await ImportService.importRequirements(
+      importRequirementsRequestSchema.parse({
         designId: targetDesignId,
         rows: validated.map((row) => ({
           ...row.mappedData,
           revision: '-',
         })),
       }),
-    })
-    expect(imported.status).toBe(201)
-    const { data } = (await imported.json()) as ImportBody
-    expect(data.result.successCount).toBe(3)
-    expect(data.result.parentsLinked).toBe(1)
+      userId,
+    )
+    expect(imported.errorCount).toBe(0)
+    expect(imported.successCount).toBe(3)
+    expect(imported.parentsLinked).toBe(1)
 
     const exportedAgain = await app.request(
       `/api/v1/designs/${targetDesignId}/requirements-export`,

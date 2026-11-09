@@ -2469,6 +2469,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Import documents from a sheet
+         * @description Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`ImportResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.
+         */
         post: operations["postApiV1ImportDocuments"];
         delete?: never;
         options?: never;
@@ -2485,6 +2489,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Import issues from a sheet
+         * @description Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`ImportResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.
+         */
         post: operations["postApiV1ImportIssues"];
         delete?: never;
         options?: never;
@@ -2501,6 +2509,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Import parts and their BOM from a sheet
+         * @description Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`BomImportResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.
+         */
         post: operations["postApiV1ImportParts"];
         delete?: never;
         options?: never;
@@ -2517,6 +2529,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Import requirements and their hierarchy from a sheet
+         * @description Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`ImportRequirementsResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.
+         */
         post: operations["postApiV1ImportRequirements"];
         delete?: never;
         options?: never;
@@ -2669,6 +2685,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Create many items in one request
+         * @description Queues the batch as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header); once it completes, the job's `result` is `{ created, errors }` — every created item, and every row that failed with the reason. There is no size limit. The whole batch is authorized before it is queued: the create permission for each item type in it, access to every design and branch it names, and `system:manage` for `bypassBranchProtection`. Runs on the jobs worker: answers 503 when the job queue cannot be reached.
+         */
         post: operations["postApiV1ItemsBatchCreate"];
         delete?: never;
         options?: never;
@@ -10992,6 +11012,20 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Import queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            jobId: string;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -11032,6 +11066,20 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Import queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            jobId: string;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -11091,6 +11139,20 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Import queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            jobId: string;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -11140,6 +11202,20 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Import queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            jobId: string;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -11905,6 +11981,20 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Batch queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            jobId: string;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

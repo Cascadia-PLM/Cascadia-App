@@ -106,25 +106,12 @@ export const ACCEPTED_FILE_TYPES = {
 export const ACCEPTED_EXTENSIONS = ['.xlsx', '.xls', '.csv']
 
 /**
- * Maximum rows allowed per import.
+ * Maximum file size in bytes (10MB).
  *
- * Enforced client-side in `parseFile` (a UX guard) and again server-side in
- * every `/api/v1/import/*` route, which is the real boundary — the parser runs
- * in the browser, so a direct API caller never touches it.
- */
-export const MAX_IMPORT_ROWS = 500
-
-/**
- * Maximum BOM relationships allowed alongside a parts import.
- *
- * Ten times the row cap rather than equal to it: one part can appear under
- * many parents, so relationships legitimately outnumber rows. This exists so
- * the array is bounded at all — it was unbounded while `rows` beside it was
- * capped, which made the row cap easy to route around.
- */
-export const MAX_IMPORT_RELATIONSHIPS = MAX_IMPORT_ROWS * 10
-
-/**
- * Maximum file size in bytes (10MB)
+ * There is no row cap. An import runs as a background job on the jobs worker,
+ * so its size is not bounded by an HTTP request; it used to be capped at 500
+ * rows because it ran inside one. This bound is the browser's, not the
+ * server's: the wizard parses the file in the page, and a sheet larger than
+ * this is more than a tab should be asked to hold in memory at once.
  */
 export const MAX_FILE_SIZE = 10 * 1024 * 1024

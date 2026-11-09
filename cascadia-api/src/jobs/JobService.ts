@@ -125,6 +125,37 @@ export interface Job {
   nextRetryAt: Date | null
 }
 
+/**
+ * A job as a list shows it: everything but its payload and its result.
+ *
+ * Those two are the job's own data, and some jobs carry a lot of it — an
+ * import's payload is every row of the sheet, its result one entry per row. A
+ * list of a hundred jobs that carried them was a list of a hundred sheets.
+ * One job's detail (`get`, `getOrThrow`) still has both.
+ */
+export type JobSummary = Omit<Job, 'payload' | 'result'>
+
+/** The columns `JobSummary` is read from — every column but the two above. */
+const jobSummaryColumns = {
+  id: jobs.id,
+  type: jobs.type,
+  status: jobs.status,
+  priority: jobs.priority,
+  error: jobs.error,
+  progress: jobs.progress,
+  progressMessage: jobs.progressMessage,
+  itemId: jobs.itemId,
+  createdBy: jobs.createdBy,
+  createdAt: jobs.createdAt,
+  queuedAt: jobs.queuedAt,
+  startedAt: jobs.startedAt,
+  completedAt: jobs.completedAt,
+  attempts: jobs.attempts,
+  maxAttempts: jobs.maxAttempts,
+  retryDelays: jobs.retryDelays,
+  nextRetryAt: jobs.nextRetryAt,
+}
+
 export interface JobLog {
   id: string
   jobId: string
@@ -370,7 +401,7 @@ export class JobService {
    */
   static async list(
     filter: JobFilter = {},
-  ): Promise<{ jobs: Array<Job>; total: number }> {
+  ): Promise<{ jobs: Array<JobSummary>; total: number }> {
     const conditions = []
 
     if (filter.status) {
@@ -401,7 +432,7 @@ export class JobService {
       .where(whereClause)
 
     const results = await db
-      .select()
+      .select(jobSummaryColumns)
       .from(jobs)
       .where(whereClause)
       .orderBy(...paginatedOrderBy(desc(jobs.createdAt), jobs.id))
@@ -409,7 +440,7 @@ export class JobService {
       .offset(filter.offset ?? 0)
 
     return {
-      jobs: results.map(this.mapToJob),
+      jobs: results.map((row) => this.mapToSummary(row)),
       total: countResult?.count ?? 0,
     }
   }
@@ -906,12 +937,21 @@ export class JobService {
 
   private static mapToJob(row: typeof jobs.$inferSelect): Job {
     return {
+      // By name, not `this`: callers pass this method unbound to `.map()`.
+      ...JobService.mapToSummary(row),
+      payload: row.payload,
+      result: row.result,
+    }
+  }
+
+  private static mapToSummary(
+    row: Omit<typeof jobs.$inferSelect, 'payload' | 'result' | 'dedupeKey'>,
+  ): JobSummary {
+    return {
       id: row.id,
       type: row.type,
       status: row.status,
       priority: row.priority,
-      payload: row.payload,
-      result: row.result,
       error: row.error,
       progress: row.progress ?? 0,
       progressMessage: row.progressMessage,

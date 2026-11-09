@@ -1,17 +1,59 @@
 # Import API
 
-Bulk data import endpoints for creating items from external sources (CSV, XLSX, or direct JSON). Supports parts, documents, and issues with branch-aware creation for post-release designs.
+Bulk data import endpoints for creating items from external sources (CSV, XLSX, or direct JSON). Supports parts, documents, requirements and issues with branch-aware creation for post-release designs.
 
 ## Overview
 
-| Endpoint                             | Method | Auth          | Description                           |
-| ------------------------------------ | ------ | ------------- | ------------------------------------- |
-| `/api/v1/import/parts`               | POST   | Auth required | Bulk import parts (with optional BOM) |
-| `/api/v1/import/documents`           | POST   | Auth required | Bulk import documents                 |
-| `/api/v1/import/issues`              | POST   | Auth required | Bulk import issues                    |
-| `/api/v1/import/templates/parts`     | GET    | Public        | Download parts CSV template           |
-| `/api/v1/import/templates/documents` | GET    | Public        | Download documents CSV template       |
-| `/api/v1/import/templates/issues`    | GET    | Public        | Download issues CSV template          |
+| Endpoint                                | Method | Auth          | Description                                   |
+| --------------------------------------- | ------ | ------------- | --------------------------------------------- |
+| `/api/v1/import/parts`                  | POST   | Auth required | Bulk import parts (with optional BOM)         |
+| `/api/v1/import/documents`              | POST   | Auth required | Bulk import documents                         |
+| `/api/v1/import/requirements`           | POST   | Auth required | Bulk import requirements (with the hierarchy) |
+| `/api/v1/import/issues`                 | POST   | Auth required | Bulk import issues                            |
+| `/api/v1/import/templates/parts`        | GET    | Public        | Download parts CSV template                   |
+| `/api/v1/import/templates/documents`    | GET    | Public        | Download documents CSV template               |
+| `/api/v1/import/templates/requirements` | GET    | Public        | Download requirements CSV template            |
+| `/api/v1/import/templates/issues`       | GET    | Public        | Download issues CSV template                  |
+
+## How an import runs
+
+An import is a **background job** on the jobs worker. There is no row limit:
+the rows are written by the job, not inside the HTTP request that sends them.
+
+1. `POST` the rows. The route checks everything that can be checked up front
+   — the body's shape, the `create` permission for the item type, access to
+   the design and branch, the Administrator role for `bypassBranchProtection`
+   and `importAsReleased`, and the post-release branch requirement — and
+   refuses the whole request if any fails. Nothing is queued for a refused
+   request.
+2. An admitted request answers **`202 Accepted`** with the job's id, and a
+   `Location` header naming where to watch it:
+
+   ```json
+   { "data": { "jobId": "uuid" } }
+   ```
+
+3. Poll `GET /api/v1/jobs/{jobId}` (the submitter, or a holder of
+   `system:manage`, may read it). It reports `status` (`queued`, `running`,
+   `completed`, `failed`, `cancelled`), `progress` (0–100) and a
+   `progressMessage` such as `Processed 1,200 of 4,000 rows`.
+4. When `status` is `completed`, the job's `result` is the import's
+   row-by-row outcome — the object each section below describes. A row that
+   fails is reported in `result.failedRows` and the rest of the sheet still
+   imports, so a completed job may still carry failures.
+
+A few things follow from running as a job:
+
+- **The jobs worker must be running.** When the job queue (RabbitMQ) cannot
+  be reached, the `POST` answers `503` with `EXTERNAL_SERVICE_UNAVAILABLE` and
+  nothing is queued. When the queue is up but no worker is consuming it, the
+  job stays `queued` until one starts.
+- **An import is never retried.** A run that fails part-way has already
+  created rows, and a second run would only fail them again as duplicates.
+  The job ends `failed`, and its `progressMessage` says how far it got.
+- **Rows already created are kept** when a run stops — a cancel from the
+  admin jobs page, or the job's one-hour run time running out. Each row is
+  its own transaction; the run stops between rows.
 
 ## POST /api/v1/import/parts
 
@@ -61,7 +103,7 @@ Bulk-create parts from an array of row data. Optionally includes BOM relationshi
 | ------------------------ | ------- | ----------- | ------------------------------------------------------------------------------------------ |
 | `designId`               | UUID    | Yes         | Target design for the imported parts                                                       |
 | `branchId`               | UUID    | Conditional | Required for post-release designs unless bypass or formal baseline import is enabled       |
-| `rows`                   | Array   | Yes         | 1-500 part rows to import                                                                  |
+| `rows`                   | Array   | Yes         | Part rows to import: at least one, no upper limit                                          |
 | `bomRelationships`       | Array   | No          | BOM parent-child relationships to create after parts are imported                          |
 | `bypassBranchProtection` | boolean | No          | If true, create directly on main even for post-release designs (default: false)            |
 | `importAsReleased`       | boolean | No          | Administrator-only import of existing formal revisions directly onto main (default: false) |
@@ -95,29 +137,23 @@ Bulk-create parts from an array of row data. Optionally includes BOM relationshi
 
 ### Response
 
-**201 Created** -- All rows imported successfully.
+**202 Accepted** -- The import is queued; see [How an import runs](#how-an-import-runs).
 
-**207 Multi-Status** -- Some rows succeeded, some failed.
-
-**400 Bad Request** -- All rows failed or validation error.
+The completed job's `result` (from `GET /api/v1/jobs/{jobId}`):
 
 ```json
 {
-  "data": {
-    "result": {
-      "totalRows": 5,
-      "successCount": 4,
-      "errorCount": 1,
-      "createdItems": [
-        { "rowNumber": 2, "itemId": "uuid", "itemNumber": "P-1001" },
-        { "rowNumber": 3, "itemId": "uuid", "itemNumber": "P-1002" }
-      ],
-      "failedRows": [{ "rowNumber": 6, "errors": ["Name is required"] }],
-      "relationshipsCreated": 3,
-      "relationshipsFailed": 0,
-      "failedRelationships": []
-    }
-  }
+  "totalRows": 5,
+  "successCount": 4,
+  "errorCount": 1,
+  "createdItems": [
+    { "rowNumber": 2, "itemId": "uuid", "itemNumber": "P-1001" },
+    { "rowNumber": 3, "itemId": "uuid", "itemNumber": "P-1002" }
+  ],
+  "failedRows": [{ "rowNumber": 6, "errors": ["Name is required"] }],
+  "relationshipsCreated": 3,
+  "relationshipsFailed": 0,
+  "failedRelationships": []
 }
 ```
 
@@ -212,8 +248,10 @@ Bulk-create documents. Follows the same branch-aware pattern as parts import. Ad
 
 ### Response
 
-Same structure as parts import (without BOM relationship fields). Documents
-also support the Administrator-only `importAsReleased` mode described above.
+**202 Accepted**, as for parts. The completed job's `result` has the same
+structure as the parts import's, without the BOM relationship fields.
+Documents also support the Administrator-only `importAsReleased` mode
+described above.
 
 ---
 
@@ -245,7 +283,7 @@ Bulk-create issues. Issues use a free lifecycle (`Open` state) and do not requir
 | Field       | Type  | Required | Description                              |
 | ----------- | ----- | -------- | ---------------------------------------- |
 | `programId` | UUID  | No       | Associate imported issues with a program |
-| `rows`      | Array | Yes      | 1-500 issue rows to import               |
+| `rows`      | Array | Yes      | Issue rows: at least one, no upper limit |
 
 ### Row fields
 
@@ -264,7 +302,8 @@ Bulk-create issues. Issues use a free lifecycle (`Open` state) and do not requir
 
 ### Response
 
-Same structure as parts import (without BOM relationship fields).
+**202 Accepted**, as for parts. The completed job's `result` has the same
+structure as the parts import's, without the BOM relationship fields.
 
 ---
 
@@ -315,25 +354,30 @@ All import endpoints use the standard Cascadia error envelope:
 }
 ```
 
-**400 Bad Request** (all rows failed):
+**403 Forbidden** -- the caller may not create this item type, may not reach
+the design or branch, or sent `bypassBranchProtection`/`importAsReleased`
+without the Administrator role. Nothing is queued.
+
+**503 Service Unavailable** (`EXTERNAL_SERVICE_UNAVAILABLE`) -- the job queue
+cannot be reached, so the import cannot run. Nothing is queued.
+
+Row failures are not HTTP errors: they are reported in the completed job's
+`result`. A sheet whose every row failed is a completed job with
+`successCount: 0`:
 
 ```json
 {
-  "data": {
-    "result": {
-      "totalRows": 2,
-      "successCount": 0,
-      "errorCount": 2,
-      "createdItems": [],
-      "failedRows": [
-        {
-          "rowNumber": 2,
-          "errors": ["Part number 'PN-000001' already exists"]
-        },
-        { "rowNumber": 3, "errors": ["Name is required"] }
-      ]
-    }
-  }
+  "totalRows": 2,
+  "successCount": 0,
+  "errorCount": 2,
+  "createdItems": [],
+  "failedRows": [
+    {
+      "rowNumber": 2,
+      "errors": ["Part number 'PN-000001' already exists"]
+    },
+    { "rowNumber": 3, "errors": ["Name is required"] }
+  ]
 }
 ```
 
@@ -344,9 +388,9 @@ its message is the statement that failed together with every bound parameter.
 
 ## Limits
 
-| Constraint                 | Value                              |
-| -------------------------- | ---------------------------------- |
-| Maximum rows per request   | 500                                |
-| Maximum item number length | 100 characters                     |
-| Maximum name length        | 500 characters                     |
-| Maximum description length | 5000 characters (10000 for issues) |
+| Constraint                 | Value                               |
+| -------------------------- | ----------------------------------- |
+| Maximum rows per import    | None (one hour of run time per job) |
+| Maximum item number length | 100 characters                      |
+| Maximum name length        | 500 characters                      |
+| Maximum description length | 5000 characters (10000 for issues)  |

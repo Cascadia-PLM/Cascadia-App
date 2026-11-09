@@ -35,6 +35,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 import { Hono } from 'hono'
 import { ErrorCode } from '@cascadia/commons/errors/codes'
@@ -55,6 +56,7 @@ import { BranchService } from '@/services/BranchService'
 import { SessionManager } from '@/auth/session'
 import { permissionService } from '@/auth/permission-service'
 import { programMembers, programs } from '@/db/schema'
+import { RabbitMQClient } from '@/jobs/rabbitmq/client'
 import { takeFirst } from '@/db/take-first'
 
 // Import to register item types
@@ -251,6 +253,10 @@ describe('items routes — authorization gates', () => {
       // The viewer lacks parts:create outright; the interesting case is a
       // user who CAN create but must not bypass branch protection. The
       // Administrator role has system:manage, so it is the positive case.
+      //
+      // An admitted batch is queued as a job, and no broker runs in CI.
+      vi.spyOn(RabbitMQClient, 'connect').mockResolvedValue(undefined)
+      vi.spyOn(RabbitMQClient, 'publish').mockResolvedValue(undefined)
       const denied = await post('/api/v1/items/batch-create', viewerCookie, {
         items: [
           {
@@ -276,7 +282,8 @@ describe('items routes — authorization gates', () => {
         ],
         bypassBranchProtection: true,
       })
-      expect(allowed.status).toBe(201)
+      expect(allowed.status).toBe(202)
+      vi.restoreAllMocks()
     })
   })
 

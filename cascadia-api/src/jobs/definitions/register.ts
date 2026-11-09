@@ -32,6 +32,15 @@ import { cadConversionConfig } from './conversion/config'
 
 // PDF watermarking jobs (Node.js worker)
 import { watermarkPdfConfig } from './watermark/config'
+
+// Bulk creation jobs: sheet imports and item batch-create (Node.js worker)
+import {
+  batchCreateConfig,
+  importDocumentsConfig,
+  importIssuesConfig,
+  importPartsConfig,
+  importRequirementsConfig,
+} from './import/config'
 import { jobLogger } from '@/logging/logger'
 
 // Register all job type definitions
@@ -43,6 +52,11 @@ JobTypeRegistry.register(sessionCleanupConfig)
 JobTypeRegistry.register(wiPartChangedConfig)
 JobTypeRegistry.register(cadConversionConfig)
 JobTypeRegistry.register(watermarkPdfConfig)
+JobTypeRegistry.register(importPartsConfig)
+JobTypeRegistry.register(importDocumentsConfig)
+JobTypeRegistry.register(importRequirementsConfig)
+JobTypeRegistry.register(importIssuesConfig)
+JobTypeRegistry.register(batchCreateConfig)
 
 // Mark registry definitions as loaded
 JobTypeRegistry.markInitialized()

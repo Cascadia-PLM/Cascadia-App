@@ -235,23 +235,17 @@ Only valid rows are imported. Invalid rows are skipped. The "Import N Parts" but
 
 ## Bulk Part Creation
 
-The import system creates items one at a time in a loop, which allows individual row failures to be tracked without aborting the entire batch.
+An import runs as a **background job** on the jobs worker. The request is authorized and queued, and answers `202` with the job's id; the job then creates the items one at a time, so an individual row failure is recorded without aborting the rest of the sheet. The wizard follows the job's progress and shows its result when it completes. See [How an import runs](../api/import.md#how-an-import-runs) for the lifecycle.
 
 **Limits:**
 
 - Minimum: 1 row
-- Maximum: 500 rows per import
-- Maximum file size: 10 MB
+- Maximum rows: none — a run may take up to an hour on the worker
+- Maximum file size: 10 MB (the wizard parses the file in the browser)
 
-**Response status codes:**
+**Requires the jobs worker.** When the job queue cannot be reached, the import is refused with `503` and the wizard says so. A run is never retried; rows created before a failure or a cancel are kept.
 
-| Status | Meaning                                            |
-| ------ | -------------------------------------------------- |
-| 201    | All rows imported successfully                     |
-| 207    | Partial success (some rows succeeded, some failed) |
-| 400    | All rows failed                                    |
-
-Each created item is returned with its `rowNumber`, `itemId`, and `itemNumber`. Failed rows include error messages.
+The completed job's result lists each created item with its `rowNumber`, `itemId`, and `itemNumber`, and each failed row with its error messages.
 
 ### Pre-Release vs Post-Release
 
@@ -451,24 +445,20 @@ Creates parts in bulk, optionally with BOM relationships.
 | `findNumber`          | integer        | No       |                              |
 | `referenceDesignator` | string         | No       |                              |
 
-**Response (201/207/400):**
+**Response (202):** `{ "data": { "jobId": "uuid" } }`. The completed job's `result` (from `GET /api/v1/jobs/{jobId}`):
 
 ```json
 {
-  "data": {
-    "result": {
-      "totalRows": 3,
-      "successCount": 3,
-      "errorCount": 0,
-      "createdItems": [
-        { "rowNumber": 2, "itemId": "uuid", "itemNumber": "PN-001" }
-      ],
-      "failedRows": [],
-      "relationshipsCreated": 2,
-      "relationshipsFailed": 0,
-      "failedRelationships": []
-    }
-  }
+  "totalRows": 3,
+  "successCount": 3,
+  "errorCount": 0,
+  "createdItems": [
+    { "rowNumber": 2, "itemId": "uuid", "itemNumber": "PN-001" }
+  ],
+  "failedRows": [],
+  "relationshipsCreated": 2,
+  "relationshipsFailed": 0,
+  "failedRelationships": []
 }
 ```
 
@@ -664,7 +654,7 @@ The import wizard (`ImportDialog` component) guides users through a five-step pr
 2. **Upload File** -- Drag-and-drop or browse for .xlsx/.csv files. Shows a preview of the first 3 rows.
 3. **Map Columns** -- Review auto-detected mappings. Manually adjust via dropdowns. See which columns will become custom attributes.
 4. **Review** -- Validation summary with error/warning counts, row-level detail table, BOM structure detection info, and filter controls.
-5. **Import** -- Progress indicator during creation. Final summary of successes and failures.
+5. **Import** -- Queues the import and follows the job: a progress bar with the worker's own count (`Processed 1,200 of 4,000 rows`), a notice if no jobs worker picks it up, then the summary of successes and failures. The import keeps running if the dialog is closed. The Review step's table shows the first 200 rows of the current filter; every row is validated and counted.
 
 The wizard is embedded in an `ImportButton` component that can be placed on any page and pre-populated with program, design, and branch context.
 

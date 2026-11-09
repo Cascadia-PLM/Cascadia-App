@@ -74,8 +74,7 @@ export const importRequirementsRequestSchema = z.object({
   branchId: z.string().uuid().optional(),
   rows: z
     .array(importRequirementRowSchema)
-    .min(1, 'At least one row is required')
-    .max(500, 'Maximum 500 rows per import'),
+    .min(1, 'At least one row is required'),
   bypassBranchProtection: z.boolean().optional().default(false),
   importAsReleased: z.boolean().optional().default(false),
 })

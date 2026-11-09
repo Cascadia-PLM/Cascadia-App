@@ -363,7 +363,7 @@ Bulk data import from spreadsheets with intelligent BOM parsing.
 | CSV import                 | ✅     | RFC 4180 compliant with quoted field support                                                                            |
 | Column auto-mapping        | ✅     | Intelligent field matching by header names                                                                              |
 | Validation preview         | ✅     | Review errors/warnings before import                                                                                    |
-| Bulk part creation         | ✅     | Up to 500 rows per import                                                                                               |
+| Bulk part creation         | ✅     | No row limit; runs as a background job on the jobs worker                                                               |
 | Requirement import         | ✅     | A hierarchy in one sheet: each row names its parent by item number, in any order; loops and missing parents fail by row |
 | Requirements export        | ✅     | `GET /designs/:id/requirements-export` — the sheet the import reads back, so a design round-trips                       |
 | Rich text handling         | ✅     | Extracts text from Excel rich text cells                                                                                |

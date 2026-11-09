@@ -438,7 +438,15 @@ Search for items with autocomplete and type filtering.
 POST /api/v1/items/batch-create
 ```
 
-Create multiple items in a single request. Limited to 100 items per batch.
+Create multiple items in a single request, with no limit on how many. The
+batch runs as a **background job** on the jobs worker: the request authorizes
+the whole batch and queues it, and the job writes the rows.
+
+Everything is checked before anything is queued, against every row: the
+`create` permission for each item type in the batch, access to every design
+and branch a row names, and `system:manage` for `bypassBranchProtection`.
+Change orders are refused (create them with `POST /api/v1/change-orders`). A
+batch that fails any check is refused whole and nothing is queued.
 
 ### Request Body
 
@@ -469,24 +477,40 @@ Create multiple items in a single request. Limited to 100 items per batch.
 
 ### Response
 
-Returns `201` (all succeeded), `207` (partial success), or `400` (all failed):
+Returns `202 Accepted` with the job's id, and a `Location` header naming
+where to watch it:
+
+```json
+{ "data": { "jobId": "job-uuid" } }
+```
+
+Poll `GET /api/v1/jobs/{jobId}` until its `status` is `completed` (or
+`failed`/`cancelled`). The completed job's `result` reports every row —
+created, or failed with the reason; one failed row never stops the others:
 
 ```json
 {
-  "data": {
-    "created": [
-      { "id": "new-uuid-1", "itemNumber": "PRT-001", ... }
-    ],
-    "errors": [
-      {
-        "itemNumber": "DOC-001",
-        "error": "Failed to create item",
-        "details": "Item number already exists"
-      }
-    ]
-  }
+  "created": [
+    { "id": "new-uuid-1", "itemNumber": "PRT-001", ... }
+  ],
+  "errors": [
+    {
+      "itemNumber": "DOC-001",
+      "error": "Failed to create item",
+      "details": "Item number already exists"
+    }
+  ]
 }
 ```
+
+Returns `503` (`EXTERNAL_SERVICE_UNAVAILABLE`) when the job queue cannot be
+reached; nothing is queued. A batch job is never retried: rows created before
+a failure are kept. See [How an import runs](./import.md#how-an-import-runs)
+for the job lifecycle, which batch-create shares.
+
+> In v0.6 and earlier this endpoint wrote the rows inside the request, answered
+> `201`/`207`/`400` with the body that is now the job's `result`, and refused
+> batches over 100 items.
 
 ## Type-Specific Fields
 

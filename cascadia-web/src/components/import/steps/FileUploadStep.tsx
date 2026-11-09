@@ -6,7 +6,6 @@ import { AlertCircle, Download, FileSpreadsheet, Upload, X } from 'lucide-react'
 import {
   ACCEPTED_EXTENSIONS,
   MAX_FILE_SIZE,
-  MAX_IMPORT_ROWS,
   ParseError,
   autoDetectMappings,
   getImportConfig,
@@ -143,8 +142,7 @@ export function FileUploadStep({
           Upload your {config.pluralLabel.toLowerCase()} file
         </h3>
         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          Excel (.xlsx) or CSV files are supported. Maximum {MAX_IMPORT_ROWS}{' '}
-          rows.
+          Excel (.xlsx) or CSV files are supported, with any number of rows.
         </p>
       </div>
 

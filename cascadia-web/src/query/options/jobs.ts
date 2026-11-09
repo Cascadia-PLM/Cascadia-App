@@ -27,6 +27,13 @@ export interface Job {
   nextRetryAt: string | null
 }
 
+/**
+ * A job as the admin list returns it: no payload and no result. Those are the
+ * job's own data — an import's payload is every row of its sheet — and come
+ * with one job's detail (`jobDetailQuery`) instead.
+ */
+export type JobSummary = Omit<Job, 'payload' | 'result'>
+
 export interface JobLog {
   id: string
   jobId: string
@@ -52,8 +59,8 @@ export interface JobDetail {
 export function jobListQuery(limit = 100) {
   return queryOptions({
     queryKey: qk.list('jobs', { limit }),
-    queryFn: async (): Promise<Array<Job>> => {
-      const result = await apiFetch<{ data: { jobs: Array<Job> } }>(
+    queryFn: async (): Promise<Array<JobSummary>> => {
+      const result = await apiFetch<{ data: { jobs: Array<JobSummary> } }>(
         `/api/v1/admin/jobs?limit=${limit}`,
       )
       return result.data.jobs

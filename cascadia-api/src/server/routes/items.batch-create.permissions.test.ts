@@ -23,9 +23,15 @@
  *    permission leg proves nothing. Every body below is schema-valid.
  *  - A 403 is not by itself proof of THIS refusal: branch protection answers
  *    403/BRANCH_PROTECTED from further down. Assert on `error.code`.
- *  - The pre-flight's whole point is that it runs before the write loop, and
- *    only a row count can tell a refusal from a half-applied batch that then
- *    refused. The mixed-batch case counts rows either side.
+ *  - The pre-flight's whole point is that it runs before anything is
+ *    queued. The batch is written by a background job (`BatchCreateService`
+ *    on the jobs worker) that re-checks nothing, so a refusal must leave no
+ *    job behind — every refusal below counts the queue — and the mixed-batch
+ *    case counts rows either side as well.
+ *
+ * No broker runs in CI, so `RabbitMQClient` is stubbed: `JobService.submit`
+ * still writes the job row, and the admitted case runs that job's payload
+ * through the service the worker runs.
  *
  * Run: npx vitest run cascadia-api/src/server/routes/items.batch-create.permissions.test.ts
  */
@@ -39,12 +45,14 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest'
 import { Hono } from 'hono'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { ErrorCode } from '@cascadia/commons/errors/codes'
 import itemsRoutes from './items'
 import type { TestUser } from '@/__tests__/fixtures/users'
+import type { BatchCreatePayload } from '@/jobs/definitions/import/types'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import {
   assignRoleToUser,
@@ -57,7 +65,10 @@ import { DesignService } from '@/services/DesignService'
 import { ProgramService } from '@/services/ProgramService'
 import { SessionManager } from '@/auth/session'
 import { permissionService } from '@/auth/permission-service'
-import { changeOrders, items, programMembers } from '@/db/schema'
+import { changeOrders, items, jobs, programMembers } from '@/db/schema'
+import { BatchCreateService } from '@/items/services/BatchCreateService'
+import { RabbitMQClient } from '@/jobs/rabbitmq/client'
+import { BATCH_CREATE_JOB_TYPE } from '@/jobs/definitions/import/config'
 
 // Import to register item types
 import '@/items/registerItemTypes.server'
@@ -90,6 +101,10 @@ describe('batch-create — program boundary', () => {
     await testDb.beginTransaction()
     // The permission cache is process-global; these users are new each test.
     permissionService.clearCache()
+
+    // `submit` connects before it writes the row, and no broker runs in CI.
+    vi.spyOn(RabbitMQClient, 'connect').mockResolvedValue(undefined)
+    vi.spyOn(RabbitMQClient, 'publish').mockResolvedValue(undefined)
 
     const suffix = randomUUID().slice(0, 8)
 
@@ -177,6 +192,7 @@ describe('batch-create — program boundary', () => {
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     await testDb.rollback()
   })
 
@@ -215,6 +231,19 @@ describe('batch-create — program boundary', () => {
     return payload.error.code
   }
 
+  /** Batches this suite's users queued — rows committed by anything else are not ours to count. */
+  async function queuedBatches() {
+    return testDb.db
+      .select()
+      .from(jobs)
+      .where(
+        and(
+          eq(jobs.type, BATCH_CREATE_JOB_TYPE),
+          inArray(jobs.createdBy, [homeOnly.id, bothPrograms.id]),
+        ),
+      )
+  }
+
   async function countItems(designId: string): Promise<number> {
     return (
       await testDb.db.select().from(items).where(eq(items.designId, designId))
@@ -228,6 +257,7 @@ describe('batch-create — program boundary', () => {
       })
 
       expect(await refusalCode(response)).toBe(ErrorCode.PERMISSION_DENIED)
+      expect(await queuedBatches()).toHaveLength(0)
     })
 
     it('refuses a non-member naming a branch of the foreign design', async () => {
@@ -238,6 +268,7 @@ describe('batch-create — program boundary', () => {
       })
 
       expect(await refusalCode(response)).toBe(ErrorCode.PERMISSION_DENIED)
+      expect(await queuedBatches()).toHaveLength(0)
     })
 
     it('admits a member of both programs to the same two rows', async () => {
@@ -252,16 +283,23 @@ describe('batch-create — program boundary', () => {
         ],
       })
 
-      expect(await refusalCode(response)).not.toBe(ErrorCode.PERMISSION_DENIED)
+      expect(response.status).toBe(202)
+      const [job, ...others] = await queuedBatches()
+      expect(others).toHaveLength(0)
+      expect(job?.createdBy).toBe(bothPrograms.id)
+
+      // And the queued rows land when the job runs, as the worker runs it.
+      const payload = job?.payload as BatchCreatePayload
+      await BatchCreateService.run(payload.request, payload.userId)
       expect(await countItems(foreignDesignId)).toBeGreaterThan(before)
     })
   })
 
   describe('the pre-flight runs before the write loop', () => {
-    it('refuses a mixed batch whole and writes neither row', async () => {
+    it('refuses a mixed batch whole and queues neither row', async () => {
       // The invariant the whole placement exists for. Row 1 is one this caller
-      // may write; without the pre-flight it lands, the loop then throws on
-      // row 2, and the call returns 207 with half the batch applied.
+      // may write; without the pre-flight the batch is queued, and the job
+      // then writes row 1 and fails row 2 — half the batch applied.
       const homeBefore = await countItems(homeDesignId)
       const foreignBefore = await countItems(foreignDesignId)
 
@@ -273,6 +311,7 @@ describe('batch-create — program boundary', () => {
       })
 
       expect(await refusalCode(response)).toBe(ErrorCode.PERMISSION_DENIED)
+      expect(await queuedBatches()).toHaveLength(0)
       expect(await countItems(homeDesignId)).toBe(homeBefore)
       expect(await countItems(foreignDesignId)).toBe(foreignBefore)
     })
@@ -290,11 +329,10 @@ describe('batch-create — program boundary', () => {
         items: [{ itemType: 'ChangeOrder', data: { name: 'Orphan ECO' } }],
       })
 
-      // The code, not the status: this route also answers 400 when every row
-      // in the batch fails downstream, and that envelope is not an error one.
       expect(response.status).toBe(400)
       const payload = (await response.json()) as ErrorEnvelope
       expect(payload.error.code).toBe(ErrorCode.VALIDATION_FAILED)
+      expect(await queuedBatches()).toHaveLength(0)
       expect((await testDb.db.select().from(changeOrders)).length).toBe(before)
     })
   })

@@ -13077,6 +13077,7 @@
     },
     "/api/v1/import/documents": {
       "post": {
+        "description": "Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`ImportResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.",
         "operationId": "postApiV1ImportDocuments",
         "requestBody": {
           "content": {
@@ -13152,7 +13153,6 @@
                       ],
                       "type": "object"
                     },
-                    "maxItems": 500,
                     "minItems": 1,
                     "type": "array"
                   }
@@ -13168,6 +13168,34 @@
           "required": true
         },
         "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "jobId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "jobId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Import queued"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -13184,6 +13212,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Import documents from a sheet",
         "tags": [
           "Import"
         ]
@@ -13191,6 +13220,7 @@
     },
     "/api/v1/import/issues": {
       "post": {
+        "description": "Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`ImportResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.",
         "operationId": "postApiV1ImportIssues",
         "requestBody": {
           "content": {
@@ -13268,7 +13298,6 @@
                       ],
                       "type": "object"
                     },
-                    "maxItems": 500,
                     "minItems": 1,
                     "type": "array"
                   }
@@ -13283,6 +13312,34 @@
           "required": true
         },
         "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "jobId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "jobId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Import queued"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -13299,6 +13356,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Import issues from a sheet",
         "tags": [
           "Import"
         ]
@@ -13306,6 +13364,7 @@
     },
     "/api/v1/import/parts": {
       "post": {
+        "description": "Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`BomImportResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.",
         "operationId": "postApiV1ImportParts",
         "requestBody": {
           "content": {
@@ -13353,7 +13412,6 @@
                       ],
                       "type": "object"
                     },
-                    "maxItems": 5000,
                     "type": "array"
                   },
                   "branchId": {
@@ -13439,7 +13497,6 @@
                       ],
                       "type": "object"
                     },
-                    "maxItems": 500,
                     "minItems": 1,
                     "type": "array"
                   }
@@ -13455,6 +13512,34 @@
           "required": true
         },
         "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "jobId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "jobId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Import queued"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -13471,6 +13556,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Import parts and their BOM from a sheet",
         "tags": [
           "Import"
         ]
@@ -13478,6 +13564,7 @@
     },
     "/api/v1/import/requirements": {
       "post": {
+        "description": "Queues the import as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header) for its status and progress; once it completes, the job's `result` is the import's row-by-row outcome (`ImportRequirementsResult`). There is no row limit. Runs on the jobs worker: answers 503 when the job queue cannot be reached.",
         "operationId": "postApiV1ImportRequirements",
         "requestBody": {
           "content": {
@@ -13580,7 +13667,6 @@
                       ],
                       "type": "object"
                     },
-                    "maxItems": 500,
                     "minItems": 1,
                     "type": "array"
                   }
@@ -13596,6 +13682,34 @@
           "required": true
         },
         "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "jobId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "jobId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Import queued"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -13612,6 +13726,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Import requirements and their hierarchy from a sheet",
         "tags": [
           "Import"
         ]
@@ -15933,6 +16048,7 @@
     },
     "/api/v1/items/batch-create": {
       "post": {
+        "description": "Queues the batch as a background job and answers 202 with its id. Poll `GET /api/v1/jobs/{id}` (also given in the `Location` header); once it completes, the job's `result` is `{ created, errors }` — every created item, and every row that failed with the reason. There is no size limit. The whole batch is authorized before it is queued: the create permission for each item type in it, access to every design and branch it names, and `system:manage` for `bypassBranchProtection`. Runs on the jobs worker: answers 503 when the job queue cannot be reached.",
         "operationId": "postApiV1ItemsBatchCreate",
         "requestBody": {
           "content": {
@@ -15981,6 +16097,34 @@
           "required": true
         },
         "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "jobId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "jobId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Batch queued"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -15997,6 +16141,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "Create many items in one request",
         "tags": [
           "Items"
         ]

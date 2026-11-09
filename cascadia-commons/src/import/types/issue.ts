@@ -35,10 +35,7 @@ export type ImportIssueRow = z.infer<typeof importIssueRowSchema>
  */
 export const importIssuesRequestSchema = z.object({
   programId: z.string().uuid().optional(),
-  rows: z
-    .array(importIssueRowSchema)
-    .min(1, 'At least one row is required')
-    .max(500, 'Maximum 500 rows per import'),
+  rows: z.array(importIssueRowSchema).min(1, 'At least one row is required'),
 })
 
 export type ImportIssuesRequest = z.infer<typeof importIssuesRequestSchema>

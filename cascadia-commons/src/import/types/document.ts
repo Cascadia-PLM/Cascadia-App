@@ -41,10 +41,7 @@ export type ImportDocumentRow = z.infer<typeof importDocumentRowSchema>
 export const importDocumentsRequestSchema = z.object({
   designId: z.string().uuid({ message: 'Design ID is required' }),
   branchId: z.string().uuid().optional(),
-  rows: z
-    .array(importDocumentRowSchema)
-    .min(1, 'At least one row is required')
-    .max(500, 'Maximum 500 rows per import'),
+  rows: z.array(importDocumentRowSchema).min(1, 'At least one row is required'),
   bypassBranchProtection: z.boolean().optional().default(false),
   importAsReleased: z.boolean().optional().default(false),
 })

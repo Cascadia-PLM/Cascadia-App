@@ -13,7 +13,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import type { DataGridColumn, Row } from '@/components/ui'
-import type { Job } from '@/query'
+import type { JobSummary } from '@/query'
 import type { JobPriority, JobStatus } from '@cascadia/commons/jobs/types-wire'
 import { Badge, Button, DataGrid } from '@/components/ui'
 import {
@@ -34,6 +34,20 @@ import { apiFetch } from '@/api/client'
 
 const JOB_LIST_LIMIT = 500
 const AUTO_REFRESH_MS = 5000
+
+/**
+ * How much of a payload or result the detail dialog prints. An import's
+ * payload is its whole sheet; printed in full, one large import is a <pre>
+ * the browser spends seconds laying out.
+ */
+const JSON_PREVIEW_CHARS = 20_000
+
+function jsonPreview(value: unknown): string {
+  const text = JSON.stringify(value, null, 2)
+  return text.length > JSON_PREVIEW_CHARS
+    ? `${text.slice(0, JSON_PREVIEW_CHARS)}\n… ${(text.length - JSON_PREVIEW_CHARS).toLocaleString()} more characters`
+    : text
+}
 
 export const Route = createFileRoute('/admin/jobs')({
   component: JobsPage,
@@ -73,7 +87,7 @@ const logLevelColors: Record<string, string> = {
 function JobsPage() {
   const invalidate = useInvalidateResources()
   const [autoRefresh, setAutoRefresh] = useState(false)
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  const [selectedJob, setSelectedJob] = useState<JobSummary | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const {
@@ -91,7 +105,7 @@ function JobsPage() {
   )
   const jobLogs = detail?.logs ?? []
 
-  const handleRetry = async (job: Job) => {
+  const handleRetry = async (job: JobSummary) => {
     setActionLoading(job.id)
     try {
       await apiFetch(`/api/v1/admin/jobs/${job.id}/retry`, { method: 'POST' })
@@ -103,7 +117,7 @@ function JobsPage() {
     }
   }
 
-  const handleCancel = async (job: Job) => {
+  const handleCancel = async (job: JobSummary) => {
     if (!confirm('Are you sure you want to cancel this job?')) return
 
     setActionLoading(job.id)
@@ -117,7 +131,7 @@ function JobsPage() {
     }
   }
 
-  const columns: Array<DataGridColumn<Job>> = [
+  const columns: Array<DataGridColumn<JobSummary>> = [
     {
       id: 'type',
       header: 'Type',
@@ -250,7 +264,7 @@ function JobsPage() {
   ]
 
   const renderRowActions = useCallback(
-    (row: Row<Job>) => {
+    (row: Row<JobSummary>) => {
       const job = row.original
       const canRetry = job.status === 'failed'
       const canCancel = job.status === 'pending' || job.status === 'queued'
@@ -512,24 +526,26 @@ function JobsPage() {
                 </div>
               )}
 
-              {/* Payload */}
-              <div>
-                <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Payload
+              {/* Payload — from the detail; the list row does not carry it */}
+              {detail && (
+                <div>
+                  <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Payload
+                  </div>
+                  <pre className="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-3 text-xs text-slate-700 dark:text-slate-300 overflow-x-auto max-h-48">
+                    {jsonPreview(detail.job.payload)}
+                  </pre>
                 </div>
-                <pre className="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-3 text-xs text-slate-700 dark:text-slate-300 overflow-x-auto max-h-48">
-                  {JSON.stringify(selectedJob.payload, null, 2)}
-                </pre>
-              </div>
+              )}
 
               {/* Result */}
-              {selectedJob.result && (
+              {detail?.job.result && (
                 <div>
                   <div className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     Result
                   </div>
                   <pre className="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded p-3 text-xs text-slate-700 dark:text-slate-300 overflow-x-auto max-h-48">
-                    {JSON.stringify(selectedJob.result, null, 2)}
+                    {jsonPreview(detail.job.result)}
                   </pre>
                 </div>
               )}

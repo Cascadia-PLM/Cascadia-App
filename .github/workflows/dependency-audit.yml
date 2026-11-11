@@ -1,0 +1,75 @@
+name: Dependency audit
+
+# What `npm audit` says about the committed lockfile, every day. Advisories
+# are published against code that has not changed, so a lockfile that was clean
+# on Monday can carry a critical by Wednesday; nothing else here would notice
+# until someone ran the audit by hand. Renovate's security PRs cover the direct
+# dependencies, and the transitive ones (most of what this reports) are fixed by
+# lock file maintenance. When this goes red between Mondays, tick "Lock file
+# maintenance" on the Dependency Dashboard issue and Renovate runs it now.
+#
+# This is a separate workflow, and not a required check, on purpose: an
+# advisory published overnight says nothing about the pull request that
+# happens to be open, and gating CI on it would turn every unrelated PR red at
+# once. On a PR it runs only when the lockfile changes, where a red result is
+# about that PR. A failed scheduled run notifies whoever last edited the cron
+# line below.
+on:
+  schedule:
+    - cron: '17 13 * * *' # daily, before the working day in Pacific time
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [package-lock.json]
+  pull_request:
+    branches: [main]
+    paths: [package-lock.json]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # No `npm ci`: `npm audit` reads package-lock.json and asks the registry,
+      # so the job needs the lockfile and nothing installed. Only production
+      # dependencies at high or critical fail it; the full report, dev tooling
+      # included, goes to the job summary for reading rather than gating.
+      - name: Audit the lockfile
+        run: |
+          set +e
+          npm audit --omit=dev --audit-level=high > production.txt 2>&1
+          status=$?
+          npm audit > all.txt 2>&1
+          set -e
+          {
+            echo '## Production dependencies (fails at high or critical)'
+            echo '```'
+            cat production.txt
+            echo '```'
+            if [ "$status" -ne 0 ]; then
+              echo
+              echo 'Most findings are fixable within the declared ranges: tick **Lock file maintenance** on the Dependency Dashboard issue, or run `npm audit fix --package-lock-only` locally. One that needs a major version is listed above with `--force`.'
+            fi
+            echo
+            echo '<details><summary>All dependencies, dev tooling included (not gated)</summary>'
+            echo
+            echo '```'
+            cat all.txt
+            echo '```'
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

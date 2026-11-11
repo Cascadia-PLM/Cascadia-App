@@ -2,24 +2,36 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": [
     "Dependency updates for Cascadia. Nothing here automerges, deliberately: a green build is not the same as a decision, and with two editions rebuilt on every bump the judgement of whether to take one belongs to a person. Every Renovate PR is read by a human.",
-    "Renovate autodetects the npm workspaces from package.json, so the top-level cascadia-* workspaces need no separate configuration."
+    "Renovate autodetects the npm workspaces from package.json, so the top-level cascadia-* workspaces need no separate configuration.",
+    "Security fixes do not wait for Monday. vulnerabilityAlerts PRs ignore the schedule and the hourly limit and have their own concurrency budget, but they are raised only from GitHub's Dependabot alerts, so the repository needs Dependency graph and Dependabot alerts switched on (Dependabot security updates stays off: the PRs are Renovate's). osvVulnerabilityAlerts adds osv.dev as a second source, for direct dependencies only.",
+    "Transitive fixes (most of what npm audit reports) come from lock file maintenance, which regenerates package-lock.json within the declared ranges. It goes first on Mondays; between Mondays, the Dependency audit workflow goes red and the Lock file maintenance checkbox on the Dependency Dashboard runs it on demand."
   ],
   "extends": ["config:recommended"],
   "timezone": "America/Los_Angeles",
   "schedule": ["before 6am on monday"],
   "labels": ["dependencies"],
   "prConcurrentLimit": 2,
-  "dependencyDashboard": true,
+  "dependencyDashboard": { "enabled": true },
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "labels": ["dependencies", "security"]
+  },
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on monday"]
   },
   "packageRules": [
     {
-      "description": "One PR a week for every non-major npm update. Each bump rebuilds both editions, so grouping holds that to a single CI run rather than one per dependency.",
+      "description": "Lock file maintenance takes the first PR slot each Monday: it carries the transitive security fixes, which nothing else here reaches.",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "prPriority": 10
+    },
+    {
+      "description": "One PR a week for every non-major npm update. Each bump rebuilds both editions, so grouping holds that to a single CI run rather than one per dependency. Second in line after lock file maintenance, ahead of image digests.",
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "groupName": "npm non-major"
+      "groupName": "npm non-major",
+      "prPriority": 5
     },
     {
       "description": "Majors stay one per PR — each needs its own read of the changelog and its own CI verdict.",
@@ -28,9 +40,20 @@
       "groupName": null
     },
     {
+      "description": "Every major, in any manager, waits on the Dependency Dashboard until someone ticks it. With two PR slots, a queue of unrequested majors would otherwise hold back the lock file maintenance and non-major updates that carry the security fixes.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
       "description": "Keep the Docker base images pinned by digest, the way the Python worker bases are pinned by hand today.",
       "matchManagers": ["dockerfile", "docker-compose"],
       "pinDigests": true
+    },
+    {
+      "description": "Digest refreshes move together: one PR for every image instead of one each, so they take one PR slot rather than all of them.",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["digest"],
+      "groupName": "docker digests"
     },
     {
       "description": "Workflow actions move on the same weekly cadence, grouped.",

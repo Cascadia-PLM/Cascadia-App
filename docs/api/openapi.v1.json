@@ -435,23 +435,15 @@
               "schema": {
                 "properties": {
                   "defaultExpirationDays": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "number",
+                      "null"
                     ]
                   },
                   "maxExpirationDays": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "number",
+                      "null"
                     ]
                   },
                   "requireExpiration": {
@@ -767,23 +759,15 @@
                     "type": "string"
                   },
                   "description": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "designNotes": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "dimensions": {
@@ -819,53 +803,33 @@
                       {
                         "properties": {
                           "current": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "interface": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "pinout": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "power": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "voltage": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           }
                         },
@@ -1218,23 +1182,15 @@
                           "type": "string"
                         },
                         "description": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "designNotes": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "dimensions": {
@@ -1270,53 +1226,33 @@
                             {
                               "properties": {
                                 "current": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
+                                  "type": [
+                                    "string",
+                                    "null"
                                   ]
                                 },
                                 "interface": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
+                                  "type": [
+                                    "string",
+                                    "null"
                                   ]
                                 },
                                 "pinout": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
+                                  "type": [
+                                    "string",
+                                    "null"
                                   ]
                                 },
                                 "power": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
+                                  "type": [
+                                    "string",
+                                    "null"
                                   ]
                                 },
                                 "voltage": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
+                                  "type": [
+                                    "string",
+                                    "null"
                                   ]
                                 }
                               },
@@ -1550,23 +1486,15 @@
                     "type": "string"
                   },
                   "description": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "designNotes": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "dimensions": {
@@ -1602,53 +1530,33 @@
                       {
                         "properties": {
                           "current": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "interface": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "pinout": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "power": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           },
                           "voltage": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           }
                         },
@@ -2875,7 +2783,7 @@
                 "properties": {
                   "expiresAt": {
                     "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
                     "type": "string"
                   },
                   "name": {
@@ -6947,13 +6855,9 @@
                     "type": "string"
                   },
                   "description": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "designType": {
@@ -7241,13 +7145,9 @@
                                       "type": "string"
                                     },
                                     "name": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "relationshipId": {
@@ -7296,23 +7196,15 @@
                                 "type": "array"
                               },
                               "description": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "elementKind": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "itemId": {
@@ -7329,13 +7221,9 @@
                                 "type": "string"
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "realizedBy": {
@@ -7358,13 +7246,9 @@
                                       "type": "string"
                                     },
                                     "name": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "relationshipId": {
@@ -7818,13 +7702,9 @@
                                       "type": "string"
                                     },
                                     "name": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "realizedBy": {
@@ -7847,13 +7727,9 @@
                                             "type": "string"
                                           },
                                           "name": {
-                                            "anyOf": [
-                                              {
-                                                "type": "string"
-                                              },
-                                              {
-                                                "type": "null"
-                                              }
+                                            "type": [
+                                              "string",
+                                              "null"
                                             ]
                                           },
                                           "relationshipId": {
@@ -7965,33 +7841,21 @@
                                     "type": "string"
                                   },
                                   "name": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
+                                    "type": [
+                                      "string",
+                                      "null"
                                     ]
                                   },
                                   "priority": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
+                                    "type": [
+                                      "string",
+                                      "null"
                                     ]
                                   },
                                   "requirementType": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
+                                    "type": [
+                                      "string",
+                                      "null"
                                     ]
                                   },
                                   "revision": {
@@ -8001,23 +7865,15 @@
                                     "type": "string"
                                   },
                                   "verificationMethod": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
+                                    "type": [
+                                      "string",
+                                      "null"
                                     ]
                                   },
                                   "verificationStatus": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
+                                    "type": [
+                                      "string",
+                                      "null"
                                     ]
                                   }
                                 },
@@ -8055,13 +7911,9 @@
                                       "type": "string"
                                     },
                                     "name": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "relationshipId": {
@@ -8117,13 +7969,9 @@
                                 "items": {
                                   "properties": {
                                     "executionStatus": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "itemId": {
@@ -8138,13 +7986,9 @@
                                       "type": "string"
                                     },
                                     "lastExecutedAt": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "masterId": {
@@ -8153,13 +7997,9 @@
                                       "type": "string"
                                     },
                                     "name": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "relationshipId": {
@@ -8502,13 +8342,9 @@
                     "type": "string"
                   },
                   "description": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "name": {
@@ -10103,23 +9939,15 @@
                           "items": {
                             "properties": {
                               "createdAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "designCode": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "designId": {
@@ -10135,13 +9963,9 @@
                                 ]
                               },
                               "designName": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "id": {
@@ -10156,33 +9980,21 @@
                                 "type": "string"
                               },
                               "modifiedAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "programCode": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "programId": {
@@ -10198,33 +10010,21 @@
                                 ]
                               },
                               "programName": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "revision": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "state": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               }
                             },
@@ -10449,13 +10249,9 @@
                                 ]
                               },
                               "subjectType": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "type": {
@@ -10537,13 +10333,9 @@
                           "items": {
                             "properties": {
                               "abandonedAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "failureCount": {
@@ -10556,56 +10348,36 @@
                                 "type": "number"
                               },
                               "lastError": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "lastErrorAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "lastErrorSeq": {
-                                "anyOf": [
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "number",
+                                  "null"
                                 ]
                               },
                               "lastSeq": {
                                 "type": "number"
                               },
                               "nextAttemptAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "parkedAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "registeredHere": {
@@ -10761,13 +10533,9 @@
                     "data": {
                       "properties": {
                         "abandonedAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "failureCount": {
@@ -10777,56 +10545,36 @@
                           "type": "string"
                         },
                         "lastError": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "lastErrorAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "lastErrorSeq": {
-                          "anyOf": [
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "number",
+                            "null"
                           ]
                         },
                         "lastSeq": {
                           "type": "number"
                         },
                         "nextAttemptAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "parkedAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "updatedAt": {
@@ -10902,13 +10650,9 @@
                     "data": {
                       "properties": {
                         "abandonedAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "failureCount": {
@@ -10918,56 +10662,36 @@
                           "type": "string"
                         },
                         "lastError": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "lastErrorAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "lastErrorSeq": {
-                          "anyOf": [
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "number",
+                            "null"
                           ]
                         },
                         "lastSeq": {
                           "type": "number"
                         },
                         "nextAttemptAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "parkedAt": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "updatedAt": {
@@ -11041,13 +10765,9 @@
                                 "type": "number"
                               },
                               "subjectType": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "type": {
@@ -11128,13 +10848,9 @@
                           "items": {
                             "properties": {
                               "description": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "disabledBy": {
@@ -12422,13 +12138,9 @@
                               "type": "string"
                             },
                             "fileCategory": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "id": {
@@ -17394,15 +17106,11 @@
                     "description": "Product variants: the option selections that admit this BOM line. Omit or null for a fixed line."
                   },
                   "quantity": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ],
-                    "description": "Stored as text, so a string arrives verbatim — BOM quantities are not all integers."
+                    "description": "Stored as text, so a string arrives verbatim — BOM quantities are not all integers.",
+                    "type": [
+                      "number",
+                      "string"
+                    ]
                   },
                   "referenceDesignator": {
                     "type": "string"
@@ -18332,13 +18040,9 @@
                                 "type": "boolean"
                               },
                               "isPrimaryModel": {
-                                "anyOf": [
-                                  {
-                                    "type": "boolean"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "boolean",
+                                  "null"
                                 ]
                               },
                               "itemId": {
@@ -18457,13 +18161,9 @@
                                         ]
                                       },
                                       "changeOrderNumber": {
-                                        "anyOf": [
-                                          {
-                                            "type": "string"
-                                          },
-                                          {
-                                            "type": "null"
-                                          }
+                                        "type": [
+                                          "string",
+                                          "null"
                                         ]
                                       },
                                       "id": {
@@ -18526,13 +18226,9 @@
                                         "type": "string"
                                       },
                                       "sourceItemNumber": {
-                                        "anyOf": [
-                                          {
-                                            "type": "string"
-                                          },
-                                          {
-                                            "type": "null"
-                                          }
+                                        "type": [
+                                          "string",
+                                          "null"
                                         ]
                                       },
                                       "uploadedAt": {
@@ -18594,13 +18290,9 @@
                                       "type": "string"
                                     },
                                     "sourceItemNumber": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string"
-                                        },
-                                        {
-                                          "type": "null"
-                                        }
+                                      "type": [
+                                        "string",
+                                        "null"
                                       ]
                                     },
                                     "uploadedAt": {
@@ -21781,23 +21473,15 @@
                               "type": "string"
                             },
                             "name": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "partType": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             }
                           },
@@ -21873,13 +21557,9 @@
                     "type": "string"
                   },
                   "cost": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "costCurrency": {
@@ -22193,13 +21873,9 @@
                     ]
                   },
                   "weight": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "weightUnit": {
@@ -22237,23 +21913,15 @@
                               "type": "string"
                             },
                             "name": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "partType": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             }
                           },
@@ -22669,23 +22337,15 @@
                               "type": "string"
                             },
                             "makeCode": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "name": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "revision": {
@@ -24327,23 +23987,15 @@
                                 "type": "string"
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "priority": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "requirementId": {
@@ -24690,13 +24342,9 @@
                           ]
                         },
                         "quantity": {
-                          "anyOf": [
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "string"
-                            }
+                          "type": [
+                            "number",
+                            "string"
                           ]
                         },
                         "referenceDesignator": {
@@ -25342,23 +24990,15 @@
                           "type": "string"
                         },
                         "value": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "value2": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         }
                       },
@@ -25720,23 +25360,15 @@
                           "type": "string"
                         },
                         "value": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "value2": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         }
                       },
@@ -26428,13 +26060,9 @@
                                 "type": "string"
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "relationshipId": {
@@ -27289,13 +26917,9 @@
                     "type": "boolean"
                   },
                   "dismissedAt": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "orgInfo": {
@@ -28225,13 +27849,9 @@
                     "data": {
                       "properties": {
                         "draftManifestId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "entries": {
@@ -28266,13 +27886,9 @@
                           "type": "string"
                         },
                         "manifestId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "revision": {
@@ -28774,13 +28390,9 @@
                                 "type": "string"
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "relationshipId": {
@@ -28975,13 +28587,9 @@
                           "items": {
                             "properties": {
                               "elementKind": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "id": {
@@ -28998,13 +28606,9 @@
                                 "type": "string"
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "relationshipId": {
@@ -29191,13 +28795,9 @@
                             {
                               "properties": {
                                 "elementKind": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
+                                  "type": [
+                                    "string",
+                                    "null"
                                   ]
                                 },
                                 "id": {
@@ -29214,13 +28814,9 @@
                                   "type": "string"
                                 },
                                 "name": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string"
-                                    },
-                                    {
-                                      "type": "null"
-                                    }
+                                  "type": [
+                                    "string",
+                                    "null"
                                   ]
                                 },
                                 "relationshipId": {
@@ -29415,13 +29011,9 @@
                                 "type": "string"
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "relationshipId": {
@@ -29952,33 +29544,21 @@
                         "execution": {
                           "properties": {
                             "actualResults": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "duration": {
-                              "anyOf": [
-                                {
-                                  "type": "number"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "number",
+                                "null"
                               ]
                             },
                             "environment": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "executedAt": {
@@ -29999,13 +29579,9 @@
                               "type": "string"
                             },
                             "notes": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "status": {
@@ -30107,33 +29683,21 @@
                           "items": {
                             "properties": {
                               "actualResults": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "duration": {
-                                "anyOf": [
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "number",
+                                  "null"
                                 ]
                               },
                               "environment": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "executedAt": {
@@ -30154,13 +29718,9 @@
                                 "type": "string"
                               },
                               "notes": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "status": {
@@ -30253,13 +29813,9 @@
                           "items": {
                             "properties": {
                               "executionStatus": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "id": {
@@ -30282,26 +29838,18 @@
                                 ]
                               },
                               "name": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "state": {
                                 "type": "string"
                               },
                               "testType": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               }
                             },
@@ -30979,7 +30527,7 @@
                   },
                   "email": {
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
                     "type": "string"
                   },
                   "name": {
@@ -31129,7 +30677,7 @@
                   },
                   "email": {
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
                     "type": "string"
                   },
                   "name": {
@@ -31147,13 +30695,9 @@
                     "type": "string"
                   },
                   "providerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   }
                 },
@@ -31471,23 +31015,15 @@
                                 "type": "number"
                               },
                               "disabledAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "disabledReason": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "enabled": {
@@ -31505,23 +31041,15 @@
                                 "type": "string"
                               },
                               "lastFailureAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "lastSuccessAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "name": {
@@ -31540,23 +31068,15 @@
                                 ]
                               },
                               "rotatedAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "secretPrefix": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "targetUrl": {
@@ -31686,13 +31206,9 @@
                     "data": {
                       "properties": {
                         "secret": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "subscription": {
@@ -31707,23 +31223,15 @@
                               "type": "number"
                             },
                             "disabledAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "disabledReason": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "enabled": {
@@ -31741,23 +31249,15 @@
                               "type": "string"
                             },
                             "lastFailureAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "lastSuccessAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "name": {
@@ -31776,23 +31276,15 @@
                               ]
                             },
                             "rotatedAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "secretPrefix": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "targetUrl": {
@@ -31959,23 +31451,15 @@
                               "type": "number"
                             },
                             "disabledAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "disabledReason": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "enabled": {
@@ -31993,23 +31477,15 @@
                               "type": "string"
                             },
                             "lastFailureAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "lastSuccessAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "name": {
@@ -32028,23 +31504,15 @@
                               ]
                             },
                             "rotatedAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "secretPrefix": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "targetUrl": {
@@ -32188,23 +31656,15 @@
                               "type": "number"
                             },
                             "disabledAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "disabledReason": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "enabled": {
@@ -32222,23 +31682,15 @@
                               "type": "string"
                             },
                             "lastFailureAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "lastSuccessAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "name": {
@@ -32257,23 +31709,15 @@
                               ]
                             },
                             "rotatedAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "secretPrefix": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "targetUrl": {
@@ -32375,23 +31819,15 @@
                                 "type": "string"
                               },
                               "deliveredAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "error": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "eventId": {
@@ -32411,33 +31847,21 @@
                                 "type": "string"
                               },
                               "nextAttemptAt": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "responseSnippet": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "string",
+                                  "null"
                                 ]
                               },
                               "responseStatus": {
-                                "anyOf": [
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
+                                "type": [
+                                  "number",
+                                  "null"
                                 ]
                               },
                               "status": {
@@ -32463,13 +31887,9 @@
                           "type": "array"
                         },
                         "nextBeforeSeq": {
-                          "anyOf": [
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "number",
+                            "null"
                           ]
                         }
                       },
@@ -32547,23 +31967,15 @@
                               "type": "number"
                             },
                             "disabledAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "disabledReason": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "enabled": {
@@ -32581,23 +31993,15 @@
                               "type": "string"
                             },
                             "lastFailureAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "lastSuccessAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "name": {
@@ -32616,23 +32020,15 @@
                               ]
                             },
                             "rotatedAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "secretPrefix": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "targetUrl": {
@@ -32736,23 +32132,15 @@
                               "type": "number"
                             },
                             "disabledAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "disabledReason": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "enabled": {
@@ -32770,23 +32158,15 @@
                               "type": "string"
                             },
                             "lastFailureAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "lastSuccessAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "name": {
@@ -32805,23 +32185,15 @@
                               ]
                             },
                             "rotatedAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "secretPrefix": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "targetUrl": {
@@ -32928,23 +32300,15 @@
                               "type": "number"
                             },
                             "disabledAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "disabledReason": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "enabled": {
@@ -32962,23 +32326,15 @@
                               "type": "string"
                             },
                             "lastFailureAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "lastSuccessAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "name": {
@@ -32997,23 +32353,15 @@
                               ]
                             },
                             "rotatedAt": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "secretPrefix": {
-                              "anyOf": [
-                                {
-                                  "type": "string"
-                                },
-                                {
-                                  "type": "null"
-                                }
+                              "type": [
+                                "string",
+                                "null"
                               ]
                             },
                             "targetUrl": {
@@ -34562,13 +33910,9 @@
                     ]
                   },
                   "dueDate": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "notes": {
@@ -34757,13 +34101,9 @@
                     ]
                   },
                   "dueDate": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "notes": {
@@ -38486,23 +37826,15 @@
                           "type": "string"
                         },
                         "isArchived": {
-                          "anyOf": [
-                            {
-                              "type": "boolean"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "boolean",
+                            "null"
                           ]
                         },
                         "isLocked": {
-                          "anyOf": [
-                            {
-                              "type": "boolean"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "boolean",
+                            "null"
                           ]
                         },
                         "itemCount": {

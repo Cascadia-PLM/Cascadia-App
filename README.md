@@ -1,64 +1,82 @@
-# Cascadia PLM System
+# Cascadia PLM
 
-> A code-first Product Lifecycle Management (PLM) system built with Hono + Vite SPA
+**Open-source product lifecycle management where every engineering change gets its own branch.**
 
-Cascadia is a modern PLM system designed to replace traditional low-code PLM platforms like Aras Innovator. It prioritizes developer experience, type safety, and customization through code rather than UI-based configuration.
+Cascadia keeps a hardware team's parts, BOMs, CAD files, documents, requirements and build records in one system, and runs change control the way Git does. Each change order is an isolated branch: several changes can be in work on the same assembly at once, each one is reviewed as a set of differences, and nothing reaches released data until it is approved and merged.
 
-**Signature Feature**: ECO-as-Branch - Each Engineering Change Order gets its own isolated branch for parallel development, with Git-style versioning for all engineering data.
+The complete core is free to self-host under the AGPL, with no user limit.
+
+[Website](https://cascadiaplm.com) · [Documentation](https://docs.cascadiaplm.com) · [Try the demo](#try-it-in-five-minutes) · [Feature list](./cascadia-feature-list.md) · [Licensing](./LICENSING.md)
 
 https://github.com/user-attachments/assets/fce1368e-19af-463f-95a5-926c3f682022
 
-## Features
+## Why Cascadia
 
-### Core Capabilities
+- **Changes run in parallel.** A change order opens a branch of the design, and edits stay on that branch until release. An urgent fix and a long-running redesign can touch the same assembly at the same time, and Cascadia reports where they conflict.
+- **Released data stays released.** The main line cannot be edited directly. Every change arrives through an approved change order, and revision letters are assigned at the moment of release, so a revision always means something was approved.
+- **One connected record.** A requirement links to the part that satisfies it, the test that verifies it, the work order that built it and the serial number that shipped. The digital thread view walks those links in either direction.
+- **A complete core, free.** Parts, BOMs, change orders, documents, workflows, the file vault, search and the APIs are AGPL-3.0 with unlimited users. You run it on your own infrastructure and the data stays in your own PostgreSQL database.
+- **Customized in code.** Item types, permissions and integrations are TypeScript kept in version control, so a customization is reviewed and tested like any other software instead of living in a vendor's configuration screens.
 
-- **Parts Management** - Manage parts with revisions, materials, costs, and lead times
-- **Document Management** - Version-controlled documents with file vault storage
-- **Change Management** - ECO/ECN workflows with branch-based isolation
-- **Requirements Management** - Track and trace requirements across designs
-- **BOM Management** - Multi-level bill of materials with where-used queries
-- **Workflow Engine** - Configurable approval workflows with lifecycle states
-- **Enterprise Search** - Full-text search across all item types
-- **3D CAD Viewer** - STL/OBJ rendering in browser with orbit controls
-- **Reporting Engine** - Configurable reports with CSV export
+## A quick tour
 
-### Technical Highlights
+The screenshots below come from the bundled demo data: a 24 V utility cart and a survey catamaran modelled in FreeCAD and KiCad, and a six-axis robot arm. [Run the demo](#try-it-in-five-minutes) to click through the same screens.
 
-- **Code-First Configuration** - All customization in TypeScript, version controlled
-- **Git-Style Versioning** - Branches, commits, and tags for engineering data
-- **ECO-as-Branch** - Change orders create isolated branches, merged on release
-- **Type-Safe** - Full TypeScript throughout the stack with Zod validation
-- **Enterprise-Ready** - PostgreSQL, ACID compliance, audit trails
-- **Background Jobs** - RabbitMQ-powered async processing
-- **Modern Auth** - Session-based with GitHub OAuth (Azure AD and Google planned)
-- **SysML v2 Compatible** - Native support for SysML 2.0 with API endpoints
-- **Flexible Storage** - Local filesystem or S3-compatible object storage
-- **Batch Operations** - Bulk create items and relationships via API
+### A change order is a branch
 
-## Technology Stack
+![Affected items of change order ECO-000014: two parts revised and four new parts released](./docs/images/readme/change-order.png)
 
-- **Backend**: [Hono](https://hono.dev/) - Lightweight TypeScript API server
-- **Frontend**: [Vite](https://vite.dev/) SPA + [TanStack Router](https://tanstack.com/router) + [TanStack Query](https://tanstack.com/query)
-- **Database**: PostgreSQL 18+ with [Drizzle ORM](https://orm.drizzle.team)
-- **UI**: Tailwind CSS 4 + [Radix UI](https://www.radix-ui.com/)
-- **Auth**: Oslo.js crypto + [Arctic](https://arcticjs.dev/) for OAuth
-- **Validation**: [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev/)
-- **Graph Visualization**: [React Flow](https://reactflow.dev/) + Dagre for BOM and commit graphs
-- **3D Viewer**: Three.js for STL/OBJ CAD file preview
-- **Message Queue**: RabbitMQ for background jobs
-- **Testing**: Vitest + Playwright
-- **Containerization**: Docker, Docker Compose
+ECO-000014 adds a drop-in wall kit to the cart. It revises two released parts (B → C and C → D) and releases four new ones at revision A. All of that work happened on the change order's own branch and reached the released design in a single merge when the change was approved.
 
-## Try the Demo
+### History you can follow
 
-The fastest way to see Cascadia is the bundled demo stack — Postgres, RabbitMQ, the app (with embedded vault), the CAD converter, and the jobs worker, pre-seeded with a real engineering dataset (TDJ-25 6-DOF robot arm: ~88 parts, 101 BOM relationships, 79 colored GLBs + STEPs). No clone required:
+<p align="center">
+  <img src="./docs/images/readme/design-history.png" alt="Design history graph: change order branches merging into the main line" width="640" />
+</p>
+
+Each release is a merge commit on the design's main line, tagged with the change order that caused it. Any earlier state of the design can be opened as it was, whether that is a commit, a branch or a named baseline.
+
+### Bills of materials
+
+![Multi-level BOM of the utility cart with quantity, revision and lifecycle state per line](./docs/images/readme/bom.png)
+
+Multi-level BOMs carry quantities, find numbers and reference designators, and every line shows the revision and lifecycle state in effect. Where-used runs the other way, and BOMs import from Excel or CSV.
+
+### CAD files and 3D in the browser
+
+![Part page for the cart assembly with its CAD files and an interactive 3D model](./docs/images/readme/part-3d.png)
+
+The vault stores native CAD next to neutral formats, with check-out, check-in and version history. STEP and IGES files are converted on the server into a 3D view that anyone can open without a CAD seat. Click a component in the model to jump to its part record.
+
+### Requirements traced to evidence
+
+![Requirements traceability matrix with coverage totals and suspect-link warnings](./docs/images/readme/requirements.png)
+
+Requirements are allocated to parts, satisfied by the design and verified by test cases. The traceability matrix shows which ones are covered, and marks a link as suspect when either end has been revised since someone last confirmed it.
+
+### From the design to the shop floor
+
+![Work order traveler listing each instruction, its progress and the recorded executions](./docs/images/readme/traveler.png)
+
+A work order turns work instructions into a traveler, records every run and sign-off, and tracks the serial numbers and lots it consumed. The result is an as-built record you can compare against the design, or walk backwards when a lot is recalled.
+
+## Try it in five minutes
+
+The demo stack runs Cascadia with PostgreSQL, RabbitMQ, the CAD converter and the jobs worker, pre-loaded with the demo data shown above. It needs Docker and nothing else; there is no need to clone the repository:
 
 ```bash
 curl -O https://raw.githubusercontent.com/Cascadia-PLM/Cascadia-App/main/docker-compose.demo.yml
 docker compose -f docker-compose.demo.yml up -d
 ```
 
-First run pulls ~1.2 GB of pre-built images from GitHub Container Registry (2-5 min on a typical connection) and seeds the database. When `docker compose -f docker-compose.demo.yml logs app` shows the server is listening, open <http://localhost:3000> and log in with `admin@cascadia.local` / `Cascadia`. Navigate to **Programs → ROBOT-ARM → TDJ-25** to explore the BOM tree, click any part with CAD to see the 3D viewer, and check the ECO **Initial Release - TDJ-25 Robot Arm** to see the signature ECO-as-Branch workflow in its released state.
+The first run pulls about 1.2 GB of pre-built images from GitHub Container Registry (2-5 minutes on a typical connection) and seeds the database. When `docker compose -f docker-compose.demo.yml logs app` shows the server is listening, open <http://localhost:3000> and log in with `admin@cascadia.local` / `Cascadia`.
+
+Good places to start:
+
+- **Programs → PUC → PUC-CART-24V** is the utility cart. The Structure tab holds its BOM, Requirements the traceability matrix and History the branch graph.
+- **Change Orders → ECO-000014** is the wall-kit change shown above, in its released state.
+- **Work Orders → WO-000002** is the catamaran build, with its traveler, consumed material and qualification rollup.
+- **Programs → ROBOT-ARM → TDJ-25** is the robot arm: 88 parts, most with a 3D model.
 
 Reset to a clean slate at any time:
 
@@ -66,293 +84,99 @@ Reset to a clean slate at any time:
 docker compose -f docker-compose.demo.yml down -v
 ```
 
-The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local dev data.
+The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local development data. Working from a clone instead? Use [`docker-compose.demo-with-build.yml`](./docker-compose.demo-with-build.yml) to build the images from your working tree.
 
-Working from a clone instead? Use [`docker-compose.demo-with-build.yml`](./docker-compose.demo-with-build.yml) to build images from your working tree.
+## What's included
 
-## Quick Start
+| Area                  | In the open core                                                                                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Change management     | ECO, ECN, MCO and deviation change orders on their own branches, impact analysis, conflict detection, approval voting, configurable lifecycles             |
+| Parts and BOMs        | Multi-level BOMs, where-used, product variants, approved manufacturer lists, spreadsheet import with BOM auto-detection                                    |
+| Documents and CAD     | File vault with check-in/check-out and version history, local or S3-compatible storage, STEP/IGES conversion, in-browser 3D viewer                         |
+| Versioning            | Branches, commits, merges and baseline tags for engineering data; field-level change history; personal workspaces for exploratory work                     |
+| Requirements and V&V  | Requirement hierarchies, allocation, satisfaction and verification links, suspect-link tracking, test plans and cases, gap analysis, a traceability matrix |
+| Systems engineering   | Logical architecture (system elements) realized by parts and software, and a SysML v2 API                                                                  |
+| Manufacturing         | Work instructions, work orders with travelers and sign-offs, serialized units and lots, genealogy, as-built comparison, recall queries                     |
+| Software and firmware | Software items with a versioned source store, per-file diffs and change-order control alongside the hardware they ship with                                |
+| Platform              | REST API with an OpenAPI contract, webhooks, an ordered event log, role-based access by program, full-text search, reports, background jobs                |
+| AI                    | A chat assistant that can query and edit PLM data with confirmation (bring your own Anthropic or OpenAI key), and an MCP server exposing the same tools    |
 
-### Prerequisites
+The [feature list](./cascadia-feature-list.md) tracks the status of every capability, including what is partial or planned. Two gaps worth knowing up front: manufacturing BOM management is at an early stage, and native CAD connectors (Solid Edge, SolidWorks) are planned for the commercial edition. Today CAD files reach Cascadia through the vault.
 
-- Node.js 22+
-- PostgreSQL 18+
-- npm or pnpm
-- Docker (optional, for RabbitMQ)
+## How ECO-as-Branch works
 
-### Installation
+1. **Create a change order.** Cascadia creates a branch from the design's main line.
+2. **Check out the items it affects.** They are copied onto the branch as working copies.
+3. **Make the changes.** Edits, new files and BOM changes are visible only on that branch.
+4. **Approve and release.** The branch merges to main and the affected items receive their new revision letters.
+
+A change order can release a new item, revise a released one, make one obsolete, or add and remove BOM lines. Its own review runs on a configurable lifecycle with approvers per state. [Versioning](./docs/features/versioning.md) and [change management](./docs/features/change-management.md) describe the model in depth.
+
+Data is organized as **Program → Design → Items**. A program is the permission boundary, so users see only the programs they belong to. A design is the versioned container that holds the branches and commits.
+
+## Deploying
+
+Cascadia ships as container images and scales from one machine to a cluster:
+
+| Deployment     | Best for                          | Guide                                                              |
+| -------------- | --------------------------------- | ------------------------------------------------------------------ |
+| Single server  | Development, small teams          | [single-server](./docs/orchestration/deployments/single-server/)   |
+| Distributed    | High availability, 50+ users      | [distributed](./docs/orchestration/deployments/distributed/)       |
+| Cloud database | Managed Postgres (RDS, Cloud SQL) | [cloud-database](./docs/orchestration/deployments/cloud-database/) |
+| Kubernetes     | Enterprise, auto-scaling          | [kubernetes](./docs/orchestration/deployments/kubernetes/)         |
+
+The [orchestration guide](./docs/orchestration/README.md) covers the services and their configuration, and [upgrading](./docs/deployment/upgrading.md) covers moving a production install between releases.
+
+## For developers
+
+Cascadia is TypeScript end to end: a [Hono](https://hono.dev/) API server, a [Vite](https://vite.dev/) and [TanStack Router](https://tanstack.com/router) single-page app, PostgreSQL 18 with [Drizzle ORM](https://orm.drizzle.team), RabbitMQ for background jobs, and a Python worker built on pythonocc for CAD conversion. Tests run on Vitest and Playwright.
+
+### Run from source
+
+You need Node.js 22+ and PostgreSQL 18+. Docker is optional and only needed for RabbitMQ and the workers.
 
 ```bash
-# Install dependencies
 npm install
 
-# Set up environment
-cp .env.example .env
-# Edit .env with your database credentials
+cp .env.example .env    # then set DATABASE_URL
 
-# Set up database (dev: diff-apply the schema directly)
-npm run db:push
-npm run db:seed
+npm run db:push         # create the schema (development only)
+npm run db:seed         # admin user, roles, default lifecycles
 
-# Start development server
-npm run dev
+npm run dev             # http://localhost:3000
 ```
 
-Visit `http://localhost:3000` to see the application. The minimal seed creates a bootstrap admin account (`admin@cascadia.local` / `Cascadia`) for local development only — **change this password immediately in any shared or production deployment**.
+The seed creates a bootstrap admin account (`admin@cascadia.local` / `Cascadia`) for local development. **Change that password immediately on any shared or production deployment.** To load the demo datasets into a source checkout, run `npm run demo:fetch && npm run seed:demo`.
 
-For detailed setup instructions, see [SETUP.md](./SETUP.md).
+[SETUP.md](./SETUP.md) has the full walkthrough, including workers, object storage and OAuth.
 
-## Project Structure
+### How the code is organized
 
-```
-cascadia-commons/src/       # Shared by api and web: item schemas, permissions,
-│                           # lifecycle types, import parsing, wire types
-cascadia-api/src/           # The Hono API server
-├── auth/                   # Authentication & authorization services
-├── db/                     # Drizzle schema & database utilities
-├── items/                  # Item services, type handlers, registry
-├── services/               # Core services (Branch, Checkout, Commit, etc.)
-├── lifecycles/             # Lifecycle engine + approval registry
-├── jobs/                   # Job submission: JobService, registry, definitions
-├── events/                 # Domain event log, consumers, webhooks
-├── api/                    # API utilities (apiHandler, response builders)
-├── vault/                  # File storage system
-├── sysml/                  # SysML v2 serialization
-├── ai/                     # AI chatbot tools, adapters, session service
-├── mcp/                    # MCP servers, built on the AI tool registry
-├── packages/               # Package entitlement registry
-├── server/                 # Hono app
-│   ├── index.ts            # Entry: mounts every route module under /api/v1/*
-│   └── routes/             # API route modules — one file per resource
-└── __tests__/              # Test utilities and fixtures
-cascadia-web/src/           # The Vite + TanStack Router SPA
-├── components/             # React components (forms, tables, dialogs)
-├── query/                  # TanStack Query keys, options, invalidation graph
-├── hooks/                  # React hooks
-└── routes/                 # TanStack Router file-based routes
-cascadia-workers-job/src/   # The Node.js jobs worker: consumer, scheduler, handlers
-cascadia-workers-cad/       # Python worker: STEP/IGES → STL/GLB (pythonocc-core)
-cascadia-workers-commons/   # Python: jobs/vault DB layer shared by the Python workers
-cascadia-app/               # Composition root: entry points, build config, static assets, Dockerfile
-tests/
-├── e2e/              # Playwright E2E tests
-│   ├── pages/        # Page object models
-│   └── fixtures/     # Test fixtures
-docs/                 # Architecture & feature documentation
-scripts/              # Database seeding, deployment scripts
-```
+An npm workspace of four packages with a one-way dependency graph, plus the app that composes them:
 
-## Core Concepts
+| Package                | Role                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `cascadia-commons`     | Shared by server and client: item schemas, permissions, lifecycle and wire types |
+| `cascadia-api`         | The server: routes, services, the database schema, jobs, events, AI tools        |
+| `cascadia-web`         | The client: routes, components, the query layer                                  |
+| `cascadia-workers-job` | The background jobs worker                                                       |
+| `cascadia-app`         | Composition root: entry points, build configuration, migrations, Dockerfile      |
 
-### ECO-as-Branch Workflow
+`cascadia-workers-cad` holds the Python CAD converter. The [architecture overview](./docs/architecture/overview.md) explains how the pieces fit together.
 
-1. **Create ECO** - Creates a branch from main
-2. **Checkout Items** - Items are copied to the ECO branch
-3. **Make Changes** - Edits are isolated to the branch
-4. **Approve & Release** - Merge to main, assign revision letters (A, B, C...)
+### Extending it
 
-**Change Actions**: Release (new item), Revise (new revision), Obsolete, Add to BOM, Remove from BOM
-
-### Organizational Hierarchy
-
-- **Organization** - Top-level entity
-- **Program** - Permission boundary, users are members of programs
-- **Design** - Version container with branches and commits
-- **Items** - Parts, Documents, Requirements, etc.
-
-### Item Types
-
-All item types extend `BaseItem` and register via `ItemTypeRegistry`:
-
-- **Part** - Physical components with materials, costs, lead times
-- **Document** - Version-controlled files
-- **ChangeOrder** - ECOs that coordinate changes across items
-- **Requirement** - Traceable requirements
-- **Task** - Work items for workflows
-- **TestPlan** / **TestCase** - Test campaigns and their procedures
-- **WorkInstruction** - Step-by-step manufacturing instructions
-- **Issue** - Defects and action items
-- **Software** - Firmware/software configuration items with a source store
-- **Tool** - Manufacturing and quality equipment
-- **PhysicalPart** - Serialized units and lots (the digital twin record)
-- **WorkOrder** - Manufacturing execution and traceability anchor
-
-See [docs/features/item-types.md](./docs/features/item-types.md) for the full reference.
-
-### Admin Capabilities
-
-- User and role management with RBAC
-- Lifecycle and workflow configuration
-- Background jobs dashboard with monitoring
-- Health check endpoint (`/api/v1/health`)
-
-### Service Layer
-
-Business logic is centralized in services:
-
-```typescript
-// Create a new part
-const part = await ItemService.create(
-  'Part',
-  {
-    itemNumber: 'P-1001',
-    name: 'Widget Assembly',
-    partType: 'Manufacture',
-  },
-  userId,
-)
-
-// Checkout to an ECO branch
-await CheckoutService.checkout(part.id, ecoId, userId)
-
-// Get item at a specific version context
-const versionedPart = await VersionResolver.getItemAtContext(part.masterId, {
-  branchId,
-  commitId,
-})
-```
-
-## Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev           # Start dev server on port 3000
-npm run build         # Build for production
-npm run serve         # Preview production build
-
-# Database
-npm run db:push       # Diff-apply schema directly (dev/CI/demo only)
-npm run db:generate   # Mint migration SQL into cascadia-app/drizzle/ (CI drift gate)
-npm run db:migrate    # Apply committed migrations (the upgrade path for released installs)
-npm run db:studio     # Open Drizzle Studio GUI
-npm run db:seed       # Minimal seed (admin, roles, program, standard library)
-npm run db:reset      # Truncate all tables only
-npm run db:reset:seed # Truncate all tables + reseed
-
-# Testing
-npm run test          # Run Vitest tests
-npm run test:watch    # Run tests in watch mode
-npm run test:coverage # Run tests with coverage
-npm run test:e2e      # Run Playwright E2E tests
-npm run test:e2e:ui   # Run E2E tests with UI
-
-# Background Jobs (requires Docker)
-docker compose up -d rabbitmq
-docker compose --profile dev up jobs-worker-dev -d
-
-# Code Quality
-npm run lint          # ESLint
-npm run format        # Prettier
-npm run check         # Format + lint fix
-```
-
-### Adding a New Item Type
-
-1. Define the type and Zod schema in `cascadia-commons/src/items/types/`
-2. Add database columns in `cascadia-api/src/db/schema/items.ts`
-3. Create form, table, and detail components
-4. Register the type in `ItemTypeRegistry`
-5. Run `npm run db:push`
-6. If the type gets its own table, add it to `ALL_TABLES` in `scripts/truncate-all.ts`
-
-## Deployment
-
-Cascadia supports flexible deployment options:
-
-| Deployment     | Best For                    | Documentation                                    |
-| -------------- | --------------------------- | ------------------------------------------------ |
-| Single Server  | Development, small teams    | `docs/orchestration/deployments/single-server/`  |
-| Distributed    | HA, 50+ users               | `docs/orchestration/deployments/distributed/`    |
-| Cloud Database | Managed DB (RDS, Cloud SQL) | `docs/orchestration/deployments/cloud-database/` |
-| Kubernetes     | Enterprise, auto-scaling    | `docs/orchestration/deployments/kubernetes/`     |
-
-### Docker Compose
-
-```bash
-# Start all services
-docker compose up -d
-
-# Start with background job worker
-docker compose --profile dev up -d
-```
-
-## Environment Variables
-
-Required in `.env`:
-
-```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/cascadia
-NODE_ENV=development
-```
-
-Optional:
-
-```
-VAULT_ROOT=/path/to/vault   # Default: ./vault (a DB storage setting overrides)
-RABBITMQ_URL=amqp://localhost  # For background jobs
-```
-
-There is no session secret to configure: sessions are opaque random tokens
-stored hashed in the database.
-
-See [`.env.example`](./.env.example) for the full list.
-
-## Architecture Decisions
-
-### Why Code-First?
-
-- All configuration is version controlled
-- Full TypeScript type safety
-- IDE support for development
-- No complex UI builders to maintain
-
-### Why ECO-as-Branch?
-
-- Parallel change development without conflicts
-- Clear audit trail of what changed and when
-- Revision letters assigned only on release
-- Git-like workflow familiar to developers
-
-### Why Hono + Vite SPA?
-
-- Lightweight, fast API server with standard Web API types
-- Unified auth supporting session cookies and API keys
-- Clean separation of API server and SPA frontend
-- File-based routing via TanStack Router
-
-### Why PostgreSQL?
-
-- Enterprise standard with ACID compliance
-- Excellent JSON support for flexible data
-- Powerful full-text search capabilities
-- Materialized views for complex queries
-
-## Testing
-
-Cascadia has comprehensive test coverage:
-
-- Unit tests for all services (Vitest)
-- Component tests with React Testing Library
-- API route integration tests
-- E2E browser tests (Playwright) with page object model
-- CI via GitHub Actions
-
-```bash
-npm run test          # Run all unit/integration tests
-npm run test:e2e      # Run Playwright E2E tests
-npm run test:coverage # Generate coverage report
-```
-
-## CAD Integration
-
-Cascadia stores and serves CAD files (STEP, IGES, SolidWorks, and more) through its file vault, with server-side conversion to STL/GLB for in-browser 3D preview. Native CAD connectors (Solid Edge, SolidWorks) that push parts and BOMs directly from CAD are on the roadmap but not yet implemented.
+- **Item types** are defined in code, with a Zod schema, a table and a registered handler. See [adding item types](./docs/development/adding-item-types.md).
+- **Extensions** react to domain events in three phases: guard an operation, join its transaction, or consume it afterwards. See [writing extensions](./docs/development/writing-extensions.md).
+- **Integrations** use the [REST API](./docs/api/README.md), signed [webhooks](./docs/features/webhooks.md) or the [MCP server](./docs/features/mcp.md).
 
 ## Documentation
 
-- [Setup Guide](./SETUP.md) - Detailed installation and configuration
-- [Feature List](./cascadia-feature-list.md) - Comprehensive feature documentation
-- [CLAUDE.md](./CLAUDE.md) - Development guide for AI assistants
+- [Documentation site](https://docs.cascadiaplm.com), or the same content in-repo under [`docs/`](./docs/README.md)
+- [Setup guide](./SETUP.md) for installation and configuration
+- [Feature list](./cascadia-feature-list.md) for the status of every capability
+- [Changelog](./CHANGELOG.md)
+- [CLAUDE.md](./CLAUDE.md), the development guide for AI coding assistants
 
 ## Contributing
 

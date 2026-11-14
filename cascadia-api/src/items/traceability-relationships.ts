@@ -21,10 +21,13 @@ export const VALIDATES_RELATIONSHIP = 'VALIDATES' // TestCase → Part
  * The architecture edges (systems-engineering Phase 5). `DECOMPOSES` is the
  * tree — a structural edge, guarded on its source like `BOM`, and the one
  * edge type the relationship service refuses a cycle of. `REALIZED_BY` is the
- * hop from the logical element to the item that implements it.
+ * hop from the logical element to the item that implements it. `CONNECTS`
+ * is an interface between two elements — the lines of the block diagram;
+ * unlike the tree it may cross levels and form loops.
  */
 export const DECOMPOSES_RELATIONSHIP = 'DECOMPOSES' // SystemElement → SystemElement
 export const REALIZED_BY_RELATIONSHIP = 'REALIZED_BY' // SystemElement → Part/Software
+export const CONNECTS_RELATIONSHIP = 'CONNECTS' // SystemElement → SystemElement
 
 /**
  * The edge types whose guard falls to the target end when the source is

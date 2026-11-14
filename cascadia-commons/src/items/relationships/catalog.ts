@@ -155,6 +155,23 @@ export const RELATIONSHIP_CATALOG: ReadonlyArray<RelationshipCatalogEntry> = [
     sysmlName: 'Allocate',
   },
   {
+    value: 'CONNECTS',
+    label: 'Connects to',
+    description:
+      'This system element is connected to the other element — an interface between two blocks of the architecture, drawn as a line in the block diagram',
+    sourceTypes: ['SystemElement'],
+    targetTypes: ['SystemElement'],
+    // The connection is the source element's own content, like its children:
+    // drawing one inside an ECO needs the source checked out, not the target.
+    guardEnd: 'source',
+    // An interface is a statement about the architecture, not a trace claim
+    // against a revision; it does not go stale when an end revises.
+    suspectable: false,
+    // Not the tree: connections may cross it freely and may form loops.
+    composite: false,
+    sysmlName: 'ConnectionUsage',
+  },
+  {
     value: 'Evidences',
     label: 'Evidences',
     description:

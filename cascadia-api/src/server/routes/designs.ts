@@ -3169,6 +3169,21 @@ app.get(
 // Recursive like the structure tree, and described the way that one is: the
 // subtree is `unknown[]` on the wire rather than a `$ref`, which the snapshot
 // would otherwise hoist every shared schema into.
+/** Saved block positions of the diagram, by system-element master id. */
+const architectureLayoutSchema = z.record(
+  z.string().uuid(),
+  z.object({
+    x: z.number().finite().min(-1_000_000).max(1_000_000),
+    y: z.number().finite().min(-1_000_000).max(1_000_000),
+  }),
+)
+const architectureLayoutBodySchema = z.object({
+  positions: architectureLayoutSchema.refine(
+    (positions) => Object.keys(positions).length <= 5000,
+    'A layout holds at most 5000 blocks',
+  ),
+})
+
 const architectureNodeSchema = z.object({
   itemId: z.string().uuid(),
   masterId: z.string().uuid(),
@@ -3193,6 +3208,16 @@ export const designArchitectureSchema = z.object({
     id: z.string().uuid().nullable(),
   }),
   roots: z.array(architectureNodeSchema),
+  connections: z.array(
+    z.object({
+      relationshipId: z.string().uuid(),
+      sourceItemId: z.string().uuid(),
+      targetItemId: z.string().uuid(),
+      name: z.string().nullable(),
+      kind: z.string().nullable(),
+    }),
+  ),
+  layout: architectureLayoutSchema,
   totals: z.object({
     elements: z.number().int(),
     realized: z.number().int(),
@@ -3234,6 +3259,68 @@ app.get(
           commit: query.commit,
         }) ?? { type: 'released', designId }
         return SystemElementService.forDesign(designId, context)
+      },
+    ),
+  ),
+)
+
+// PUT /api/designs/:designId/architecture/layout — where the blocks sit
+app.put(
+  '/:designId/architecture/layout',
+  adapt(
+    apiHandler<
+      { designId: string },
+      z.infer<typeof architectureLayoutBodySchema>
+    >(
+      {
+        permission: ['system_elements', 'update'],
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+        body: architectureLayoutBodySchema,
+        openapi: {
+          summary:
+            "Save the block positions of a design's architecture diagram",
+          description:
+            'Saves positions keyed by system-element master id, each relative to the block it sits inside. Merged into what is stored: a block not named keeps its position. Presentation only: one layout per design, shared by every branch and tag, unversioned and outside change control — no checkout is needed to move a block.',
+          request: { params: z.object({ designId: z.string().uuid() }) },
+          responses: {
+            200: { schema: z.object({ layout: architectureLayoutSchema }) },
+          },
+        },
+      },
+      async ({ params, body, user }) => ({
+        layout: await SystemElementService.saveLayout(
+          params.designId,
+          body.positions,
+          user.id,
+        ),
+      }),
+    ),
+  ),
+)
+
+// DELETE /api/designs/:designId/architecture/layout — arrange automatically
+app.delete(
+  '/:designId/architecture/layout',
+  adapt(
+    apiHandler<{ designId: string }>(
+      {
+        permission: ['system_elements', 'update'],
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+        openapi: {
+          summary: "Reset the layout of a design's architecture diagram",
+          description:
+            'Forgets every saved block position, so the diagram arranges itself automatically again.',
+          request: { params: z.object({ designId: z.string().uuid() }) },
+          responses: {
+            200: { schema: z.object({ success: z.boolean() }) },
+          },
+        },
+      },
+      async ({ params }) => {
+        await SystemElementService.resetLayout(params.designId)
+        return { success: true }
       },
     ),
   ),

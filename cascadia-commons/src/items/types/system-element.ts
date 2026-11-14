@@ -30,6 +30,53 @@ export const SYSTEM_ELEMENT_KIND_LABELS: Record<SystemElementKind, string> = {
 }
 
 /**
+ * What flows across a connection between two elements. Like the element
+ * kind, a label for the reader: it colours the line in the block diagram and
+ * nothing else depends on it.
+ */
+export const systemConnectionKindSchema = z.enum([
+  'power',
+  'data',
+  'mechanical',
+  'fluid',
+  'thermal',
+  'other',
+])
+export type SystemConnectionKind = z.infer<typeof systemConnectionKindSchema>
+
+export const SYSTEM_CONNECTION_KINDS: ReadonlyArray<SystemConnectionKind> =
+  systemConnectionKindSchema.options
+
+export const SYSTEM_CONNECTION_KIND_LABELS: Record<
+  SystemConnectionKind,
+  string
+> = {
+  power: 'Power',
+  data: 'Data',
+  mechanical: 'Mechanical',
+  fluid: 'Fluid',
+  thermal: 'Thermal',
+  other: 'Other',
+}
+
+/**
+ * What a `CONNECTS` edge says about itself: an optional name ("28 V bus")
+ * and the kind of thing that flows. Both live in the edge's caller-owned
+ * `metadata` under these keys, so a connection needs no table of its own and
+ * rides checkouts and releases exactly as every other edge does.
+ */
+export const systemConnectionDetailsSchema = z.object({
+  name: z.string().trim().max(120).nullish(),
+  kind: systemConnectionKindSchema.nullish(),
+})
+export type SystemConnectionDetails = z.infer<
+  typeof systemConnectionDetailsSchema
+>
+
+export const CONNECTION_NAME_KEY = 'connectionName'
+export const CONNECTION_KIND_KEY = 'connectionKind'
+
+/**
  * A logical element of the system architecture — what a requirement is
  * allocated to before any part exists, and what a part later realizes.
  *
@@ -70,6 +117,12 @@ export const systemElementRelationships = [
     type: 'REALIZED_BY',
     label: 'Realized by',
     targetTypes: ['Part', 'Software'],
+    allowMultiple: true,
+  },
+  {
+    type: 'CONNECTS',
+    label: 'Connects to',
+    targetTypes: ['SystemElement'],
     allowMultiple: true,
   },
 ]

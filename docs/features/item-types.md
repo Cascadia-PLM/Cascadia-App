@@ -1074,11 +1074,11 @@ See `docs/features/software-management.md` for the full design.
 
 **States:** Draft, Released, Superseded, Obsolete
 
-**Relationships:** `DECOMPOSES` -> SystemElement (the tree; a link that would close a loop is refused), `REALIZED_BY` -> Part, Software (the hop to the item that implements the element — a trace claim that reads suspect after either end revises until it is affirmed), and `ALLOCATED_TO` from Requirement (written from the requirement). The requirements matrix follows the two hops: requirement -> element -> realizing part.
+**Relationships:** `DECOMPOSES` -> SystemElement (the tree; a link that would close a loop is refused), `REALIZED_BY` -> Part, Software (the hop to the item that implements the element — a trace claim that reads suspect after either end revises until it is affirmed), `CONNECTS` -> SystemElement (an interface between two elements, with an optional name and kind — the lines of the block diagram), and `ALLOCATED_TO` from Requirement (written from the requirement). The requirements matrix follows the two hops: requirement -> element -> realizing part.
 
-**Architecture at a context:** `GET /api/v1/designs/{id}/architecture?branch=|tag=|commit=` is the `DECOMPOSES` forest of a design with each element's realizations and allocated requirements, resolved and judged the way the RTM is; the design page's Architecture tab renders it as a tree and as a graph.
+**Architecture at a context:** `GET /api/v1/designs/{id}/architecture?branch=|tag=|commit=` is the `DECOMPOSES` forest of a design with each element's realizations and allocated requirements, resolved and judged the way the RTM is; the design page's Architecture tab renders it as a tree, as a graph, and as a block diagram that is edited in place (see `docs/features/requirements-and-vv.md`).
 
-**API:** `/api/v1/system-elements/{id}`, plus `/children`, `/parent`, `/realized-by`, `/allocated-requirements`
+**API:** `/api/v1/system-elements/{id}`, plus `/children`, `/parent`, `/realized-by`, `/allocated-requirements`, `/connections`
 
 **Permissions:** the `system_elements` resource. The shipped roles hold it the way they hold `requirements`, and the migration that adds the type grants it to existing roles by the same rule.
 
@@ -1152,6 +1152,7 @@ The `item_relationships` table stores typed, directed relationships between any 
 | `ALLOCATED_TO`    | Requirement              | Part, Software, Document, SystemElement | Requirement allocated to it |
 | `DECOMPOSES`      | SystemElement            | SystemElement                           | The architecture tree       |
 | `REALIZED_BY`     | SystemElement            | Part, Software                          | Element realized by item    |
+| `CONNECTS`        | SystemElement            | SystemElement                           | Interface between elements  |
 | `DERIVES_FROM`    | Requirement              | Requirement                             | Child derived from parent   |
 | `VERIFIED_BY`     | TestCase                 | Requirement                             | Test verifies requirement   |
 | `VALIDATES`       | TestCase                 | Part                                    | Test validates part         |
@@ -1165,7 +1166,7 @@ Relationship records include optional fields for quantity, reference designator,
 
 The trace family (`SATISFIES`, `ALLOCATED_TO`, `VERIFIED_BY`, `VALIDATES`,
 `DERIVES_FROM`, `Evidences`) and the architecture family (`DECOMPOSES`,
-`REALIZED_BY`) are declared once, in the **relationship catalog**
+`REALIZED_BY`, `CONNECTS`) are declared once, in the **relationship catalog**
 (`cascadia-commons/src/items/relationships/catalog.ts`): the stored string,
 the item types each end may be, which end answers for it under the edit lock,
 and whether its claim can go stale. The relationship service refuses a

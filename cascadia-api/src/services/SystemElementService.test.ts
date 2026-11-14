@@ -655,4 +655,115 @@ describe('SystemElementService', () => {
       SystemElementService.realize(subsystem.id, [requirement.id], user.id),
     ).rejects.toBeInstanceOf(ValidationError)
   })
+
+  it('connections ride an ECO: refused on released main, isolated on the branch, and on main after the merge', async () => {
+    const power = await createElement('PWR', 'subsystem')
+    const avionics = await createElement('AVI', 'subsystem')
+    for (const item of [power, avionics]) await releaseOnMain(item)
+
+    /** The connections at a context, as item numbers with name and kind. */
+    const connectionsAt = async (
+      context: Parameters<typeof SystemElementService.forDesign>[1],
+    ) => {
+      const architecture = await SystemElementService.forDesign(
+        designId,
+        context,
+      )
+      const numberOf = new Map(
+        architecture.roots.map((node) => [node.itemId, node.itemNumber]),
+      )
+      return architecture.connections.map((connection) => ({
+        from: numberOf.get(connection.sourceItemId),
+        to: numberOf.get(connection.targetItemId),
+        name: connection.name,
+        kind: connection.kind,
+      }))
+    }
+
+    // An element cannot be connected to itself, and released main is closed
+    // to a connection exactly as it is to a child.
+    await expect(
+      SystemElementService.connect(power.id, power.id, {}, user.id),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      SystemElementService.connect(power.id, avionics.id, {}, user.id),
+    ).rejects.toThrow()
+    expect(await connectionsAt(released())).toEqual([])
+
+    // Inside the ECO, with the source checked out, the line can be drawn —
+    // named by main's ids, landing on the branch's rows.
+    const { changeOrder, branchId } = await createChangeOrder()
+    await checkout(power, branchId)
+    const { relationshipId } = await SystemElementService.connect(
+      power.id,
+      avionics.id,
+      { name: '28 V bus', kind: 'power' },
+      user.id,
+      { branchId },
+    )
+    // Drawing the same line again edits it rather than adding a second.
+    await SystemElementService.connect(
+      power.id,
+      avionics.id,
+      { name: '28 V main bus' },
+      user.id,
+      { branchId },
+    )
+    const drawn = {
+      from: power.itemNumber,
+      to: avionics.itemNumber,
+      name: '28 V main bus',
+      kind: 'power',
+    }
+    expect(await connectionsAt(onBranch(branchId))).toEqual([drawn])
+    expect(await connectionsAt(released())).toEqual([])
+
+    // A rename leaves the kind alone; clearing the kind leaves the name.
+    await SystemElementService.updateConnection(
+      relationshipId,
+      { kind: null },
+      user.id,
+    )
+    expect(await connectionsAt(onBranch(branchId))).toEqual([
+      { ...drawn, kind: null },
+    ])
+    await SystemElementService.updateConnection(
+      relationshipId,
+      { kind: 'power' },
+      user.id,
+    )
+
+    await release(changeOrder)
+    expect(await connectionsAt(released())).toEqual([drawn])
+  })
+
+  it('the diagram layout is per design and merges by element', async () => {
+    const a = await createElement('A', 'system')
+    const b = await createElement('B', 'system')
+
+    await SystemElementService.saveLayout(
+      designId,
+      { [a.masterId]: { x: 10, y: 20 }, [b.masterId]: { x: 300, y: 20 } },
+      user.id,
+    )
+    // Saving one block leaves the other where it was.
+    await SystemElementService.saveLayout(
+      designId,
+      { [a.masterId]: { x: 50, y: 60 } },
+      user.id,
+    )
+    const architecture = await SystemElementService.forDesign(
+      designId,
+      released(),
+    )
+    expect(architecture.layout).toEqual({
+      [a.masterId]: { x: 50, y: 60 },
+      [b.masterId]: { x: 300, y: 20 },
+    })
+
+    await SystemElementService.resetLayout(designId)
+    expect(
+      (await SystemElementService.forDesign(designId, released())).layout,
+    ).toEqual({})
+  })
 })

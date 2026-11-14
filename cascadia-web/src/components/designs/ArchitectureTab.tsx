@@ -4,7 +4,8 @@
  * The design's Architecture tab: its system elements as the DECOMPOSES tree
  * — each with the items that realize it and the requirements allocated to it
  * — at whatever version context the page is viewing, and the same forest as
- * a graph. Read through `designArchitectureQuery`, so a write anywhere on the
+ * a graph, and as a block diagram that can be edited in place — blocks nested
+ * the way the tree nests them, with the connections between them. Read through `designArchitectureQuery`, so a write anywhere on the
  * architecture restages it; the tree is the BOM tree view with its own
  * columns, so the two structures of a design read alike.
  */
@@ -17,8 +18,10 @@ import {
   GitFork,
   ListTree,
   Plus,
+  Workflow,
 } from 'lucide-react'
 import { ArchitectureGraphView } from './ArchitectureGraphView'
+import { ArchitectureBlockDiagram } from './block-diagram/ArchitectureBlockDiagram'
 import type {
   ArchitectureLink,
   ArchitectureNode,
@@ -51,7 +54,7 @@ interface ArchitectureTabProps {
   isHistoricalView: boolean
 }
 
-type ArchitectureView = 'tree' | 'graph'
+type ArchitectureView = 'tree' | 'diagram' | 'graph'
 
 /**
  * The tree view renders `BOMTreeNode`s, so the forest is mapped to that
@@ -345,6 +348,15 @@ export function ArchitectureTab({
                 Tree
               </Button>
               <Button
+                variant={view === 'diagram' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setView('diagram')}
+                data-testid="architecture-view-diagram"
+              >
+                <Workflow className="h-4 w-4 mr-1" />
+                Block diagram
+              </Button>
+              <Button
                 variant={view === 'graph' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setView('graph')}
@@ -385,7 +397,20 @@ export function ArchitectureTab({
         </div>
       </CardHeader>
       <CardContent>
-        {roots.length === 0 ? (
+        {view === 'diagram' && (roots.length > 0 || !isHistoricalView) ? (
+          // Offered on an empty design too: the diagram is where the first
+          // block can be added.
+          <ArchitectureBlockDiagram
+            designId={designId}
+            architecture={architecture}
+            branchId={
+              versionContext.type === 'branch'
+                ? versionContext.branchId
+                : undefined
+            }
+            readOnly={isHistoricalView}
+          />
+        ) : roots.length === 0 ? (
           <div className="text-center py-8 text-slate-500 dark:text-slate-400">
             {versionContext.type === 'main'
               ? 'This design has no system elements yet. Create the system, then decompose it into segments, subsystems and modules; allocate requirements to them before any part exists.'

@@ -120,12 +120,13 @@ reads as unverified until someone affirms them.
 A requirement needs somewhere to land before the design has parts. The
 `SystemElement` item type is that place: a logical element — the system, a
 segment, a subsystem, a module — versioned and ECO-controlled like a part,
-with two edges of its own in the catalog:
+with three edges of its own in the catalog:
 
-| Edge          | From → to                      | Meaning                                                 |
-| ------------- | ------------------------------ | ------------------------------------------------------- |
-| `DECOMPOSES`  | SystemElement → SystemElement  | The architecture tree. Not the BOM, on purpose.         |
-| `REALIZED_BY` | SystemElement → Part, Software | The element is implemented by this item — a trace claim |
+| Edge          | From → to                      | Meaning                                                         |
+| ------------- | ------------------------------ | --------------------------------------------------------------- |
+| `DECOMPOSES`  | SystemElement → SystemElement  | The architecture tree. Not the BOM, on purpose.                 |
+| `REALIZED_BY` | SystemElement → Part, Software | The element is implemented by this item — a trace claim         |
+| `CONNECTS`    | SystemElement → SystemElement  | An interface between two elements — a line in the block diagram |
 
 `ALLOCATED_TO` accepts a system element as its target, so an allocation can be
 made to a subsystem on day one and the requirements matrix reads it as
@@ -137,7 +138,7 @@ stale (it is structure, not a claim), and the relationship service refuses a
 link that would close a loop, through the element's own endpoints and the
 generic relationship write alike.
 
-Both edges ride a change order the way a BOM line does: a checkout copies the
+All three edges ride a change order the way a BOM line does: a checkout copies the
 element's edges onto its working copy, the release rebuilds them on the
 released row, and a child placed or a realization made on the branch shows on
 the branch and nowhere else until the merge.
@@ -151,8 +152,43 @@ about which row answers for an item at a tag. An element placed under two
 parents appears under the first by item number, and a loop that reached the
 store despite the guard is broken at the edge that closes it, so the answer
 is always a forest. The design page's Architecture tab renders it as a tree
-(the BOM tree view with its own columns) and as a graph; the element's own
-page lists its children, its realizations and its allocated requirements.
+(the BOM tree view with its own columns), as a graph, and as an editable
+block diagram (below); the element's own page lists its children, its
+realizations and its allocated requirements.
+
+### The block diagram editor
+
+The Architecture tab's **Block diagram** view draws the same answer as nested
+boxes — an element with children is a container and its children sit inside
+it — with the `CONNECTS` edges as lines between them, and it is edited in
+place:
+
+- **Add block** creates a system element (its number is assigned
+  automatically); with a block selected, the new one is created inside it,
+  which also writes the `DECOMPOSES` edge.
+- **Dragging from a dot on one block to another** draws a connection. It can
+  be given a name ("28 V bus") and a kind — power, data, mechanical, fluid,
+  thermal or other — which colours the line. Clicking a line renames or
+  deletes it. A connection may cross levels of the tree and may form loops;
+  one connection is kept per pair of elements in each direction, so drawing
+  the same line again edits it.
+- **Dragging a block** moves it, and a container grows to fit what is inside
+  it. **Auto-arrange** forgets the saved positions.
+
+Two kinds of data are being written, under two different rules:
+
+| What             | Where it lives                                                                | Change control                                                                                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blocks and lines | Items and `item_relationships` (a connection's name and kind in its metadata) | The same as the tree: freely on main before the design's first release; afterwards inside a change order, with the element a line starts from checked out to that branch. |
+| Block positions  | `architecture_layouts`, one row per design, keyed by element master id        | None. Layout is presentation: unversioned, shared by main, every branch and every tag, and saved without a checkout.                                                      |
+
+At a tag or a commit the diagram is read-only. `connections` and `layout`
+are part of the `GET /designs/:id/architecture` answer; connections are
+written through `POST /system-elements/:id/connections` and
+`PUT|DELETE /system-elements/connections/:relationshipId`, and the layout
+through `PUT|DELETE /designs/:id/architecture/layout`. Not in this version:
+named ports on a block, re-parenting a block by dragging it into another
+(use the element's page), and deleting a block from the diagram.
 
 ## The traceability reports
 
@@ -246,7 +282,8 @@ ReqIF stays deferred until a customer names DOORS or Polarion.
 - `cascadia-api/src/items/trace-affirmation.ts` — the affirmation arithmetic
 - `cascadia-api/src/items/version-lineage.ts` — the two lineage rules
 - `cascadia-web/src/components/designs/RequirementsTab.tsx` — the tab
-- `cascadia-web/src/components/designs/ArchitectureTab.tsx` — the Architecture tab, tree and graph
+- `cascadia-web/src/components/designs/ArchitectureTab.tsx` — the Architecture tab: tree, block diagram and graph
+- `cascadia-web/src/components/designs/block-diagram/` — the block diagram editor: layout, the block node, the dialogs
 - `cascadia-web/src/components/programs/ProgramRequirementsCard.tsx` — the rollup card
 - `cascadia-web/src/components/items/suspect-links.tsx` — badges and affirm actions
 - `cascadia-commons/src/import/requirement-hierarchy.ts` — the sheet's hierarchy, planned and previewed

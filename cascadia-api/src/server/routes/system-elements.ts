@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 import { Hono } from 'hono'
 import { z } from 'zod'
+import { systemConnectionDetailsSchema } from '@cascadia/commons/items/types/system-element'
 import { tagged } from '../adapter'
 import type { SystemElement } from '@cascadia/commons/items/types/system-element'
 import { ItemService } from '@/items/services/ItemService'
@@ -35,6 +36,11 @@ const linkItemsSchema = z.object({
   branchId: branchIdField,
 })
 const unlinkItemSchema = z.object({
+  itemId: z.string().uuid(),
+  branchId: branchIdField,
+})
+
+const connectSchema = systemConnectionDetailsSchema.extend({
   itemId: z.string().uuid(),
   branchId: branchIdField,
 })
@@ -318,6 +324,121 @@ app.delete(
         await SystemElementService.unrealize(params.id, itemId, user.id, {
           branchId,
         })
+        return { success: true }
+      },
+    ),
+  ),
+)
+
+// ---- Interfaces between elements: CONNECTS ------------------------------
+
+// POST /api/system-elements/:id/connections
+app.post(
+  '/:id/connections',
+  adapt(
+    apiHandler<{ id: string }, z.infer<typeof connectSchema>>(
+      {
+        // A connection is the source element's own content, like a child.
+        permission: ['system_elements', 'update'],
+        body: connectSchema,
+        openapi: {
+          summary: 'Connect a system element to another',
+          description:
+            'Creates a CONNECTS link from this element to the one named — ' +
+            'an interface between two blocks of the architecture, with an ' +
+            'optional name and kind. Both ends must be system elements of ' +
+            'one design. Connecting a pair already connected in this ' +
+            'direction updates that connection. Pass branchId to write ' +
+            'inside an ECO; without it the write lands on the rows named ' +
+            'and is refused once the design has released items.',
+          request: { params: z.object({ id: z.string().uuid() }) },
+          responses: {
+            201: { schema: z.object({ relationshipId: z.string().uuid() }) },
+          },
+        },
+      },
+      async ({ body: { itemId, branchId, ...details }, params, user }) => {
+        await requireItemAccess(user.id, params.id)
+        await requireItemsAccess(user.id, [itemId])
+        if (branchId) await requireBranchAccess(user.id, branchId)
+        return created(
+          await SystemElementService.connect(
+            params.id,
+            itemId,
+            details,
+            user.id,
+            { branchId },
+          ),
+        )
+      },
+    ),
+  ),
+)
+
+// PUT /api/system-elements/connections/:relationshipId
+app.put(
+  '/connections/:relationshipId',
+  adapt(
+    apiHandler<
+      { relationshipId: string },
+      z.infer<typeof systemConnectionDetailsSchema>
+    >(
+      {
+        permission: ['system_elements', 'update'],
+        body: systemConnectionDetailsSchema,
+        openapi: {
+          summary: 'Rename a connection or change its kind',
+          description:
+            'A key left out is unchanged; null clears it. The connection is ' +
+            'named by the relationshipId the design architecture lists it ' +
+            'under at the context being edited.',
+          request: {
+            params: z.object({ relationshipId: z.string().uuid() }),
+          },
+          responses: {
+            200: { schema: z.object({ success: z.boolean() }) },
+          },
+        },
+      },
+      async ({ body, params, user }) => {
+        const edge = await SystemElementService.requireConnection(
+          params.relationshipId,
+        )
+        await requireItemsAccess(user.id, [edge.sourceId, edge.targetId])
+        await SystemElementService.updateConnection(
+          params.relationshipId,
+          body,
+          user.id,
+        )
+        return { success: true }
+      },
+    ),
+  ),
+)
+
+// DELETE /api/system-elements/connections/:relationshipId
+app.delete(
+  '/connections/:relationshipId',
+  adapt(
+    apiHandler<{ relationshipId: string }>(
+      {
+        permission: ['system_elements', 'update'],
+        openapi: {
+          summary: 'Remove a connection between two system elements',
+          request: {
+            params: z.object({ relationshipId: z.string().uuid() }),
+          },
+          responses: {
+            200: { schema: z.object({ success: z.boolean() }) },
+          },
+        },
+      },
+      async ({ params, user }) => {
+        const edge = await SystemElementService.requireConnection(
+          params.relationshipId,
+        )
+        await requireItemsAccess(user.id, [edge.sourceId, edge.targetId])
+        await SystemElementService.disconnect(params.relationshipId, user.id)
         return { success: true }
       },
     ),

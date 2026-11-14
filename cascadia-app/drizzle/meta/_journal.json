@@ -92,6 +92,13 @@
       "when": 1794163033593,
       "tag": "0012_bom_reference_designator_lines",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794678135477,
+      "tag": "0013_architecture_layouts",
+      "breakpoints": true
     }
   ]
 }

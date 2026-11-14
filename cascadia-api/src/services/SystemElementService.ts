@@ -11,8 +11,11 @@
  * - `REALIZED_BY` (element → Part/Software) is the hop from the logical
  *   element to the item that implements it, and the hop the requirements
  *   matrix follows after an allocation to the element.
+ * - `CONNECTS` (element → element) is an interface between two elements: a
+ *   line in the block diagram, carrying an optional name and kind in the
+ *   edge's metadata. It is not the tree — it may cross levels and loop.
  *
- * Both are edges between version rows, so they ride a checkout onto the
+ * All three are edges between version rows, so they ride a checkout onto the
  * branch's working copy and the release rebuilds them on the released row,
  * like every other outgoing edge. The architecture read here resolves them
  * at a version context by the rules the requirements matrix applies — the
@@ -20,14 +23,22 @@
  * for an item at a tag.
  */
 import { and, eq, inArray } from 'drizzle-orm'
+import {
+  CONNECTION_KIND_KEY,
+  CONNECTION_NAME_KEY,
+  systemConnectionKindSchema,
+} from '@cascadia/commons/items/types/system-element'
+import { userMetadataOf } from '@cascadia/commons/items/relationships/metadata'
 import { db } from '../db'
 import { notDeleted } from '../db/filters'
+import { architectureLayouts } from '../db/schema/designs'
 import { itemRelationships, items, systemElements } from '../db/schema/items'
 import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import {
   ALLOCATED_TO_RELATIONSHIP,
+  CONNECTS_RELATIONSHIP,
   DECOMPOSES_RELATIONSHIP,
   REALIZED_BY_RELATIONSHIP,
 } from '../items/traceability-relationships'
@@ -43,7 +54,10 @@ import type { SuspectLinkFields } from './RequirementService'
 import type { VersionContext } from './VersionResolver'
 import type { SuspectState } from '../items/trace-affirmation'
 import type { PersistedItem } from '@cascadia/commons/items/types/base'
+import type { SystemConnectionDetails } from '@cascadia/commons/items/types/system-element'
 import type {
+  ArchitectureConnection,
+  ArchitectureLayout,
   ArchitectureLink,
   ArchitectureNode,
   ArchitectureTotals,
@@ -53,6 +67,8 @@ import type {
 // Wire types live in commons so the web can name them; re-exported so server
 // callers keep importing them from here.
 export type {
+  ArchitectureConnection,
+  ArchitectureLayout,
   ArchitectureLink,
   ArchitectureNode,
   ArchitectureTotals,
@@ -93,6 +109,44 @@ const ITEM_SUMMARY = {
   itemType: items.itemType,
   revision: items.revision,
   state: items.state,
+}
+
+/**
+ * A connection's name and kind as the edge's metadata holds them. A value
+ * that is not one of the known kinds (a hand-written edge) reads as none.
+ */
+function connectionDetailsOf(metadata: unknown): {
+  name: string | null
+  kind: string | null
+} {
+  const own = userMetadataOf(metadata)
+  const name = own?.[CONNECTION_NAME_KEY]
+  const kind = systemConnectionKindSchema.safeParse(own?.[CONNECTION_KIND_KEY])
+  return {
+    name: typeof name === 'string' && name.trim() ? name.trim() : null,
+    kind: kind.success ? kind.data : null,
+  }
+}
+
+/**
+ * The metadata to store for a connection: `details` over whatever other
+ * caller-owned keys the edge already carries, a blank name or absent kind
+ * dropping its key. Null when nothing is left.
+ */
+function connectionMetadata(
+  details: SystemConnectionDetails,
+  stored?: unknown,
+): Record<string, unknown> | null {
+  const next: Record<string, unknown> = { ...(userMetadataOf(stored) ?? {}) }
+  if (details.name !== undefined) {
+    if (details.name) next[CONNECTION_NAME_KEY] = details.name
+    else delete next[CONNECTION_NAME_KEY]
+  }
+  if (details.kind !== undefined) {
+    if (details.kind) next[CONNECTION_KIND_KEY] = details.kind
+    else delete next[CONNECTION_KIND_KEY]
+  }
+  return Object.keys(next).length > 0 ? next : null
 }
 
 function byItemNumber<T extends { itemNumber: string }>(a: T, b: T): number {
@@ -259,6 +313,150 @@ export class SystemElementService {
     )
   }
 
+  // ---- Connections: CONNECTS --------------------------------------------
+
+  /**
+   * Connect `elementId` to `targetId`: an interface between two elements of
+   * one design, with an optional name and kind. The element named first is
+   * the source and answers for the edge under the edit lock, as it does for
+   * its children. Connecting a pair that is already connected in this
+   * direction updates that connection instead of refusing.
+   */
+  static async connect(
+    elementId: string,
+    targetId: string,
+    details: SystemConnectionDetails,
+    userId: string,
+    options?: LinkWriteOptions,
+  ): Promise<{ relationshipId: string }> {
+    const element = await this.requireElement(elementId, 'connect')
+    const target = await this.requireElement(targetId, 'connect')
+    if (element.masterId === target.masterId) {
+      throw new ValidationError(
+        `${element.itemNumber} cannot be connected to itself`,
+        [{ field: 'itemId', message: 'An element cannot connect to itself' }],
+      )
+    }
+    if (element.designId !== target.designId) {
+      throw new ValidationError(
+        `${target.itemNumber} is not in the same design as ${element.itemNumber}; a connection does not cross designs`,
+        [{ field: 'itemId', message: 'Element is in another design' }],
+      )
+    }
+    const ends = await resolveLinkEnds(element, target, options?.branchId)
+    const [existing] = await db
+      .select({ id: itemRelationships.id })
+      .from(itemRelationships)
+      .where(
+        and(
+          eq(itemRelationships.sourceId, ends.source.id),
+          eq(itemRelationships.targetId, ends.target.id),
+          eq(itemRelationships.relationshipType, CONNECTS_RELATIONSHIP),
+        ),
+      )
+      .limit(1)
+    if (existing) {
+      await this.updateConnection(existing.id, details, userId)
+      return { relationshipId: existing.id }
+    }
+    const created = await ItemService.addRelationship(
+      ends.source.id,
+      ends.target.id,
+      CONNECTS_RELATIONSHIP,
+      userId,
+      { metadata: connectionMetadata(details) },
+    )
+    return { relationshipId: created.id }
+  }
+
+  /** The `CONNECTS` edge `relationshipId`, or a not-found. */
+  static async requireConnection(relationshipId: string): Promise<EdgeRow> {
+    const [edge] = await db
+      .select()
+      .from(itemRelationships)
+      .where(
+        and(
+          eq(itemRelationships.id, relationshipId),
+          eq(itemRelationships.relationshipType, CONNECTS_RELATIONSHIP),
+        ),
+      )
+      .limit(1)
+    if (!edge) {
+      throw new NotFoundError('Connection', relationshipId, {
+        operation: 'requireConnection',
+      })
+    }
+    return edge
+  }
+
+  /**
+   * Rename a connection or change its kind. A key absent from `details` is
+   * left alone; `null` clears it. The edit lock is the relationship
+   * service's, applied to the connection's source element.
+   */
+  static async updateConnection(
+    relationshipId: string,
+    details: SystemConnectionDetails,
+    userId: string,
+  ): Promise<void> {
+    const edge = await this.requireConnection(relationshipId)
+    await ItemService.updateRelationship(relationshipId, userId, {
+      metadata: connectionMetadata(details, edge.metadata),
+    })
+  }
+
+  static async disconnect(
+    relationshipId: string,
+    userId: string,
+  ): Promise<void> {
+    await this.requireConnection(relationshipId)
+    await ItemService.removeRelationship(relationshipId, userId)
+  }
+
+  // ---- The diagram's layout ---------------------------------------------
+
+  /** The saved block positions of a design's diagram; empty when none. */
+  static async getLayout(designId: string): Promise<ArchitectureLayout> {
+    const [row] = await db
+      .select({ positions: architectureLayouts.positions })
+      .from(architectureLayouts)
+      .where(eq(architectureLayouts.designId, designId))
+      .limit(1)
+    return row?.positions ?? {}
+  }
+
+  /**
+   * Save block positions into the design's layout. Merged by element, not
+   * replaced: the diagram sends the blocks it drew at one context, and a
+   * block that exists only on some other branch keeps the position it had.
+   */
+  static async saveLayout(
+    designId: string,
+    positions: ArchitectureLayout,
+    userId: string,
+  ): Promise<ArchitectureLayout> {
+    const design = await DesignService.getById(designId)
+    if (!design) {
+      throw new NotFoundError('Design', designId, { operation: 'saveLayout' })
+    }
+    const merged = { ...(await this.getLayout(designId)), ...positions }
+    await db
+      .insert(architectureLayouts)
+      .values({ designId, positions: merged, updatedBy: userId })
+      .onConflictDoUpdate({
+        target: architectureLayouts.designId,
+        set: { positions: merged, updatedBy: userId, updatedAt: new Date() },
+      })
+    return merged
+  }
+
+  /** Forget every saved position: the diagram arranges itself again. */
+  static async resetLayout(designId: string): Promise<void> {
+    await db
+      .delete(architectureLayouts)
+      .where(eq(architectureLayouts.designId, designId))
+  }
+
   /**
    * The requirements allocated to this element (incoming `ALLOCATED_TO`),
    * inherited from the rows it succeeded the way every incoming trace read
@@ -371,7 +569,8 @@ export class SystemElementService {
   /**
    * The architecture of one design at `context`: the `DECOMPOSES` forest of
    * its system elements, each with the items that realize it and the
-   * requirements allocated to it.
+   * requirements allocated to it, the connections between elements, and the
+   * diagram's saved layout.
    *
    * Resolution is the requirements matrix's: an element's row at the context
    * answers for the allocations made against the rows it succeeded, a
@@ -407,7 +606,13 @@ export class SystemElementService {
       .filter((row) => row.itemType === 'SystemElement')
       .sort(byItemNumber)
     if (elementRows.length === 0) {
-      return { ...base, roots: [], totals: emptyTotals() }
+      return {
+        ...base,
+        roots: [],
+        connections: [],
+        layout: {},
+        totals: emptyTotals(),
+      }
     }
     const elementIds = elementRows.map((row) => row.id)
     const extensionByItem = new Map(
@@ -430,6 +635,7 @@ export class SystemElementService {
           inArray(itemRelationships.relationshipType, [
             DECOMPOSES_RELATIONSHIP,
             REALIZED_BY_RELATIONSHIP,
+            CONNECTS_RELATIONSHIP,
           ]),
         ),
       )
@@ -487,10 +693,13 @@ export class SystemElementService {
     for (const row of resolvedByMaster.values()) {
       if (row) rowById.set(row.id, row)
     }
+    // Connections make no trace claim, so they are not judged for suspicion.
     const suspectStates = await RequirementsMatrixService.suspectStates(
       context,
       keptIncoming,
-      keptOutgoing,
+      keptOutgoing.filter(
+        (edge) => edge.relationshipType !== CONNECTS_RELATIONSHIP,
+      ),
       ancestorToOwner,
       namedById,
       resolvedByMaster,
@@ -545,6 +754,7 @@ export class SystemElementService {
       return byItemNumber(targetA, targetB)
     })
     const parentOf = new Map<string, string>()
+    const connections: Array<ArchitectureConnection> = []
     const seen = new Set<string>()
     for (const edge of orderedOutgoing) {
       const node = nodeById.get(edge.sourceId)
@@ -561,6 +771,16 @@ export class SystemElementService {
         parentOf.set(child.itemId, node.itemId)
         child.relationshipId = edge.id
         node.children.push(child)
+      } else if (edge.relationshipType === CONNECTS_RELATIONSHIP) {
+        // Both ends must be elements present at the context; the target is
+        // the row that answers for its master there.
+        if (!nodeById.has(target.id) || target.id === node.itemId) continue
+        connections.push({
+          relationshipId: edge.id,
+          sourceItemId: node.itemId,
+          targetItemId: target.id,
+          ...connectionDetailsOf(edge.metadata),
+        })
       } else {
         node.realizedBy.push(toLink(edge, target, suspectStates.get(edge.id)))
       }
@@ -603,7 +823,22 @@ export class SystemElementService {
     }
     roots.sort(byItemNumber)
 
-    return { ...base, roots, totals: totalsOf([...nodeById.values()]) }
+    // Only positions of elements at this context cross the wire: the stored
+    // map also remembers elements that exist on other branches.
+    const saved = await this.getLayout(designId)
+    const layout: ArchitectureLayout = {}
+    for (const node of nodeById.values()) {
+      const position = saved[node.masterId]
+      if (position) layout[node.masterId] = position
+    }
+
+    return {
+      ...base,
+      roots,
+      connections,
+      layout,
+      totals: totalsOf([...nodeById.values()]),
+    }
   }
 }
 

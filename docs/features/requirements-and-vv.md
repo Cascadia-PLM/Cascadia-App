@@ -120,13 +120,12 @@ reads as unverified until someone affirms them.
 A requirement needs somewhere to land before the design has parts. The
 `SystemElement` item type is that place: a logical element — the system, a
 segment, a subsystem, a module — versioned and ECO-controlled like a part,
-with three edges of its own in the catalog:
+with two edges of its own in the catalog:
 
 | Edge          | From → to                      | Meaning                                                         |
 | ------------- | ------------------------------ | --------------------------------------------------------------- |
 | `DECOMPOSES`  | SystemElement → SystemElement  | The architecture tree. Not the BOM, on purpose.                 |
 | `REALIZED_BY` | SystemElement → Part, Software | The element is implemented by this item — a trace claim         |
-| `CONNECTS`    | SystemElement → SystemElement  | An interface between two elements — a line in the block diagram |
 
 `ALLOCATED_TO` accepts a system element as its target, so an allocation can be
 made to a subsystem on day one and the requirements matrix reads it as
@@ -138,7 +137,7 @@ stale (it is structure, not a claim), and the relationship service refuses a
 link that would close a loop, through the element's own endpoints and the
 generic relationship write alike.
 
-All three edges ride a change order the way a BOM line does: a checkout copies the
+Both edges ride a change order the way a BOM line does: a checkout copies the
 element's edges onto its working copy, the release rebuilds them on the
 released row, and a child placed or a realization made on the branch shows on
 the branch and nowhere else until the merge.
@@ -153,42 +152,96 @@ parents appears under the first by item number, and a loop that reached the
 store despite the guard is broken at the edge that closes it, so the answer
 is always a forest. The design page's Architecture tab renders it as a tree
 (the BOM tree view with its own columns), as a graph, and as an editable
-block diagram (below); the element's own page lists its children, its
+block diagram (below); the element's own page lists its ports, its children, its
 realizations and its allocated requirements.
+
+### Ports and interfaces
+
+Two more things describe how the elements connect:
+
+- A **port** is a named connection point on an element's boundary — "J1",
+  "28 V in" — with a direction (in, out, bidirectional). The port list is the
+  element's contract with whatever it is connected to, so it is a field of
+  the element's own row (`system_elements.ports`): it revises with the
+  element, is isolated on a branch until the release, and reads as it was at
+  a tag, with no machinery of its own. A port's id is assigned once and never
+  changes, so an attachment survives a rename and a revision.
+- An **interface** is an item of its own (`Interface`, `IF-000001`; kind
+  power, data, mechanical, fluid, thermal or other), versioned and
+  ECO-controlled like an element. It is an item rather than a link so that
+  two interfaces between the same two elements are two items, one interface
+  can join more than two elements (a bus), and it can carry what an interface
+  carries in practice: its interface control document, and requirements —
+  `ALLOCATED_TO` accepts an interface as its target.
+
+What an interface joins is the `CONNECTS` edge:
+
+| Edge       | From → to                 | Meaning                                                                 |
+| ---------- | ------------------------- | ----------------------------------------------------------------------- |
+| `CONNECTS` | Interface → SystemElement | The interface attaches to the element, at the port the edge's metadata names |
+
+An interface attaches to an element once. The edges are the interface's own
+content, so they ride its checkout and its release like any outgoing edge.
+Who owns what decides what has to be editable:
+
+| Change                                   | Is an edit of | Inside a change order, needs  |
+| ---------------------------------------- | ------------- | ----------------------------- |
+| Add, rename or remove a port             | the element   | the element checked out       |
+| Create an interface between two ports    | (a new item)  | nothing checked out           |
+| Attach or detach an end, rename, re-kind | the interface | the interface checked out     |
+
+Removing a port does not touch the interfaces attached to it — they are
+under their own change control. Such an attachment reads `portMissing` in
+the architecture answer and is drawn dashed until it is re-attached or
+detached.
 
 ### The block diagram editor
 
 The Architecture tab's **Block diagram** view draws the same answer as nested
 boxes — an element with children is a container and its children sit inside
-it — with the `CONNECTS` edges as lines between them, and it is edited in
-place:
+it — each with its ports down its left and right edges, and the interfaces as
+lines between ports. It is edited in place:
 
 - **Add block** creates a system element (its number is assigned
   automatically); with a block selected, the new one is created inside it,
   which also writes the `DECOMPOSES` edge.
-- **Dragging from a dot on one block to another** draws a connection. It can
-  be given a name ("28 V bus") and a kind — power, data, mechanical, fluid,
-  thermal or other — which colours the line. Clicking a line renames or
-  deletes it. A connection may cross levels of the tree and may form loops;
-  one connection is kept per pair of elements in each direction, so drawing
-  the same line again edits it.
-- **Dragging a block** moves it, and a container grows to fit what is inside
-  it. **Auto-arrange** forgets the saved positions.
+- **Add port** adds a port to the selected block; clicking a port renames it,
+  changes its direction or deletes it.
+- **Dragging from one port to another** creates an interface between them,
+  with a name and a kind that colours the line. Under the ports on each side
+  of a block is a dashed point: dragging from or to it creates a new port on
+  the way, named in the same dialog — so one drag between two bare blocks
+  makes both ports and the interface.
+- **Clicking a line** edits the interface: rename, change kind, detach an
+  end, delete, or open its page. _Show as a bus_ redraws a two-ended line as
+  a node, and dragging from another port to that node attaches a third end.
+  An interface with more than two ends is always drawn that way.
+- **Dragging a block or a bus node** moves it; a container grows to fit what
+  is inside it. **Auto-arrange** forgets the saved positions.
 
-Two kinds of data are being written, under two different rules:
+Which edge of a block a port is drawn on is not stored: it is the side
+facing what the port is connected to, so lines stay short however the blocks
+are arranged. Block positions are stored, but as presentation rather than
+engineering data: `architecture_layouts`, one row per design keyed by master
+id, unversioned, shared by main, every branch and every tag, and saved
+without a checkout. At a tag or a commit the diagram is read-only.
 
-| What             | Where it lives                                                                | Change control                                                                                                                                                            |
-| ---------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Blocks and lines | Items and `item_relationships` (a connection's name and kind in its metadata) | The same as the tree: freely on main before the design's first release; afterwards inside a change order, with the element a line starts from checked out to that branch. |
-| Block positions  | `architecture_layouts`, one row per design, keyed by element master id        | None. Layout is presentation: unversioned, shared by main, every branch and every tag, and saved without a checkout.                                                      |
+`ports`, `interfaces` and `layout` are part of the
+`GET /designs/:id/architecture` answer. The writes:
 
-At a tag or a commit the diagram is read-only. `connections` and `layout`
-are part of the `GET /designs/:id/architecture` answer; connections are
-written through `POST /system-elements/:id/connections` and
-`PUT|DELETE /system-elements/connections/:relationshipId`, and the layout
-through `PUT|DELETE /designs/:id/architecture/layout`. Not in this version:
-named ports on a block, re-parenting a block by dragging it into another
-(use the element's page), and deleting a block from the diagram.
+| Endpoint                                                              | Does                              |
+| --------------------------------------------------------------------- | --------------------------------- |
+| `POST /system-elements/:id/ports`, `PUT`/`DELETE …/ports/:portId`     | Add, edit, remove a port          |
+| `POST /designs/:id/architecture/interfaces`                           | Create an interface with its ends |
+| `POST /designs/:id/architecture/interfaces/:interfaceId/ends`         | Attach one more end               |
+| `DELETE /designs/:id/architecture/interface-ends/:relationshipId`     | Detach an end                     |
+| `PUT`/`DELETE /interfaces/:id`                                        | Rename, re-kind, delete           |
+| `PUT`/`DELETE /designs/:id/architecture/layout`                       | Save or reset block positions     |
+
+Not in this version: re-parenting a block by dragging it into another (use
+the element's page), deleting a block from the diagram, an interface between
+two ports of the same element, and typed ports (a check that a power port is
+not wired to a data interface).
 
 ## The traceability reports
 
@@ -275,7 +328,8 @@ ReqIF stays deferred until a customer names DOORS or Polarion.
 
 - `cascadia-api/src/services/RequirementService.ts` — links, coverage, waivers
 - `cascadia-api/src/services/RequirementsMatrixService.ts` — the RTM and the rollup, and the context resolvers the architecture shares
-- `cascadia-api/src/services/SystemElementService.ts` — the architecture: the tree, realizations, the design's forest at a context
+- `cascadia-api/src/services/SystemElementService.ts` — the architecture: the tree, realizations, ports, the design's forest at a context
+- `cascadia-api/src/services/InterfaceService.ts` — interfaces: create with ends, attach, detach
 - `cascadia-api/src/services/verification-rollup.ts` — the derivation and the one rule
 - `cascadia-api/src/services/VerificationService.ts` — executions, test coverage
 - `cascadia-api/src/services/TraceImpactService.ts` — the release preview
@@ -283,7 +337,7 @@ ReqIF stays deferred until a customer names DOORS or Polarion.
 - `cascadia-api/src/items/version-lineage.ts` — the two lineage rules
 - `cascadia-web/src/components/designs/RequirementsTab.tsx` — the tab
 - `cascadia-web/src/components/designs/ArchitectureTab.tsx` — the Architecture tab: tree, block diagram and graph
-- `cascadia-web/src/components/designs/block-diagram/` — the block diagram editor: layout, the block node, the dialogs
+- `cascadia-web/src/components/designs/block-diagram/` — the block diagram editor: layout and port placement, the block and bus nodes, the dialogs
 - `cascadia-web/src/components/programs/ProgramRequirementsCard.tsx` — the rollup card
 - `cascadia-web/src/components/items/suspect-links.tsx` — badges and affirm actions
 - `cascadia-commons/src/import/requirement-hierarchy.ts` — the sheet's hierarchy, planned and previewed

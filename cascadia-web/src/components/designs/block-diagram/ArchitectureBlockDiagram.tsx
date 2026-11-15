@@ -4,20 +4,25 @@
  * The design's architecture as an editable block diagram.
  *
  * Blocks are the system elements, nested the way the DECOMPOSES tree nests
- * them; lines are the CONNECTS edges between them. Built from the same
- * answer the tab's tree and graph render, so the three views never disagree.
+ * them, each with its ports down its edges. Lines are the design's
+ * interfaces — items of their own — running between the ports they attach
+ * to; an interface with more than two ends is drawn as a bus node the lines
+ * meet at. Built from the same answer the tab's tree and graph render, so
+ * the three views never disagree.
  *
  * What an edit here is, in the data:
  *
- * - drawing a line, renaming one or deleting one writes a CONNECTS edge —
- *   engineering data, under the same change control as the tree. On a
- *   branch the write lands on that branch; the server decides whether it is
- *   allowed (the source element checked out, or main before any release)
- *   and a refusal is shown as it comes back;
+ * - drawing a line creates an Interface item and attaches it to a port at
+ *   each end, creating the port when the line was dropped on a block's "new
+ *   port" point. Renaming, re-attaching or deleting an interface is an edit
+ *   of the interface; adding, renaming or deleting a port is an edit of the
+ *   element. Both are engineering data under change control: on a branch
+ *   the write lands on that branch, the server decides whether it is
+ *   allowed, and a refusal is shown as it comes back;
  * - adding a block creates a system element, and its DECOMPOSES edge when
  *   it is added inside another;
- * - dragging a block saves where it sits. That is presentation: one layout
- *   per design, outside change control, no checkout needed.
+ * - dragging a block or a bus node saves where it sits. That is
+ *   presentation: one layout per design, outside change control.
  *
  * At a tag or a commit the diagram is read-only.
  */
@@ -33,33 +38,52 @@ import {
   useNodesState,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { LayoutGrid, Plus } from 'lucide-react'
+import { CircleDot, LayoutGrid, Plus } from 'lucide-react'
 import {
-  SYSTEM_CONNECTION_KINDS,
-  SYSTEM_CONNECTION_KIND_LABELS,
-  SYSTEM_ELEMENT_KINDS,
-} from '@cascadia/commons/items/types/system-element'
-import { BlockNode } from './BlockNode'
-import { AddBlockDialog, ConnectionDialog } from './BlockDiagramDialogs'
+  INTERFACE_KINDS,
+  INTERFACE_KIND_LABELS,
+} from '@cascadia/commons/items/types/interface'
+import { SYSTEM_ELEMENT_KINDS } from '@cascadia/commons/items/types/system-element'
+import { BlockNode, newPortHandleId, portHandleId } from './BlockNode'
+import { HubNode, hubNodeId, interfaceIdOfHub } from './HubNode'
 import {
-  CONNECTION_KIND_COLORS,
-  connectionColor,
-  connectionLabel,
-} from './connection-kinds'
-import { absolutePositions, facingSides, layoutBlocks } from './layout'
-import type { Connection, Edge, OnNodeDrag } from '@xyflow/react'
+  AddBlockDialog,
+  ConnectDialog,
+  InterfaceDialog,
+  PortDialog,
+} from './BlockDiagramDialogs'
+import {
+  INTERFACE_KIND_COLORS,
+  interfaceColor,
+  interfaceLabel,
+} from './interface-kinds'
+import {
+  HUB_HEIGHT,
+  HUB_WIDTH,
+  absoluteBoxes,
+  defaultHubPosition,
+  facingSide,
+  layoutBlocks,
+  placePorts,
+  portRowsOf,
+} from './layout'
+import type { Connection, Edge, EdgeMarker, OnNodeDrag } from '@xyflow/react'
 import type {
-  ArchitectureConnection,
+  ArchitectureInterface,
+  ArchitectureInterfaceEnd,
   ArchitectureLayout,
   ArchitectureNode,
   DesignArchitecture,
 } from '@cascadia/commons/services/types/architecture'
-import type { SystemElementKind } from '@cascadia/commons/items/types/system-element'
 import type {
-  BlockFormValues,
-  ConnectionFormValues,
-} from './BlockDiagramDialogs'
+  SystemElementKind,
+  SystemPort,
+  SystemPortDirection,
+} from '@cascadia/commons/items/types/system-element'
+import type { ConnectEnd } from './BlockDiagramDialogs'
 import type { BlockNodeType } from './BlockNode'
+import type { HubNodeType } from './HubNode'
+import type { Box, PortRows } from './layout'
 import { apiFetch } from '@/api/client'
 import { Button } from '@/components/ui'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -75,12 +99,31 @@ interface ArchitectureBlockDiagramProps {
   readOnly: boolean
 }
 
-type DialogState =
-  | { type: 'connect'; sourceItemId: string; targetItemId: string }
-  | { type: 'edit'; connection: ArchitectureConnection }
-  | { type: 'add'; parent: ArchitectureNode | null }
+type DiagramNode = BlockNodeType | HubNodeType
 
-const nodeTypes = { block: BlockNode }
+/** One end of a line being dragged: a block, at a port or at a new one. */
+interface DraggedEnd {
+  elementItemId: string
+  portId?: string
+}
+
+// Dialogs hold ids, not objects, so what they show follows a refetch.
+type DialogState =
+  | { type: 'connect'; ends: [DraggedEnd, DraggedEnd] }
+  | { type: 'interface'; interfaceItemId: string }
+  | { type: 'attach'; interfaceItemId: string; elementItemId: string }
+  | { type: 'port'; elementItemId: string; portId: string }
+  | { type: 'addPort'; elementItemId: string }
+  | { type: 'addBlock'; parentItemId: string | null }
+
+/** A write the diagram makes: what to run, and what to call a failure. */
+interface DiagramWrite {
+  title: string
+  run: () => Promise<unknown>
+}
+
+const nodeTypes = { block: BlockNode, hub: HubNode }
+const json = (body: unknown) => JSON.stringify(body)
 
 function indexElements(
   nodes: Array<ArchitectureNode>,
@@ -110,6 +153,16 @@ function kindBelow(kind: string | null | undefined): SystemElementKind {
   )
 }
 
+/** An arrowhead belongs at an end things flow into. */
+function arrowInto(
+  port: SystemPort | undefined,
+  color: string,
+): EdgeMarker | undefined {
+  return port && port.direction !== 'out'
+    ? { type: MarkerType.ArrowClosed, color }
+    : undefined
+}
+
 export function ArchitectureBlockDiagram({
   designId,
   architecture,
@@ -120,6 +173,24 @@ export function ArchitectureBlockDiagram({
   const { handleError } = useErrorHandler()
   const queryClient = useQueryClient()
   const [dialog, setDialog] = useState<DialogState | null>(null)
+  // Two-ended interfaces the user asked to see as a bus node.
+  const [shownAsBus, setShownAsBus] = useState<ReadonlySet<string>>(new Set())
+
+  const elementById = useMemo(
+    () => indexElements(architecture.roots),
+    [architecture.roots],
+  )
+  const interfaceById = useMemo(
+    () => new Map(architecture.interfaces.map((item) => [item.itemId, item])),
+    [architecture.interfaces],
+  )
+  const portOf = useCallback(
+    (end: { elementItemId: string; portId?: string | null }) =>
+      elementById
+        .get(end.elementItemId)
+        ?.ports.find((port) => port.id === end.portId),
+    [elementById],
+  )
 
   // ---- Layout -----------------------------------------------------------
 
@@ -132,25 +203,57 @@ export function ArchitectureBlockDiagram({
     () => (ignoreSaved ? moved : { ...architecture.layout, ...moved }),
     [architecture.layout, moved, ignoreSaved],
   )
-  const blocks = useMemo(
-    () => layoutBlocks(architecture.roots, positions),
-    [architecture.roots, positions],
-  )
-  const elementById = useMemo(
-    () => indexElements(architecture.roots),
-    [architecture.roots],
-  )
+
+  // Which side a port is drawn on depends on where the blocks are, and how
+  // tall a block is depends on how many ports each side holds. One pass with
+  // a guess (half its ports a side) settles the sides; the second uses them.
+  const { blocks, placedPorts } = useMemo(() => {
+    const guess: PortRows = new Map(
+      [...elementById.values()].map((element) => [
+        element.itemId,
+        Math.ceil(element.ports.length / 2),
+      ]),
+    )
+    const ports = placePorts(
+      layoutBlocks(architecture.roots, positions, guess),
+      architecture.interfaces,
+    )
+    return {
+      blocks: layoutBlocks(architecture.roots, positions, portRowsOf(ports)),
+      placedPorts: ports,
+    }
+  }, [architecture.roots, architecture.interfaces, elementById, positions])
+  const boxes = useMemo(() => absoluteBoxes(blocks), [blocks])
+
+  /** Interfaces drawn as a node: a bus, a loose end, or one asked for. */
+  const hubs = useMemo(() => {
+    let unattached = 0
+    return architecture.interfaces
+      .filter((item) => item.ends.length !== 2 || shownAsBus.has(item.itemId))
+      .map((item) => {
+        const ends = item.ends.flatMap(
+          (end) => boxes.get(end.elementItemId) ?? [],
+        )
+        const fallback = defaultHubPosition(ends)
+        // Interfaces attached to nothing line up above the diagram.
+        if (ends.length === 0) fallback.x += unattached++ * (HUB_WIDTH + 16)
+        const position = positions[item.masterId] ?? fallback
+        return {
+          item,
+          box: { ...position, width: HUB_WIDTH, height: HUB_HEIGHT } as Box,
+        }
+      })
+  }, [architecture.interfaces, boxes, positions, shownAsBus])
 
   const refreshArchitecture = () =>
     queryClient.invalidateQueries({
       queryKey: qk.sub('designs', designId, 'architecture'),
     })
-
   const saveLayout = useMutation({
     mutationFn: (next: ArchitectureLayout) =>
       apiFetch(`/api/v1/designs/${designId}/architecture/layout`, {
         method: 'PUT',
-        body: JSON.stringify({ positions: next }),
+        body: json({ positions: next }),
       }),
     onSuccess: refreshArchitecture,
     onError: (error) =>
@@ -168,9 +271,14 @@ export function ArchitectureBlockDiagram({
 
   // ---- Nodes and edges --------------------------------------------------
 
-  const builtNodes = useMemo<Array<BlockNodeType>>(
-    () =>
-      blocks.map((block) => ({
+  const openPort = useCallback(
+    (elementItemId: string, portId: string) =>
+      setDialog({ type: 'port', elementItemId, portId }),
+    [],
+  )
+  const builtNodes = useMemo<Array<DiagramNode>>(
+    () => [
+      ...blocks.map((block): BlockNodeType => ({
         id: block.element.itemId,
         type: 'block',
         position: { x: block.x, y: block.y },
@@ -180,12 +288,25 @@ export function ArchitectureBlockDiagram({
         data: {
           element: block.element,
           isContainer: block.isContainer,
-          connectable: !readOnly,
+          ports: placedPorts.get(block.element.itemId) ?? [],
+          editable: !readOnly,
+          onPortClick: openPort,
         },
       })),
-    [blocks, readOnly],
+      ...hubs.map(({ item, box }): HubNodeType => ({
+        id: hubNodeId(item.itemId),
+        type: 'hub',
+        position: { x: box.x, y: box.y },
+        width: box.width,
+        height: box.height,
+        // Above the containers it may sit over.
+        zIndex: 1001,
+        data: { item, editable: !readOnly },
+      })),
+    ],
+    [blocks, hubs, placedPorts, readOnly, openPort],
   )
-  const [nodes, setNodes, onNodesChange] = useNodesState<BlockNodeType>([])
+  const [nodes, setNodes, onNodesChange] = useNodesState<DiagramNode>([])
   useEffect(() => {
     // Rebuilt from data on every change; only the selection is the canvas's.
     setNodes((previous) => {
@@ -199,51 +320,97 @@ export function ArchitectureBlockDiagram({
   }, [builtNodes, setNodes])
 
   const edges = useMemo<Array<Edge>>(() => {
-    const boxes = absolutePositions(blocks)
-    return architecture.connections.flatMap((connection) => {
-      const source = boxes.get(connection.sourceItemId)
-      const target = boxes.get(connection.targetItemId)
-      if (!source || !target) return []
-      const sides = facingSides(source, target)
-      const color = connectionColor(connection.kind)
-      return [
-        {
-          id: connection.relationshipId,
-          source: connection.sourceItemId,
-          target: connection.targetItemId,
-          sourceHandle: sides.source,
-          targetHandle: sides.target,
+    const hubBoxById = new Map(hubs.map(({ item, box }) => [item.itemId, box]))
+    /** The point on its block an end is drawn from. */
+    const handleOf = (end: ArchitectureInterfaceEnd) =>
+      portOf(end) && end.portId
+        ? portHandleId(end.portId)
+        : // A port that has gone: the line still shows, from the block's edge.
+          newPortHandleId('right')
+    const base = (item: ArchitectureInterface, dangling: boolean) => {
+      const color = interfaceColor(item.kind)
+      return {
+        color,
+        shared: {
           type: 'smoothstep',
-          label: connectionLabel(connection),
-          style: { stroke: color, strokeWidth: 2 },
-          markerEnd: { type: MarkerType.ArrowClosed, color },
+          style: {
+            stroke: color,
+            strokeWidth: 2,
+            ...(dangling && { strokeDasharray: '4 3' }),
+          },
           interactionWidth: 24,
           // Above the containers a line may have to cross.
           zIndex: 1000,
-          data: { connection },
+        },
+      }
+    }
+
+    return architecture.interfaces.flatMap((item): Array<Edge> => {
+      const hubBox = hubBoxById.get(item.itemId)
+      if (hubBox) {
+        return item.ends.flatMap((end): Array<Edge> => {
+          const box = boxes.get(end.elementItemId)
+          if (!box) return []
+          const { color, shared } = base(item, end.portMissing)
+          return [
+            {
+              ...shared,
+              id: `end:${end.relationshipId}`,
+              source: end.elementItemId,
+              sourceHandle: handleOf(end),
+              target: hubNodeId(item.itemId),
+              targetHandle: facingSide(hubBox, box),
+              markerStart: arrowInto(portOf(end), color),
+            },
+          ]
+        })
+      }
+      const [first, second] = item.ends
+      if (!first || !second) return []
+      const { color, shared } = base(
+        item,
+        first.portMissing || second.portMissing,
+      )
+      return [
+        {
+          ...shared,
+          id: `if:${item.itemId}`,
+          source: first.elementItemId,
+          sourceHandle: handleOf(first),
+          target: second.elementItemId,
+          targetHandle: handleOf(second),
+          label: interfaceLabel(item),
+          markerStart: arrowInto(portOf(first), color),
+          markerEnd: arrowInto(portOf(second), color),
         },
       ]
     })
-  }, [architecture.connections, blocks])
+  }, [architecture.interfaces, boxes, hubs, portOf])
 
   const selectedElement = useMemo(() => {
     const selected = nodes.filter((node) => node.selected)
-    return selected.length === 1 ? (selected[0]?.data.element ?? null) : null
+    const only = selected.length === 1 ? selected[0] : undefined
+    return only?.type === 'block' ? only.data.element : null
   }, [nodes])
 
   // ---- Edits ------------------------------------------------------------
 
-  const onNodeDragStop = useCallback<OnNodeDrag<BlockNodeType>>(
+  const onNodeDragStop = useCallback<OnNodeDrag<DiagramNode>>(
     (_event, _node, dragged) => {
       // Pin every block where it is now drawn, then move the dragged ones:
       // otherwise the blocks still placed automatically would repack around
-      // the first one that gets a saved position.
-      const next: ArchitectureLayout = {}
+      // the first one that gets a saved position. Bus nodes are pinned only
+      // when dragged, so the rest keep following the blocks they join.
+      const next: ArchitectureLayout = { ...moved }
       for (const block of blocks) {
         next[block.element.masterId] = { x: block.x, y: block.y }
       }
       for (const node of dragged) {
-        next[node.data.element.masterId] = {
+        const masterId =
+          node.type === 'hub'
+            ? node.data.item.masterId
+            : node.data.element.masterId
+        next[masterId] = {
           x: Math.round(node.position.x),
           y: Math.round(node.position.y),
         }
@@ -251,7 +418,7 @@ export function ArchitectureBlockDiagram({
       setMoved(next)
       saveLayout.mutate(next)
     },
-    [blocks, saveLayout],
+    [blocks, moved, saveLayout],
   )
 
   const autoArrange = () => {
@@ -260,118 +427,301 @@ export function ArchitectureBlockDiagram({
     resetLayout.mutate()
   }
 
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      if (connection.source === connection.target) return
-      const existing = architecture.connections.find(
-        (candidate) =>
-          candidate.sourceItemId === connection.source &&
-          candidate.targetItemId === connection.target,
-      )
-      setDialog(
-        existing
-          ? { type: 'edit', connection: existing }
-          : {
-              type: 'connect',
-              sourceItemId: connection.source,
-              targetItemId: connection.target,
-            },
-      )
-    },
-    [architecture.connections],
-  )
-
   const closeDialog = () => setDialog(null)
-  const connect = useResourceMutation({
-    mutationFn: (input: {
-      sourceItemId: string
-      targetItemId: string
-      values: ConnectionFormValues
-    }) =>
-      apiFetch(`/api/v1/system-elements/${input.sourceItemId}/connections`, {
-        method: 'POST',
-        body: JSON.stringify({
-          itemId: input.targetItemId,
-          ...input.values,
-          ...(branchId && { branchId }),
+  const write = useResourceMutation({
+    mutationFn: (request: DiagramWrite) => request.run(),
+    invalidates: ['system-elements', 'interfaces'],
+    onSuccess: closeDialog,
+    onError: (error, request) => handleError(error, { title: request.title }),
+  })
+  const branch = branchId ? { branchId } : {}
+  const post = (path: string, body: unknown) =>
+    apiFetch(path, { method: 'POST', body: json(body) })
+  const architecturePath = `/api/v1/designs/${designId}/architecture`
+
+  /** What the server is told about one end: its port, or the one to create. */
+  const endInput = (
+    end: DraggedEnd,
+    newPort: { name: string; direction: SystemPortDirection } | null,
+  ) =>
+    end.portId
+      ? { elementId: end.elementItemId, portId: end.portId }
+      : { elementId: end.elementItemId, newPort }
+
+  const attach = (
+    interfaceItemId: string,
+    end: DraggedEnd,
+    newPort: { name: string; direction: SystemPortDirection } | null,
+  ) =>
+    write.mutate({
+      title: 'Could not attach the interface',
+      run: () =>
+        post(`${architecturePath}/interfaces/${interfaceItemId}/ends`, {
+          end: endInput(end, newPort),
+          ...branch,
         }),
-      }),
-    invalidates: ['system-elements'],
-    onSuccess: closeDialog,
-    onError: (error) => handleError(error, { title: 'Could not connect' }),
-  })
-  const updateConnection = useResourceMutation({
-    mutationFn: (input: {
-      relationshipId: string
-      values: ConnectionFormValues
-    }) =>
-      apiFetch(`/api/v1/system-elements/connections/${input.relationshipId}`, {
-        method: 'PUT',
-        body: JSON.stringify(input.values),
-      }),
-    invalidates: ['system-elements'],
-    onSuccess: closeDialog,
-    onError: (error) =>
-      handleError(error, { title: 'Could not update the connection' }),
-  })
-  const removeConnection = useResourceMutation({
-    mutationFn: (relationshipId: string) =>
-      apiFetch(`/api/v1/system-elements/connections/${relationshipId}`, {
-        method: 'DELETE',
-      }),
-    invalidates: ['system-elements'],
-    onSuccess: closeDialog,
-    onError: (error) =>
-      handleError(error, { title: 'Could not delete the connection' }),
-  })
-  const addBlock = useResourceMutation({
-    mutationFn: async (input: {
-      parent: ArchitectureNode | null
-      values: BlockFormValues
-    }) => {
-      const result = await apiFetch<{ data: { item: { id: string } } }>(
-        '/api/v1/items',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            itemType: 'SystemElement',
-            // Blank: the server assigns the next number.
-            itemNumber: '',
-            name: input.values.name,
-            elementKind: input.values.elementKind,
-            designId,
-            ...(branchId && { branchId }),
-          }),
+    })
+
+  const onConnect = (connection: Connection) => {
+    const parse = (
+      nodeId: string,
+      handle: string | null,
+    ): { hub: string } | { end: DraggedEnd } => {
+      const hub = interfaceIdOfHub(nodeId)
+      if (hub) return { hub }
+      return {
+        end: {
+          elementItemId: nodeId,
+          ...(handle?.startsWith('port:') && { portId: handle.slice(5) }),
         },
-      )
-      if (input.parent) {
-        await apiFetch(
-          `/api/v1/system-elements/${input.parent.itemId}/children`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              itemIds: [result.data.item.id],
-              ...(branchId && { branchId }),
-            }),
-          },
+      }
+    }
+    const from = parse(connection.source, connection.sourceHandle)
+    const to = parse(connection.target, connection.targetHandle)
+
+    if ('end' in from && 'end' in to) {
+      if (from.end.elementItemId === to.end.elementItemId) return
+      setDialog({ type: 'connect', ends: [from.end, to.end] })
+      return
+    }
+    // A port dragged to a bus node (or the other way): one more end.
+    const hub = 'hub' in from ? from.hub : 'hub' in to ? to.hub : null
+    const end = 'end' in from ? from.end : 'end' in to ? to.end : null
+    if (!hub || !end) return
+    if (end.portId) attach(hub, end, null)
+    else {
+      setDialog({
+        type: 'attach',
+        interfaceItemId: hub,
+        elementItemId: end.elementItemId,
+      })
+    }
+  }
+
+  const openInterface = (interfaceItemId: string | undefined) => {
+    if (interfaceItemId && interfaceById.has(interfaceItemId)) {
+      setDialog({ type: 'interface', interfaceItemId })
+    }
+  }
+
+  // ---- Dialogs ----------------------------------------------------------
+
+  const busy = write.isPending
+  const renderDialog = () => {
+    if (!dialog) return null
+    switch (dialog.type) {
+      case 'connect': {
+        const ends = dialog.ends.map((end, index): ConnectEnd => {
+          const port = portOf(end)
+          return {
+            elementItemId: end.elementItemId,
+            elementLabel: elementLabel(elementById.get(end.elementItemId)),
+            ...(port && { port: { id: port.id, name: port.name } }),
+            // The line was dragged from the first end to the second.
+            defaultDirection: index === 0 ? 'out' : 'in',
+          }
+        })
+        return (
+          <ConnectDialog
+            ends={ends}
+            busy={busy}
+            onClose={closeDialog}
+            onSubmit={(values) =>
+              write.mutate({
+                title: 'Could not connect',
+                run: () =>
+                  post(`${architecturePath}/interfaces`, {
+                    name: values.name,
+                    kind: values.kind,
+                    ends: dialog.ends.map((end, index) =>
+                      endInput(end, values.newPorts[index] ?? null),
+                    ),
+                    ...branch,
+                  }),
+              })
+            }
+          />
         )
       }
-    },
-    invalidates: ['system-elements'],
-    onSuccess: closeDialog,
-    onError: (error) =>
-      handleError(error, { title: 'Could not add the block' }),
-  })
-
-  const busy =
-    connect.isPending ||
-    updateConnection.isPending ||
-    removeConnection.isPending ||
-    addBlock.isPending
+      case 'interface': {
+        const item = interfaceById.get(dialog.interfaceItemId)
+        if (!item) return null
+        return (
+          <InterfaceDialog
+            item={item}
+            ends={item.ends.map((end) => ({
+              relationshipId: end.relationshipId,
+              label: `${elementLabel(elementById.get(end.elementItemId))} · ${
+                portOf(end)?.name ?? 'no port'
+              }`,
+              portMissing: end.portMissing,
+            }))}
+            busy={busy}
+            onClose={closeDialog}
+            onSubmit={(values) =>
+              write.mutate({
+                title: 'Could not update the interface',
+                run: () =>
+                  apiFetch(`/api/v1/interfaces/${item.itemId}`, {
+                    method: 'PUT',
+                    body: json({
+                      name: values.name,
+                      interfaceKind: values.kind,
+                    }),
+                  }),
+              })
+            }
+            onDetach={(relationshipId) =>
+              write.mutate({
+                title: 'Could not detach the interface',
+                run: () =>
+                  apiFetch(
+                    `${architecturePath}/interface-ends/${relationshipId}`,
+                    { method: 'DELETE' },
+                  ),
+              })
+            }
+            onDelete={() =>
+              write.mutate({
+                title: 'Could not delete the interface',
+                run: () =>
+                  apiFetch(`/api/v1/interfaces/${item.itemId}`, {
+                    method: 'DELETE',
+                  }),
+              })
+            }
+            onShowAsBus={
+              item.ends.length === 2 && !shownAsBus.has(item.itemId)
+                ? () => {
+                    setShownAsBus(
+                      (previous) => new Set([...previous, item.itemId]),
+                    )
+                    closeDialog()
+                  }
+                : undefined
+            }
+          />
+        )
+      }
+      case 'attach': {
+        const item = interfaceById.get(dialog.interfaceItemId)
+        return (
+          <PortDialog
+            title={`Attach ${item ? interfaceLabel(item) : 'the interface'} through a new port`}
+            elementLabel={elementLabel(elementById.get(dialog.elementItemId))}
+            submitLabel="Attach"
+            busy={busy}
+            onClose={closeDialog}
+            onSubmit={(values) =>
+              attach(
+                dialog.interfaceItemId,
+                { elementItemId: dialog.elementItemId },
+                values,
+              )
+            }
+          />
+        )
+      }
+      case 'addPort':
+        return (
+          <PortDialog
+            title="Add port"
+            elementLabel={elementLabel(elementById.get(dialog.elementItemId))}
+            submitLabel="Add port"
+            busy={busy}
+            onClose={closeDialog}
+            onSubmit={(values) =>
+              write.mutate({
+                title: 'Could not add the port',
+                run: () =>
+                  post(
+                    `/api/v1/system-elements/${dialog.elementItemId}/ports`,
+                    { ...values, ...branch },
+                  ),
+              })
+            }
+          />
+        )
+      case 'port': {
+        const port = portOf(dialog)
+        if (!port) return null
+        const path = `/api/v1/system-elements/${dialog.elementItemId}/ports/${port.id}`
+        return (
+          <PortDialog
+            title={`Port ${port.name}`}
+            elementLabel={elementLabel(elementById.get(dialog.elementItemId))}
+            existing={port}
+            submitLabel="Save"
+            busy={busy}
+            onClose={closeDialog}
+            onSubmit={(values) =>
+              write.mutate({
+                title: 'Could not update the port',
+                run: () =>
+                  apiFetch(path, {
+                    method: 'PUT',
+                    body: json({ ...values, ...branch }),
+                  }),
+              })
+            }
+            onDelete={() =>
+              write.mutate({
+                title: 'Could not delete the port',
+                run: () =>
+                  apiFetch(branchId ? `${path}?branchId=${branchId}` : path, {
+                    method: 'DELETE',
+                  }),
+              })
+            }
+          />
+        )
+      }
+      case 'addBlock': {
+        const parent = dialog.parentItemId
+          ? elementById.get(dialog.parentItemId)
+          : undefined
+        return (
+          <AddBlockDialog
+            parentLabel={parent ? elementLabel(parent) : undefined}
+            defaultKind={parent ? kindBelow(parent.elementKind) : 'system'}
+            busy={busy}
+            onClose={closeDialog}
+            onSubmit={(values) =>
+              write.mutate({
+                title: 'Could not add the block',
+                run: async () => {
+                  const result = await apiFetch<{
+                    data: { item: { id: string } }
+                  }>('/api/v1/items', {
+                    method: 'POST',
+                    body: json({
+                      itemType: 'SystemElement',
+                      // Blank: the server assigns the next number.
+                      itemNumber: '',
+                      name: values.name,
+                      elementKind: values.elementKind,
+                      designId,
+                      ...branch,
+                    }),
+                  })
+                  if (parent) {
+                    await post(
+                      `/api/v1/system-elements/${parent.itemId}/children`,
+                      { itemIds: [result.data.item.id], ...branch },
+                    )
+                  }
+                },
+              })
+            }
+          />
+        )
+      }
+    }
+  }
 
   return (
     <div data-testid="architecture-block-diagram">
-      <div className="h-[640px] rounded-lg border bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+      <div className="h-[680px] rounded-lg border bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -383,17 +733,32 @@ export function ArchitectureBlockDiagram({
             readOnly
               ? undefined
               : (_event, edge) => {
-                  const connection = architecture.connections.find(
-                    (candidate) => candidate.relationshipId === edge.id,
-                  )
-                  if (connection) setDialog({ type: 'edit', connection })
+                  if (edge.id.startsWith('if:')) {
+                    openInterface(edge.id.slice(3))
+                  } else {
+                    const relationshipId = edge.id.slice(4)
+                    openInterface(
+                      architecture.interfaces.find((item) =>
+                        item.ends.some(
+                          (end) => end.relationshipId === relationshipId,
+                        ),
+                      )?.itemId,
+                    )
+                  }
+                }
+          }
+          onNodeClick={
+            readOnly
+              ? undefined
+              : (_event, node) => {
+                  if (node.type === 'hub') openInterface(node.data.item.itemId)
                 }
           }
           connectionMode={ConnectionMode.Loose}
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}
-          // Deleting an element is a decision for its own page, and a
-          // connection is deleted from its dialog — never by a stray key.
+          // Deleting an element is a decision for its own page, and an
+          // interface is deleted from its dialog — never by a stray key.
           deleteKeyCode={null}
           colorMode={theme}
           fitView
@@ -409,7 +774,10 @@ export function ArchitectureBlockDiagram({
               <Button
                 size="sm"
                 onClick={() =>
-                  setDialog({ type: 'add', parent: selectedElement })
+                  setDialog({
+                    type: 'addBlock',
+                    parentItemId: selectedElement?.itemId ?? null,
+                  })
                 }
                 title={
                   selectedElement
@@ -422,6 +790,21 @@ export function ArchitectureBlockDiagram({
                   ? `Add block inside ${selectedElement.itemNumber}`
                   : 'Add block'}
               </Button>
+              {selectedElement && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setDialog({
+                      type: 'addPort',
+                      elementItemId: selectedElement.itemId,
+                    })
+                  }
+                >
+                  <CircleDot className="mr-1 h-4 w-4" />
+                  Add port to {selectedElement.itemNumber}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -438,74 +821,25 @@ export function ArchitectureBlockDiagram({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-slate-600 dark:text-slate-400">
-        <p>
+        <p className="max-w-3xl">
           {readOnly
             ? 'Read-only at this version. Use the mouse wheel to zoom and drag the canvas to pan.'
-            : 'Drag a block to move it. Drag from a dot on one block to another block to connect them; click a line to rename or delete it.'}
+            : 'Drag between two ports to connect them with an interface; drag from or to a dashed point to create a new port on the way. Click a line, a bus node or a port to edit it.'}
         </p>
         <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {SYSTEM_CONNECTION_KINDS.map((kind) => (
+          {INTERFACE_KINDS.map((kind) => (
             <li key={kind} className="inline-flex items-center gap-1">
               <span
                 className="inline-block h-0.5 w-4 rounded"
-                style={{ backgroundColor: CONNECTION_KIND_COLORS[kind] }}
+                style={{ backgroundColor: INTERFACE_KIND_COLORS[kind] }}
               />
-              {SYSTEM_CONNECTION_KIND_LABELS[kind]}
+              {INTERFACE_KIND_LABELS[kind]}
             </li>
           ))}
         </ul>
       </div>
 
-      {dialog?.type === 'connect' && (
-        <ConnectionDialog
-          sourceLabel={elementLabel(elementById.get(dialog.sourceItemId))}
-          targetLabel={elementLabel(elementById.get(dialog.targetItemId))}
-          busy={busy}
-          onSubmit={(values) =>
-            connect.mutate({
-              sourceItemId: dialog.sourceItemId,
-              targetItemId: dialog.targetItemId,
-              values,
-            })
-          }
-          onClose={closeDialog}
-        />
-      )}
-      {dialog?.type === 'edit' && (
-        <ConnectionDialog
-          sourceLabel={elementLabel(
-            elementById.get(dialog.connection.sourceItemId),
-          )}
-          targetLabel={elementLabel(
-            elementById.get(dialog.connection.targetItemId),
-          )}
-          existing={dialog.connection}
-          busy={busy}
-          onSubmit={(values) =>
-            updateConnection.mutate({
-              relationshipId: dialog.connection.relationshipId,
-              values,
-            })
-          }
-          onDelete={() =>
-            removeConnection.mutate(dialog.connection.relationshipId)
-          }
-          onClose={closeDialog}
-        />
-      )}
-      {dialog?.type === 'add' && (
-        <AddBlockDialog
-          parentLabel={dialog.parent ? elementLabel(dialog.parent) : undefined}
-          defaultKind={
-            dialog.parent ? kindBelow(dialog.parent.elementKind) : 'system'
-          }
-          busy={busy}
-          onSubmit={(values) =>
-            addBlock.mutate({ parent: dialog.parent, values })
-          }
-          onClose={closeDialog}
-        />
-      )}
+      {renderDialog()}
     </div>
   )
 }

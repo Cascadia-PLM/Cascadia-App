@@ -25,7 +25,11 @@ import {
   verificationStatusSchema,
 } from '@cascadia/commons/items/types/requirement'
 import { jsonValueSchema } from '@cascadia/commons/items/types/base'
-import { systemElementKindSchema } from '@cascadia/commons/items/types/system-element'
+import { interfaceKindSchema } from '@cascadia/commons/items/types/interface'
+import {
+  systemElementKindSchema,
+  systemPortsSchema,
+} from '@cascadia/commons/items/types/system-element'
 import { taskPrioritySchema } from '@cascadia/commons/items/types/task'
 import { testStepSchema } from '@cascadia/commons/items/types/testcase'
 import {
@@ -395,13 +399,26 @@ export type ChangeOrderUpdate = z.infer<typeof changeOrderUpdateSchema>
 export const baseItemUpdateSchema = z.object({ ...itemUpdateBaseFields })
 
 /**
- * SystemElement: the two fields of its own. Its tree and its realizing items
+ * SystemElement: the fields of its own. Its tree and its realizing items
  * are edges, written through `/system-elements/:id/children` and
  * `/system-elements/:id/realized-by`, not fields of the row.
  */
 export const systemElementUpdateSchema = z.object({
   ...itemUpdateBaseFields,
   elementKind: systemElementKindSchema.nullable().optional(),
+  description: z.string().max(10000).nullable().optional(),
+  /** Replaces the port list as a whole; the port endpoints edit one port. */
+  ports: systemPortsSchema.optional(),
+})
+
+/**
+ * Interface: the two fields of its own. What it joins is its `CONNECTS`
+ * edges, written through the interface's link endpoints, not fields of the
+ * row.
+ */
+export const interfaceUpdateSchema = z.object({
+  ...itemUpdateBaseFields,
+  interfaceKind: interfaceKindSchema.nullable().optional(),
   description: z.string().max(10000).nullable().optional(),
 })
 
@@ -519,6 +536,7 @@ const ITEM_UPDATE_SCHEMAS: Record<string, z.ZodType> = {
   Document: documentUpdateSchema,
   Requirement: requirementUpdateSchema,
   SystemElement: systemElementUpdateSchema,
+  Interface: interfaceUpdateSchema,
   Task: taskUpdateSchema,
   ChangeOrder: changeOrderUpdateSchema,
   TestPlan: testPlanUpdateSchema,

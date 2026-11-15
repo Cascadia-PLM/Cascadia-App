@@ -5,6 +5,11 @@ import { Hono } from 'hono'
 import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
+import { interfaceKindSchema } from '@cascadia/commons/items/types/interface'
+import {
+  systemPortDirectionSchema,
+  systemPortSchema,
+} from '@cascadia/commons/items/types/system-element'
 import { referenceDesignatorKey } from '@cascadia/commons/types/bom'
 import { optionConditionKey } from '@cascadia/commons/types/variants'
 import { REQUIREMENT_SHEET_FIELDS } from '@cascadia/commons/import'
@@ -28,6 +33,7 @@ import { UsageService } from '@/services/UsageService'
 import { VersionResolver } from '@/services/VersionResolver'
 import { RequirementsMatrixService } from '@/services/RequirementsMatrixService'
 import { SystemElementService } from '@/services/SystemElementService'
+import { InterfaceService } from '@/services/InterfaceService'
 import { parseSheetFormat, sheetResponse } from '@/import/sheet'
 import { ThreadCacheService } from '@/services/ThreadCacheService'
 import { RequirementService } from '@/services/RequirementService'
@@ -39,7 +45,11 @@ import {
 import { JobService } from '@/jobs/JobService'
 import { requirePermission } from '@/auth/server'
 import { likeContains } from '@/db/like-pattern'
-import { requireDesignAccess, requireItemAccess } from '@/auth/access'
+import {
+  requireBranchAccess,
+  requireDesignAccess,
+  requireItemAccess,
+} from '@/auth/access'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
 import { apiHandler, created, jsonResponse, parseQuery } from '@/api/handler'
@@ -3169,7 +3179,7 @@ app.get(
 // Recursive like the structure tree, and described the way that one is: the
 // subtree is `unknown[]` on the wire rather than a `$ref`, which the snapshot
 // would otherwise hoist every shared schema into.
-/** Saved block positions of the diagram, by system-element master id. */
+/** Saved block positions of the diagram, by element or interface master id. */
 const architectureLayoutSchema = z.record(
   z.string().uuid(),
   z.object({
@@ -3184,6 +3194,31 @@ const architectureLayoutBodySchema = z.object({
   ),
 })
 
+/**
+ * One end of an interface as the block diagram names it: an element, and
+ * either a port it has or one to create on it.
+ */
+const interfaceEndSchema = z.union([
+  z.object({ elementId: z.string().uuid(), portId: z.string().uuid() }),
+  z.object({
+    elementId: z.string().uuid(),
+    newPort: z.object({
+      name: z.string().trim().min(1).max(60),
+      direction: systemPortDirectionSchema,
+    }),
+  }),
+])
+const connectBodySchema = z.object({
+  name: z.string().trim().max(200).nullish(),
+  kind: interfaceKindSchema.nullish(),
+  ends: z.array(interfaceEndSchema).min(1).max(50),
+  branchId: z.string().uuid().optional(),
+})
+const attachBodySchema = z.object({
+  end: interfaceEndSchema,
+  branchId: z.string().uuid().optional(),
+})
+
 const architectureNodeSchema = z.object({
   itemId: z.string().uuid(),
   masterId: z.string().uuid(),
@@ -3194,6 +3229,7 @@ const architectureNodeSchema = z.object({
   elementKind: z.string().nullable(),
   description: z.string().nullable(),
   relationshipId: z.string().uuid().optional(),
+  ports: z.array(systemPortSchema),
   realizedBy: z.array(rtmLinkSchema),
   allocatedRequirements: z.array(rtmLinkSchema),
   /** The elements this one decomposes into — nodes of this same shape. */
@@ -3208,13 +3244,23 @@ export const designArchitectureSchema = z.object({
     id: z.string().uuid().nullable(),
   }),
   roots: z.array(architectureNodeSchema),
-  connections: z.array(
+  interfaces: z.array(
     z.object({
-      relationshipId: z.string().uuid(),
-      sourceItemId: z.string().uuid(),
-      targetItemId: z.string().uuid(),
+      itemId: z.string().uuid(),
+      masterId: z.string().uuid(),
+      itemNumber: z.string(),
       name: z.string().nullable(),
+      revision: z.string(),
+      state: z.string(),
       kind: z.string().nullable(),
+      ends: z.array(
+        z.object({
+          relationshipId: z.string().uuid(),
+          elementItemId: z.string().uuid(),
+          portId: z.string().uuid().nullable(),
+          portMissing: z.boolean(),
+        }),
+      ),
     }),
   ),
   layout: architectureLayoutSchema,
@@ -3236,7 +3282,7 @@ app.get(
         openapi: {
           summary: 'System architecture of a design',
           description:
-            "The DECOMPOSES tree of the design's system elements at a version context — main as it stands when no context is given, else the branch, tag or commit named — each element with the items that realize it and the requirements allocated to it. Links are resolved and judged the way the requirements matrix resolves and judges them.",
+            "The DECOMPOSES tree of the design's system elements at a version context — main as it stands when no context is given, else the branch, tag or commit named — each element with its ports, the items that realize it and the requirements allocated to it; the design's interfaces with the ports they attach to; and the saved layout of the block diagram. Links are resolved and judged the way the requirements matrix resolves and judges them.",
           request: {
             params: z.object({ designId: z.string().uuid() }),
             query: rtmQuerySchema,
@@ -3264,6 +3310,125 @@ app.get(
   ),
 )
 
+// POST /api/designs/:designId/architecture/interfaces — draw a line
+app.post(
+  '/:designId/architecture/interfaces',
+  adapt(
+    apiHandler<{ designId: string }, z.infer<typeof connectBodySchema>>(
+      {
+        // An interface is an item of the architecture; drawing one creates it.
+        permission: ['system_elements', 'create'],
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+        body: connectBodySchema,
+        openapi: {
+          summary: 'Create an interface joining system elements',
+          description:
+            'Creates an Interface item in the design and attaches it to each end — the block diagram\'s "draw a line". An end names an element and either one of its ports or a port to create on it; each end names a different element, and an interface may have more than two (a bus). Creating a port is an edit of that element and needs it to be editable; attaching is an edit of the interface alone. Pass branchId to write inside an ECO.',
+          request: { params: z.object({ designId: z.string().uuid() }) },
+          responses: {
+            201: {
+              schema: z.object({
+                interfaceId: z.string().uuid(),
+                itemNumber: z.string(),
+              }),
+            },
+          },
+        },
+      },
+      async ({ params, body: { branchId, ...input }, user }) => {
+        if (branchId) {
+          await requireBranchOfDesign(params.designId, branchId)
+          await requireBranchAccess(user.id, branchId)
+        }
+        return created(
+          await InterfaceService.connect(params.designId, input, user.id, {
+            branchId,
+          }),
+        )
+      },
+    ),
+  ),
+)
+
+// POST /api/designs/:designId/architecture/interfaces/:interfaceId/ends
+app.post(
+  '/:designId/architecture/interfaces/:interfaceId/ends',
+  adapt(
+    apiHandler<
+      { designId: string; interfaceId: string },
+      z.infer<typeof attachBodySchema>
+    >(
+      {
+        permission: ['system_elements', 'update'],
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+        body: attachBodySchema,
+        openapi: {
+          summary: 'Attach an interface to one more system element',
+          description:
+            'Adds an end to an existing interface — how a line becomes a bus. Refused when the interface already attaches to that element. Pass branchId to write inside an ECO, where the interface must be editable on that branch.',
+          request: {
+            params: z.object({
+              designId: z.string().uuid(),
+              interfaceId: z.string().uuid(),
+            }),
+          },
+          responses: {
+            201: { schema: z.object({ relationshipId: z.string().uuid() }) },
+          },
+        },
+      },
+      async ({ params, body: { end, branchId }, user }) => {
+        await requireItemAccess(user.id, params.interfaceId)
+        if (branchId) {
+          await requireBranchOfDesign(params.designId, branchId)
+          await requireBranchAccess(user.id, branchId)
+        }
+        return created(
+          await InterfaceService.attach(params.interfaceId, end, user.id, {
+            branchId,
+          }),
+        )
+      },
+    ),
+  ),
+)
+
+// DELETE /api/designs/:designId/architecture/interface-ends/:relationshipId
+app.delete(
+  '/:designId/architecture/interface-ends/:relationshipId',
+  adapt(
+    apiHandler<{ designId: string; relationshipId: string }>(
+      {
+        permission: ['system_elements', 'update'],
+        access: ({ params, user }) =>
+          requireDesignAccess(user.id, params.designId),
+        openapi: {
+          summary: 'Detach an interface from a system element',
+          description:
+            'Removes one end, named by the relationshipId the architecture read lists it under at the context being edited. The interface itself stays.',
+          request: {
+            params: z.object({
+              designId: z.string().uuid(),
+              relationshipId: z.string().uuid(),
+            }),
+          },
+          responses: {
+            200: { schema: z.object({ success: z.boolean() }) },
+          },
+        },
+      },
+      async ({ params, user }) => {
+        const edge = await InterfaceService.requireEnd(params.relationshipId)
+        await requireItemAccess(user.id, edge.sourceId)
+        await InterfaceService.detach(params.relationshipId, user.id)
+        return { success: true }
+      },
+    ),
+  ),
+)
+
 // PUT /api/designs/:designId/architecture/layout — where the blocks sit
 app.put(
   '/:designId/architecture/layout',
@@ -3281,7 +3446,7 @@ app.put(
           summary:
             "Save the block positions of a design's architecture diagram",
           description:
-            'Saves positions keyed by system-element master id, each relative to the block it sits inside. Merged into what is stored: a block not named keeps its position. Presentation only: one layout per design, shared by every branch and tag, unversioned and outside change control — no checkout is needed to move a block.',
+            'Saves positions keyed by master id — of a system element, relative to the block it sits inside, or of an interface drawn as a bus node. Merged into what is stored: a block not named keeps its position. Presentation only: one layout per design, shared by every branch and tag, unversioned and outside change control — no checkout is needed to move a block.',
           request: { params: z.object({ designId: z.string().uuid() }) },
           responses: {
             200: { schema: z.object({ layout: architectureLayoutSchema }) },

@@ -14,6 +14,7 @@ registerTypeHandler('SystemElement', {
       itemId,
       elementKind: data.elementKind || null,
       description: data.description || null,
+      ports: data.ports ?? [],
     })
   },
 
@@ -34,6 +35,7 @@ registerTypeHandler('SystemElement', {
       updateData.elementKind = data.elementKind || null
     if (data.description !== undefined)
       updateData.description = data.description || null
+    if (data.ports !== undefined) updateData.ports = data.ports ?? []
 
     if (Object.keys(updateData).length > 0) {
       await run

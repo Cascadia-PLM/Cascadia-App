@@ -9,6 +9,7 @@ import {
   Bot,
   Box,
   Briefcase,
+  Cable,
   CheckSquare,
   ClipboardCheck,
   ClipboardList,
@@ -188,6 +189,15 @@ export function SidebarNav({
         to="/system-elements"
         icon={Network}
         label="System Elements"
+        isOpen={isOpen}
+        iconSize={iconSize}
+        onClick={onNavClick}
+      />
+
+      <SidebarNavItem
+        to="/interfaces"
+        icon={Cable}
+        label="Interfaces"
         isOpen={isOpen}
         iconSize={iconSize}
         onClick={onNavClick}

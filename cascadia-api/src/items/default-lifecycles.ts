@@ -307,6 +307,18 @@ export const SYSTEM_ELEMENT_LIFECYCLE_DEFINITION = {
   applicableItemTypes: ['SystemElement'],
 }
 
+/**
+ * Interfaces: the system-element definition scoped to the type. An interface
+ * is architecture like the elements it joins, so an ECO reshapes it on its
+ * branch and releases it the same way.
+ */
+export const INTERFACE_LIFECYCLE_DEFINITION = {
+  ...SYSTEM_ELEMENT_LIFECYCLE_DEFINITION,
+  description:
+    'Interface lifecycle. Release, revision and obsolescence go through ECOs, as for System Elements.',
+  applicableItemTypes: ['Interface'],
+}
+
 export const WORK_ORDER_LIFECYCLE_DEFINITION = {
   states: [
     {
@@ -1266,6 +1278,14 @@ export const DEFAULT_ITEM_LIFECYCLES: ReadonlyArray<DefaultLifecycle> = [
     version: 1,
   },
   {
+    id: LIFECYCLE_IDS.interface,
+    name: 'Interface - Default Lifecycle',
+    lifecycleType: 'Driven',
+    definition: withLayout(INTERFACE_LIFECYCLE_DEFINITION),
+    // v1: shipped with interfaces as items.
+    version: 1,
+  },
+  {
     id: LIFECYCLE_IDS.task,
     name: 'Task - Default Lifecycle',
     lifecycleType: 'Free',
@@ -1379,6 +1399,7 @@ export const DEFAULT_LIFECYCLE_LINKS: ReadonlyArray<{
     itemType: 'SystemElement',
     lifecycleDefinitionId: LIFECYCLE_IDS.systemElement,
   },
+  { itemType: 'Interface', lifecycleDefinitionId: LIFECYCLE_IDS.interface },
   { itemType: 'Task', lifecycleDefinitionId: LIFECYCLE_IDS.task },
   { itemType: 'TestPlan', lifecycleDefinitionId: LIFECYCLE_IDS.testPlan },
   { itemType: 'TestCase', lifecycleDefinitionId: LIFECYCLE_IDS.testCase },

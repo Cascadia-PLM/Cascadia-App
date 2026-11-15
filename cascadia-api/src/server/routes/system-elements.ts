@@ -2,7 +2,10 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { systemConnectionDetailsSchema } from '@cascadia/commons/items/types/system-element'
+import {
+  systemPortDirectionSchema,
+  systemPortSchema,
+} from '@cascadia/commons/items/types/system-element'
 import { tagged } from '../adapter'
 import type { SystemElement } from '@cascadia/commons/items/types/system-element'
 import { ItemService } from '@/items/services/ItemService'
@@ -13,7 +16,7 @@ import {
   requireItemAccess,
   requireItemsAccess,
 } from '@/auth/access'
-import { apiHandler, created } from '@/api/handler'
+import { apiHandler, created, parseQuery } from '@/api/handler'
 import { itemReadEchoFields } from '@/api/item-read-echo'
 import { systemElementUpdateSchema } from '@/api/schemas'
 
@@ -40,10 +43,20 @@ const unlinkItemSchema = z.object({
   branchId: branchIdField,
 })
 
-const connectSchema = systemConnectionDetailsSchema.extend({
-  itemId: z.string().uuid(),
+const portFields = {
+  name: z.string().trim().min(1).max(60),
+  direction: systemPortDirectionSchema,
+  description: z.string().max(500).optional(),
+}
+const addPortSchema = z.object({ ...portFields, branchId: branchIdField })
+const updatePortSchema = z.object({
+  name: portFields.name.optional(),
+  direction: portFields.direction.optional(),
+  /** An empty string clears the description. */
+  description: portFields.description,
   branchId: branchIdField,
 })
+const portBranchQuerySchema = z.object({ branchId: branchIdField })
 
 const relatedElementSchema = z.object({
   id: z.string().uuid(),
@@ -330,115 +343,120 @@ app.delete(
   ),
 )
 
-// ---- Interfaces between elements: CONNECTS ------------------------------
+// ---- Ports -------------------------------------------------------------
+//
+// A port is a field of the element's own row, so each of these is an edit of
+// the element: it charges `update`, lands on the row the branch is working
+// from when one is named, and is refused where the element may not be
+// edited — a released row on main, or a branch row not checked out.
 
-// POST /api/system-elements/:id/connections
+// POST /api/system-elements/:id/ports
 app.post(
-  '/:id/connections',
+  '/:id/ports',
   adapt(
-    apiHandler<{ id: string }, z.infer<typeof connectSchema>>(
+    apiHandler<{ id: string }, z.infer<typeof addPortSchema>>(
       {
-        // A connection is the source element's own content, like a child.
         permission: ['system_elements', 'update'],
-        body: connectSchema,
+        body: addPortSchema,
         openapi: {
-          summary: 'Connect a system element to another',
+          summary: 'Add a port to a system element',
           description:
-            'Creates a CONNECTS link from this element to the one named — ' +
-            'an interface between two blocks of the architecture, with an ' +
-            'optional name and kind. Both ends must be system elements of ' +
-            'one design. Connecting a pair already connected in this ' +
-            'direction updates that connection. Pass branchId to write ' +
-            'inside an ECO; without it the write lands on the rows named ' +
-            'and is refused once the design has released items.',
+            'A port is a named connection point on the element that ' +
+            'interfaces attach to. Its id is assigned here and never ' +
+            'changes, so attachments survive a rename and a revision. Port ' +
+            'names are unique within an element. Pass branchId to write ' +
+            'inside an ECO.',
           request: { params: z.object({ id: z.string().uuid() }) },
-          responses: {
-            201: { schema: z.object({ relationshipId: z.string().uuid() }) },
-          },
+          responses: { 201: { schema: z.object({ port: systemPortSchema }) } },
         },
       },
-      async ({ body: { itemId, branchId, ...details }, params, user }) => {
+      async ({ body: { branchId, ...input }, params, user }) => {
         await requireItemAccess(user.id, params.id)
-        await requireItemsAccess(user.id, [itemId])
         if (branchId) await requireBranchAccess(user.id, branchId)
-        return created(
-          await SystemElementService.connect(
-            params.id,
-            itemId,
-            details,
-            user.id,
-            { branchId },
-          ),
+        const port = await SystemElementService.addPort(
+          params.id,
+          input,
+          user.id,
+          { branchId },
         )
+        return created({ port })
       },
     ),
   ),
 )
 
-// PUT /api/system-elements/connections/:relationshipId
+// PUT /api/system-elements/:id/ports/:portId
 app.put(
-  '/connections/:relationshipId',
+  '/:id/ports/:portId',
   adapt(
     apiHandler<
-      { relationshipId: string },
-      z.infer<typeof systemConnectionDetailsSchema>
+      { id: string; portId: string },
+      z.infer<typeof updatePortSchema>
     >(
       {
         permission: ['system_elements', 'update'],
-        body: systemConnectionDetailsSchema,
+        body: updatePortSchema,
         openapi: {
-          summary: 'Rename a connection or change its kind',
-          description:
-            'A key left out is unchanged; null clears it. The connection is ' +
-            'named by the relationshipId the design architecture lists it ' +
-            'under at the context being edited.',
+          summary: 'Rename a port or change its direction',
           request: {
-            params: z.object({ relationshipId: z.string().uuid() }),
+            params: z.object({
+              id: z.string().uuid(),
+              portId: z.string().uuid(),
+            }),
           },
-          responses: {
-            200: { schema: z.object({ success: z.boolean() }) },
-          },
+          responses: { 200: { schema: z.object({ port: systemPortSchema }) } },
         },
       },
-      async ({ body, params, user }) => {
-        const edge = await SystemElementService.requireConnection(
-          params.relationshipId,
-        )
-        await requireItemsAccess(user.id, [edge.sourceId, edge.targetId])
-        await SystemElementService.updateConnection(
-          params.relationshipId,
-          body,
+      async ({ body: { branchId, ...patch }, params, user }) => {
+        await requireItemAccess(user.id, params.id)
+        if (branchId) await requireBranchAccess(user.id, branchId)
+        const port = await SystemElementService.updatePort(
+          params.id,
+          params.portId,
+          patch,
           user.id,
+          { branchId },
         )
-        return { success: true }
+        return { port }
       },
     ),
   ),
 )
 
-// DELETE /api/system-elements/connections/:relationshipId
+// DELETE /api/system-elements/:id/ports/:portId
 app.delete(
-  '/connections/:relationshipId',
+  '/:id/ports/:portId',
   adapt(
-    apiHandler<{ relationshipId: string }>(
+    apiHandler<{ id: string; portId: string }>(
       {
         permission: ['system_elements', 'update'],
         openapi: {
-          summary: 'Remove a connection between two system elements',
+          summary: 'Remove a port from a system element',
+          description:
+            'An interface still attached to the port is left alone and ' +
+            'reads as attached to a missing port until it is re-attached ' +
+            'or detached. Pass branchId as a query parameter to write ' +
+            'inside an ECO.',
           request: {
-            params: z.object({ relationshipId: z.string().uuid() }),
+            params: z.object({
+              id: z.string().uuid(),
+              portId: z.string().uuid(),
+            }),
+            query: portBranchQuerySchema,
           },
-          responses: {
-            200: { schema: z.object({ success: z.boolean() }) },
-          },
+          responses: { 200: { schema: z.object({ success: z.boolean() }) } },
         },
       },
-      async ({ params, user }) => {
-        const edge = await SystemElementService.requireConnection(
-          params.relationshipId,
+      async ({ params, request, user }) => {
+        const { branchId } = parseQuery(request, portBranchQuerySchema)
+        await requireItemAccess(user.id, params.id)
+        if (branchId) await requireBranchAccess(user.id, branchId)
+        await SystemElementService.removePort(
+          params.id,
+          params.portId,
+          user.id,
+          { branchId },
         )
-        await requireItemsAccess(user.id, [edge.sourceId, edge.targetId])
-        await SystemElementService.disconnect(params.relationshipId, user.id)
         return { success: true }
       },
     ),

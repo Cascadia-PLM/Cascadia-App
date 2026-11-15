@@ -34,6 +34,7 @@ const TYPE_INVALID_FIELD: Record<string, Record<string, unknown>> = {
   Document: { name: 123 },
   Requirement: { priority: 'urgent-est' },
   SystemElement: { elementKind: 'component' },
+  Interface: { interfaceKind: 'wireless' },
   Task: { assignee: 'not-a-uuid' },
   ChangeOrder: { riskLevel: 'extreme' },
   TestPlan: { scope: 42 },

@@ -13,6 +13,11 @@
  * - architecture edges ride an ECO: a child placed and a realization made on
  *   the branch show on the branch and nowhere else, and after the release
  *   the released tree equals the branch tree;
+ * - ports and interfaces ride an ECO the same way: a port is a field of the
+ *   element's row and an interface is an item with its own edges, so both
+ *   are closed on released main, isolated on the branch and on main after
+ *   the merge; a second interface between the same two elements is a second
+ *   item; and an attachment whose port has gone is reported, not dropped;
  * - a requirement allocated to an element reads as allocated in the matrix
  *   before any part exists, and once the element is realized the matrix
  *   shows the second hop.
@@ -37,6 +42,7 @@ import { CheckoutService } from './CheckoutService'
 import { DesignService } from './DesignService'
 import { RequirementService } from './RequirementService'
 import { RequirementsMatrixService } from './RequirementsMatrixService'
+import { InterfaceService } from './InterfaceService'
 import { SystemElementService } from './SystemElementService'
 import type { ArchitectureNode } from './SystemElementService'
 import type { TestUser } from '@/__tests__/fixtures/users'
@@ -46,6 +52,7 @@ import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
   seedRequirementLifecycle,
   seedStandardPartLifecycle,
+  seedInterfaceLifecycle,
   seedSystemElementLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
 import {
@@ -89,6 +96,7 @@ describe('SystemElementService', () => {
     await seedStandardPartLifecycle(testDb.db)
     await seedRequirementLifecycle(testDb.db)
     await seedSystemElementLifecycle(testDb.db)
+    await seedInterfaceLifecycle(testDb.db)
     await testDb.db
       .insert(lifecycleDefinitions)
       .values({
@@ -656,85 +664,196 @@ describe('SystemElementService', () => {
     ).rejects.toBeInstanceOf(ValidationError)
   })
 
-  it('connections ride an ECO: refused on released main, isolated on the branch, and on main after the merge', async () => {
+  it('ports and interfaces ride an ECO: refused on released main, isolated on the branch, and on main after the merge', async () => {
     const power = await createElement('PWR', 'subsystem')
     const avionics = await createElement('AVI', 'subsystem')
-    for (const item of [power, avionics]) await releaseOnMain(item)
+    // Before anything is released, main is open: a port, and an interface
+    // attached to it at one end and to a port made on the way at the other.
+    const out = await SystemElementService.addPort(
+      power.id,
+      { name: 'J1', direction: 'out' },
+      user.id,
+    )
+    await InterfaceService.connect(
+      designId,
+      {
+        name: '28 V bus',
+        kind: 'power',
+        ends: [
+          { elementId: power.id, portId: out.id },
+          {
+            elementId: avionics.id,
+            newPort: { name: 'PWR IN', direction: 'in' },
+          },
+        ],
+      },
+      user.id,
+    )
 
-    /** The connections at a context, as item numbers with name and kind. */
-    const connectionsAt = async (
+    /** The interfaces at a context as name, kind and "element:port" ends. */
+    const interfacesAt = async (
       context: Parameters<typeof SystemElementService.forDesign>[1],
     ) => {
       const architecture = await SystemElementService.forDesign(
         designId,
         context,
       )
-      const numberOf = new Map(
-        architecture.roots.map((node) => [node.itemId, node.itemNumber]),
+      const nodeOf = new Map(
+        architecture.roots.map((node) => [node.itemId, node]),
       )
-      return architecture.connections.map((connection) => ({
-        from: numberOf.get(connection.sourceItemId),
-        to: numberOf.get(connection.targetItemId),
-        name: connection.name,
-        kind: connection.kind,
+      return architecture.interfaces.map((item) => ({
+        name: item.name,
+        kind: item.kind,
+        ends: item.ends
+          .map((end) => {
+            const node = nodeOf.get(end.elementItemId)
+            const port = node?.ports.find(
+              (candidate) => candidate.id === end.portId,
+            )
+            return `${node?.itemNumber}:${port?.name ?? (end.portMissing ? 'MISSING' : 'none')}`
+          })
+          .sort(),
       }))
     }
+    const bus = {
+      name: '28 V bus',
+      kind: 'power',
+      ends: [`${avionics.itemNumber}:PWR IN`, `${power.itemNumber}:J1`].sort(),
+    }
+    expect(await interfacesAt(released())).toEqual([bus])
 
-    // An element cannot be connected to itself, and released main is closed
-    // to a connection exactly as it is to a child.
+    // An interface attaches to an element once, to a port the element has,
+    // and a port name is unique on its element.
     await expect(
-      SystemElementService.connect(power.id, power.id, {}, user.id),
+      InterfaceService.connect(
+        designId,
+        {
+          ends: [
+            { elementId: power.id, portId: out.id },
+            { elementId: power.id, newPort: { name: 'J2', direction: 'in' } },
+          ],
+        },
+        user.id,
+      ),
     ).rejects.toBeInstanceOf(ValidationError)
     await expect(
-      SystemElementService.connect(power.id, avionics.id, {}, user.id),
-    ).rejects.toThrow()
-    expect(await connectionsAt(released())).toEqual([])
+      InterfaceService.connect(
+        designId,
+        { ends: [{ elementId: avionics.id, portId: out.id }] },
+        user.id,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError)
+    await expect(
+      SystemElementService.addPort(
+        power.id,
+        { name: 'j1', direction: 'in' },
+        user.id,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError)
+    expect(await interfacesAt(released())).toEqual([bus])
 
-    // Inside the ECO, with the source checked out, the line can be drawn —
-    // named by main's ids, landing on the branch's rows.
+    // Release the baseline. Main is now closed to a port and to a new line.
+    const [interfaceRow] = await testDb.db
+      .select()
+      .from(items)
+      .where(and(eq(items.designId, designId), eq(items.itemType, 'Interface')))
+    const baseline = [power, avionics, interfaceRow as unknown as PersistedItem]
+    for (const item of baseline) await releaseOnMain(item)
+    await expect(
+      SystemElementService.addPort(
+        power.id,
+        { name: 'J2', direction: 'out' },
+        user.id,
+      ),
+    ).rejects.toThrow()
+    await expect(
+      InterfaceService.connect(
+        designId,
+        {
+          ends: [
+            { elementId: power.id, portId: out.id },
+            { elementId: avionics.id, newPort: { name: 'X', direction: 'in' } },
+          ],
+        },
+        user.id,
+      ),
+    ).rejects.toThrow()
+
+    // Inside the ECO: with the element checked out its port list can grow,
+    // and a second interface between the same two elements is simply a
+    // second item — named by main's ids, landing on the branch's rows.
     const { changeOrder, branchId } = await createChangeOrder()
     await checkout(power, branchId)
-    const { relationshipId } = await SystemElementService.connect(
-      power.id,
-      avionics.id,
-      { name: '28 V bus', kind: 'power' },
+    await checkout(avionics, branchId)
+    await InterfaceService.connect(
+      designId,
+      {
+        name: 'CAN',
+        kind: 'data',
+        ends: [
+          { elementId: power.id, newPort: { name: 'J2', direction: 'inout' } },
+          {
+            elementId: avionics.id,
+            newPort: { name: 'CAN A', direction: 'inout' },
+          },
+        ],
+      },
       user.id,
       { branchId },
     )
-    // Drawing the same line again edits it rather than adding a second.
-    await SystemElementService.connect(
-      power.id,
-      avionics.id,
-      { name: '28 V main bus' },
-      user.id,
-      { branchId },
-    )
-    const drawn = {
-      from: power.itemNumber,
-      to: avionics.itemNumber,
-      name: '28 V main bus',
-      kind: 'power',
+    const can = {
+      name: 'CAN',
+      kind: 'data',
+      ends: [`${avionics.itemNumber}:CAN A`, `${power.itemNumber}:J2`].sort(),
     }
-    expect(await connectionsAt(onBranch(branchId))).toEqual([drawn])
-    expect(await connectionsAt(released())).toEqual([])
-
-    // A rename leaves the kind alone; clearing the kind leaves the name.
-    await SystemElementService.updateConnection(
-      relationshipId,
-      { kind: null },
-      user.id,
-    )
-    expect(await connectionsAt(onBranch(branchId))).toEqual([
-      { ...drawn, kind: null },
+    const byName = (a: { name: string | null }, b: { name: string | null }) =>
+      (a.name ?? '').localeCompare(b.name ?? '')
+    expect((await interfacesAt(onBranch(branchId))).sort(byName)).toEqual([
+      bus,
+      can,
     ])
-    await SystemElementService.updateConnection(
-      relationshipId,
-      { kind: 'power' },
+    // Main still has one interface and the ports it was released with.
+    expect(await interfacesAt(released())).toEqual([bus])
+    expect(
+      (await SystemElementService.forDesign(designId, released())).roots.map(
+        (node) => node.ports.map((port) => port.name).sort(),
+      ),
+    ).toEqual([['PWR IN'], ['J1']])
+
+    // A port removed on the branch leaves the released interface attached
+    // to nothing there — reported, not silently dropped — and main unmoved.
+    await SystemElementService.removePort(power.id, out.id, user.id, {
+      branchId,
+    })
+    expect(
+      (await interfacesAt(onBranch(branchId))).find(
+        (item) => item.name === '28 V bus',
+      )?.ends,
+    ).toEqual(
+      [`${avionics.itemNumber}:PWR IN`, `${power.itemNumber}:MISSING`].sort(),
+    )
+    expect(await interfacesAt(released())).toEqual([bus])
+    // Put back under the same name it is a new port: the old attachment
+    // stays missing until someone re-attaches it.
+    await SystemElementService.addPort(
+      power.id,
+      { name: 'J1', direction: 'out' },
       user.id,
+      { branchId },
     )
 
     await release(changeOrder)
-    expect(await connectionsAt(released())).toEqual([drawn])
+    const after = (await interfacesAt(released())).sort(byName)
+    expect(after).toEqual([
+      {
+        ...bus,
+        ends: [
+          `${avionics.itemNumber}:PWR IN`,
+          `${power.itemNumber}:MISSING`,
+        ].sort(),
+      },
+      can,
+    ])
   })
 
   it('the diagram layout is per design and merges by element', async () => {

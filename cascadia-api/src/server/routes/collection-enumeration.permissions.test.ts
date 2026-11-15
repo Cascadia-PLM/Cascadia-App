@@ -104,6 +104,7 @@ import relationshipsRoutes from './relationships'
 import reportsRoutes from './reports'
 import requirementsRoutes from './requirements'
 import systemElementsRoutes from './system-elements'
+import interfacesRoutes from './interfaces'
 import rolesRoutes from './roles'
 import softwareRoutes from './software'
 import sysmlRoutes from './sysml'
@@ -256,6 +257,7 @@ describe('collection routes, enumerated — outsider enumeration', () => {
     { mount: '/api/v1/reports', router: reportsRoutes },
     { mount: '/api/v1/requirements', router: requirementsRoutes },
     { mount: '/api/v1/system-elements', router: systemElementsRoutes },
+    { mount: '/api/v1/interfaces', router: interfacesRoutes },
     { mount: '/api/v1/roles', router: rolesRoutes },
     { mount: '/api/v1/software', router: softwareRoutes },
     { mount: '/api/v1/sysml', router: sysmlRoutes },
@@ -410,6 +412,7 @@ describe('collection routes, enumerated — outsider enumeration', () => {
       Document: await make('Document'),
       Requirement: await make('Requirement'),
       SystemElement: await make('SystemElement'),
+      Interface: await make('Interface'),
       Task: await make('Task'),
       TestPlan: await make('TestPlan'),
       TestCase: await make('TestCase'),

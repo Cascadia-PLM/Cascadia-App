@@ -97,6 +97,14 @@ export const numberingSchemes: Record<string, NumberingScheme> = {
     allowManualEntry: true,
   },
 
+  Interface: {
+    segments: [
+      { type: 'literal', value: 'IF' },
+      { type: 'sequence', scope: 'global', padding: 6 },
+    ],
+    allowManualEntry: true,
+  },
+
   TestPlan: {
     segments: [
       { type: 'literal', value: 'TP' },
@@ -186,6 +194,9 @@ export const familyNumberingConfig: Record<string, FamilyNumberingConfig> = {
     enabled: false,
   },
   SystemElement: {
+    enabled: false,
+  },
+  Interface: {
     enabled: false,
   },
   Task: {

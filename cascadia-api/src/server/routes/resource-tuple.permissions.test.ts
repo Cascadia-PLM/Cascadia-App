@@ -72,6 +72,7 @@ import documentsRoutes from './documents'
 import changeOrdersRoutes from './change-orders'
 import requirementsRoutes from './requirements'
 import systemElementsRoutes from './system-elements'
+import interfacesRoutes from './interfaces'
 import tasksRoutes from './tasks'
 import testPlansRoutes from './test-plans'
 import testCasesRoutes from './test-cases'
@@ -139,6 +140,7 @@ describe('typed by-id routes declare their own RBAC resource', () => {
       mount: '/api/v1/system-elements',
       router: systemElementsRoutes,
     },
+    Interface: { mount: '/api/v1/interfaces', router: interfacesRoutes },
     Task: { mount: '/api/v1/tasks', router: tasksRoutes },
     TestPlan: { mount: '/api/v1/test-plans', router: testPlansRoutes },
     TestCase: { mount: '/api/v1/test-cases', router: testCasesRoutes },
@@ -262,6 +264,7 @@ describe('typed by-id routes declare their own RBAC resource', () => {
       Document: await make('Document'),
       Requirement: await make('Requirement'),
       SystemElement: await make('SystemElement'),
+      Interface: await make('Interface'),
       Task: await make('Task'),
       TestPlan: await make('TestPlan'),
       TestCase: await make('TestCase'),

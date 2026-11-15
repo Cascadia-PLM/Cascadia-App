@@ -30,51 +30,56 @@ export const SYSTEM_ELEMENT_KIND_LABELS: Record<SystemElementKind, string> = {
 }
 
 /**
- * What flows across a connection between two elements. Like the element
- * kind, a label for the reader: it colours the line in the block diagram and
- * nothing else depends on it.
+ * Which way things flow through a port, seen from the element that owns it.
+ * A label for the reader and the arrowheads of the block diagram.
  */
-export const systemConnectionKindSchema = z.enum([
-  'power',
-  'data',
-  'mechanical',
-  'fluid',
-  'thermal',
-  'other',
-])
-export type SystemConnectionKind = z.infer<typeof systemConnectionKindSchema>
+export const systemPortDirectionSchema = z.enum(['in', 'out', 'inout'])
+export type SystemPortDirection = z.infer<typeof systemPortDirectionSchema>
 
-export const SYSTEM_CONNECTION_KINDS: ReadonlyArray<SystemConnectionKind> =
-  systemConnectionKindSchema.options
+export const SYSTEM_PORT_DIRECTIONS: ReadonlyArray<SystemPortDirection> =
+  systemPortDirectionSchema.options
 
-export const SYSTEM_CONNECTION_KIND_LABELS: Record<
-  SystemConnectionKind,
-  string
-> = {
-  power: 'Power',
-  data: 'Data',
-  mechanical: 'Mechanical',
-  fluid: 'Fluid',
-  thermal: 'Thermal',
-  other: 'Other',
-}
+export const SYSTEM_PORT_DIRECTION_LABELS: Record<SystemPortDirection, string> =
+  {
+    in: 'In',
+    out: 'Out',
+    inout: 'Bidirectional',
+  }
 
 /**
- * What a `CONNECTS` edge says about itself: an optional name ("28 V bus")
- * and the kind of thing that flows. Both live in the edge's caller-owned
- * `metadata` under these keys, so a connection needs no table of its own and
- * rides checkouts and releases exactly as every other edge does.
+ * A port: a named connection point on an element's boundary — "J1", "28 V
+ * in" — that interfaces attach to. The port list is the element's contract
+ * with whatever it is connected to, so it is a field of the element's own
+ * row: it revises with the element, is isolated on a branch until the
+ * release, and reads as it was at a tag, with no machinery of its own.
+ *
+ * `id` is assigned once and never changes, so an interface's attachment
+ * survives the port being renamed and the element being revised.
  */
-export const systemConnectionDetailsSchema = z.object({
-  name: z.string().trim().max(120).nullish(),
-  kind: systemConnectionKindSchema.nullish(),
+export const systemPortSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().trim().min(1).max(60),
+  direction: systemPortDirectionSchema,
+  description: z.string().max(500).optional(),
 })
-export type SystemConnectionDetails = z.infer<
-  typeof systemConnectionDetailsSchema
->
+export type SystemPort = z.infer<typeof systemPortSchema>
 
-export const CONNECTION_NAME_KEY = 'connectionName'
-export const CONNECTION_KIND_KEY = 'connectionKind'
+/** At most this many ports on one element. */
+export const MAX_SYSTEM_PORTS = 100
+
+export const systemPortsSchema = z
+  .array(systemPortSchema)
+  .max(MAX_SYSTEM_PORTS)
+  .refine(
+    (ports) => new Set(ports.map((port) => port.id)).size === ports.length,
+    'Port ids must be unique within an element',
+  )
+  .refine(
+    (ports) =>
+      new Set(ports.map((port) => port.name.toLowerCase())).size ===
+      ports.length,
+    'Port names must be unique within an element',
+  )
 
 /**
  * A logical element of the system architecture — what a requirement is
@@ -94,6 +99,8 @@ export interface SystemElement extends BaseItem {
   designId: string
   elementKind?: SystemElementKind
   description?: string
+  /** The element's connection points; see `systemPortSchema`. */
+  ports?: Array<SystemPort>
 }
 
 export const systemElementSchema = baseItemSchema.extend({
@@ -101,6 +108,7 @@ export const systemElementSchema = baseItemSchema.extend({
   designId: z.string().uuid({ message: 'Design is required' }),
   elementKind: systemElementKindSchema.optional(),
   description: z.string().max(5000).optional(),
+  ports: systemPortsSchema.optional(),
 })
 
 // The cataloged edges an element is the source of; the catalog
@@ -117,12 +125,6 @@ export const systemElementRelationships = [
     type: 'REALIZED_BY',
     label: 'Realized by',
     targetTypes: ['Part', 'Software'],
-    allowMultiple: true,
-  },
-  {
-    type: 'CONNECTS',
-    label: 'Connects to',
-    targetTypes: ['SystemElement'],
     allowMultiple: true,
   },
 ]

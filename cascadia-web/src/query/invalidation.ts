@@ -29,6 +29,10 @@ const RESOURCE_DEPENDENTS: Partial<Record<Resource, ReadonlyArray<Resource>>> =
     // An element's tree and realizations are edges, and the design page's
     // architecture reads them through `relationships` → `designs`.
     'system-elements': ['items', 'relationships'],
+    // An interface is architecture too: its `CONNECTS` edges are read with
+    // the elements they join, on the element pages and in the design's
+    // architecture, so it restages everything an element write does.
+    interfaces: ['items', 'relationships', 'system-elements'],
     tasks: ['items'],
     issues: ['items'],
     tools: ['items'],

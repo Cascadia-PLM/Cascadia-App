@@ -11,11 +11,13 @@
  * - `REALIZED_BY` (element → Part/Software) is the hop from the logical
  *   element to the item that implements it, and the hop the requirements
  *   matrix follows after an allocation to the element.
- * - `CONNECTS` (element → element) is an interface between two elements: a
- *   line in the block diagram, carrying an optional name and kind in the
- *   edge's metadata. It is not the tree — it may cross levels and loop.
  *
- * All three are edges between version rows, so they ride a checkout onto the
+ * An element also carries its **ports** — named connection points, a field
+ * of its own row — and the design's **interfaces** (items of their own, see
+ * `InterfaceService`) attach to them by `CONNECTS` edges (interface →
+ * element). The architecture read returns both.
+ *
+ * Both are edges between version rows, so they ride a checkout onto the
  * branch's working copy and the release rebuilds them on the released row,
  * like every other outgoing edge. The architecture read here resolves them
  * at a version context by the rules the requirements matrix applies — the
@@ -23,16 +25,22 @@
  * for an item at a tag.
  */
 import { and, eq, inArray } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
+import { CONNECTS_PORT_KEY } from '@cascadia/commons/items/types/interface'
 import {
-  CONNECTION_KIND_KEY,
-  CONNECTION_NAME_KEY,
-  systemConnectionKindSchema,
+  MAX_SYSTEM_PORTS,
+  systemPortsSchema,
 } from '@cascadia/commons/items/types/system-element'
 import { userMetadataOf } from '@cascadia/commons/items/relationships/metadata'
 import { db } from '../db'
 import { notDeleted } from '../db/filters'
 import { architectureLayouts } from '../db/schema/designs'
-import { itemRelationships, items, systemElements } from '../db/schema/items'
+import {
+  interfaces,
+  itemRelationships,
+  items,
+  systemElements,
+} from '../db/schema/items'
 import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
@@ -43,7 +51,11 @@ import {
   REALIZED_BY_RELATIONSHIP,
 } from '../items/traceability-relationships'
 import { DesignService } from './DesignService'
-import { resolveLinkEndIds, resolveLinkEnds } from './link-ends'
+import {
+  resolveLinkEndIds,
+  resolveLinkEnds,
+  resolveOnBranch,
+} from './link-ends'
 import { suspectFields } from './RequirementService'
 import {
   RequirementsMatrixService,
@@ -54,9 +66,13 @@ import type { SuspectLinkFields } from './RequirementService'
 import type { VersionContext } from './VersionResolver'
 import type { SuspectState } from '../items/trace-affirmation'
 import type { PersistedItem } from '@cascadia/commons/items/types/base'
-import type { SystemConnectionDetails } from '@cascadia/commons/items/types/system-element'
 import type {
-  ArchitectureConnection,
+  SystemElement,
+  SystemPort,
+  SystemPortDirection,
+} from '@cascadia/commons/items/types/system-element'
+import type {
+  ArchitectureInterface,
   ArchitectureLayout,
   ArchitectureLink,
   ArchitectureNode,
@@ -67,7 +83,7 @@ import type {
 // Wire types live in commons so the web can name them; re-exported so server
 // callers keep importing them from here.
 export type {
-  ArchitectureConnection,
+  ArchitectureInterface,
   ArchitectureLayout,
   ArchitectureLink,
   ArchitectureNode,
@@ -111,42 +127,17 @@ const ITEM_SUMMARY = {
   state: items.state,
 }
 
-/**
- * A connection's name and kind as the edge's metadata holds them. A value
- * that is not one of the known kinds (a hand-written edge) reads as none.
- */
-function connectionDetailsOf(metadata: unknown): {
-  name: string | null
-  kind: string | null
-} {
-  const own = userMetadataOf(metadata)
-  const name = own?.[CONNECTION_NAME_KEY]
-  const kind = systemConnectionKindSchema.safeParse(own?.[CONNECTION_KIND_KEY])
-  return {
-    name: typeof name === 'string' && name.trim() ? name.trim() : null,
-    kind: kind.success ? kind.data : null,
-  }
+/** What a caller says about a port; the id is the server's. */
+export interface PortInput {
+  name: string
+  direction: SystemPortDirection
+  description?: string
 }
 
-/**
- * The metadata to store for a connection: `details` over whatever other
- * caller-owned keys the edge already carries, a blank name or absent kind
- * dropping its key. Null when nothing is left.
- */
-function connectionMetadata(
-  details: SystemConnectionDetails,
-  stored?: unknown,
-): Record<string, unknown> | null {
-  const next: Record<string, unknown> = { ...(userMetadataOf(stored) ?? {}) }
-  if (details.name !== undefined) {
-    if (details.name) next[CONNECTION_NAME_KEY] = details.name
-    else delete next[CONNECTION_NAME_KEY]
-  }
-  if (details.kind !== undefined) {
-    if (details.kind) next[CONNECTION_KIND_KEY] = details.kind
-    else delete next[CONNECTION_KIND_KEY]
-  }
-  return Object.keys(next).length > 0 ? next : null
+/** The port a `CONNECTS` edge names in its metadata, if it names one. */
+export function portIdOf(metadata: unknown): string | null {
+  const portId = userMetadataOf(metadata)?.[CONNECTS_PORT_KEY]
+  return typeof portId === 'string' && portId ? portId : null
 }
 
 function byItemNumber<T extends { itemNumber: string }>(a: T, b: T): number {
@@ -313,104 +304,128 @@ export class SystemElementService {
     )
   }
 
-  // ---- Connections: CONNECTS --------------------------------------------
+  // ---- Ports -------------------------------------------------------------
 
   /**
-   * Connect `elementId` to `targetId`: an interface between two elements of
-   * one design, with an optional name and kind. The element named first is
-   * the source and answers for the edge under the edit lock, as it does for
-   * its children. Connecting a pair that is already connected in this
-   * direction updates that connection instead of refusing.
+   * The element row a port write lands on: the row `branchId` is working
+   * from, or the row named. Whether it may be edited is `ItemService.update`'s
+   * call — a working copy whose checkout the caller holds, or main before
+   * anything in the design has released.
    */
-  static async connect(
+  private static async elementForWrite(
     elementId: string,
-    targetId: string,
-    details: SystemConnectionDetails,
+    operation: string,
+    options?: LinkWriteOptions,
+  ): Promise<PersistedItem & { ports: Array<SystemPort> }> {
+    const element = await this.requireElement(elementId, operation)
+    const row = options?.branchId
+      ? await resolveOnBranch(element, options.branchId)
+      : element
+    return { ...row, ports: (row as SystemElement).ports ?? [] }
+  }
+
+  /** The ports of an element as its row at `branchId` (or the row named) has them. */
+  static async getPorts(
+    elementId: string,
+    options?: LinkWriteOptions,
+  ): Promise<Array<SystemPort>> {
+    return (await this.elementForWrite(elementId, 'getPorts', options)).ports
+  }
+
+  /**
+   * Store `ports` as the element's port list, after the checks the schema
+   * makes of any port list: unique ids, unique names, a bounded count.
+   */
+  private static async writePorts(
+    element: PersistedItem,
+    ports: Array<SystemPort>,
+    userId: string,
+  ): Promise<void> {
+    const parsed = systemPortsSchema.safeParse(ports)
+    if (!parsed.success) {
+      const message =
+        ports.length > MAX_SYSTEM_PORTS
+          ? `An element holds at most ${MAX_SYSTEM_PORTS} ports`
+          : (parsed.error.issues[0]?.message ?? 'Invalid port list')
+      throw new ValidationError(`${element.itemNumber}: ${message}`, [
+        { field: 'name', message },
+      ])
+    }
+    await ItemService.update<SystemElement>(
+      element.id,
+      { ports: parsed.data },
+      userId,
+    )
+  }
+
+  /** Add a port to the element; its id is assigned here and never changes. */
+  static async addPort(
+    elementId: string,
+    input: PortInput,
     userId: string,
     options?: LinkWriteOptions,
-  ): Promise<{ relationshipId: string }> {
-    const element = await this.requireElement(elementId, 'connect')
-    const target = await this.requireElement(targetId, 'connect')
-    if (element.masterId === target.masterId) {
-      throw new ValidationError(
-        `${element.itemNumber} cannot be connected to itself`,
-        [{ field: 'itemId', message: 'An element cannot connect to itself' }],
-      )
+  ): Promise<SystemPort> {
+    const element = await this.elementForWrite(elementId, 'addPort', options)
+    const port: SystemPort = {
+      id: randomUUID(),
+      name: input.name.trim(),
+      direction: input.direction,
+      ...(input.description && { description: input.description }),
     }
-    if (element.designId !== target.designId) {
-      throw new ValidationError(
-        `${target.itemNumber} is not in the same design as ${element.itemNumber}; a connection does not cross designs`,
-        [{ field: 'itemId', message: 'Element is in another design' }],
-      )
-    }
-    const ends = await resolveLinkEnds(element, target, options?.branchId)
-    const [existing] = await db
-      .select({ id: itemRelationships.id })
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.sourceId, ends.source.id),
-          eq(itemRelationships.targetId, ends.target.id),
-          eq(itemRelationships.relationshipType, CONNECTS_RELATIONSHIP),
-        ),
-      )
-      .limit(1)
-    if (existing) {
-      await this.updateConnection(existing.id, details, userId)
-      return { relationshipId: existing.id }
-    }
-    const created = await ItemService.addRelationship(
-      ends.source.id,
-      ends.target.id,
-      CONNECTS_RELATIONSHIP,
-      userId,
-      { metadata: connectionMetadata(details) },
-    )
-    return { relationshipId: created.id }
+    await this.writePorts(element, [...element.ports, port], userId)
+    return port
   }
 
-  /** The `CONNECTS` edge `relationshipId`, or a not-found. */
-  static async requireConnection(relationshipId: string): Promise<EdgeRow> {
-    const [edge] = await db
-      .select()
-      .from(itemRelationships)
-      .where(
-        and(
-          eq(itemRelationships.id, relationshipId),
-          eq(itemRelationships.relationshipType, CONNECTS_RELATIONSHIP),
-        ),
-      )
-      .limit(1)
-    if (!edge) {
-      throw new NotFoundError('Connection', relationshipId, {
-        operation: 'requireConnection',
-      })
+  /** Rename a port, or change its direction or description. */
+  static async updatePort(
+    elementId: string,
+    portId: string,
+    patch: Partial<PortInput>,
+    userId: string,
+    options?: LinkWriteOptions,
+  ): Promise<SystemPort> {
+    const element = await this.elementForWrite(elementId, 'updatePort', options)
+    const existing = element.ports.find((port) => port.id === portId)
+    if (!existing) {
+      throw new NotFoundError('Port', portId, { operation: 'updatePort' })
     }
-    return edge
+    const { description, ...rest } = existing
+    const nextDescription =
+      patch.description === undefined ? description : patch.description
+    const updated: SystemPort = {
+      ...rest,
+      ...(patch.name !== undefined && { name: patch.name.trim() }),
+      ...(patch.direction !== undefined && { direction: patch.direction }),
+      ...(nextDescription && { description: nextDescription }),
+    }
+    await this.writePorts(
+      element,
+      element.ports.map((port) => (port.id === portId ? updated : port)),
+      userId,
+    )
+    return updated
   }
 
   /**
-   * Rename a connection or change its kind. A key absent from `details` is
-   * left alone; `null` clears it. The edit lock is the relationship
-   * service's, applied to the connection's source element.
+   * Remove a port. An interface still attached to it is not touched — the
+   * interface is its own item, under its own change control — and reads as
+   * attached to a missing port until someone re-attaches or detaches it.
    */
-  static async updateConnection(
-    relationshipId: string,
-    details: SystemConnectionDetails,
+  static async removePort(
+    elementId: string,
+    portId: string,
     userId: string,
+    options?: LinkWriteOptions,
   ): Promise<void> {
-    const edge = await this.requireConnection(relationshipId)
-    await ItemService.updateRelationship(relationshipId, userId, {
-      metadata: connectionMetadata(details, edge.metadata),
-    })
-  }
-
-  static async disconnect(
-    relationshipId: string,
-    userId: string,
-  ): Promise<void> {
-    await this.requireConnection(relationshipId)
-    await ItemService.removeRelationship(relationshipId, userId)
+    const element = await this.elementForWrite(elementId, 'removePort', options)
+    if (!element.ports.some((port) => port.id === portId)) {
+      throw new NotFoundError('Port', portId, { operation: 'removePort' })
+    }
+    await this.writePorts(
+      element,
+      element.ports.filter((port) => port.id !== portId),
+      userId,
+    )
   }
 
   // ---- The diagram's layout ---------------------------------------------
@@ -569,8 +584,8 @@ export class SystemElementService {
   /**
    * The architecture of one design at `context`: the `DECOMPOSES` forest of
    * its system elements, each with the items that realize it and the
-   * requirements allocated to it, the connections between elements, and the
-   * diagram's saved layout.
+   * requirements allocated to it and its ports, the design's interfaces with
+   * the ports they attach to, and the diagram's saved layout.
    *
    * Resolution is the requirements matrix's: an element's row at the context
    * answers for the allocations made against the rows it succeeded, a
@@ -609,7 +624,7 @@ export class SystemElementService {
       return {
         ...base,
         roots: [],
-        connections: [],
+        interfaces: [],
         layout: {},
         totals: emptyTotals(),
       }
@@ -635,7 +650,6 @@ export class SystemElementService {
           inArray(itemRelationships.relationshipType, [
             DECOMPOSES_RELATIONSHIP,
             REALIZED_BY_RELATIONSHIP,
-            CONNECTS_RELATIONSHIP,
           ]),
         ),
       )
@@ -693,13 +707,10 @@ export class SystemElementService {
     for (const row of resolvedByMaster.values()) {
       if (row) rowById.set(row.id, row)
     }
-    // Connections make no trace claim, so they are not judged for suspicion.
     const suspectStates = await RequirementsMatrixService.suspectStates(
       context,
       keptIncoming,
-      keptOutgoing.filter(
-        (edge) => edge.relationshipType !== CONNECTS_RELATIONSHIP,
-      ),
+      keptOutgoing,
       ancestorToOwner,
       namedById,
       resolvedByMaster,
@@ -735,6 +746,7 @@ export class SystemElementService {
         state: row.state,
         elementKind: extension?.elementKind ?? null,
         description: extension?.description ?? null,
+        ports: extension?.ports ?? [],
         realizedBy: [],
         allocatedRequirements: [],
         children: [],
@@ -754,7 +766,6 @@ export class SystemElementService {
       return byItemNumber(targetA, targetB)
     })
     const parentOf = new Map<string, string>()
-    const connections: Array<ArchitectureConnection> = []
     const seen = new Set<string>()
     for (const edge of orderedOutgoing) {
       const node = nodeById.get(edge.sourceId)
@@ -771,16 +782,6 @@ export class SystemElementService {
         parentOf.set(child.itemId, node.itemId)
         child.relationshipId = edge.id
         node.children.push(child)
-      } else if (edge.relationshipType === CONNECTS_RELATIONSHIP) {
-        // Both ends must be elements present at the context; the target is
-        // the row that answers for its master there.
-        if (!nodeById.has(target.id) || target.id === node.itemId) continue
-        connections.push({
-          relationshipId: edge.id,
-          sourceItemId: node.itemId,
-          targetItemId: target.id,
-          ...connectionDetailsOf(edge.metadata),
-        })
       } else {
         node.realizedBy.push(toLink(edge, target, suspectStates.get(edge.id)))
       }
@@ -823,22 +824,112 @@ export class SystemElementService {
     }
     roots.sort(byItemNumber)
 
-    // Only positions of elements at this context cross the wire: the stored
-    // map also remembers elements that exist on other branches.
+    const architectureInterfaces = await this.interfacesAt(
+      [...atContext.values()],
+      [...nodeById.values()],
+    )
+
+    // Only positions of what is drawn at this context cross the wire: the
+    // stored map also remembers blocks that exist on other branches.
     const saved = await this.getLayout(designId)
     const layout: ArchitectureLayout = {}
-    for (const node of nodeById.values()) {
-      const position = saved[node.masterId]
-      if (position) layout[node.masterId] = position
+    for (const { masterId } of [
+      ...nodeById.values(),
+      ...architectureInterfaces,
+    ]) {
+      const position = saved[masterId]
+      if (position) layout[masterId] = position
     }
 
     return {
       ...base,
       roots,
-      connections,
+      interfaces: architectureInterfaces,
       layout,
       totals: totalsOf([...nodeById.values()]),
     }
+  }
+
+  /**
+   * The design's interfaces among `rowsAtContext`, each with its ends: the
+   * `CONNECTS` edges of the interface's own row, followed by master to the
+   * element's row at the context. An end whose element is not at the context
+   * is left out; one whose port the element no longer has is flagged.
+   */
+  private static async interfacesAt(
+    rowsAtContext: Array<ItemRow>,
+    nodes: Array<ArchitectureNode>,
+  ): Promise<Array<ArchitectureInterface>> {
+    const interfaceRows = rowsAtContext
+      .filter((row) => row.itemType === 'Interface')
+      .sort(byItemNumber)
+    if (interfaceRows.length === 0) return []
+    const interfaceIds = interfaceRows.map((row) => row.id)
+
+    const kindByItem = new Map(
+      (
+        await db
+          .select()
+          .from(interfaces)
+          .where(inArray(interfaces.itemId, interfaceIds))
+      ).map((row) => [row.itemId, row.interfaceKind]),
+    )
+    const edges = await db
+      .select()
+      .from(itemRelationships)
+      .where(
+        and(
+          inArray(itemRelationships.sourceId, interfaceIds),
+          eq(itemRelationships.relationshipType, CONNECTS_RELATIONSHIP),
+        ),
+      )
+    const targetIds = [...new Set(edges.map((edge) => edge.targetId))]
+    const masterOfTarget = new Map(
+      targetIds.length > 0
+        ? (
+            await db
+              .select({ id: items.id, masterId: items.masterId })
+              .from(items)
+              .where(inArray(items.id, targetIds))
+          ).map((row) => [row.id, row.masterId])
+        : [],
+    )
+    const nodeByMaster = new Map(nodes.map((node) => [node.masterId, node]))
+
+    return interfaceRows.map((row) => {
+      const seen = new Set<string>()
+      const ends = edges
+        .filter((edge) => edge.sourceId === row.id)
+        .flatMap((edge) => {
+          const master = masterOfTarget.get(edge.targetId)
+          const node = master ? nodeByMaster.get(master) : undefined
+          // One end per element: an edge to a superseded row of an element
+          // already attached says nothing new.
+          if (!node || seen.has(node.itemId)) return []
+          seen.add(node.itemId)
+          const portId = portIdOf(edge.metadata)
+          return [
+            {
+              relationshipId: edge.id,
+              elementItemId: node.itemId,
+              portId,
+              portMissing:
+                portId !== null &&
+                !node.ports.some((port) => port.id === portId),
+            },
+          ]
+        })
+      return {
+        itemId: row.id,
+        masterId: row.masterId,
+        itemNumber: row.itemNumber,
+        name: row.name,
+        revision: row.revision,
+        state: row.state,
+        kind: kindByItem.get(row.id) ?? null,
+        ends,
+      }
+    })
   }
 }
 

@@ -26,6 +26,7 @@ import {
   SYSTEM_ELEMENT_KIND_LABELS,
 } from '@cascadia/commons/items/types/system-element'
 import { SystemElementLinksPanel } from './SystemElementLinksPanel'
+import { SystemElementPortsPanel } from './SystemElementPortsPanel'
 import type { SystemElement } from '@cascadia/commons/items/types/system-element'
 import type { Design } from '@cascadia/commons/types/design'
 import { PageContainer } from '@/components/layout'
@@ -633,6 +634,16 @@ export function SystemElementDetail({
                   into, what realizes it, and what is allocated to it */}
               {!isCreateMode && currentElement.id && (
                 <>
+                  <SystemElementPortsPanel
+                    elementId={currentElement.id}
+                    elementLabel={
+                      currentElement.name
+                        ? `${currentElement.itemNumber} ${currentElement.name}`
+                        : currentElement.itemNumber
+                    }
+                    ports={currentElement.ports ?? []}
+                    isEditable={isEditable}
+                  />
                   <SystemElementLinksPanel
                     kind="children"
                     elementId={currentElement.id}

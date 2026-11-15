@@ -28,6 +28,7 @@ import {
   requirements,
   software,
   systemElements,
+  interfaces,
   tasks,
   testCases,
   testPlans,
@@ -717,6 +718,7 @@ export class ItemSearchService {
       Document: ['description', 'fileName', 'mimeType'],
       Requirement: ['description', 'type', 'priority', 'category'],
       SystemElement: ['description', 'elementKind'],
+      Interface: ['description', 'interfaceKind'],
       Task: ['description', 'assignee', 'priority', 'dueDate'],
       ChangeOrder: ['changeType', 'priority', 'reasonForChange'],
       TestPlan: ['scope', 'environment'],
@@ -805,6 +807,10 @@ export class ItemSearchService {
       SystemElement: {
         description: systemElements.description,
         elementKind: systemElements.elementKind,
+      },
+      Interface: {
+        description: interfaces.description,
+        interfaceKind: interfaces.interfaceKind,
       },
       Task: {
         description: tasks.description,
@@ -984,6 +990,10 @@ export class ItemSearchService {
       SystemElement: {
         description: systemElements.description,
         elementKind: systemElements.elementKind,
+      },
+      Interface: {
+        description: interfaces.description,
+        interfaceKind: interfaces.interfaceKind,
       },
       Task: {
         description: tasks.description,

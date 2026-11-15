@@ -2,19 +2,24 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 /**
  * One system element in the block diagram: a box carrying its number, name
- * and kind. An element with children is drawn as a container — the same
- * header on a larger, lightly tinted box its children sit inside.
+ * and kind, with its ports down its left and right edges. An element with
+ * children is drawn as a container — the same header on a larger, lightly
+ * tinted box its children sit inside, its port names outside the box so
+ * they do not sit on top of its contents.
  *
- * Each side has one connection point. They are all "source" handles and the
- * canvas runs in loose connection mode, so a line can be dragged from any
- * side of one block to any side of another; which element is the source of
- * the stored connection is simply the one the drag started on.
+ * Every port is a connection point a line can be dragged from or to. Under
+ * the ports on each side sits one more point, drawn hollow: dragging from or
+ * to it means "a new port here", which the diagram asks the name of.
+ *
+ * All points are "source" handles and the canvas runs in loose connection
+ * mode, so a line can be dragged in either direction between any two.
  */
 import { memo } from 'react'
 import { Handle, Position } from '@xyflow/react'
+import { portRowY } from './layout'
 import type { Node, NodeProps } from '@xyflow/react'
 import type { ArchitectureNode } from '@cascadia/commons/services/types/architecture'
-import type { BlockSide } from './layout'
+import type { PlacedPort, PortSide } from './layout'
 import { ItemLink } from '@/components/items/ItemLink'
 import { elementKindLabel } from '@/components/system-elements/SystemElementTable'
 import { cn } from '@/utils'
@@ -22,25 +27,30 @@ import { cn } from '@/utils'
 export interface BlockNodeData extends Record<string, unknown> {
   element: ArchitectureNode
   isContainer: boolean
-  /** Connection points are shown only where a line can be drawn. */
-  connectable: boolean
+  ports: Array<PlacedPort>
+  /** Lines can be drawn and ports edited; false at a tag or a commit. */
+  editable: boolean
+  onPortClick: (elementItemId: string, portId: string) => void
 }
 
 export type BlockNodeType = Node<BlockNodeData, 'block'>
 
-const SIDES: Array<{ side: BlockSide; position: Position }> = [
-  { side: 'top', position: Position.Top },
-  { side: 'right', position: Position.Right },
-  { side: 'bottom', position: Position.Bottom },
-  { side: 'left', position: Position.Left },
-]
+/** Handle id of a port, and of the "new port" point on a side. */
+export const portHandleId = (portId: string) => `port:${portId}`
+export const newPortHandleId = (side: PortSide) => `new:${side}`
+
+const SIDES: Array<PortSide> = ['left', 'right']
+const POSITION: Record<PortSide, Position> = {
+  left: Position.Left,
+  right: Position.Right,
+}
+const DIRECTION_MARK = { in: '▸', out: '◂', inout: '◆' } as const
 
 export const BlockNode = memo(function BlockNode({
   data,
   selected,
 }: NodeProps<BlockNodeType>) {
-  const { element, isContainer, connectable } = data
-  const realized = element.realizedBy.length
+  const { element, isContainer, ports, editable, onPortClick } = data
   return (
     <div
       className={cn(
@@ -72,29 +82,79 @@ export const BlockNode = memo(function BlockNode({
         >
           {element.name || 'Unnamed element'}
         </div>
-        {!isContainer && (
-          <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-            {realized === 0
-              ? 'Not yet realized'
-              : `Realized by ${element.realizedBy
-                  .map((link) => link.itemNumber)
-                  .join(', ')}`}
-          </div>
-        )}
       </div>
-      {SIDES.map(({ side, position }) => (
-        <Handle
-          key={side}
-          id={side}
-          type="source"
-          position={position}
-          isConnectable={connectable}
-          className={cn(
-            '!h-2.5 !w-2.5 !border-2 !border-white !bg-teal-600 dark:!border-slate-900',
-            !connectable && '!opacity-0',
-          )}
-        />
+
+      {ports.map(({ port, side, row }) => (
+        <div key={port.id}>
+          <Handle
+            id={portHandleId(port.id)}
+            type="source"
+            position={POSITION[side]}
+            isConnectable={editable}
+            style={{ top: portRowY(row) }}
+            className="!h-2.5 !w-2.5 !rounded-sm !border-2 !border-white !bg-slate-700 dark:!border-slate-900 dark:!bg-slate-200"
+          />
+          <button
+            type="button"
+            disabled={!editable}
+            onClick={(event) => {
+              event.stopPropagation()
+              onPortClick(element.itemId, port.id)
+            }}
+            title={
+              port.description
+                ? `${port.name} — ${port.description}`
+                : port.name
+            }
+            data-testid="architecture-port"
+            style={{ top: portRowY(row) }}
+            className={cn(
+              'nodrag absolute flex max-w-[104px] -translate-y-1/2 items-center gap-1 rounded px-1 text-[11px] leading-4 text-slate-700 dark:text-slate-300',
+              editable &&
+                'cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700',
+              side === 'right' && 'flex-row-reverse',
+              // A container's port names sit outside it, clear of its contents.
+              isContainer
+                ? side === 'left'
+                  ? 'right-full mr-2'
+                  : 'left-full ml-2'
+                : side === 'left'
+                  ? 'left-2'
+                  : 'right-2',
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                'text-[8px] text-slate-400',
+                side === 'right' && port.direction !== 'inout' && 'rotate-180',
+              )}
+            >
+              {DIRECTION_MARK[port.direction]}
+            </span>
+            <span className="truncate">{port.name}</span>
+          </button>
+        </div>
       ))}
+
+      {SIDES.map((side) => {
+        const rows = ports.filter((placed) => placed.side === side).length
+        return (
+          <Handle
+            key={side}
+            id={newPortHandleId(side)}
+            type="source"
+            position={POSITION[side]}
+            isConnectable={editable}
+            style={{ top: portRowY(rows) }}
+            title="Drag from here to connect through a new port"
+            className={cn(
+              '!h-2.5 !w-2.5 !border-2 !border-dashed !border-teal-600 !bg-white dark:!bg-slate-900',
+              !editable && '!opacity-0',
+            )}
+          />
+        )
+      })}
     </div>
   )
 })

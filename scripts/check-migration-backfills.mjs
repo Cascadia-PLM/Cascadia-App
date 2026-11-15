@@ -1878,6 +1878,109 @@ const SCENARIOS = [
   },
 
   {
+    tag: INTERFACES_TAG(),
+    // Not applied twice: the file also creates the table. Its data
+    // statements' idempotence is the next scenario's question instead.
+    name: 'the Interface lifecycle and its item-type link land on an upgraded database',
+    async seed(sql) {
+      await exec(
+        sql,
+        `
+        ${USERS}
+        insert into users (id, email, name) values
+          ('00000000-0000-4000-8000-000000000000', 'system@fixture.invalid', 'System User');
+        `,
+      )
+    },
+    async assert(sql) {
+      const definition = await one(
+        sql,
+        `select name, version, lifecycle_type from workflow_definitions where id = '00000000-0000-4000-8000-000000000116'`,
+      )
+      expectEqual(
+        definition.name,
+        'Interface - Default Lifecycle',
+        'the shipped definition',
+      )
+      expectEqual(definition.version, 1, 'the shipped version')
+      expectEqual(definition.lifecycle_type, 'Driven', 'a Driven lifecycle')
+      const link = await one(
+        sql,
+        `select config->>'lifecycleDefinitionId' as lifecycle_definition_id from item_type_configs where item_type = 'Interface'`,
+      )
+      expectEqual(
+        link.lifecycle_definition_id,
+        '00000000-0000-4000-8000-000000000116',
+        'the item-type link',
+      )
+    },
+  },
+
+  {
+    tag: INTERFACES_TAG(),
+    name: 'a database the seed already wrote the Interface lifecycle to is left as it is',
+    async seed(sql) {
+      await exec(
+        sql,
+        `
+        ${USERS}
+        insert into users (id, email, name) values
+          ('00000000-0000-4000-8000-000000000000', 'system@fixture.invalid', 'System User');
+        insert into workflow_definitions (id, name, version, workflow_type, definition, lifecycle_type)
+          values ('00000000-0000-4000-8000-000000000116', 'Interfaces, renamed by an administrator', 1, 'strict', '{}'::jsonb, 'Driven');
+        insert into item_type_configs (item_type, config, modified_by)
+          values ('Interface', '{"lifecycleDefinitionId": "00000000-0000-4000-8000-000000000116", "note": "kept"}'::jsonb, '00000000-0000-4000-8000-000000000000');
+        `,
+      )
+    },
+    async assert(sql) {
+      const definition = await one(
+        sql,
+        `select name, definition::text as definition from workflow_definitions where id = '00000000-0000-4000-8000-000000000116'`,
+      )
+      expectEqual(
+        definition.name,
+        'Interfaces, renamed by an administrator',
+        'a definition that already exists is not rewritten',
+      )
+      expectEqual(definition.definition, '{}', 'nor is its body')
+      const link = await one(
+        sql,
+        `select config->>'note' as note from item_type_configs where item_type = 'Interface'`,
+      )
+      expectEqual(
+        link.note,
+        'kept',
+        'a link that already exists is not rewritten',
+      )
+    },
+  },
+
+  {
+    tag: INTERFACES_TAG(),
+    name: "without the seed's system user the Interface definition still lands and the link is left to the code default",
+    async seed(sql) {
+      await exec(sql, USERS)
+    },
+    async assert(sql) {
+      const definition = await one(
+        sql,
+        `select name from workflow_definitions where id = '00000000-0000-4000-8000-000000000116'`,
+      )
+      expectEqual(
+        definition.name,
+        'Interface - Default Lifecycle',
+        'the shipped definition',
+      )
+      const links = await one(
+        sql,
+        `select count(*)::int as n from item_type_configs where item_type = 'Interface'`,
+      )
+      expectEqual(links.n, 0, 'no link is written with nobody to record it')
+    },
+  },
+
+  {
     tag: VERIFICATION_INTEGRITY_TAG(),
     name: "a test case's plan pointer moves to the plan's master, whichever revision of the plan it named",
     async seed(sql) {
@@ -3401,6 +3504,22 @@ function SYSTEM_ELEMENTS_TAG() {
   if (!found) {
     throw new Error(
       'No migration creates system_elements — the system-element scenarios name a file that no longer exists.',
+    )
+  }
+  return found.tag
+}
+
+/**
+ * The migration that creates `interfaces`, named by what it builds for the
+ * same reason as the helpers above.
+ */
+function INTERFACES_TAG() {
+  const found = migrations.find((m) =>
+    m.sql.some((s) => s.includes('CREATE TABLE "interfaces"')),
+  )
+  if (!found) {
+    throw new Error(
+      'No migration creates interfaces — the interface scenarios name a file that no longer exists.',
     )
   }
   return found.tag

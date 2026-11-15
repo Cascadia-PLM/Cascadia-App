@@ -636,11 +636,12 @@ export function SystemElementDetail({
                 <>
                   <SystemElementPortsPanel
                     elementId={currentElement.id}
-                    elementLabel={
-                      currentElement.name
-                        ? `${currentElement.itemNumber} ${currentElement.name}`
-                        : currentElement.itemNumber
-                    }
+                    elementLabel={[
+                      currentElement.itemNumber,
+                      currentElement.name,
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
                     ports={currentElement.ports ?? []}
                     isEditable={isEditable}
                   />

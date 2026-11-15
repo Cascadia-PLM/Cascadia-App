@@ -152,10 +152,7 @@ export function InterfaceDetail({
   )
 
   const { data: createDesignStatus = null } = useQuery(
-    designStatusQuery(
-      iface.designId,
-      isCreateMode && Boolean(iface.designId),
-    ),
+    designStatusQuery(iface.designId, isCreateMode && Boolean(iface.designId)),
   )
   const createBranchRequired =
     createDesignStatus?.protection.phase === 'post-release'
@@ -178,9 +175,7 @@ export function InterfaceDetail({
       !isCreateMode && Boolean(iface.designId),
     ),
   )
-  const displayedInterface = isCreateMode
-    ? iface
-    : (versionAtContext ?? iface)
+  const displayedInterface = isCreateMode ? iface : (versionAtContext ?? iface)
 
   useEffect(() => {
     if (initialInterface) {
@@ -489,9 +484,7 @@ export function InterfaceDetail({
 
       <Tabs
         value={activeTab}
-        onValueChange={(value) =>
-          onTabChange?.(value as InterfaceDetailTab)
-        }
+        onValueChange={(value) => onTabChange?.(value as InterfaceDetailTab)}
         className="w-full"
       >
         <TabsList

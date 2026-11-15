@@ -7029,7 +7029,7 @@
     },
     "/api/v1/designs/{designId}/architecture": {
       "get": {
-        "description": "The DECOMPOSES tree of the design's system elements at a version context — main as it stands when no context is given, else the branch, tag or commit named — each element with the items that realize it and the requirements allocated to it. Links are resolved and judged the way the requirements matrix resolves and judges them.",
+        "description": "The DECOMPOSES tree of the design's system elements at a version context — main as it stands when no context is given, else the branch, tag or commit named — each element with its ports, the items that realize it and the requirements allocated to it; the design's interfaces with the ports they attach to; and the saved layout of the block diagram. Links are resolved and judged the way the requirements matrix resolves and judges them.",
         "operationId": "getApiV1DesignsByDesignIdArchitecture",
         "parameters": [
           {
@@ -7081,48 +7081,6 @@
                   "properties": {
                     "data": {
                       "properties": {
-                        "connections": {
-                          "items": {
-                            "properties": {
-                              "kind": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
-                              },
-                              "name": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
-                              },
-                              "relationshipId": {
-                                "format": "uuid",
-                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                                "type": "string"
-                              },
-                              "sourceItemId": {
-                                "format": "uuid",
-                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                                "type": "string"
-                              },
-                              "targetItemId": {
-                                "format": "uuid",
-                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "relationshipId",
-                              "sourceItemId",
-                              "targetItemId",
-                              "name",
-                              "kind"
-                            ],
-                            "type": "object"
-                          },
-                          "type": "array"
-                        },
                         "context": {
                           "properties": {
                             "id": {
@@ -7163,6 +7121,94 @@
                         },
                         "designName": {
                           "type": "string"
+                        },
+                        "interfaces": {
+                          "items": {
+                            "properties": {
+                              "ends": {
+                                "items": {
+                                  "properties": {
+                                    "elementItemId": {
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                      "type": "string"
+                                    },
+                                    "portId": {
+                                      "anyOf": [
+                                        {
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "portMissing": {
+                                      "type": "boolean"
+                                    },
+                                    "relationshipId": {
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "relationshipId",
+                                    "elementItemId",
+                                    "portId",
+                                    "portMissing"
+                                  ],
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              "itemId": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "itemNumber": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "masterId": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "revision": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "itemId",
+                              "masterId",
+                              "itemNumber",
+                              "name",
+                              "revision",
+                              "state",
+                              "kind",
+                              "ends"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
                         },
                         "layout": {
                           "additionalProperties": {
@@ -7295,6 +7341,41 @@
                                   "null"
                                 ]
                               },
+                              "ports": {
+                                "items": {
+                                  "properties": {
+                                    "description": {
+                                      "maxLength": 500,
+                                      "type": "string"
+                                    },
+                                    "direction": {
+                                      "enum": [
+                                        "in",
+                                        "out",
+                                        "inout"
+                                      ],
+                                      "type": "string"
+                                    },
+                                    "id": {
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "maxLength": 60,
+                                      "minLength": 1,
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "name",
+                                    "direction"
+                                  ],
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
                               "realizedBy": {
                                 "items": {
                                   "properties": {
@@ -7382,6 +7463,7 @@
                               "state",
                               "elementKind",
                               "description",
+                              "ports",
                               "realizedBy",
                               "allocatedRequirements",
                               "children"
@@ -7428,7 +7510,7 @@
                         "designName",
                         "context",
                         "roots",
-                        "connections",
+                        "interfaces",
                         "layout",
                         "totals"
                       ],
@@ -7461,6 +7543,421 @@
           }
         },
         "summary": "System architecture of a design",
+        "tags": [
+          "Designs"
+        ]
+      }
+    },
+    "/api/v1/designs/{designId}/architecture/interface-ends/{relationshipId}": {
+      "delete": {
+        "description": "Removes one end, named by the relationshipId the architecture read lists it under at the context being edited. The interface itself stays.",
+        "operationId": "deleteApiV1DesignsByDesignIdArchitectureInterfaceEndsByRelationshipId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "designId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Detach an interface from a system element",
+        "tags": [
+          "Designs"
+        ]
+      }
+    },
+    "/api/v1/designs/{designId}/architecture/interfaces": {
+      "post": {
+        "description": "Creates an Interface item in the design and attaches it to each end — the block diagram's \"draw a line\". An end names an element and either one of its ports or a port to create on it; each end names a different element, and an interface may have more than two (a bus). Creating a port is an edit of that element and needs it to be editable; attaching is an edit of the interface alone. Pass branchId to write inside an ECO.",
+        "operationId": "postApiV1DesignsByDesignIdArchitectureInterfaces",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "designId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "branchId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "ends": {
+                    "items": {
+                      "anyOf": [
+                        {
+                          "properties": {
+                            "elementId": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "portId": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "elementId",
+                            "portId"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "properties": {
+                            "elementId": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "newPort": {
+                              "properties": {
+                                "direction": {
+                                  "enum": [
+                                    "in",
+                                    "out",
+                                    "inout"
+                                  ],
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "maxLength": 60,
+                                  "minLength": 1,
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "direction"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "elementId",
+                            "newPort"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "maxItems": 50,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "kind": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "power",
+                          "data",
+                          "mechanical",
+                          "fluid",
+                          "thermal",
+                          "other"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "anyOf": [
+                      {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "ends"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "interfaceId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        },
+                        "itemNumber": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "interfaceId",
+                        "itemNumber"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Create an interface joining system elements",
+        "tags": [
+          "Designs"
+        ]
+      }
+    },
+    "/api/v1/designs/{designId}/architecture/interfaces/{interfaceId}/ends": {
+      "post": {
+        "description": "Adds an end to an existing interface — how a line becomes a bus. Refused when the interface already attaches to that element. Pass branchId to write inside an ECO, where the interface must be editable on that branch.",
+        "operationId": "postApiV1DesignsByDesignIdArchitectureInterfacesByInterfaceIdEnds",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "designId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "interfaceId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "branchId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "end": {
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "elementId": {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "portId": {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "elementId",
+                          "portId"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "elementId": {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "newPort": {
+                            "properties": {
+                              "direction": {
+                                "enum": [
+                                  "in",
+                                  "out",
+                                  "inout"
+                                ],
+                                "type": "string"
+                              },
+                              "name": {
+                                "maxLength": 60,
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "direction"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "elementId",
+                          "newPort"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "end"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "relationshipId": {
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "relationshipId"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Attach an interface to one more system element",
         "tags": [
           "Designs"
         ]
@@ -7531,7 +8028,7 @@
         ]
       },
       "put": {
-        "description": "Saves positions keyed by system-element master id, each relative to the block it sits inside. Merged into what is stored: a block not named keeps its position. Presentation only: one layout per design, shared by every branch and tag, unversioned and outside change control — no checkout is needed to move a block.",
+        "description": "Saves positions keyed by master id — of a system element, relative to the block it sits inside, or of an interface drawn as a bus node. Merged into what is stored: a block not named keeps its position. Presentation only: one layout per design, shared by every branch and tag, unversioned and outside change control — no checkout is needed to move a block.",
         "operationId": "putApiV1DesignsByDesignIdArchitectureLayout",
         "parameters": [
           {
@@ -13804,6 +14301,171 @@
         ]
       }
     },
+    "/api/v1/interfaces/{id}": {
+      "delete": {
+        "operationId": "deleteApiV1InterfacesById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Interfaces"
+        ]
+      },
+      "get": {
+        "operationId": "getApiV1InterfacesById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Interfaces"
+        ]
+      },
+      "put": {
+        "operationId": "putApiV1InterfacesById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "attributes": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "commitMessage": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "maxLength": 10000,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "interfaceKind": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "power",
+                          "data",
+                          "mechanical",
+                          "fluid",
+                          "thermal",
+                          "other"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "anyOf": [
+                      {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "state": {
+                    "maxLength": 50,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Interfaces"
+        ]
+      }
+    },
     "/api/v1/issues/{id}": {
       "delete": {
         "operationId": "deleteApiV1IssuesById",
@@ -14687,6 +15349,113 @@
                       },
                       "itemType": {
                         "const": "SystemElement",
+                        "type": "string"
+                      },
+                      "name": {
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "ports": {
+                        "items": {
+                          "properties": {
+                            "description": {
+                              "maxLength": 500,
+                              "type": "string"
+                            },
+                            "direction": {
+                              "enum": [
+                                "in",
+                                "out",
+                                "inout"
+                              ],
+                              "type": "string"
+                            },
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "name": {
+                              "maxLength": 60,
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "direction"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 100,
+                        "type": "array"
+                      },
+                      "revision": {
+                        "maxLength": 10,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "state": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "usageOf": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "designId",
+                      "itemType"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "attributes": {
+                        "additionalProperties": {},
+                        "type": "object"
+                      },
+                      "branchId": {
+                        "description": "Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "commitMessage": {
+                        "description": "Message for the commit the branch write produces. Ignored without `branchId`. Defaults to \"Created <itemType> <itemNumber>\".",
+                        "maxLength": 500,
+                        "type": "string"
+                      },
+                      "description": {
+                        "maxLength": 5000,
+                        "type": "string"
+                      },
+                      "designId": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "interfaceKind": {
+                        "enum": [
+                          "power",
+                          "data",
+                          "mechanical",
+                          "fluid",
+                          "thermal",
+                          "other"
+                        ],
+                        "type": "string"
+                      },
+                      "itemNumber": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "itemType": {
+                        "const": "Interface",
                         "type": "string"
                       },
                       "name": {
@@ -28448,174 +29217,6 @@
         ]
       }
     },
-    "/api/v1/system-elements/connections/{relationshipId}": {
-      "delete": {
-        "operationId": "deleteApiV1SystemElementsConnectionsByRelationshipId",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "relationshipId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "data": {
-                      "properties": {
-                        "success": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "success"
-                      ],
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "summary": "Remove a connection between two system elements",
-        "tags": [
-          "System Elements"
-        ]
-      },
-      "put": {
-        "description": "A key left out is unchanged; null clears it. The connection is named by the relationshipId the design architecture lists it under at the context being edited.",
-        "operationId": "putApiV1SystemElementsConnectionsByRelationshipId",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "relationshipId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "kind": {
-                    "anyOf": [
-                      {
-                        "enum": [
-                          "power",
-                          "data",
-                          "mechanical",
-                          "fluid",
-                          "thermal",
-                          "other"
-                        ],
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "name": {
-                    "anyOf": [
-                      {
-                        "maxLength": 120,
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "type": "object"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "data": {
-                      "properties": {
-                        "success": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": [
-                        "success"
-                      ],
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "summary": "Rename a connection or change its kind",
-        "tags": [
-          "System Elements"
-        ]
-      }
-    },
     "/api/v1/system-elements/{id}": {
       "delete": {
         "operationId": "deleteApiV1SystemElementsById",
@@ -28740,6 +29341,49 @@
                       {
                         "maxLength": 500,
                         "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "ports": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "properties": {
+                            "description": {
+                              "maxLength": 500,
+                              "type": "string"
+                            },
+                            "direction": {
+                              "enum": [
+                                "in",
+                                "out",
+                                "inout"
+                              ],
+                              "type": "string"
+                            },
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "name": {
+                              "maxLength": 60,
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "direction"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 100,
+                        "type": "array"
                       },
                       {
                         "type": "null"
@@ -29195,127 +29839,6 @@
         ]
       }
     },
-    "/api/v1/system-elements/{id}/connections": {
-      "post": {
-        "description": "Creates a CONNECTS link from this element to the one named — an interface between two blocks of the architecture, with an optional name and kind. Both ends must be system elements of one design. Connecting a pair already connected in this direction updates that connection. Pass branchId to write inside an ECO; without it the write lands on the rows named and is refused once the design has released items.",
-        "operationId": "postApiV1SystemElementsByIdConnections",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "branchId": {
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                    "type": "string"
-                  },
-                  "itemId": {
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                    "type": "string"
-                  },
-                  "kind": {
-                    "anyOf": [
-                      {
-                        "enum": [
-                          "power",
-                          "data",
-                          "mechanical",
-                          "fluid",
-                          "thermal",
-                          "other"
-                        ],
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "name": {
-                    "anyOf": [
-                      {
-                        "maxLength": 120,
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "itemId"
-                ],
-                "type": "object"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "data": {
-                      "properties": {
-                        "relationshipId": {
-                          "format": "uuid",
-                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "relationshipId"
-                      ],
-                      "type": "object"
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ],
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Success"
-          },
-          "400": {
-            "$ref": "#/components/responses/ValidationError"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "summary": "Connect a system element to another",
-        "tags": [
-          "System Elements"
-        ]
-      }
-    },
     "/api/v1/system-elements/{id}/parent": {
       "get": {
         "operationId": "getApiV1SystemElementsByIdParent",
@@ -29430,6 +29953,358 @@
           }
         },
         "summary": "The system element this one sits under, if any",
+        "tags": [
+          "System Elements"
+        ]
+      }
+    },
+    "/api/v1/system-elements/{id}/ports": {
+      "post": {
+        "description": "A port is a named connection point on the element that interfaces attach to. Its id is assigned here and never changes, so attachments survive a rename and a revision. Port names are unique within an element. Pass branchId to write inside an ECO.",
+        "operationId": "postApiV1SystemElementsByIdPorts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "branchId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "description": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "direction": {
+                    "enum": [
+                      "in",
+                      "out",
+                      "inout"
+                    ],
+                    "type": "string"
+                  },
+                  "name": {
+                    "maxLength": 60,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "direction"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "port": {
+                          "properties": {
+                            "description": {
+                              "maxLength": 500,
+                              "type": "string"
+                            },
+                            "direction": {
+                              "enum": [
+                                "in",
+                                "out",
+                                "inout"
+                              ],
+                              "type": "string"
+                            },
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "name": {
+                              "maxLength": 60,
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "direction"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "port"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Add a port to a system element",
+        "tags": [
+          "System Elements"
+        ]
+      }
+    },
+    "/api/v1/system-elements/{id}/ports/{portId}": {
+      "delete": {
+        "description": "An interface still attached to the port is left alone and reads as attached to a missing port until it is re-attached or detached. Pass branchId as a query parameter to write inside an ECO.",
+        "operationId": "deleteApiV1SystemElementsByIdPortsByPortId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "portId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "branchId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "success"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Remove a port from a system element",
+        "tags": [
+          "System Elements"
+        ]
+      },
+      "put": {
+        "operationId": "putApiV1SystemElementsByIdPortsByPortId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "portId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "branchId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "description": {
+                    "maxLength": 500,
+                    "type": "string"
+                  },
+                  "direction": {
+                    "enum": [
+                      "in",
+                      "out",
+                      "inout"
+                    ],
+                    "type": "string"
+                  },
+                  "name": {
+                    "maxLength": 60,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "port": {
+                          "properties": {
+                            "description": {
+                              "maxLength": 500,
+                              "type": "string"
+                            },
+                            "direction": {
+                              "enum": [
+                                "in",
+                                "out",
+                                "inout"
+                              ],
+                              "type": "string"
+                            },
+                            "id": {
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                              "type": "string"
+                            },
+                            "name": {
+                              "maxLength": 60,
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "direction"
+                          ],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "port"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Rename a port or change its direction",
         "tags": [
           "System Elements"
         ]

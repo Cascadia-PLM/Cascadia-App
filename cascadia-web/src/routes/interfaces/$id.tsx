@@ -64,10 +64,7 @@ function InterfaceDetailPage() {
     await apiFetch(`/api/v1/interfaces/${iface.id}`, {
       method: 'DELETE',
     })
-    showSuccess(
-      'Interface deleted',
-      `${iface.itemNumber} has been deleted`,
-    )
+    showSuccess('Interface deleted', `${iface.itemNumber} has been deleted`)
     await invalidate('interfaces')
     navigate({ to: '/interfaces' })
   }

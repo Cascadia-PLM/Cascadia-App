@@ -1,5 +1,5 @@
 {
-  "id": "9484b0be-036c-4530-b597-02f0f577ae1e",
+  "id": "8a26f293-0f17-42ec-bff7-e4a66a702402",
   "prevId": "09f40e48-314c-42bd-ab6b-c1f951097af3",
   "version": "7",
   "dialect": "postgresql",
@@ -3337,6 +3337,67 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.interfaces": {
+      "name": "interfaces",
+      "schema": "",
+      "columns": {
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "interface_kind": {
+          "name": "interface_kind",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_interfaces_kind": {
+          "name": "idx_interfaces_kind",
+          "columns": [
+            {
+              "expression": "interface_kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "interfaces_item_id_items_id_fk": {
+          "name": "interfaces_item_id_items_id_fk",
+          "tableFrom": "interfaces",
+          "tableTo": "items",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.issue_affected_items": {
       "name": "issue_affected_items",
       "schema": "",
@@ -4974,6 +5035,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "ports": {
+          "name": "ports",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         }
       },
       "indexes": {

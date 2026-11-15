@@ -83,7 +83,7 @@ import type {
 import type { ConnectEnd } from './BlockDiagramDialogs'
 import type { BlockNodeType } from './BlockNode'
 import type { HubNodeType } from './HubNode'
-import type { Box, PortRows } from './layout'
+import type { PortRows } from './layout'
 import { apiFetch } from '@/api/client'
 import { Button } from '@/components/ui'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -240,7 +240,7 @@ export function ArchitectureBlockDiagram({
         const position = positions[item.masterId] ?? fallback
         return {
           item,
-          box: { ...position, width: HUB_WIDTH, height: HUB_HEIGHT } as Box,
+          box: { ...position, width: HUB_WIDTH, height: HUB_HEIGHT },
         }
       })
   }, [architecture.interfaces, boxes, positions, shownAsBus])

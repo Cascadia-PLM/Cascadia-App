@@ -50,9 +50,9 @@ import type { PersistedItem } from '@cascadia/commons/items/types/base'
 import { TestDatabase } from '@/__tests__/helpers/db'
 import { insertTestUser } from '@/__tests__/fixtures/users'
 import {
+  seedInterfaceLifecycle,
   seedRequirementLifecycle,
   seedStandardPartLifecycle,
-  seedInterfaceLifecycle,
   seedSystemElementLifecycle,
 } from '@/__tests__/fixtures/lifecycles'
 import {

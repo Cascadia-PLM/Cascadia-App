@@ -122,10 +122,10 @@ A requirement needs somewhere to land before the design has parts. The
 segment, a subsystem, a module — versioned and ECO-controlled like a part,
 with two edges of its own in the catalog:
 
-| Edge          | From → to                      | Meaning                                                         |
-| ------------- | ------------------------------ | --------------------------------------------------------------- |
-| `DECOMPOSES`  | SystemElement → SystemElement  | The architecture tree. Not the BOM, on purpose.                 |
-| `REALIZED_BY` | SystemElement → Part, Software | The element is implemented by this item — a trace claim         |
+| Edge          | From → to                      | Meaning                                                 |
+| ------------- | ------------------------------ | ------------------------------------------------------- |
+| `DECOMPOSES`  | SystemElement → SystemElement  | The architecture tree. Not the BOM, on purpose.         |
+| `REALIZED_BY` | SystemElement → Part, Software | The element is implemented by this item — a trace claim |
 
 `ALLOCATED_TO` accepts a system element as its target, so an allocation can be
 made to a subsystem on day one and the requirements matrix reads it as
@@ -176,19 +176,19 @@ Two more things describe how the elements connect:
 
 What an interface joins is the `CONNECTS` edge:
 
-| Edge       | From → to                 | Meaning                                                                 |
-| ---------- | ------------------------- | ----------------------------------------------------------------------- |
+| Edge       | From → to                 | Meaning                                                                      |
+| ---------- | ------------------------- | ---------------------------------------------------------------------------- |
 | `CONNECTS` | Interface → SystemElement | The interface attaches to the element, at the port the edge's metadata names |
 
 An interface attaches to an element once. The edges are the interface's own
 content, so they ride its checkout and its release like any outgoing edge.
 Who owns what decides what has to be editable:
 
-| Change                                   | Is an edit of | Inside a change order, needs  |
-| ---------------------------------------- | ------------- | ----------------------------- |
-| Add, rename or remove a port             | the element   | the element checked out       |
-| Create an interface between two ports    | (a new item)  | nothing checked out           |
-| Attach or detach an end, rename, re-kind | the interface | the interface checked out     |
+| Change                                   | Is an edit of | Inside a change order, needs |
+| ---------------------------------------- | ------------- | ---------------------------- |
+| Add, rename or remove a port             | the element   | the element checked out      |
+| Create an interface between two ports    | (a new item)  | nothing checked out          |
+| Attach or detach an end, rename, re-kind | the interface | the interface checked out    |
 
 Removing a port does not touch the interfaces attached to it — they are
 under their own change control. Such an attachment reads `portMissing` in
@@ -229,14 +229,14 @@ without a checkout. At a tag or a commit the diagram is read-only.
 `ports`, `interfaces` and `layout` are part of the
 `GET /designs/:id/architecture` answer. The writes:
 
-| Endpoint                                                              | Does                              |
-| --------------------------------------------------------------------- | --------------------------------- |
-| `POST /system-elements/:id/ports`, `PUT`/`DELETE …/ports/:portId`     | Add, edit, remove a port          |
-| `POST /designs/:id/architecture/interfaces`                           | Create an interface with its ends |
-| `POST /designs/:id/architecture/interfaces/:interfaceId/ends`         | Attach one more end               |
-| `DELETE /designs/:id/architecture/interface-ends/:relationshipId`     | Detach an end                     |
-| `PUT`/`DELETE /interfaces/:id`                                        | Rename, re-kind, delete           |
-| `PUT`/`DELETE /designs/:id/architecture/layout`                       | Save or reset block positions     |
+| Endpoint                                                          | Does                              |
+| ----------------------------------------------------------------- | --------------------------------- |
+| `POST /system-elements/:id/ports`, `PUT`/`DELETE …/ports/:portId` | Add, edit, remove a port          |
+| `POST /designs/:id/architecture/interfaces`                       | Create an interface with its ends |
+| `POST /designs/:id/architecture/interfaces/:interfaceId/ends`     | Attach one more end               |
+| `DELETE /designs/:id/architecture/interface-ends/:relationshipId` | Detach an end                     |
+| `PUT`/`DELETE /interfaces/:id`                                    | Rename, re-kind, delete           |
+| `PUT`/`DELETE /designs/:id/architecture/layout`                   | Save or reset block positions     |
 
 Not in this version: re-parenting a block by dragging it into another (use
 the element's page), deleting a block from the diagram, an interface between

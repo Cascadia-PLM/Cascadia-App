@@ -407,8 +407,8 @@ export const systemElementUpdateSchema = z.object({
   ...itemUpdateBaseFields,
   elementKind: systemElementKindSchema.nullable().optional(),
   description: z.string().max(10000).nullable().optional(),
-  /** Replaces the port list as a whole; the port endpoints edit one port. */
-  ports: systemPortsSchema.optional(),
+  /** Replaces the port list as a whole (null empties it); the port endpoints edit one port. */
+  ports: systemPortsSchema.nullable().optional(),
 })
 
 /**

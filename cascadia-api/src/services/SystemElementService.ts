@@ -24,8 +24,8 @@
  * same helpers, so the two surfaces never disagree about which row answers
  * for an item at a tag.
  */
-import { and, eq, inArray } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
+import { and, eq, inArray } from 'drizzle-orm'
 import { CONNECTS_PORT_KEY } from '@cascadia/commons/items/types/interface'
 import {
   MAX_SYSTEM_PORTS,

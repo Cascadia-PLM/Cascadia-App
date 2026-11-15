@@ -10,7 +10,7 @@
  * route names: a Task route declaring `['parts', 'read']` passes both of its
  * legs. It did, for as long as the tuple was wrong.
  *
- * This suite measures the other axis. For each of the 14 item types it builds
+ * This suite measures the other axis. For each of the 15 item types it builds
  * two program members who differ only in RBAC:
  *
  *   ONLY-OWN     — every verb on that type's own resource, and nothing else.

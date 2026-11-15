@@ -200,8 +200,7 @@ function InterfacesListPage() {
         <CardHeader>
           <CardTitle>All Interfaces</CardTitle>
           <CardDescription>
-            {total} {total === 1 ? 'interface' : 'interfaces'} in the
-            system
+            {total} {total === 1 ? 'interface' : 'interfaces'} in the system
             {selectedDesign && context.type !== 'main' && (
               <span className="ml-2 text-amber-600 dark:text-amber-400">
                 (viewing {contextLabel})

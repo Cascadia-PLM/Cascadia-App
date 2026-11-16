@@ -79,6 +79,7 @@ import documentsRoutes from './documents'
 import changeOrdersRoutes from './change-orders'
 import requirementsRoutes from './requirements'
 import systemElementsRoutes from './system-elements'
+import interfacesRoutes from './interfaces'
 import tasksRoutes from './tasks'
 import testPlansRoutes from './test-plans'
 import testCasesRoutes from './test-cases'
@@ -184,6 +185,7 @@ describe('by-id routes, enumerated — program isolation', () => {
     { mount: '/api/v1/change-orders', router: changeOrdersRoutes },
     { mount: '/api/v1/requirements', router: requirementsRoutes },
     { mount: '/api/v1/system-elements', router: systemElementsRoutes },
+    { mount: '/api/v1/interfaces', router: interfacesRoutes },
     { mount: '/api/v1/tasks', router: tasksRoutes },
     { mount: '/api/v1/test-plans', router: testPlansRoutes },
     { mount: '/api/v1/test-cases', router: testCasesRoutes },
@@ -311,6 +313,7 @@ describe('by-id routes, enumerated — program isolation', () => {
       Document: await make('Document'),
       Requirement: await make('Requirement'),
       SystemElement: await make('SystemElement'),
+      Interface: await make('Interface'),
       Task: await make('Task'),
       TestPlan: await make('TestPlan'),
       TestCase: await make('TestCase'),
@@ -365,6 +368,7 @@ describe('by-id routes, enumerated — program isolation', () => {
       '/api/v1/change-orders': byType.ChangeOrder!,
       '/api/v1/requirements': byType.Requirement!,
       '/api/v1/system-elements': byType.SystemElement!,
+      '/api/v1/interfaces': byType.Interface!,
       '/api/v1/tasks': byType.Task!,
       '/api/v1/test-plans': byType.TestPlan!,
       '/api/v1/test-cases': byType.TestCase!,

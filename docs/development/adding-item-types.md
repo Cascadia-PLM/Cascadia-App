@@ -437,6 +437,7 @@ see its definition if the new type needs more than name and description.)
 | Document        | `documents`         | `types/document.ts`         | Driven                         |
 | Requirement     | `requirements`      | `types/requirement.ts`      | Driven                         |
 | SystemElement   | `system_elements`   | `types/system-element.ts`   | Driven (shares Part lifecycle) |
+| Interface       | `interfaces`        | `types/interface.ts`        | Driven (shares Part lifecycle) |
 | Software        | `software`          | `types/software.ts`         | Driven (shares Part lifecycle) |
 | ChangeOrder     | `change_orders`     | `types/change-order.ts`     | Driving (controls others)      |
 | Task            | `tasks`             | `types/task.ts`             | Free (self-controlled)         |

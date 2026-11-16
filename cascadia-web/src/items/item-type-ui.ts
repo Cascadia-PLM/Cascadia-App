@@ -3,7 +3,7 @@
 
 /**
  * Client-side UI metadata for item types: detail-route paths, icons, and
- * filter options — complete for all 14 registered types.
+ * filter options — complete for all 15 registered types.
  *
  * Before this module, every consumer hand-rolled its own partial map
  * (EnterpriseSearchBar, BOM helpers, thread nodes each covered ~5 of 13
@@ -13,6 +13,7 @@
 
 import {
   AlertTriangle,
+  Cable,
   CheckSquare,
   ClipboardCheck,
   ClipboardList,
@@ -74,6 +75,7 @@ const ICONS_BY_NAME: Record<string, LucideIcon> = {
   Wrench,
   Factory,
   Network,
+  Cable,
 }
 
 /** Resolve an icon name from an item type definition to its component. */

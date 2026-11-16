@@ -12,6 +12,11 @@
  *   element to the item that implements it, and the hop the requirements
  *   matrix follows after an allocation to the element.
  *
+ * An element also carries its **ports** — named connection points, a field
+ * of its own row — and the design's **interfaces** (items of their own, see
+ * `InterfaceService`) attach to them by `CONNECTS` edges (interface →
+ * element). The architecture read returns both.
+ *
  * Both are edges between version rows, so they ride a checkout onto the
  * branch's working copy and the release rebuilds them on the released row,
  * like every other outgoing edge. The architecture read here resolves them
@@ -19,20 +24,38 @@
  * same helpers, so the two surfaces never disagree about which row answers
  * for an item at a tag.
  */
+import { randomUUID } from 'node:crypto'
 import { and, eq, inArray } from 'drizzle-orm'
+import { CONNECTS_PORT_KEY } from '@cascadia/commons/items/types/interface'
+import {
+  MAX_SYSTEM_PORTS,
+  systemPortsSchema,
+} from '@cascadia/commons/items/types/system-element'
+import { userMetadataOf } from '@cascadia/commons/items/relationships/metadata'
 import { db } from '../db'
 import { notDeleted } from '../db/filters'
-import { itemRelationships, items, systemElements } from '../db/schema/items'
+import { architectureLayouts } from '../db/schema/designs'
+import {
+  interfaces,
+  itemRelationships,
+  items,
+  systemElements,
+} from '../db/schema/items'
 import { NotFoundError, ValidationError } from '../errors'
 import { ItemService } from '../items/services/ItemService'
 import { ItemRelationshipService } from '../items/services/ItemRelationshipService'
 import {
   ALLOCATED_TO_RELATIONSHIP,
+  CONNECTS_RELATIONSHIP,
   DECOMPOSES_RELATIONSHIP,
   REALIZED_BY_RELATIONSHIP,
 } from '../items/traceability-relationships'
 import { DesignService } from './DesignService'
-import { resolveLinkEndIds, resolveLinkEnds } from './link-ends'
+import {
+  resolveLinkEndIds,
+  resolveLinkEnds,
+  resolveOnBranch,
+} from './link-ends'
 import { suspectFields } from './RequirementService'
 import {
   RequirementsMatrixService,
@@ -44,6 +67,13 @@ import type { VersionContext } from './VersionResolver'
 import type { SuspectState } from '../items/trace-affirmation'
 import type { PersistedItem } from '@cascadia/commons/items/types/base'
 import type {
+  SystemElement,
+  SystemPort,
+  SystemPortDirection,
+} from '@cascadia/commons/items/types/system-element'
+import type {
+  ArchitectureInterface,
+  ArchitectureLayout,
   ArchitectureLink,
   ArchitectureNode,
   ArchitectureTotals,
@@ -53,6 +83,8 @@ import type {
 // Wire types live in commons so the web can name them; re-exported so server
 // callers keep importing them from here.
 export type {
+  ArchitectureInterface,
+  ArchitectureLayout,
   ArchitectureLink,
   ArchitectureNode,
   ArchitectureTotals,
@@ -93,6 +125,19 @@ const ITEM_SUMMARY = {
   itemType: items.itemType,
   revision: items.revision,
   state: items.state,
+}
+
+/** What a caller says about a port; the id is the server's. */
+export interface PortInput {
+  name: string
+  direction: SystemPortDirection
+  description?: string
+}
+
+/** The port a `CONNECTS` edge names in its metadata, if it names one. */
+export function portIdOf(metadata: unknown): string | null {
+  const portId = userMetadataOf(metadata)?.[CONNECTS_PORT_KEY]
+  return typeof portId === 'string' && portId ? portId : null
 }
 
 function byItemNumber<T extends { itemNumber: string }>(a: T, b: T): number {
@@ -259,6 +304,174 @@ export class SystemElementService {
     )
   }
 
+  // ---- Ports -------------------------------------------------------------
+
+  /**
+   * The element row a port write lands on: the row `branchId` is working
+   * from, or the row named. Whether it may be edited is `ItemService.update`'s
+   * call — a working copy whose checkout the caller holds, or main before
+   * anything in the design has released.
+   */
+  private static async elementForWrite(
+    elementId: string,
+    operation: string,
+    options?: LinkWriteOptions,
+  ): Promise<PersistedItem & { ports: Array<SystemPort> }> {
+    const element = await this.requireElement(elementId, operation)
+    const row = options?.branchId
+      ? await resolveOnBranch(element, options.branchId)
+      : element
+    return { ...row, ports: (row as SystemElement).ports ?? [] }
+  }
+
+  /** The ports of an element as its row at `branchId` (or the row named) has them. */
+  static async getPorts(
+    elementId: string,
+    options?: LinkWriteOptions,
+  ): Promise<Array<SystemPort>> {
+    return (await this.elementForWrite(elementId, 'getPorts', options)).ports
+  }
+
+  /**
+   * Store `ports` as the element's port list, after the checks the schema
+   * makes of any port list: unique ids, unique names, a bounded count.
+   */
+  private static async writePorts(
+    element: PersistedItem,
+    ports: Array<SystemPort>,
+    userId: string,
+  ): Promise<void> {
+    const parsed = systemPortsSchema.safeParse(ports)
+    if (!parsed.success) {
+      const message =
+        ports.length > MAX_SYSTEM_PORTS
+          ? `An element holds at most ${MAX_SYSTEM_PORTS} ports`
+          : (parsed.error.issues[0]?.message ?? 'Invalid port list')
+      throw new ValidationError(`${element.itemNumber}: ${message}`, [
+        { field: 'name', message },
+      ])
+    }
+    await ItemService.update<SystemElement>(
+      element.id,
+      { ports: parsed.data },
+      userId,
+    )
+  }
+
+  /** Add a port to the element; its id is assigned here and never changes. */
+  static async addPort(
+    elementId: string,
+    input: PortInput,
+    userId: string,
+    options?: LinkWriteOptions,
+  ): Promise<SystemPort> {
+    const element = await this.elementForWrite(elementId, 'addPort', options)
+    const port: SystemPort = {
+      id: randomUUID(),
+      name: input.name.trim(),
+      direction: input.direction,
+      ...(input.description && { description: input.description }),
+    }
+    await this.writePorts(element, [...element.ports, port], userId)
+    return port
+  }
+
+  /** Rename a port, or change its direction or description. */
+  static async updatePort(
+    elementId: string,
+    portId: string,
+    patch: Partial<PortInput>,
+    userId: string,
+    options?: LinkWriteOptions,
+  ): Promise<SystemPort> {
+    const element = await this.elementForWrite(elementId, 'updatePort', options)
+    const existing = element.ports.find((port) => port.id === portId)
+    if (!existing) {
+      throw new NotFoundError('Port', portId, { operation: 'updatePort' })
+    }
+    const { description, ...rest } = existing
+    const nextDescription =
+      patch.description === undefined ? description : patch.description
+    const updated: SystemPort = {
+      ...rest,
+      ...(patch.name !== undefined && { name: patch.name.trim() }),
+      ...(patch.direction !== undefined && { direction: patch.direction }),
+      ...(nextDescription && { description: nextDescription }),
+    }
+    await this.writePorts(
+      element,
+      element.ports.map((port) => (port.id === portId ? updated : port)),
+      userId,
+    )
+    return updated
+  }
+
+  /**
+   * Remove a port. An interface still attached to it is not touched — the
+   * interface is its own item, under its own change control — and reads as
+   * attached to a missing port until someone re-attaches or detaches it.
+   */
+  static async removePort(
+    elementId: string,
+    portId: string,
+    userId: string,
+    options?: LinkWriteOptions,
+  ): Promise<void> {
+    const element = await this.elementForWrite(elementId, 'removePort', options)
+    if (!element.ports.some((port) => port.id === portId)) {
+      throw new NotFoundError('Port', portId, { operation: 'removePort' })
+    }
+    await this.writePorts(
+      element,
+      element.ports.filter((port) => port.id !== portId),
+      userId,
+    )
+  }
+
+  // ---- The diagram's layout ---------------------------------------------
+
+  /** The saved block positions of a design's diagram; empty when none. */
+  static async getLayout(designId: string): Promise<ArchitectureLayout> {
+    const [row] = await db
+      .select({ positions: architectureLayouts.positions })
+      .from(architectureLayouts)
+      .where(eq(architectureLayouts.designId, designId))
+      .limit(1)
+    return row?.positions ?? {}
+  }
+
+  /**
+   * Save block positions into the design's layout. Merged by element, not
+   * replaced: the diagram sends the blocks it drew at one context, and a
+   * block that exists only on some other branch keeps the position it had.
+   */
+  static async saveLayout(
+    designId: string,
+    positions: ArchitectureLayout,
+    userId: string,
+  ): Promise<ArchitectureLayout> {
+    const design = await DesignService.getById(designId)
+    if (!design) {
+      throw new NotFoundError('Design', designId, { operation: 'saveLayout' })
+    }
+    const merged = { ...(await this.getLayout(designId)), ...positions }
+    await db
+      .insert(architectureLayouts)
+      .values({ designId, positions: merged, updatedBy: userId })
+      .onConflictDoUpdate({
+        target: architectureLayouts.designId,
+        set: { positions: merged, updatedBy: userId, updatedAt: new Date() },
+      })
+    return merged
+  }
+
+  /** Forget every saved position: the diagram arranges itself again. */
+  static async resetLayout(designId: string): Promise<void> {
+    await db
+      .delete(architectureLayouts)
+      .where(eq(architectureLayouts.designId, designId))
+  }
+
   /**
    * The requirements allocated to this element (incoming `ALLOCATED_TO`),
    * inherited from the rows it succeeded the way every incoming trace read
@@ -371,7 +584,8 @@ export class SystemElementService {
   /**
    * The architecture of one design at `context`: the `DECOMPOSES` forest of
    * its system elements, each with the items that realize it and the
-   * requirements allocated to it.
+   * requirements allocated to it and its ports, the design's interfaces with
+   * the ports they attach to, and the diagram's saved layout.
    *
    * Resolution is the requirements matrix's: an element's row at the context
    * answers for the allocations made against the rows it succeeded, a
@@ -407,7 +621,13 @@ export class SystemElementService {
       .filter((row) => row.itemType === 'SystemElement')
       .sort(byItemNumber)
     if (elementRows.length === 0) {
-      return { ...base, roots: [], totals: emptyTotals() }
+      return {
+        ...base,
+        roots: [],
+        interfaces: [],
+        layout: {},
+        totals: emptyTotals(),
+      }
     }
     const elementIds = elementRows.map((row) => row.id)
     const extensionByItem = new Map(
@@ -526,6 +746,7 @@ export class SystemElementService {
         state: row.state,
         elementKind: extension?.elementKind ?? null,
         description: extension?.description ?? null,
+        ports: extension?.ports ?? [],
         realizedBy: [],
         allocatedRequirements: [],
         children: [],
@@ -603,7 +824,112 @@ export class SystemElementService {
     }
     roots.sort(byItemNumber)
 
-    return { ...base, roots, totals: totalsOf([...nodeById.values()]) }
+    const architectureInterfaces = await this.interfacesAt(
+      [...atContext.values()],
+      [...nodeById.values()],
+    )
+
+    // Only positions of what is drawn at this context cross the wire: the
+    // stored map also remembers blocks that exist on other branches.
+    const saved = await this.getLayout(designId)
+    const layout: ArchitectureLayout = {}
+    for (const { masterId } of [
+      ...nodeById.values(),
+      ...architectureInterfaces,
+    ]) {
+      const position = saved[masterId]
+      if (position) layout[masterId] = position
+    }
+
+    return {
+      ...base,
+      roots,
+      interfaces: architectureInterfaces,
+      layout,
+      totals: totalsOf([...nodeById.values()]),
+    }
+  }
+
+  /**
+   * The design's interfaces among `rowsAtContext`, each with its ends: the
+   * `CONNECTS` edges of the interface's own row, followed by master to the
+   * element's row at the context. An end whose element is not at the context
+   * is left out; one whose port the element no longer has is flagged.
+   */
+  private static async interfacesAt(
+    rowsAtContext: Array<ItemRow>,
+    nodes: Array<ArchitectureNode>,
+  ): Promise<Array<ArchitectureInterface>> {
+    const interfaceRows = rowsAtContext
+      .filter((row) => row.itemType === 'Interface')
+      .sort(byItemNumber)
+    if (interfaceRows.length === 0) return []
+    const interfaceIds = interfaceRows.map((row) => row.id)
+
+    const kindByItem = new Map(
+      (
+        await db
+          .select()
+          .from(interfaces)
+          .where(inArray(interfaces.itemId, interfaceIds))
+      ).map((row) => [row.itemId, row.interfaceKind]),
+    )
+    const edges = await db
+      .select()
+      .from(itemRelationships)
+      .where(
+        and(
+          inArray(itemRelationships.sourceId, interfaceIds),
+          eq(itemRelationships.relationshipType, CONNECTS_RELATIONSHIP),
+        ),
+      )
+    const targetIds = [...new Set(edges.map((edge) => edge.targetId))]
+    const masterOfTarget = new Map(
+      targetIds.length > 0
+        ? (
+            await db
+              .select({ id: items.id, masterId: items.masterId })
+              .from(items)
+              .where(inArray(items.id, targetIds))
+          ).map((row) => [row.id, row.masterId])
+        : [],
+    )
+    const nodeByMaster = new Map(nodes.map((node) => [node.masterId, node]))
+
+    return interfaceRows.map((row) => {
+      const seen = new Set<string>()
+      const ends = edges
+        .filter((edge) => edge.sourceId === row.id)
+        .flatMap((edge) => {
+          const master = masterOfTarget.get(edge.targetId)
+          const node = master ? nodeByMaster.get(master) : undefined
+          // One end per element: an edge to a superseded row of an element
+          // already attached says nothing new.
+          if (!node || seen.has(node.itemId)) return []
+          seen.add(node.itemId)
+          const portId = portIdOf(edge.metadata)
+          return [
+            {
+              relationshipId: edge.id,
+              elementItemId: node.itemId,
+              portId,
+              portMissing:
+                portId !== null &&
+                !node.ports.some((port) => port.id === portId),
+            },
+          ]
+        })
+      return {
+        itemId: row.id,
+        masterId: row.masterId,
+        itemNumber: row.itemNumber,
+        name: row.name,
+        revision: row.revision,
+        state: row.state,
+        kind: kindByItem.get(row.id) ?? null,
+        ends,
+      }
+    })
   }
 }
 

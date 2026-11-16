@@ -277,6 +277,12 @@ try {
       },
     },
     {
+      itemType: 'Interface',
+      config: {
+        lifecycleDefinitionId: LIFECYCLE_IDS.interface,
+      },
+    },
+    {
       itemType: 'ChangeOrder',
       config: {
         lifecycleDefinitionId: IDS.changeOrderWorkflow,

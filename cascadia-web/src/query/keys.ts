@@ -39,6 +39,7 @@ export const RESOURCES = [
   'events',
   'files',
   'import',
+  'interfaces',
   'issues',
   'items',
   'jobs',

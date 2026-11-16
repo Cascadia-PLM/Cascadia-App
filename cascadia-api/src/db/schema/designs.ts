@@ -27,6 +27,7 @@ import type {
   DesignRow,
 } from '@cascadia/commons/types/design'
 import type { Equal, Expect } from '@cascadia/commons/types/assert'
+import type { ArchitectureLayout } from '@cascadia/commons/services/types/architecture'
 
 /**
  * Design type values:
@@ -195,3 +196,27 @@ export const designsRelations = relations(designs, ({ one, many }) => ({
   // Note: branches, items, and defaultBranch relations are defined in versioning.ts
   // to avoid circular dependency issues
 }))
+
+/**
+ * Where the blocks of a design's architecture diagram sit: one row per
+ * design, positions keyed by system-element master id.
+ *
+ * Deliberately outside the versioned model. A block's position is how the
+ * diagram is drawn, not what the architecture is, so moving one is not an
+ * engineering change: it needs no checkout, joins no change order, and the
+ * same layout serves main, every branch and every tag. Keying by master id
+ * is what lets one position follow an element across its revisions.
+ */
+export const architectureLayouts = pgTable('architecture_layouts', {
+  designId: uuid('design_id')
+    .primaryKey()
+    .references(() => designs.id, { onDelete: 'cascade' }),
+  positions: jsonb('positions').$type<ArchitectureLayout>().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  // SET NULL: who last arranged the diagram is a courtesy, not ownership.
+  updatedBy: uuid('updated_by').references(() => users.id, {
+    onDelete: 'set null',
+  }),
+})

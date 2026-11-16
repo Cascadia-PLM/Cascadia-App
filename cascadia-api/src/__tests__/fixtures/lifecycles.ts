@@ -21,6 +21,7 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '@/db/schema'
 import { itemTypeConfigs, lifecycleDefinitions, users } from '@/db/schema'
 import {
+  INTERFACE_LIFECYCLE_DEFINITION,
   PART_LIFECYCLE_DEFINITION,
   REQUIREMENT_LIFECYCLE_DEFINITION,
   SYSTEM_ELEMENT_LIFECYCLE_DEFINITION,
@@ -41,6 +42,7 @@ export const SYSTEM_USER_ID = '00000000-0000-4000-8000-000000000000'
 // same data the app seed and the test global-setup use. Re-exported here so
 // suites keep their historical import path.
 export {
+  INTERFACE_LIFECYCLE_DEFINITION,
   PART_LIFECYCLE_DEFINITION,
   REQUIREMENT_LIFECYCLE_DEFINITION,
   SYSTEM_ELEMENT_LIFECYCLE_DEFINITION,
@@ -282,6 +284,48 @@ export async function seedSystemElementLifecycle(
     .insert(itemTypeConfigs)
     .values({
       itemType: 'SystemElement',
+      config,
+      modifiedBy: systemUserId,
+    })
+    .onConflictDoUpdate({
+      target: itemTypeConfigs.itemType,
+      set: { config, modifiedBy: systemUserId },
+    })
+  ItemTypeRegistry.invalidateLifecycleCache()
+}
+
+/**
+ * Seed the Interface lifecycle + item-type link. beforeAll-safe like the
+ * SystemElement helper, whose definition this is, scoped to the type.
+ */
+export async function seedInterfaceLifecycle(
+  db: TestDbInstance,
+  systemUserId: string = SYSTEM_USER_ID,
+): Promise<void> {
+  await seedSystemUser(db)
+  await db
+    .insert(lifecycleDefinitions)
+    .values({
+      id: LIFECYCLE_IDS.interface,
+      name: 'Interface - Test Lifecycle',
+      version: 1,
+      workflowType: 'strict',
+      definition: INTERFACE_LIFECYCLE_DEFINITION,
+      isActive: true,
+      lifecycleType: 'Driven',
+    })
+    .onConflictDoNothing()
+
+  await db
+    .update(lifecycleDefinitions)
+    .set({ drivers: [] })
+    .where(eq(lifecycleDefinitions.id, LIFECYCLE_IDS.interface))
+
+  const config = { lifecycleDefinitionId: LIFECYCLE_IDS.interface }
+  await db
+    .insert(itemTypeConfigs)
+    .values({
+      itemType: 'Interface',
       config,
       modifiedBy: systemUserId,
     })

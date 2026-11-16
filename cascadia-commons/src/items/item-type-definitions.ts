@@ -42,6 +42,7 @@ import {
   systemElementRelationships,
   systemElementSchema,
 } from './types/system-element'
+import { interfaceItemSchema, interfaceRelationships } from './types/interface'
 import type { RelationshipConfig } from './types/base'
 import type { ResourceType } from '../auth/permissions'
 import type { z } from 'zod'
@@ -138,6 +139,23 @@ export const ITEM_TYPE_DEFINITIONS: Record<string, SharedItemTypeDef> = {
     schema: systemElementSchema,
     lifecycleDefinitionId: LIFECYCLE_IDS.systemElement,
     relationships: systemElementRelationships,
+    searchableFields: ['itemNumber', 'name', 'description'],
+    displayField: 'itemNumber',
+  },
+
+  // An interface is part of the architecture, so it is held against the
+  // resource the elements it joins are: whoever may edit an element may edit
+  // the interfaces between them.
+  Interface: {
+    name: 'Interface',
+    resource: 'system_elements',
+    detailPath: '/interfaces',
+    label: 'Interface',
+    pluralLabel: 'Interfaces',
+    icon: 'Cable',
+    schema: interfaceItemSchema,
+    lifecycleDefinitionId: LIFECYCLE_IDS.interface,
+    relationships: interfaceRelationships,
     searchableFields: ['itemNumber', 'name', 'description'],
     displayField: 'itemNumber',
   },

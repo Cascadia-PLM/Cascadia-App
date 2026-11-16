@@ -35,6 +35,7 @@ import type {
 // ============================================================================
 
 import type { StepContent } from '@cascadia/commons/items/types/work-instruction-content'
+import type { SystemPort } from '@cascadia/commons/items/types/system-element'
 
 export const items = pgTable(
   'items',
@@ -506,8 +507,32 @@ export const systemElements = pgTable(
     // constraint on the tree
     elementKind: varchar('element_kind', { length: 20 }),
     description: text('description'),
+    // The element's ports — its named connection points, which interfaces
+    // attach to. A column of the version row on purpose: the port list
+    // revises with the element and is branch-isolated like any other field.
+    ports: jsonb('ports').$type<Array<SystemPort>>().notNull().default([]),
   },
   (table) => [index('idx_system_elements_kind').on(table.elementKind)],
+)
+
+/**
+ * Interfaces: what joins system elements — a 28 V bus, a CAN network — as
+ * an item in its own right. One row per item version, like every
+ * type-specific table; what an interface joins is its `CONNECTS` edges in
+ * `item_relationships`, so it has no structural columns of its own.
+ */
+export const interfaces = pgTable(
+  'interfaces',
+  {
+    itemId: uuid('item_id')
+      .primaryKey()
+      .references(() => items.id, { onDelete: 'cascade' }),
+    // power | data | mechanical | fluid | thermal | other — a label for the
+    // reader, not a constraint on what the interface may join
+    interfaceKind: varchar('interface_kind', { length: 20 }),
+    description: text('description'),
+  },
+  (table) => [index('idx_interfaces_kind').on(table.interfaceKind)],
 )
 
 export const tasks = pgTable(
@@ -1048,6 +1073,13 @@ export const requirementsRelations = relations(requirements, ({ one }) => ({
 export const systemElementsRelations = relations(systemElements, ({ one }) => ({
   item: one(items, {
     fields: [systemElements.itemId],
+    references: [items.id],
+  }),
+}))
+
+export const interfacesRelations = relations(interfaces, ({ one }) => ({
+  item: one(items, {
+    fields: [interfaces.itemId],
     references: [items.id],
   }),
 }))

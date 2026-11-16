@@ -143,6 +143,8 @@ export const CASCADIA_TO_SYSML_MAP: Record<string, SysMLElementType> = {
   // A logical element of the architecture; its DECOMPOSES edges serialize as
   // composite PartUsages owned by it (SysMLSerializer.relationshipToSysML).
   SystemElement: 'PartDefinition',
+  // What joins those elements; its CONNECTS edges name the ends.
+  Interface: 'InterfaceDefinition',
 }
 
 /**

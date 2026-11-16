@@ -2,9 +2,9 @@
 
 Cascadia PLM manages engineering data through **item types** -- typed records that represent the artifacts of product development. Every item in the system is an instance of a registered item type, and all items share common base fields while carrying type-specific data in a companion table.
 
-This document covers all 14 registered item types -- purpose, database schema, lifecycle, relationships, API surface, and UI pages. The seven with the deepest UI surface get a numbered section each; the rest are grouped under [Additional Item Types](#additional-item-types).
+This document covers all 15 registered item types -- purpose, database schema, lifecycle, relationships, API surface, and UI pages. The seven with the deepest UI surface get a numbered section each; the rest are grouped under [Additional Item Types](#additional-item-types).
 
-**The 14 types:** Part, Document, ChangeOrder, Requirement, SystemElement, Task, WorkInstruction, Issue, TestPlan, TestCase, Software, Tool, PhysicalPart, WorkOrder. The canonical list lives in `cascadia-commons/src/items/item-type-definitions.ts`.
+**The 15 types:** Part, Document, ChangeOrder, Requirement, SystemElement, Interface, Task, WorkInstruction, Issue, TestPlan, TestCase, Software, Tool, PhysicalPart, WorkOrder. The canonical list lives in `cascadia-commons/src/items/item-type-definitions.ts`.
 
 ---
 
@@ -51,6 +51,8 @@ Each item type has a default numbering scheme defined in `cascadia-commons/src/i
 | Document        | `DOC`  | `DOC-000001`  |
 | ChangeOrder     | `ECO`  | `ECO-000001`  |
 | Requirement     | `REQ`  | `REQ-000001`  |
+| SystemElement   | `SE`   | `SE-000001`   |
+| Interface       | `IF`   | `IF-000001`   |
 | Task            | `TSK`  | `TSK-000001`  |
 | TestPlan        | `TP`   | `TP-000001`   |
 | TestCase        | `TC`   | `TC-000001`   |
@@ -67,7 +69,7 @@ Most types allow manual entry of item numbers. Change Orders, PhysicalParts, and
 
 Item types use one of three lifecycle categories:
 
-- **Driven** -- state transitions are controlled by ECOs. Cannot be modified on `main` directly. (Part, Document, Requirement, Software)
+- **Driven** -- state transitions are controlled by ECOs. Cannot be modified on `main` directly. (Part, Document, Requirement, SystemElement, Interface, Software)
 - **Driving** -- the ECO itself, which controls Driven lifecycles. (ChangeOrder)
 - **Free** -- self-controlled, no ECO required. Can transition states independently. (Task, TestPlan, TestCase, WorkInstruction, Issue, Tool, PhysicalPart, WorkOrder)
 
@@ -1074,15 +1076,36 @@ See `docs/features/software-management.md` for the full design.
 
 **States:** Draft, Released, Superseded, Obsolete
 
-**Relationships:** `DECOMPOSES` -> SystemElement (the tree; a link that would close a loop is refused), `REALIZED_BY` -> Part, Software (the hop to the item that implements the element — a trace claim that reads suspect after either end revises until it is affirmed), and `ALLOCATED_TO` from Requirement (written from the requirement). The requirements matrix follows the two hops: requirement -> element -> realizing part.
+**Relationships:** `DECOMPOSES` -> SystemElement (the tree; a link that would close a loop is refused), `REALIZED_BY` -> Part, Software (the hop to the item that implements the element — a trace claim that reads suspect after either end revises until it is affirmed), `CONNECTS` from Interface (an interface attached to one of the element's ports), and `ALLOCATED_TO` from Requirement (written from the requirement). The requirements matrix follows the two hops: requirement -> element -> realizing part.
 
-**Architecture at a context:** `GET /api/v1/designs/{id}/architecture?branch=|tag=|commit=` is the `DECOMPOSES` forest of a design with each element's realizations and allocated requirements, resolved and judged the way the RTM is; the design page's Architecture tab renders it as a tree and as a graph.
+**Architecture at a context:** `GET /api/v1/designs/{id}/architecture?branch=|tag=|commit=` is the `DECOMPOSES` forest of a design with each element's realizations and allocated requirements, resolved and judged the way the RTM is; the design page's Architecture tab renders it as a tree, as a graph, and as a block diagram that is edited in place (see `docs/features/requirements-and-vv.md`).
 
-**API:** `/api/v1/system-elements/{id}`, plus `/children`, `/parent`, `/realized-by`, `/allocated-requirements`
+**API:** `/api/v1/system-elements/{id}`, plus `/children`, `/parent`, `/realized-by`, `/allocated-requirements`, `/ports`
 
 **Permissions:** the `system_elements` resource. The shipped roles hold it the way they hold `requirements`, and the migration that adds the type grants it to existing roles by the same rule.
 
 See `docs/features/requirements-and-vv.md` for the trace rules the architecture shares.
+
+### Interface
+
+**Purpose:** An interface between system elements — a 28 V bus, a CAN network, a coolant loop — as an item in its own right. It is an item rather than a link so that it can be what an interface is in practice: numbered, revised through a change order of its own, and the home of its interface control document and of the requirements allocated to it. Two interfaces between the same two elements are two items, and one interface can join more than two elements (a bus). Versioned and ECO-controlled exactly like a System Element.
+
+**Lifecycle:** Driven (the System Element definition scoped to the type) | **Default State:** Draft | **Numbering:** `IF-000001`
+
+| Field            | Type        | Description                                                                              |
+| ---------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| `interface_kind` | varchar(20) | `power`, `data`, `mechanical`, `fluid`, `thermal` or `other` — a label, not a constraint |
+| `description`    | text        | What flows across the interface                                                          |
+
+**States:** Draft, Released, Superseded, Obsolete
+
+**Relationships:** `CONNECTS` -> SystemElement, one edge per element the interface joins, naming the port it attaches to in the edge's metadata. The edges are the interface's own content: they ride its checkout and its release. `ALLOCATED_TO` from Requirement (written from the requirement).
+
+**API:** `/api/v1/interfaces/{id}` (`GET`, `PUT`, `DELETE`); created through `POST /api/v1/items` with `itemType: "Interface"`
+
+**UI:** `/interfaces` (list), `/interfaces/new`, `/interfaces/{id}`
+
+**Permissions:** the `system_elements` resource — an interface is part of the architecture, so whoever may edit elements may edit the interfaces between them. There is no resource of its own, and so nothing for a migration to grant.
 
 ### Tool
 
@@ -1134,7 +1157,9 @@ Each item type is assigned a lifecycle definition by ID (defaults in `cascadia-c
 Access is not configured per item type. Each type maps to an RBAC resource
 (`ITEM_TYPE_RESOURCES` in `cascadia-api/src/items/item-type-resources.ts`
 — `Part` to `parts`, `ChangeOrder` to `change_orders`, and so on), and roles
-hold permissions on those resources. See
+hold permissions on those resources. The mapping is not one-to-one:
+`Interface` is held against `system_elements`, the resource of the elements
+it joins. See
 [Access Control](../admin/access-control.md).
 
 ---
@@ -1143,29 +1168,30 @@ hold permissions on those resources. See
 
 The `item_relationships` table stores typed, directed relationships between any two items. Key relationship types used across the system:
 
-| Relationship Type | Typical Source           | Typical Target                          | Description                 |
-| ----------------- | ------------------------ | --------------------------------------- | --------------------------- |
-| `BOM`             | Part (parent)            | Part (child)                            | Bill of Materials hierarchy |
-| `Document`        | Part                     | Document                                | Attached documentation      |
-| `Affects`         | ChangeOrder              | Part, Document                          | ECO affected items          |
-| `SATISFIES`       | Part, Software, Document | Requirement                             | Item satisfies requirement  |
-| `ALLOCATED_TO`    | Requirement              | Part, Software, Document, SystemElement | Requirement allocated to it |
-| `DECOMPOSES`      | SystemElement            | SystemElement                           | The architecture tree       |
-| `REALIZED_BY`     | SystemElement            | Part, Software                          | Element realized by item    |
-| `DERIVES_FROM`    | Requirement              | Requirement                             | Child derived from parent   |
-| `VERIFIED_BY`     | TestCase                 | Requirement                             | Test verifies requirement   |
-| `VALIDATES`       | TestCase                 | Part                                    | Test validates part         |
-| `Dependency`      | Requirement/Task         | Requirement/Task                        | Depends-on relationship     |
-| `Blocker`         | Task                     | Task                                    | Blocking relationship       |
-| `AffectedItem`    | Issue                    | Part, Document                          | Items affected by issue     |
-| `CausedBy`        | Issue                    | ChangeOrder, Issue                      | Root cause link             |
-| `ResolvedBy`      | Issue                    | ChangeOrder                             | Resolution link             |
+| Relationship Type | Typical Source           | Typical Target                          | Description                  |
+| ----------------- | ------------------------ | --------------------------------------- | ---------------------------- |
+| `BOM`             | Part (parent)            | Part (child)                            | Bill of Materials hierarchy  |
+| `Document`        | Part                     | Document                                | Attached documentation       |
+| `Affects`         | ChangeOrder              | Part, Document                          | ECO affected items           |
+| `SATISFIES`       | Part, Software, Document | Requirement                             | Item satisfies requirement   |
+| `ALLOCATED_TO`    | Requirement              | Part, Software, Document, SystemElement | Requirement allocated to it  |
+| `DECOMPOSES`      | SystemElement            | SystemElement                           | The architecture tree        |
+| `REALIZED_BY`     | SystemElement            | Part, Software                          | Element realized by item     |
+| `CONNECTS`        | Interface                | SystemElement                           | Interface attached at a port |
+| `DERIVES_FROM`    | Requirement              | Requirement                             | Child derived from parent    |
+| `VERIFIED_BY`     | TestCase                 | Requirement                             | Test verifies requirement    |
+| `VALIDATES`       | TestCase                 | Part                                    | Test validates part          |
+| `Dependency`      | Requirement/Task         | Requirement/Task                        | Depends-on relationship      |
+| `Blocker`         | Task                     | Task                                    | Blocking relationship        |
+| `AffectedItem`    | Issue                    | Part, Document                          | Items affected by issue      |
+| `CausedBy`        | Issue                    | ChangeOrder, Issue                      | Root cause link              |
+| `ResolvedBy`      | Issue                    | ChangeOrder                             | Resolution link              |
 
 Relationship records include optional fields for quantity, reference designator, find number, SysML composition/multiplicity, and cross-design traceability (source/target design, derivation method). Every copy of an edge -- the checkout's working copy and the release's rebuild -- carries those columns unchanged.
 
 The trace family (`SATISFIES`, `ALLOCATED_TO`, `VERIFIED_BY`, `VALIDATES`,
 `DERIVES_FROM`, `Evidences`) and the architecture family (`DECOMPOSES`,
-`REALIZED_BY`) are declared once, in the **relationship catalog**
+`REALIZED_BY`, `CONNECTS`) are declared once, in the **relationship catalog**
 (`cascadia-commons/src/items/relationships/catalog.ts`): the stored string,
 the item types each end may be, which end answers for it under the edit lock,
 and whether its claim can go stale. The relationship service refuses a

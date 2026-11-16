@@ -1502,12 +1502,96 @@ export interface paths {
         };
         /**
          * System architecture of a design
-         * @description The DECOMPOSES tree of the design's system elements at a version context — main as it stands when no context is given, else the branch, tag or commit named — each element with the items that realize it and the requirements allocated to it. Links are resolved and judged the way the requirements matrix resolves and judges them.
+         * @description The DECOMPOSES tree of the design's system elements at a version context — main as it stands when no context is given, else the branch, tag or commit named — each element with its ports, the items that realize it and the requirements allocated to it; the design's interfaces with the ports they attach to; and the saved layout of the block diagram. Links are resolved and judged the way the requirements matrix resolves and judges them.
          */
         get: operations["getApiV1DesignsByDesignIdArchitecture"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/designs/{designId}/architecture/interface-ends/{relationshipId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Detach an interface from a system element
+         * @description Removes one end, named by the relationshipId the architecture read lists it under at the context being edited. The interface itself stays.
+         */
+        delete: operations["deleteApiV1DesignsByDesignIdArchitectureInterfaceEndsByRelationshipId"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/designs/{designId}/architecture/interfaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an interface joining system elements
+         * @description Creates an Interface item in the design and attaches it to each end — the block diagram's "draw a line". An end names an element and either one of its ports or a port to create on it; each end names a different element, and an interface may have more than two (a bus). Creating a port is an edit of that element and needs it to be editable; attaching is an edit of the interface alone. Pass branchId to write inside an ECO.
+         */
+        post: operations["postApiV1DesignsByDesignIdArchitectureInterfaces"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/designs/{designId}/architecture/interfaces/{interfaceId}/ends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach an interface to one more system element
+         * @description Adds an end to an existing interface — how a line becomes a bus. Refused when the interface already attaches to that element. Pass branchId to write inside an ECO, where the interface must be editable on that branch.
+         */
+        post: operations["postApiV1DesignsByDesignIdArchitectureInterfacesByInterfaceIdEnds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/designs/{designId}/architecture/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save the block positions of a design's architecture diagram
+         * @description Saves positions keyed by master id — of a system element, relative to the block it sits inside, or of an interface drawn as a bus node. Merged into what is stored: a block not named keeps its position. Presentation only: one layout per design, shared by every branch and tag, unversioned and outside change control — no checkout is needed to move a block.
+         */
+        put: operations["putApiV1DesignsByDesignIdArchitectureLayout"];
+        post?: never;
+        /**
+         * Reset the layout of a design's architecture diagram
+         * @description Forgets every saved block position, so the diagram arranges itself automatically again.
+         */
+        delete: operations["deleteApiV1DesignsByDesignIdArchitectureLayout"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2599,6 +2683,22 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/interfaces/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getApiV1InterfacesById"];
+        put: operations["putApiV1InterfacesById"];
+        post?: never;
+        delete: operations["deleteApiV1InterfacesById"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4639,6 +4739,47 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system-elements/{id}/ports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a port to a system element
+         * @description A port is a named connection point on the element that interfaces attach to. Its id is assigned here and never changes, so attachments survive a rename and a revision. Port names are unique within an element. Pass branchId to write inside an ECO.
+         */
+        post: operations["postApiV1SystemElementsByIdPorts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system-elements/{id}/ports/{portId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename a port or change its direction */
+        put: operations["putApiV1SystemElementsByIdPortsByPortId"];
+        post?: never;
+        /**
+         * Remove a port from a system element
+         * @description An interface still attached to the port is left alone and reads as attached to a missing port until it is re-attached or detached. Pass branchId as a query parameter to write inside an ECO.
+         */
+        delete: operations["deleteApiV1SystemElementsByIdPortsByPortId"];
         options?: never;
         head?: never;
         patch?: never;
@@ -8936,6 +9077,31 @@ export interface operations {
                             /** Format: uuid */
                             designId: string;
                             designName: string;
+                            interfaces: {
+                                ends: {
+                                    /** Format: uuid */
+                                    elementItemId: string;
+                                    portId: string | null;
+                                    portMissing: boolean;
+                                    /** Format: uuid */
+                                    relationshipId: string;
+                                }[];
+                                /** Format: uuid */
+                                itemId: string;
+                                itemNumber: string;
+                                kind: string | null;
+                                /** Format: uuid */
+                                masterId: string;
+                                name: string | null;
+                                revision: string;
+                                state: string;
+                            }[];
+                            layout: {
+                                [key: string]: {
+                                    x: number;
+                                    y: number;
+                                };
+                            };
                             roots: {
                                 allocatedRequirements: {
                                     /** Format: uuid */
@@ -8961,6 +9127,14 @@ export interface operations {
                                 /** Format: uuid */
                                 masterId: string;
                                 name: string | null;
+                                ports: {
+                                    description?: string;
+                                    /** @enum {string} */
+                                    direction: "in" | "out" | "inout";
+                                    /** Format: uuid */
+                                    id: string;
+                                    name: string;
+                                }[];
                                 realizedBy: {
                                     /** Format: uuid */
                                     itemId: string;
@@ -8987,6 +9161,226 @@ export interface operations {
                                 realized: number;
                                 suspect: number;
                             };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteApiV1DesignsByDesignIdArchitectureInterfaceEndsByRelationshipId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
+                relationshipId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            success: boolean;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1DesignsByDesignIdArchitectureInterfaces: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    branchId?: string;
+                    ends: ({
+                        /** Format: uuid */
+                        elementId: string;
+                        /** Format: uuid */
+                        portId: string;
+                    } | {
+                        /** Format: uuid */
+                        elementId: string;
+                        newPort: {
+                            /** @enum {string} */
+                            direction: "in" | "out" | "inout";
+                            name: string;
+                        };
+                    })[];
+                    kind?: ("power" | "data" | "mechanical" | "fluid" | "thermal" | "other") | null;
+                    name?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            interfaceId: string;
+                            itemNumber: string;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1DesignsByDesignIdArchitectureInterfacesByInterfaceIdEnds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
+                interfaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    branchId?: string;
+                    end: {
+                        /** Format: uuid */
+                        elementId: string;
+                        /** Format: uuid */
+                        portId: string;
+                    } | {
+                        /** Format: uuid */
+                        elementId: string;
+                        newPort: {
+                            /** @enum {string} */
+                            direction: "in" | "out" | "inout";
+                            name: string;
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            relationshipId: string;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    putApiV1DesignsByDesignIdArchitectureLayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    positions: {
+                        [key: string]: {
+                            x: number;
+                            y: number;
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            layout: {
+                                [key: string]: {
+                                    x: number;
+                                    y: number;
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteApiV1DesignsByDesignIdArchitectureLayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                designId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            success: boolean;
                         };
                     };
                 };
@@ -11287,6 +11681,73 @@ export interface operations {
             500: components["responses"]["ServerError"];
         };
     };
+    getApiV1InterfacesById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    putApiV1InterfacesById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    commitMessage?: string;
+                    description?: string | null;
+                    interfaceKind?: ("power" | "data" | "mechanical" | "fluid" | "thermal" | "other") | null;
+                    name?: string | null;
+                    state?: string;
+                };
+            };
+        };
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteApiV1InterfacesById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
     getApiV1IssuesById: {
         parameters: {
             query?: never;
@@ -11545,6 +12006,38 @@ export interface operations {
                     itemNumber?: string;
                     /** @constant */
                     itemType: "SystemElement";
+                    name?: string;
+                    ports?: {
+                        description?: string;
+                        /** @enum {string} */
+                        direction: "in" | "out" | "inout";
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                    }[];
+                    revision?: string;
+                    state?: string;
+                    /** Format: uuid */
+                    usageOf?: string;
+                } | {
+                    attributes?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Format: uuid
+                     * @description Create the item on this ECO branch instead of directly on main. Omitting it writes to main, which branch protection allows only before the design has released.
+                     */
+                    branchId?: string;
+                    /** @description Message for the commit the branch write produces. Ignored without `branchId`. Defaults to "Created <itemType> <itemNumber>". */
+                    commitMessage?: string;
+                    description?: string;
+                    /** Format: uuid */
+                    designId: string;
+                    /** @enum {string} */
+                    interfaceKind?: "power" | "data" | "mechanical" | "fluid" | "thermal" | "other";
+                    itemNumber?: string;
+                    /** @constant */
+                    itemType: "Interface";
                     name?: string;
                     revision?: string;
                     state?: string;
@@ -16600,6 +17093,14 @@ export interface operations {
                     description?: string | null;
                     elementKind?: ("system" | "segment" | "subsystem" | "module") | null;
                     name?: string | null;
+                    ports?: {
+                        description?: string;
+                        /** @enum {string} */
+                        direction: "in" | "out" | "inout";
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                    }[] | null;
                     state?: string;
                 };
             };
@@ -16827,6 +17328,139 @@ export interface operations {
                                 revision: string;
                                 state: string;
                             } | null;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    postApiV1SystemElementsByIdPorts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    branchId?: string;
+                    description?: string;
+                    /** @enum {string} */
+                    direction: "in" | "out" | "inout";
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            port: {
+                                description?: string;
+                                /** @enum {string} */
+                                direction: "in" | "out" | "inout";
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    putApiV1SystemElementsByIdPortsByPortId: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                portId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    branchId?: string;
+                    description?: string;
+                    /** @enum {string} */
+                    direction?: "in" | "out" | "inout";
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            port: {
+                                description?: string;
+                                /** @enum {string} */
+                                direction: "in" | "out" | "inout";
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            };
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["ValidationError"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    deleteApiV1SystemElementsByIdPortsByPortId: {
+        parameters: {
+            query?: {
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                portId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            success: boolean;
                         };
                     };
                 };

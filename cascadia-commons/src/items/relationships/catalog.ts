@@ -62,12 +62,16 @@ export interface RelationshipCatalogEntry {
 const SATISFYING_TYPES = ['Part', 'Software', 'Document'] as const
 
 /**
- * What a requirement may be allocated to: the items that can satisfy it, and
- * a system element — the logical home a requirement has before any part
- * exists. The element's own `REALIZED_BY` edge is the second hop to the part,
+ * What a requirement may be allocated to: the items that can satisfy it, a
+ * system element — the logical home a requirement has before any part
+ * exists — and an interface, where an interface requirement lands. The element's own `REALIZED_BY` edge is the second hop to the part,
  * and the requirements matrix shows both.
  */
-const ALLOCATION_TARGET_TYPES = [...SATISFYING_TYPES, 'SystemElement'] as const
+const ALLOCATION_TARGET_TYPES = [
+  ...SATISFYING_TYPES,
+  'SystemElement',
+  'Interface',
+] as const
 
 /** What a system element is realized by: the physical and software items. */
 const REALIZING_TYPES = ['Part', 'Software'] as const
@@ -153,6 +157,22 @@ export const RELATIONSHIP_CATALOG: ReadonlyArray<RelationshipCatalogEntry> = [
     suspectable: true,
     composite: false,
     sysmlName: 'Allocate',
+  },
+  {
+    value: 'CONNECTS',
+    label: 'Connects',
+    description:
+      'This interface attaches to the system element, at the port the link names — one end of a line in the block diagram',
+    sourceTypes: ['Interface'],
+    targetTypes: ['SystemElement'],
+    // What an interface joins is the interface's own content: changing it
+    // inside an ECO needs the interface checked out, not the elements.
+    guardEnd: 'source',
+    // Not judged for staleness: an attachment whose port has gone is
+    // reported as such by the architecture read instead.
+    suspectable: false,
+    composite: false,
+    sysmlName: 'ConnectionUsage',
   },
   {
     value: 'Evidences',

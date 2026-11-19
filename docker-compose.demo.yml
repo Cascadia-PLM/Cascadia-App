@@ -103,7 +103,7 @@ services:
     networks: [cascadia-demo]
 
   app:
-    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:da0b889b7023678d9b71dd836bda674b59320cf5a59f50c75ad3994878fa1d3b
+    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:8d7b7e68f049d2e2876a29ca98f7e768c36b040947295b9b2b68581679604fab
     container_name: cascadia-demo-app
     restart: unless-stopped
     depends_on:
@@ -162,7 +162,7 @@ services:
       && npm run serve"
 
   cad-converter:
-    image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest@sha256:c16d9effc0dbf7fc9ff07a48c1dae870da8031e8f92bf3013fe1aec289aff1f4
+    image: ghcr.io/cascadia-plm/cascadia-cad-converter:latest@sha256:ab1928344c87916b365668d133c9029263c5ae2a988ccae88dae1a8a8906b51d
     container_name: cascadia-demo-cad-converter
     restart: unless-stopped
     depends_on:
@@ -181,7 +181,7 @@ services:
     networks: [cascadia-demo]
 
   jobs-worker:
-    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest@sha256:f77d45da690b406e92a235f1312ae9d5ee886a0c79c4aaf7c5869f9e1594d422
+    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest@sha256:970f5df98d6b18257ea75242836bc859d3af52af6edecdd5cb492c4ff9943521
     container_name: cascadia-demo-jobs-worker
     restart: unless-stopped
     depends_on:

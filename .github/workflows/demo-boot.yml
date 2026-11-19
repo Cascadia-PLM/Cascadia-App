@@ -86,7 +86,14 @@ jobs:
           while IFS= read -r ref; do
             repo="${ref%%:latest@*}"
             pinned="${ref##*@}"
-            latest=$(docker buildx imagetools inspect "$repo:latest" | awk '/^Digest:/ { print $2; exit }')
+            # --format, not a pipe into `awk … exit`: awk closing the pipe early
+            # made buildx fail its write, and pipefail turned that into a red
+            # step with no message (exit 255) on the Linux runner.
+            if ! latest=$(docker buildx imagetools inspect "$repo:latest" --format '{{.Manifest.Digest}}'); then
+              echo "::warning::Could not resolve ${repo##*/}:latest; skipping its stale-pin check."
+              echo "| ${repo##*/} | ${pinned:7:12} | unknown |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
             if [ "$pinned" = "$latest" ]; then
               state='current'
             else

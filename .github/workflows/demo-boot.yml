@@ -1,0 +1,184 @@
+name: Demo boot
+
+# Boots docker-compose.demo.yml exactly as pinned — the same images, the same
+# unauthenticated pulls, the same first boot a user gets from the no-clone
+# quickstart — and fails unless the app comes up healthy with its workers.
+#
+# Three times the quickstart shipped broken because a pin named an image built
+# before the fix its command relied on: #115, #137 (the image predated
+# `scripts/app-tsx.mjs`) and #154 (it predated df297af, so the first boot's
+# migration looked for `cascadia-app/cascadia-app/tsconfig.json`, and the jobs
+# worker died on Postgres 42P01 behind it). `compose-config` in ci.yml parses
+# the file but cannot see any of that; each was found by a user running it.
+#
+# A pin breaks without the file changing — main moves on and the pinned image
+# stays behind — so this runs daily as well as on every change to the file.
+# The stale-pin report says which pins `:latest` has moved past. It warns
+# rather than fails: an older pin is fine as long as it boots, and whether
+# it does is what the boot step decides.
+#
+# A separate workflow and not a required check, on the same reasoning as
+# dependency-audit.yml: a pinned image breaking overnight says nothing about the
+# pull request that happens to be open. On a PR it runs only when the demo
+# compose (or this file) changes, where a red result is about that PR — a
+# Renovate digest bump, say. A failed scheduled run notifies whoever last edited
+# the cron line below.
+on:
+  schedule:
+    - cron: '41 12 * * *' # daily, before the working day in Pacific time
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - docker-compose.demo.yml
+      - .github/workflows/demo-boot.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - docker-compose.demo.yml
+      - .github/workflows/demo-boot.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COMPOSE_FILE: docker-compose.demo.yml
+
+jobs:
+  boot:
+    name: Boot the pinned demo stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # The four images are ~9.5 GB unpacked, the CAD converter alone 4.3 GB;
+      # a stock runner's root disk does not reliably hold them. Same reclaim as
+      # publish-demo-images.yml's cad-converter build.
+      - name: Free disk space
+        run: |
+          set -euo pipefail
+          echo "Before:"; df -h / | tail -1
+          sudo rm -rf \
+            /usr/local/lib/android \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force || true
+          echo "After:"; df -h / | tail -1
+
+      # Informational: which ghcr.io pins `:latest` has moved past. No login,
+      # so this also proves the packages are still publicly pullable.
+      - name: Report stale pins
+        run: |
+          set -euo pipefail
+          {
+            echo '## Demo image pins'
+            echo '| Image | Pinned | `:latest` |'
+            echo '| --- | --- | --- |'
+          } >> "$GITHUB_STEP_SUMMARY"
+          grep -oE 'ghcr\.io/cascadia-plm/[a-z0-9-]+:latest@sha256:[0-9a-f]{64}' "$COMPOSE_FILE" |
+          while IFS= read -r ref; do
+            repo="${ref%%:latest@*}"
+            pinned="${ref##*@}"
+            # --format, not a pipe into `awk … exit`: awk closing the pipe early
+            # made buildx fail its write, and pipefail turned that into a red
+            # step with no message (exit 255) on the Linux runner.
+            if ! latest=$(docker buildx imagetools inspect "$repo:latest" --format '{{.Manifest.Digest}}'); then
+              echo "::warning::Could not resolve ${repo##*/}:latest; skipping its stale-pin check."
+              echo "| ${repo##*/} | ${pinned:7:12} | unknown |" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            if [ "$pinned" = "$latest" ]; then
+              state='current'
+            else
+              state="moved to ${latest:7:12}"
+              echo "::warning file=$COMPOSE_FILE::${repo##*/} is pinned to ${pinned:7:12}, but :latest is now ${latest:7:12}. Bump the pin if the newer image carries a fix the demo needs."
+            fi
+            echo "| ${repo##*/} | ${pinned:7:12} | $state |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Pull images
+        run: docker compose pull --quiet
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      # Healthy means the whole first boot passed: the app's command runs
+      # migrate && seed-minimal && seed-demo && serve, and the healthcheck only
+      # answers once the server is up. A boot step that fails exits the
+      # container and `restart: unless-stopped` starts it again, so a single
+      # restart is already the failure — no need to wait out the timeout.
+      - name: Wait for the app
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 900))
+          while :; do
+            loader=$(docker inspect -f '{{.State.Status}} {{.State.ExitCode}}' cascadia-demo-data-loader)
+            if [ "${loader%% *}" = exited ] && [ "${loader##* }" != 0 ]; then
+              echo "::error::The demo-data loader exited with ${loader##* }."
+              exit 1
+            fi
+            read -r status health restarts < <(docker inspect \
+              -f '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} {{.RestartCount}}' \
+              cascadia-demo-app 2>/dev/null || echo 'absent none 0')
+            if [ "$health" = healthy ]; then
+              echo "App healthy after ${SECONDS}s."
+              break
+            fi
+            if [ "$restarts" -gt 0 ] || [ "$status" = exited ]; then
+              echo "::error::cascadia-demo-app exited during first boot (restarts: $restarts)."
+              exit 1
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::cascadia-demo-app was not healthy after 15 minutes (status: $status, health: $health)."
+              exit 1
+            fi
+            sleep 10
+          done
+
+      # The workers start beside the app, and the jobs worker restarts while the
+      # migrations are still running (42P01) or RabbitMQ is not yet accepting
+      # connections. That is expected; what matters is that each settles once the
+      # app is up.
+      - name: Wait for the workers
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 180))
+          for c in cascadia-demo-jobs-worker cascadia-demo-cad-converter; do
+            while :; do
+              health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$c")
+              if [ "$health" = healthy ]; then
+                echo "$c healthy."
+                break
+              fi
+              if [ "$SECONDS" -ge "$deadline" ]; then
+                echo "::error::$c did not become healthy within 3 minutes of the app (state: $health)."
+                exit 1
+              fi
+              sleep 10
+            done
+          done
+
+      - name: Check the app answers
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 10 http://127.0.0.1:3000/api/v1/health
+          echo
+          curl --fail --silent --show-error --max-time 10 --output /dev/null http://127.0.0.1:3000/
+          echo "SPA served."
+
+      - name: Dump state and logs
+        if: failure()
+        run: |
+          docker compose ps --all
+          docker compose logs --no-color --timestamps
+
+      - name: Tear down
+        if: always()
+        run: docker compose down --volumes

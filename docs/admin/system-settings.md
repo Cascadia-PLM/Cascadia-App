@@ -217,13 +217,13 @@ Cascadia supports AI-assisted operations with configurable providers. Settings a
 
 ### Supported Providers
 
-| Provider    | Description               |
-| ----------- | ------------------------- |
-| `openai`    | OpenAI (GPT models)       |
-| `anthropic` | Anthropic (Claude models) |
-| `deepseek`  | DeepSeek (chat + reasoner)|
-| `gemini`    | Google Gemini             |
-| `ollama`    | Self-hosted Ollama        |
+| Provider    | Description                |
+| ----------- | -------------------------- |
+| `openai`    | OpenAI (GPT models)        |
+| `anthropic` | Anthropic (Claude models)  |
+| `deepseek`  | DeepSeek (chat + reasoner) |
+| `gemini`    | Google Gemini              |
+| `ollama`    | Self-hosted Ollama         |
 
 ### Configuring AI
 

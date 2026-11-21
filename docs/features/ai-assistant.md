@@ -449,9 +449,9 @@ This allows different programs to use different providers or models.
 | `OPENAI_BASE_URL`   | Custom OpenAI-compatible endpoint              |
 | `ANTHROPIC_API_KEY` | Anthropic API key (fallback if no DB settings) |
 | `ANTHROPIC_MODEL`   | Override default Anthropic model               |
-| `DEEPSEEK_API_KEY`   | DeepSeek API key (fallback if no DB settings)  |
-| `DEEPSEEK_MODEL`     | Override default DeepSeek model                |
-| `DEEPSEEK_BASE_URL`  | Custom DeepSeek-compatible endpoint            |
+| `DEEPSEEK_API_KEY`  | DeepSeek API key (fallback if no DB settings)  |
+| `DEEPSEEK_MODEL`    | Override default DeepSeek model                |
+| `DEEPSEEK_BASE_URL` | Custom DeepSeek-compatible endpoint            |
 
 ### Settings API
 

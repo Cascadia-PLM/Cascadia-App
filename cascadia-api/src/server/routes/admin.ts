@@ -342,10 +342,10 @@ app.post(
               : provider === 'deepseek'
                 ? 'DeepSeek'
                 : provider === 'anthropic'
-                ? 'Anthropic'
-                : provider === 'gemini'
-                  ? 'Gemini'
-                  : 'Ollama'
+                  ? 'Anthropic'
+                  : provider === 'gemini'
+                    ? 'Gemini'
+                    : 'Ollama'
 
           return {
             success: true,

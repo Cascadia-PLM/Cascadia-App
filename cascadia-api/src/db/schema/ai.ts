@@ -23,11 +23,7 @@ import type {
 
 // Types for AI configuration
 export type ProviderType =
-  | 'openai'
-  | 'deepseek'
-  | 'anthropic'
-  | 'gemini'
-  | 'ollama'
+  'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'ollama'
 
 export interface AIProviderConfig {
   provider: ProviderType

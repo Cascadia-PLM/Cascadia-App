@@ -1042,6 +1042,7 @@ export const stateApproverPatchSchema = z.object({
  */
 export const aiProviderTypeSchema = z.enum([
   'openai',
+  'deepseek',
   'anthropic',
   'gemini',
   'ollama',

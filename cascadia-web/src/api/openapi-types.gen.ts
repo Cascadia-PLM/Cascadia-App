@@ -6092,11 +6092,11 @@ export interface operations {
                         model: string;
                         monthlyTokenBudget?: number;
                         /** @enum {string} */
-                        provider: "openai" | "anthropic" | "gemini" | "ollama";
+                        provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                     };
                     enabled: boolean;
                     /** @enum {string} */
-                    provider: "openai" | "anthropic" | "gemini" | "ollama";
+                    provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                 };
             };
         };
@@ -6121,7 +6121,7 @@ export interface operations {
                     apiKey?: string;
                     baseURL?: string;
                     /** @enum {string} */
-                    provider: "openai" | "anthropic" | "gemini" | "ollama";
+                    provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                 };
             };
         };
@@ -6164,7 +6164,7 @@ export interface operations {
                     baseURL?: string;
                     model: string;
                     /** @enum {string} */
-                    provider: "openai" | "anthropic" | "gemini" | "ollama";
+                    provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                 };
             };
         };
@@ -7190,13 +7190,13 @@ export interface operations {
                         model: string;
                         monthlyTokenBudget?: number;
                         /** @enum {string} */
-                        provider: "openai" | "anthropic" | "gemini" | "ollama";
+                        provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                     };
                     enabled?: boolean;
                     /** Format: uuid */
                     programId?: string;
                     /** @enum {string} */
-                    provider: "openai" | "anthropic" | "gemini" | "ollama";
+                    provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                 };
             };
         };
@@ -7224,13 +7224,13 @@ export interface operations {
                         model: string;
                         monthlyTokenBudget?: number;
                         /** @enum {string} */
-                        provider: "openai" | "anthropic" | "gemini" | "ollama";
+                        provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                     };
                     enabled?: boolean;
                     /** Format: uuid */
                     programId?: string;
                     /** @enum {string} */
-                    provider: "openai" | "anthropic" | "gemini" | "ollama";
+                    provider: "openai" | "deepseek" | "anthropic" | "gemini" | "ollama";
                 };
             };
         };

@@ -22,7 +22,8 @@ import type {
 } from '@cascadia/commons/ai/dialogs'
 
 // Types for AI configuration
-export type ProviderType = 'openai' | 'anthropic' | 'gemini' | 'ollama'
+export type ProviderType =
+  'openai' | 'deepseek' | 'anthropic' | 'gemini' | 'ollama'
 
 export interface AIProviderConfig {
   provider: ProviderType

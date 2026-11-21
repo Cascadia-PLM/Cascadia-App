@@ -20,6 +20,7 @@ export interface AiProviderSettings {
 
 export interface AiSettingsEnvVars {
   openai: boolean
+  deepseek: boolean
   anthropic: boolean
 }
 
@@ -28,7 +29,11 @@ export interface AiSettings {
   envVars: AiSettingsEnvVars
 }
 
-const NO_ENV_VARS: AiSettingsEnvVars = { openai: false, anthropic: false }
+const NO_ENV_VARS: AiSettingsEnvVars = {
+  openai: false,
+  deepseek: false,
+  anthropic: false,
+}
 
 /**
  * How the vault resolves its storage backend, and where each value came from.

@@ -142,6 +142,7 @@ Cascadia includes an AI chatbot and design engine that require API keys from sup
 | ------------------- | ----------------------------------- |
 | `OPENAI_API_KEY`    | OpenAI API key for GPT models       |
 | `ANTHROPIC_API_KEY` | Anthropic API key for Claude models |
+| `DEEPSEEK_API_KEY`  | DeepSeek API key for DeepSeek models |
 
 At least one of `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is required for AI features. If neither is set, the AI chatbot panel is hidden but the rest of the application works normally. AI CAD generation (the design engine's FreeCAD stages and the part **Generate CAD** action) uses the same provider and has no key of its own — see [CAD Services](../features/cad-services.md).
 

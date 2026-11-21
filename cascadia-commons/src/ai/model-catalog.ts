@@ -19,7 +19,13 @@
  * union; it is redeclared here rather than imported to keep that boundary.
  */
 
-export const AI_PROVIDERS = ['openai', 'anthropic', 'gemini', 'ollama'] as const
+export const AI_PROVIDERS = [
+  'openai',
+  'deepseek',
+  'anthropic',
+  'gemini',
+  'ollama',
+] as const
 
 export type AiProviderType = (typeof AI_PROVIDERS)[number]
 
@@ -32,6 +38,7 @@ export function isAiProviderType(value: unknown): value is AiProviderType {
 
 export const PROVIDER_LABELS: Record<AiProviderType, string> = {
   openai: 'OpenAI',
+  deepseek: 'DeepSeek',
   anthropic: 'Anthropic',
   gemini: 'Google Gemini',
   ollama: 'Ollama (local)',
@@ -54,6 +61,7 @@ export interface AiModelOption {
  */
 export const FALLBACK_MODELS: Record<AiProviderType, Array<string>> = {
   openai: ['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna', 'gpt-5.5'],
+  deepseek: ['deepseek-reasoner', 'deepseek-chat'],
   anthropic: [
     'claude-opus-5',
     'claude-sonnet-5',
@@ -81,12 +89,16 @@ export const FALLBACK_MODELS: Record<AiProviderType, Array<string>> = {
  */
 export const DEFAULT_MODEL: Record<AiProviderType, string> = {
   openai: 'gpt-5.6-terra',
+  deepseek: 'deepseek-chat',
   anthropic: 'claude-sonnet-5',
   gemini: 'gemini-3.6-flash',
   ollama: 'llama3.3',
 }
 
 export const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434'
+
+/** DeepSeek's OpenAI-compatible API root. */
+export const DEFAULT_DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1'
 
 /** Fallback list shaped as picker options. */
 export function fallbackModelOptions(

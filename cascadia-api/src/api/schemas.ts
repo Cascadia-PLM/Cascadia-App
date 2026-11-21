@@ -191,6 +191,11 @@ export const documentUpdateSchema = z.object({
   fileName: z.string().max(500).nullable().optional(),
   // Edited on the detail page; dropped until update bodies were strict.
   mimeType: z.string().max(100).nullable().optional(),
+  // The vault already records the file, but these were only accepted on
+  // create. Document editors (and the CAD connectors) need to mirror the
+  // stored file so the web "File Information" card is complete.
+  fileSize: z.number().int().min(0).nullable().optional(),
+  storagePath: z.string().nullable().optional(),
 })
 
 export type DocumentCreate = z.infer<typeof documentCreateSchema>

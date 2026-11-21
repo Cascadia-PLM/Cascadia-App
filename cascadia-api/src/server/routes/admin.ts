@@ -134,6 +134,7 @@ app.get(
       // Check for environment variables
       const envVars = {
         openai: !!process.env.OPENAI_API_KEY,
+        deepseek: !!process.env.DEEPSEEK_API_KEY,
         anthropic: !!process.env.ANTHROPIC_API_KEY,
       }
 
@@ -263,6 +264,9 @@ app.post(
           effectiveApiKey =
             process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
         }
+        if (!effectiveApiKey && provider === 'deepseek') {
+          effectiveApiKey = process.env.DEEPSEEK_API_KEY
+        }
 
         // Ollama doesn't need an API key
         if (provider !== 'ollama' && !effectiveApiKey) {
@@ -335,11 +339,13 @@ app.post(
           const providerName =
             provider === 'openai'
               ? 'OpenAI'
-              : provider === 'anthropic'
-                ? 'Anthropic'
-                : provider === 'gemini'
-                  ? 'Gemini'
-                  : 'Ollama'
+              : provider === 'deepseek'
+                ? 'DeepSeek'
+                : provider === 'anthropic'
+                  ? 'Anthropic'
+                  : provider === 'gemini'
+                    ? 'Gemini'
+                    : 'Ollama'
 
           return {
             success: true,
@@ -472,6 +478,8 @@ async function resolveDiscoveryApiKey(
   switch (provider) {
     case 'openai':
       return process.env.OPENAI_API_KEY
+    case 'deepseek':
+      return process.env.DEEPSEEK_API_KEY
     case 'anthropic':
       return process.env.ANTHROPIC_API_KEY
     case 'gemini':

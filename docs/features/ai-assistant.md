@@ -397,6 +397,7 @@ The AI assistant supports multiple LLM providers through TanStack AI adapters.
 | ---------------------- | --------- | ------------------ | -------------------------------------------------- |
 | **Anthropic** (Claude) | Supported | `claude-sonnet-5`  | `@tanstack/ai-anthropic`                           |
 | **OpenAI** (GPT)       | Supported | `gpt-5.6-terra`    | `@tanstack/ai-openai`                              |
+| **DeepSeek**           | Supported | `deepseek-chat`    | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
 | **Google** (Gemini)    | Supported | `gemini-3.6-flash` | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
 | **Ollama** (local)     | Supported | `llama3.3`         | `@tanstack/ai-openai` (OpenAI-compatible endpoint) |
 
@@ -448,6 +449,9 @@ This allows different programs to use different providers or models.
 | `OPENAI_BASE_URL`   | Custom OpenAI-compatible endpoint              |
 | `ANTHROPIC_API_KEY` | Anthropic API key (fallback if no DB settings) |
 | `ANTHROPIC_MODEL`   | Override default Anthropic model               |
+| `DEEPSEEK_API_KEY`  | DeepSeek API key (fallback if no DB settings)  |
+| `DEEPSEEK_MODEL`    | Override default DeepSeek model                |
+| `DEEPSEEK_BASE_URL` | Custom DeepSeek-compatible endpoint            |
 
 ### Settings API
 

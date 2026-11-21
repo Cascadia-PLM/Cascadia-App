@@ -4,11 +4,11 @@
 /**
  * Runtime model discovery.
  *
- * All four providers expose a list-models endpoint, so the admin picker does
+ * Every provider exposes a list-models endpoint, so the admin picker does
  * not have to ship a hand-maintained list of vendor model ids that goes stale
  * every few months. Each provider's response is normalised to `AiModelOption`.
  *
- * The three hosted providers differ in how much they hand back:
+ * The hosted providers differ in how much they hand back:
  *
  * - **Anthropic** — chat models only, already newest-first, with display names.
  *   Nothing to filter.
@@ -23,7 +23,10 @@
  * client bundle.
  */
 
-import { DEFAULT_OLLAMA_BASE_URL } from '@cascadia/commons/ai/model-catalog'
+import {
+  DEFAULT_DEEPSEEK_BASE_URL,
+  DEFAULT_OLLAMA_BASE_URL,
+} from '@cascadia/commons/ai/model-catalog'
 import type {
   AiModelOption,
   AiProviderType,
@@ -194,13 +197,14 @@ function isOpenAiChatModel(id: string): boolean {
 async function listOpenAiModels(
   apiKey: string,
   baseURL: string | undefined,
+  providerName = 'OpenAI',
 ): Promise<Array<AiModelOption>> {
   const base = (baseURL || 'https://api.openai.com/v1').replace(/\/+$/, '')
 
   const json = (await fetchJson(
     `${base}/models`,
     { method: 'GET', headers: { Authorization: `Bearer ${apiKey}` } },
-    'OpenAI',
+    providerName,
   )) as { data?: unknown }
 
   return asRecordArray(json.data)
@@ -322,6 +326,7 @@ async function listOllamaModels(
 
 const PROVIDER_DISPLAY_NAMES: Record<AiProviderType, string> = {
   openai: 'OpenAI',
+  deepseek: 'DeepSeek',
   anthropic: 'Anthropic',
   gemini: 'Gemini',
   ollama: 'Ollama',
@@ -356,6 +361,10 @@ export async function listProviderModels(
       return { models: await listAnthropicModels(apiKey), source }
     case 'openai':
       return { models: await listOpenAiModels(apiKey, config.baseURL), source }
+    case 'deepseek': {
+      const base = config.baseURL || DEFAULT_DEEPSEEK_BASE_URL
+      return { models: await listOpenAiModels(apiKey, base, source), source }
+    }
     case 'gemini':
       return { models: await listGeminiModels(apiKey), source }
   }

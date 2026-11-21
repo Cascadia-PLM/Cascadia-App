@@ -332,7 +332,7 @@ interface ImagePart {
  * recommend. The image part is shaped per provider because the two adapters
  * disagree about what `source.value` holds for inline data: Anthropic's wants
  * raw base64 plus the media type in `metadata`, and the OpenAI-compatible one
- * (OpenAI, Gemini, Ollama) forwards the value verbatim as `image_url`, so it
+ * (OpenAI, DeepSeek, Gemini, Ollama) forwards the value verbatim as `image_url`, so it
  * has to be a data URI.
  */
 function buildUserContent(

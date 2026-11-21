@@ -13,7 +13,10 @@ import { createAnthropicChat } from '@tanstack/ai-anthropic'
 import { createOpenaiChat } from '@tanstack/ai-openai'
 import { and, eq, gte, isNull, sql } from 'drizzle-orm'
 
-import { DEFAULT_MODEL } from '@cascadia/commons/ai/model-catalog'
+import {
+  DEFAULT_DEEPSEEK_BASE_URL,
+  DEFAULT_MODEL,
+} from '@cascadia/commons/ai/model-catalog'
 import type { AIProviderConfig, ProviderType } from '@/db/schema/ai'
 import { aiSettings, aiUsageLogs } from '@/db/schema/ai'
 import { db } from '@/db'
@@ -67,6 +70,16 @@ export function getAdapter(config: AIProviderConfig) {
       }
       return createOpenaiChat(model as any, config.apiKey, {
         baseURL: config.baseURL,
+      })
+    }
+
+    case 'deepseek': {
+      if (!config.apiKey) {
+        throw new Error('DeepSeek API key is required')
+      }
+      // DeepSeek speaks the OpenAI chat-completions wire format.
+      return createOpenaiChat(model as any, config.apiKey, {
+        baseURL: config.baseURL || DEFAULT_DEEPSEEK_BASE_URL,
       })
     }
 
@@ -189,6 +202,7 @@ export async function loadProviderConfig(
 
   // Fall back to environment variables
   const openaiKey = process.env.OPENAI_API_KEY
+  const deepseekKey = process.env.DEEPSEEK_API_KEY
   const anthropicKey = process.env.ANTHROPIC_API_KEY
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
   const ollamaBaseURL = process.env.OLLAMA_BASE_URL
@@ -199,6 +213,15 @@ export async function loadProviderConfig(
       apiKey: openaiKey,
       model: process.env.OPENAI_MODEL || DEFAULT_MODELS.openai,
       baseURL: process.env.OPENAI_BASE_URL,
+    }
+  }
+
+  if (deepseekKey) {
+    return {
+      provider: 'deepseek',
+      apiKey: deepseekKey,
+      model: process.env.DEEPSEEK_MODEL || DEFAULT_MODELS.deepseek,
+      baseURL: process.env.DEEPSEEK_BASE_URL,
     }
   }
 
@@ -228,7 +251,7 @@ export async function loadProviderConfig(
   }
 
   throw new Error(
-    'No AI provider configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, or OLLAMA_BASE_URL environment variable, or configure in AI settings.',
+    'No AI provider configured. Set OPENAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, or OLLAMA_BASE_URL environment variable, or configure in AI settings.',
   )
 }
 
@@ -259,6 +282,7 @@ export async function isAIEnabled(programId?: string): Promise<boolean> {
   // Fall back to checking env vars
   return !!(
     process.env.OPENAI_API_KEY ||
+    process.env.DEEPSEEK_API_KEY ||
     process.env.ANTHROPIC_API_KEY ||
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_API_KEY ||
@@ -274,6 +298,10 @@ export function getAvailableProviders(): Array<ProviderType> {
 
   if (process.env.OPENAI_API_KEY) {
     providers.push('openai')
+  }
+
+  if (process.env.DEEPSEEK_API_KEY) {
+    providers.push('deepseek')
   }
 
   if (process.env.ANTHROPIC_API_KEY) {

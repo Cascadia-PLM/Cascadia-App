@@ -150,6 +150,7 @@ function AIProviderForm({
     (initialSettings?.provider === settings.provider &&
       !!initialSettings.config.apiKey) ||
     (settings.provider === 'openai' && envVarsDetected.openai) ||
+    (settings.provider === 'deepseek' && envVarsDetected.deepseek) ||
     (settings.provider === 'anthropic' && envVarsDetected.anthropic)
 
   const models = useAiModels({
@@ -250,12 +251,15 @@ function AIProviderForm({
     settings.apiKey.length > 0 ||
     settings.provider === 'ollama' ||
     (settings.provider === 'openai' && envVarsDetected.openai) ||
+    (settings.provider === 'deepseek' && envVarsDetected.deepseek) ||
     (settings.provider === 'anthropic' && envVarsDetected.anthropic)
 
   return (
     <>
       {/* Environment Variables Info */}
-      {(envVarsDetected.openai || envVarsDetected.anthropic) && (
+      {(envVarsDetected.openai ||
+        envVarsDetected.deepseek ||
+        envVarsDetected.anthropic) && (
         <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
@@ -269,6 +273,14 @@ function AIProviderForm({
                     <span className="mr-3">
                       <Badge variant="outline" className="mr-1">
                         OPENAI_API_KEY
+                      </Badge>
+                      configured
+                    </span>
+                  )}
+                  {envVarsDetected.deepseek && (
+                    <span className="mr-3">
+                      <Badge variant="outline" className="mr-1">
+                        DEEPSEEK_API_KEY
                       </Badge>
                       configured
                     </span>
@@ -404,6 +416,8 @@ function AIProviderForm({
                 </div>
               </div>
               {((settings.provider === 'openai' && envVarsDetected.openai) ||
+                (settings.provider === 'deepseek' &&
+                  envVarsDetected.deepseek) ||
                 (settings.provider === 'anthropic' &&
                   envVarsDetected.anthropic)) &&
                 !settings.apiKey && (
@@ -462,6 +476,7 @@ function AIProviderForm({
 
           {/* Base URL (for OpenAI-compatible or Ollama) */}
           {(settings.provider === 'openai' ||
+            settings.provider === 'deepseek' ||
             settings.provider === 'ollama') && (
             <div className="space-y-2">
               <Label htmlFor="baseURL">
@@ -474,7 +489,9 @@ function AIProviderForm({
                 placeholder={
                   settings.provider === 'ollama'
                     ? 'http://localhost:11434'
-                    : 'https://api.openai.com/v1'
+                    : settings.provider === 'deepseek'
+                      ? 'https://api.deepseek.com/v1'
+                      : 'https://api.openai.com/v1'
                 }
                 value={settings.baseURL}
                 onChange={(e) =>
@@ -488,7 +505,9 @@ function AIProviderForm({
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 {settings.provider === 'ollama'
                   ? 'URL of your local Ollama instance'
-                  : 'Custom endpoint for OpenAI-compatible APIs (e.g., Azure OpenAI)'}
+                  : settings.provider === 'deepseek'
+                    ? 'Default is https://api.deepseek.com/v1 — change only for a proxy'
+                    : 'Custom endpoint for OpenAI-compatible APIs (e.g., Azure OpenAI)'}
               </p>
             </div>
           )}

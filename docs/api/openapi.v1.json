@@ -10540,6 +10540,18 @@
                       }
                     ]
                   },
+                  "fileSize": {
+                    "anyOf": [
+                      {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "mimeType": {
                     "anyOf": [
                       {
@@ -10565,6 +10577,12 @@
                   "state": {
                     "maxLength": 50,
                     "type": "string"
+                  },
+                  "storagePath": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "type": "object"

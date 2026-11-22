@@ -10,6 +10,7 @@ import { programMembers, programs, users } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
+import type { ProgramSettings } from '@cascadia/commons/types/program'
 import { takeFirst } from '@/db/take-first'
 import { clearableDate } from '@/api/wire-date'
 
@@ -28,6 +29,12 @@ export const programCreateSchema = z.object({
   targetEndDate: clearableDate().optional(),
   status: z.enum(['Active', 'On Hold', 'Completed', 'Cancelled']).optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  settings: z
+    .object({
+      branchProtectionScope: z.enum(['design', 'released-items']).optional(),
+    })
+    .passthrough()
+    .optional(),
 })
 
 export const programUpdateSchema = programCreateSchema.partial()
@@ -136,6 +143,7 @@ export class ProgramService {
             description: validated.description,
             contractNumber: validated.contractNumber,
             customer: validated.customer,
+            settings: (validated.settings as ProgramSettings | undefined) ?? {},
             startDate: validated.startDate,
             targetEndDate: validated.targetEndDate,
             status: validated.status || 'Active',
@@ -222,10 +230,20 @@ export class ProgramService {
       }
     }
 
+    const settingsUpdate = validated.settings as ProgramSettings | undefined
+    const { settings: _settings, ...fields } = validated
     const [updated] = await db
       .update(programs)
       .set({
-        ...validated,
+        ...fields,
+        ...(settingsUpdate !== undefined
+          ? {
+              settings: {
+                ...(existing.settings ?? {}),
+                ...settingsUpdate,
+              },
+            }
+          : {}),
         updatedBy: userId,
         updatedAt: new Date(),
       })

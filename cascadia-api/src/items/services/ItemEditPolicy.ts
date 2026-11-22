@@ -93,15 +93,24 @@ export class ItemEditPolicy {
     if (!isProtected) {
       return { allowed: true, requiresCheckout: false }
     }
-    if (await BranchService.isItemReleased(item.designId, item.state)) {
-      return {
-        allowed: false,
-        reason:
-          'This item is released. Use an ECO or workspace branch to revise it.',
-        requiresCheckout: true,
+    const scope = await BranchService.getBranchProtectionScope(item.designId)
+    if (scope === 'released-items') {
+      if (await BranchService.isItemReleased(item.designId, item.state)) {
+        return {
+          allowed: false,
+          reason:
+            'This item is released. Use an ECO or workspace branch to revise it.',
+          requiresCheckout: true,
+        }
       }
+      return { allowed: true, requiresCheckout: false }
     }
-    return { allowed: true, requiresCheckout: false }
+    return {
+      allowed: false,
+      reason:
+        'Design has released items. Use an ECO or workspace branch to make changes.',
+      requiresCheckout: true,
+    }
   }
 
   /**

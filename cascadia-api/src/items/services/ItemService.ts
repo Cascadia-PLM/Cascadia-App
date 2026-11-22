@@ -339,19 +339,32 @@ export class ItemService {
 
     const isChangeOrder = type === 'ChangeOrder'
 
-    // Per-item protection: a new row starts unreleased, so it may be created
-    // on main even after other items in the design have been released. Only a
-    // creation that asks for a released baseline state is refused.
+    // `design` scope blocks creation once anything is released. `released-items`
+    // scope allows a new row because it starts unreleased, and only refuses a
+    // creation that asks for a released baseline state.
     if (
       validatedData.designId &&
       !options?.bypassBranchProtection &&
-      !(await isBranchProtectionExempt(type)) &&
-      (await BranchService.isItemReleased(validatedData.designId, initialState))
+      !(await isBranchProtectionExempt(type))
     ) {
-      throw new BranchProtectionError(
-        `Cannot create ${type} directly on main branch: the requested item state is released`,
-        { operation: 'create', designId: validatedData.designId },
+      const scope = await BranchService.getBranchProtectionScope(
+        validatedData.designId,
       )
+      const blocked =
+        scope === 'released-items'
+          ? await BranchService.isItemReleased(
+              validatedData.designId,
+              initialState,
+            )
+          : await this.canEditDirectly(validatedData.designId).then(
+              (result) => !result.allowed,
+            )
+      if (blocked) {
+        throw new BranchProtectionError(
+          `Cannot create ${type} directly on main branch: ${scope === 'released-items' ? 'the requested item state is released' : 'the design has released items'}`,
+          { operation: 'create', designId: validatedData.designId },
+        )
+      }
     }
 
     // Generate master ID for first revision

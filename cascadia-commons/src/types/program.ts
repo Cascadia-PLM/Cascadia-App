@@ -15,10 +15,20 @@ export type JsonValue =
   | Array<JsonValue>
   | { [key: string]: JsonValue }
 
+export type BranchProtectionScope = 'design' | 'released-items'
+
 export interface ProgramSettings {
   approvalWorkflow?: Array<string> // ['Engineering', 'Manufacturing', 'Quality']
   // Renamed from `ecoNumberFormat`; migration 0004 moves the stored key
   changeOrderNumberFormat?: string // 'ECO-{YYYY}-{NNN}'
+  /**
+   * Which writes the design baseline guards.
+   *
+   * `design` (default): once any item is released, every item in the design
+   * needs a branch. `released-items`: only released items need a branch;
+   * Draft items remain editable on main.
+   */
+  branchProtectionScope?: BranchProtectionScope
   [key: string]: JsonValue | undefined
 }
 
@@ -90,6 +100,7 @@ export type CreateProgramInput = {
   targetEndDate?: Date | string | null
   status?: 'Active' | 'On Hold' | 'Completed' | 'Cancelled'
   attributes?: Record<string, unknown>
+  settings?: ProgramSettings
 }
 
 export type UpdateProgramInput = Partial<CreateProgramInput>

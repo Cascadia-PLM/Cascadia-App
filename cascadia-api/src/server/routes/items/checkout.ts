@@ -412,10 +412,16 @@ app.get(
         const designProtected = await BranchService.isMainBranchProtected(
           item.designId,
         )
+        const scope =
+          designProtected && !(await isBranchProtectionExempt(item.itemType))
+            ? await BranchService.getBranchProtectionScope(item.designId)
+            : 'design'
         isMainProtected = (await isBranchProtectionExempt(item.itemType))
           ? false
-          : designProtected &&
-            (await BranchService.isItemReleased(item.designId, item.state))
+          : scope === 'released-items'
+            ? designProtected &&
+              (await BranchService.isItemReleased(item.designId, item.state))
+            : designProtected
         if (!branchInfo && !isMainProtected) {
           const mainBranch = await BranchService.getMainBranch(item.designId)
           lockBranchId = mainBranch?.id ?? null

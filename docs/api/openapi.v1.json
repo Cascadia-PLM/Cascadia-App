@@ -24206,6 +24206,19 @@
                     "minLength": 1,
                     "type": "string"
                   },
+                  "settings": {
+                    "additionalProperties": {},
+                    "properties": {
+                      "branchProtectionScope": {
+                        "enum": [
+                          "design",
+                          "released-items"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
                   "startDate": {
                     "anyOf": [
                       {
@@ -24425,6 +24438,19 @@
                     "maxLength": 200,
                     "minLength": 1,
                     "type": "string"
+                  },
+                  "settings": {
+                    "additionalProperties": {},
+                    "properties": {
+                      "branchProtectionScope": {
+                        "enum": [
+                          "design",
+                          "released-items"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
                   },
                   "startDate": {
                     "anyOf": [

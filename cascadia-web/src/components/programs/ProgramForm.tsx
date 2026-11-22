@@ -35,6 +35,7 @@ const programFormSchema = z.object({
   startDate: z.string().optional(),
   targetEndDate: z.string().optional(),
   status: z.enum(['Active', 'On Hold', 'Completed', 'Cancelled']).optional(),
+  branchProtectionScope: z.enum(['design', 'released-items']),
 })
 
 interface ProgramFormProps {
@@ -71,6 +72,8 @@ export function ProgramForm({
         (program?.status as
           'Active' | 'On Hold' | 'Completed' | 'Cancelled' | undefined) ??
         'Active',
+      branchProtectionScope:
+        program?.settings?.branchProtectionScope ?? 'design',
     },
     validators: {
       onSubmit: zodValidator(programFormSchema),
@@ -86,6 +89,10 @@ export function ProgramForm({
         targetEndDate: value.targetEndDate || undefined,
         status: value.status,
         attributes: attributes,
+        settings: {
+          ...(program?.settings ?? {}),
+          branchProtectionScope: value.branchProtectionScope,
+        },
       }
       await onSubmit(submissionData)
     },
@@ -258,6 +265,37 @@ export function ProgramForm({
                 onBlur={field.handleBlur}
                 error={!!field.state.meta.errors.length}
               />
+            </FormField>
+          )}
+        </form.Field>
+
+        {/* Branch protection scope */}
+        <form.Field name="branchProtectionScope">
+          {(field) => (
+            <FormField
+              label="Branch protection"
+              helpText="Controls whether unreleased parts stay editable on main after the design has released items."
+              error={field.state.meta.errors[0]}
+              className="md:col-span-2"
+            >
+              <Select
+                value={field.state.value}
+                onValueChange={(value) =>
+                  field.handleChange(value as 'design' | 'released-items')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select protection scope" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="design">
+                    Whole design (default) — any release protects all items
+                  </SelectItem>
+                  <SelectItem value="released-items">
+                    Released items only — Draft items stay editable on main
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </FormField>
           )}
         </form.Field>

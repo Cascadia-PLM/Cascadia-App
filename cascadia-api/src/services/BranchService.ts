@@ -16,7 +16,9 @@ import {
   branchItems,
   branches,
   changeOrderAffectedItems,
+  designs,
   items,
+  programs,
   tags,
 } from '../db/schema'
 import {
@@ -970,8 +972,6 @@ export class BranchService {
    * List workspace branches by user (with design info)
    */
   static async listByUser(userId: string) {
-    const { designs } = await import('../db/schema')
-
     return db
       .select({
         id: branches.id,
@@ -1173,6 +1173,27 @@ export class BranchService {
       .limit(1)
 
     return releasedItems.length > 0
+  }
+
+  /**
+   * Which writes main's protection governs for this design.
+   *
+   * Defaults to `design` so existing programs keep the original baseline
+   * behavior until an administrator opts into per-item protection.
+   */
+  static async getBranchProtectionScope(
+    designId: string,
+  ): Promise<'design' | 'released-items'> {
+    const row = await db
+      .select({ settings: programs.settings })
+      .from(designs)
+      .innerJoin(programs, eq(designs.programId, programs.id))
+      .where(eq(designs.id, designId))
+      .limit(1)
+      .then((rows) => rows.at(0))
+    return row?.settings?.branchProtectionScope === 'released-items'
+      ? 'released-items'
+      : 'design'
   }
 
   /**

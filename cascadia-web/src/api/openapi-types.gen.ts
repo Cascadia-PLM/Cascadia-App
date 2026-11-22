@@ -15198,6 +15198,12 @@ export interface operations {
                     customer?: string;
                     description?: string;
                     name: string;
+                    settings?: {
+                        /** @enum {string} */
+                        branchProtectionScope?: "design" | "released-items";
+                    } & {
+                        [key: string]: unknown;
+                    };
                     startDate?: string | null;
                     /** @enum {string} */
                     status?: "Active" | "On Hold" | "Completed" | "Cancelled";
@@ -15271,6 +15277,12 @@ export interface operations {
                     customer?: string;
                     description?: string;
                     name?: string;
+                    settings?: {
+                        /** @enum {string} */
+                        branchProtectionScope?: "design" | "released-items";
+                    } & {
+                        [key: string]: unknown;
+                    };
                     startDate?: string | null;
                     /** @enum {string} */
                     status?: "Active" | "On Hold" | "Completed" | "Cancelled";

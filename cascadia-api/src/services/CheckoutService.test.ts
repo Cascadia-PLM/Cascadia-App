@@ -70,6 +70,7 @@ import { takeFirst } from '@/db/take-first'
 import '@/items/registerItemTypes.server'
 
 describe('CheckoutService', () => {
+  let setProtectionScope: (scope: 'design' | 'released-items') => Promise<void>
   const testDb = new TestDatabase()
   let user: TestUser
   let otherUser: TestUser
@@ -114,6 +115,12 @@ describe('CheckoutService', () => {
     )
 
     programId = program.id
+    setProtectionScope = async (scope) => {
+      await testDb.db
+        .update(programs)
+        .set({ settings: { branchProtectionScope: scope } })
+        .where(eq(programs.id, programId))
+    }
 
     // The program's creator is not automatically a member when the row is
     // inserted directly (ProgramService.create is what enrols them), and
@@ -1179,6 +1186,7 @@ describe('CheckoutService', () => {
     it('allows creating an unreleased item on protected main branch', async () => {
       // Main is protected once anything in the design is released, but a new
       // row starts unreleased and therefore has no released lineage to guard.
+      await setProtectionScope('released-items')
       await createReleasedPart({ name: 'Released Part' })
 
       const result = await CheckoutService.createOnBranch(
@@ -1823,6 +1831,7 @@ describe('CheckoutService', () => {
     })
 
     it('allows editing a draft item on protected main', async () => {
+      await setProtectionScope('released-items')
       await createReleasedPart({ name: 'Released Baseline' })
       const draft = await ItemService.create(
         'Part',
@@ -1895,6 +1904,7 @@ describe('CheckoutService', () => {
     })
 
     it('allows checkout of a draft item on protected main', async () => {
+      await setProtectionScope('released-items')
       await createReleasedPart({ name: 'Released Baseline' })
       const draft = await ItemService.create(
         'Part',

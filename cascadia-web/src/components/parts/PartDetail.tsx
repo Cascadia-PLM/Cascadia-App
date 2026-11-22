@@ -27,7 +27,11 @@ import { ImpactAnalysisDialog } from '@/components/impact'
 import { Slot } from '@/ui/slot-registry'
 import { ItemHistoryTab } from '@/components/items/ItemHistoryTab'
 import { PhaseBadge } from '@/components/items/PhaseBadge'
-import { ImageGallery, useItemImages } from '@/components/vault'
+import {
+  ImageGallery,
+  ItemFilePreviewPanel,
+  useItemImages,
+} from '@/components/vault'
 import { WorkInstructionsForPartPanel } from '@/components/work-instructions'
 import { CheckoutDialog } from '@/components/items/CheckoutDialog'
 import { resolveItemBranchActions } from '@/components/items/itemBranchActions'
@@ -93,8 +97,12 @@ const tabGridCols = (
   hasVariants: boolean,
 ): string => {
   if (isCreateMode) return 'grid-cols-2'
-  const count = 5 + (hasGallery ? 1 : 0) + (hasVariants ? 1 : 0)
-  return { 5: 'grid-cols-5', 6: 'grid-cols-6', 7: 'grid-cols-7' }[count]!
+  const count = 6 + (hasGallery ? 1 : 0) + (hasVariants ? 1 : 0)
+  return {
+    6: 'grid-cols-6',
+    7: 'grid-cols-7',
+    8: 'grid-cols-8',
+  }[count]!
 }
 
 // Default empty part for create mode
@@ -129,6 +137,7 @@ const createEmptyPart = (): Part => ({
 export const PART_DETAIL_TABS = [
   'details',
   'gallery',
+  'drawings',
   'relationships',
   'variants',
   'sources',
@@ -793,6 +802,9 @@ export function PartDetail({
           >
             <TabsTrigger value="details">Details</TabsTrigger>
             {hasGallery && <TabsTrigger value="gallery">Gallery</TabsTrigger>}
+            {!isCreateMode && (
+              <TabsTrigger value="drawings">Drawings</TabsTrigger>
+            )}
             <TabsTrigger value="relationships">Relationships</TabsTrigger>
             {hasVariants && (
               <TabsTrigger value="variants">Variants</TabsTrigger>
@@ -947,6 +959,32 @@ export function PartDetail({
                       context.type === 'branch' ? context.branchId : undefined
                     }
                     mainBranchId={mainBranchId}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Drawings Tab — PDFs attached to this part, for the workshop */}
+          {!isCreateMode && currentPart.id && (
+            <TabsContent value="drawings" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Drawings</CardTitle>
+                  <CardDescription>
+                    PDF drawings attached to this part — click one to preview
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ItemFilePreviewPanel
+                    itemId={currentPart.id}
+                    branchId={
+                      context.type === 'branch' ? context.branchId : undefined
+                    }
+                    mainBranchId={mainBranchId}
+                    fileFilter={(file) =>
+                      file.originalFileName.toLowerCase().endsWith('.pdf')
+                    }
                   />
                 </CardContent>
               </Card>

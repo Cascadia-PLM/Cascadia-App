@@ -61,6 +61,8 @@ interface ItemFilePreviewPanelProps {
    * tools.
    */
   canAnnotate?: boolean
+  /** Optional filter, e.g. PDF-only for the Drawings tab. */
+  fileFilter?: (file: FileRecord) => boolean
   className?: string
 }
 
@@ -76,12 +78,16 @@ export function ItemFilePreviewPanel({
   branchId,
   mainBranchId,
   canAnnotate = false,
+  fileFilter,
   className,
 }: ItemFilePreviewPanelProps) {
-  const { previewable, isLoading } = useItemPreviewableFiles(itemId, {
-    branchId,
-    mainBranchId,
-  })
+  const { previewable: allPreviewable, isLoading } = useItemPreviewableFiles(
+    itemId,
+    { branchId, mainBranchId },
+  )
+  const previewable = fileFilter
+    ? allPreviewable.filter(fileFilter)
+    : allPreviewable
 
   const { data: session } = useQuery(authSessionQuery())
   const [selectedId, setSelectedId] = useState<string | null>(null)

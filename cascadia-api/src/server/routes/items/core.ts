@@ -49,6 +49,28 @@ import { items, vaultFiles } from '@/db/schema'
 import { designs } from '@/db/schema/designs'
 import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
 
+/** One summary of PDF/STEP attachments for a page of items. */
+async function derivativeSummary(
+  resultItems: Array<{ id: string }>,
+): Promise<Record<string, { pdf: boolean; step: boolean }>> {
+  const ids = resultItems.map((item) => item.id)
+  const summary: Record<string, { pdf: boolean; step: boolean }> = {}
+  for (const id of ids) summary[id] = { pdf: false, step: false }
+  if (ids.length === 0) return summary
+  const rows = await db
+    .select({ itemId: vaultFiles.itemId, fileName: vaultFiles.fileName })
+    .from(vaultFiles)
+    .where(and(inArray(vaultFiles.itemId, ids), isNull(vaultFiles.deletedAt)))
+  for (const row of rows) {
+    const entry = summary[row.itemId]
+    if (!entry) continue
+    const extension = row.fileName.toLowerCase().split('.').pop()
+    if (extension === 'pdf') entry.pdf = true
+    if (['step', 'stp', 'iges', 'igs'].includes(extension ?? '')) entry.step = true
+  }
+  return summary
+}
+
 const adapt = tagged('Items')
 
 /**
@@ -485,6 +507,8 @@ app.get(
         undefined) as 'asc' | 'desc' | undefined
       const includeCounts = url.searchParams.get('includeCounts') === 'true'
       const countStates = url.searchParams.get('countStates')
+      const includeDerivatives =
+        url.searchParams.get('includeDerivatives') === 'true'
 
       let columnFilters:
         | Record<
@@ -595,6 +619,10 @@ app.get(
           context: contextDescription,
         }
 
+        if (includeDerivatives) {
+          response.derivatives = await derivativeSummary(result.items as Array<{ id: string }>)
+        }
+
         if (includeCounts && countStates) {
           const allItems = await ItemService.listAtContext(designId, context, {
             itemType,
@@ -640,6 +668,10 @@ app.get(
           items: result.items,
           total: result.total,
           context: contextDescription,
+        }
+
+        if (includeDerivatives) {
+          response.derivatives = await derivativeSummary(result.items as Array<{ id: string }>)
         }
 
         // Same rollup the explicit-version-context path above performs. It

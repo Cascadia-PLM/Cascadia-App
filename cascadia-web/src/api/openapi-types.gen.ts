@@ -11163,6 +11163,13 @@ export interface operations {
                      */
                     meshQuality?: "preview" | "standard" | "high";
                     /**
+                     * @description Derivative formats to store. GLB is the web viewer format; STL is only needed for 3D printing/import. Defaults to GLB only.
+                     * @default [
+                     *       "glb"
+                     *     ]
+                     */
+                    outputFormats?: ("glb" | "stl")[];
+                    /**
                      * Format: uuid
                      * @description Attach the converted mesh to this item instead of the source file’s own — e.g. a STEP held on a Document producing an STL on the Part.
                      */

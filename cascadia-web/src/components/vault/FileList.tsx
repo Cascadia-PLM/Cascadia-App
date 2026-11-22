@@ -59,14 +59,14 @@ import { apiErrorFromResponse } from '@/api/client'
 import { downloadBlob } from '@/utils/download'
 
 const fileOrderRank = (file: FileRecord): number => {
-  const extension = (file.originalFileName ?? '').toLowerCase().split('.').pop()
+  const extension = file.originalFileName.toLowerCase().split('.').pop() ?? ''
   if (file.isPrimaryModel && extension === 'dwg') return 0
   if (extension === 'pdf') return 1
   const is3dModel =
     file.fileCategory === 'cad_model' ||
     Boolean(file.metadata?.cadFormat) ||
     ['step', 'stp', 'iges', 'igs', 'glb', 'gltf', 'obj', 'stl', '3mf'].includes(
-      extension ?? '',
+      extension,
     )
   if (is3dModel) return 2
   return 3
@@ -75,15 +75,11 @@ const fileOrderRank = (file: FileRecord): number => {
 const compareFilesForDisplay = (a: FileRecord, b: FileRecord): number => {
   const rank = fileOrderRank(a) - fileOrderRank(b)
   if (rank !== 0) return rank
-  const version = (b.fileVersion ?? 0) - (a.fileVersion ?? 0)
+  const version = b.fileVersion - a.fileVersion
   if (version !== 0) return version
-  const uploaded = String(b.uploadedAt ?? '').localeCompare(
-    String(a.uploadedAt ?? ''),
-  )
+  const uploaded = String(b.uploadedAt).localeCompare(String(a.uploadedAt))
   if (uploaded !== 0) return uploaded
-  return String(a.originalFileName ?? '').localeCompare(
-    String(b.originalFileName ?? ''),
-  )
+  return String(a.originalFileName).localeCompare(String(b.originalFileName))
 }
 
 export interface FileRecord {
@@ -376,16 +372,13 @@ export function FileList({
   }
 
   const getCategoryBadge = (file: FileRecord) => {
-    const extension = (file.originalFileName ?? '')
-      .toLowerCase()
-      .split('.')
-      .pop()
-    const isStep = ['step', 'stp', 'iges', 'igs'].includes(extension ?? '')
+    const extension = file.originalFileName.toLowerCase().split('.').pop() ?? ''
+    const isStep = ['step', 'stp', 'iges', 'igs'].includes(extension)
     const isInventorPart = ['ipt', 'sldprt', 'par', 'prt', 'catpart'].includes(
-      extension ?? '',
+      extension,
     )
     const isInventorAssembly = ['iam', 'sldasm', 'asm', 'catproduct'].includes(
-      extension ?? '',
+      extension,
     )
     const is2dDrawing = [
       'dwg',
@@ -395,12 +388,12 @@ export function FileList({
       'dft',
       'drw',
       'catdrawing',
-    ].includes(extension ?? '')
+    ].includes(extension)
 
     let label: string | null = null
     let variant: 'default' | 'secondary' | 'outline' | 'success' = 'secondary'
 
-    if (file.isPrimaryModel && ['dwg', 'dxf'].includes(extension ?? '')) {
+    if (file.isPrimaryModel && ['dwg', 'dxf'].includes(extension)) {
       // The native BricsCAD model is the actual CAD model; the exported
       // STEP/PDF files are derivatives of it.
       label = 'CAD Model'

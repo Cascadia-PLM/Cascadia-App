@@ -78,6 +78,13 @@ function batchDenial(
 
 const convertInputSchema = z.object({
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
+  outputFormats: z
+    .array(z.enum(['glb', 'stl']))
+    .default(['glb'])
+    .describe(
+      'Derivative formats to store. GLB is the web viewer format; STL is ' +
+        'only needed for 3D printing/import. Defaults to GLB only.',
+    ),
   decompose: z
     .boolean()
     .default(false)
@@ -610,7 +617,9 @@ app.post(
             vaultFileId: fileId,
             itemId: outputItemId,
             outputBranchId: outputBranch?.branchId ?? null,
-            outputFormat: 'stl',
+            outputFormats: input.decompose
+              ? [...new Set([...input.outputFormats, 'stl'])]
+              : input.outputFormats,
             meshQuality: input.meshQuality,
             decompose: input.decompose,
             userId: user.id,

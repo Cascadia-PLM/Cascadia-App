@@ -8,6 +8,7 @@ export const cadConversionPayloadSchema = z.object({
   itemId: z.string().uuid(),
   outputBranchId: z.string().uuid().nullable().optional(),
   outputFormat: z.string().default('stl'),
+  outputFormats: z.array(z.enum(['glb', 'stl'])).default(['glb']),
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
   decompose: z.boolean().default(false),
   userId: z.string().uuid(),

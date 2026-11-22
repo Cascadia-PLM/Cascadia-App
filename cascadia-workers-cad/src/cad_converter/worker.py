@@ -464,7 +464,23 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
         total_polygons = 0
         combined_bbox: Optional[BoundingBox] = None
 
+        store_stl = 'stl' in payload.outputFormats or payload.decompose
+        store_glb = 'glb' in payload.outputFormats
+
         for output in outputs:
+            total_polygons += output.polygon_count
+            if output.bounding_box:
+                if combined_bbox is None:
+                    combined_bbox = output.bounding_box
+                else:
+                    combined_bbox = BoundingBox(
+                        x=max(combined_bbox.x, output.bounding_box.x),
+                        y=max(combined_bbox.y, output.bounding_box.y),
+                        z=max(combined_bbox.z, output.bounding_box.z),
+                    )
+            if not store_stl:
+                continue
+
             file_size = os.path.getsize(output.stl_path)
             file_hash = compute_file_hash(output.stl_path)
 
@@ -502,7 +518,6 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
             )
 
             output_file_ids.append(file_id)
-            total_polygons += output.polygon_count
 
             if payload.decompose:
                 manifest_parts.append(ManifestPart(
@@ -514,20 +529,9 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                     color=output.color,
                 ))
 
-            # Combine bounding boxes (take max extents)
-            if output.bounding_box:
-                if combined_bbox is None:
-                    combined_bbox = output.bounding_box
-                else:
-                    combined_bbox = BoundingBox(
-                        x=max(combined_bbox.x, output.bounding_box.x),
-                        y=max(combined_bbox.y, output.bounding_box.y),
-                        z=max(combined_bbox.z, output.bounding_box.z),
-                    )
-
-        # Store GLB files in vault alongside STLs
+        # Store GLB files in vault
         glb_file_ids: list[str] = []
-        for i, output in enumerate(outputs):
+        for i, output in enumerate(outputs if store_glb else []):
             if not output.glb_path or not os.path.exists(output.glb_path):
                 continue
 

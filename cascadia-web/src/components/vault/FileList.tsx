@@ -9,7 +9,6 @@ import {
   Download,
   Eye,
   FileIcon,
-  FileSearch,
   FileSpreadsheet,
   FileText,
   Image as ImageIcon,
@@ -150,6 +149,12 @@ export function FileList({
     : files
 
   const loadFiles = () => invalidate('files')
+
+  const handlePreview = (file: FileRecord) => {
+    if (!isPreviewable(file.originalFileName, file.fileSize)) return
+    if (onPreviewFile) onPreviewFile(file)
+    else setPreviewFile(file)
+  }
 
   const handleDownload = async (file: FileRecord) => {
     try {
@@ -424,8 +429,27 @@ export function FileList({
       accessorFn: () => '', // Not used for display
       enableSorting: false,
       enableFiltering: false,
-      cell: ({ row }) =>
-        getFileIcon(row.original.mimeType, row.original.fileCategory),
+      cell: ({ row }) => {
+        const file = row.original
+        const icon = getFileIcon(file.mimeType, file.fileCategory)
+        if (!isPreviewable(file.originalFileName, file.fileSize)) {
+          return icon
+        }
+        return (
+          <button
+            type="button"
+            className="rounded p-1 -m-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400"
+            onClick={(event) => {
+              event.stopPropagation()
+              handlePreview(file)
+            }}
+            title="Preview file"
+            aria-label={`Preview ${file.originalFileName}`}
+          >
+            {icon}
+          </button>
+        )
+      },
     },
     {
       id: 'fileName',
@@ -600,18 +624,6 @@ export function FileList({
     return (
       <div className="flex justify-end gap-1">
         {!readOnly && <Slot name="file-row-actions" props={{ file }} />}
-        {isPreviewable(file.originalFileName, file.fileSize) && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() =>
-              onPreviewFile ? onPreviewFile(file) : setPreviewFile(file)
-            }
-            title="Preview"
-          >
-            <FileSearch className="w-4 h-4" />
-          </Button>
-        )}
         {isViewableCAD(file) && onViewCAD && (
           <Button
             variant="ghost"

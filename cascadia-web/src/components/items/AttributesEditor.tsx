@@ -13,6 +13,8 @@ import {
   Input,
 } from '@/components/ui'
 
+import { orderedAttributeEntries } from '@/utils/attribute-order'
+
 interface AttributesEditorProps {
   value: Record<string, unknown>
   onChange: (attributes: Record<string, unknown>) => void
@@ -66,8 +68,8 @@ export function AttributesEditor({
   compact = false,
 }: AttributesEditorProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const entries = orderedAttributeEntries(value)
 
-  const entries = Object.entries(value)
   const attributeCount = entries.length
 
   const handleAddAttribute = () => {

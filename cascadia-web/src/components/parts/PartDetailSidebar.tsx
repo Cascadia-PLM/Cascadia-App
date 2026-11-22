@@ -20,6 +20,7 @@ import {
   ViewEditStatic,
 } from '@/components/ui'
 
+import { orderedAttributeEntries } from '@/utils/attribute-order'
 /**
  * The right-hand column of a part's Details tab: custom attributes, the file
  * vault, and the row's own metadata.
@@ -86,7 +87,7 @@ export function PartDetailSidebar({
               <CardContent className="pt-0">
                 {Object.keys(part.attributes ?? {}).length > 0 ? (
                   <dl className="space-y-3">
-                    {Object.entries(part.attributes ?? {}).map(
+                    {orderedAttributeEntries(part.attributes).map(
                       ([key, value]) => (
                         <div key={key} className="space-y-1">
                           <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">

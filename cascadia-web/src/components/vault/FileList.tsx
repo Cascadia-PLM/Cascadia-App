@@ -58,6 +58,34 @@ import { Slot } from '@/ui/slot-registry'
 import { apiErrorFromResponse } from '@/api/client'
 import { downloadBlob } from '@/utils/download'
 
+const fileOrderRank = (file: FileRecord): number => {
+  const extension = (file.originalFileName ?? '').toLowerCase().split('.').pop()
+  if (file.isPrimaryModel && extension === 'dwg') return 0
+  if (extension === 'pdf') return 1
+  const is3dModel =
+    file.fileCategory === 'cad_model' ||
+    Boolean(file.metadata?.cadFormat) ||
+    ['step', 'stp', 'iges', 'igs', 'glb', 'gltf', 'obj', 'stl', '3mf'].includes(
+      extension ?? '',
+    )
+  if (is3dModel) return 2
+  return 3
+}
+
+const compareFilesForDisplay = (a: FileRecord, b: FileRecord): number => {
+  const rank = fileOrderRank(a) - fileOrderRank(b)
+  if (rank !== 0) return rank
+  const version = (b.fileVersion ?? 0) - (a.fileVersion ?? 0)
+  if (version !== 0) return version
+  const uploaded = String(b.uploadedAt ?? '').localeCompare(
+    String(a.uploadedAt ?? ''),
+  )
+  if (uploaded !== 0) return uploaded
+  return String(a.originalFileName ?? '').localeCompare(
+    String(b.originalFileName ?? ''),
+  )
+}
+
 export interface FileRecord {
   id: string
   itemId: string
@@ -148,6 +176,7 @@ export function FileList({
         applicabilityMatches(file.applicability, selectedMake.selections),
       )
     : files
+  const orderedFiles = effectiveFiles.slice().sort(compareFilesForDisplay)
 
   const loadFiles = () => invalidate('files')
 
@@ -346,21 +375,69 @@ export function FileList({
     return <FileIcon className="w-4 h-4" />
   }
 
-  const getCategoryBadge = (
-    category: string | undefined,
-    isPrimary: boolean | undefined,
-  ) => {
-    if (!isFileCategory(category)) return null
+  const getCategoryBadge = (file: FileRecord) => {
+    const extension = (file.originalFileName ?? '')
+      .toLowerCase()
+      .split('.')
+      .pop()
+    const isStep = ['step', 'stp', 'iges', 'igs'].includes(extension ?? '')
+    const isInventorPart = ['ipt', 'sldprt', 'par', 'prt', 'catpart'].includes(
+      extension ?? '',
+    )
+    const isInventorAssembly = ['iam', 'sldasm', 'asm', 'catproduct'].includes(
+      extension ?? '',
+    )
+    const is2dDrawing = [
+      'dwg',
+      'dxf',
+      'idw',
+      'slddrw',
+      'dft',
+      'drw',
+      'catdrawing',
+    ].includes(extension ?? '')
 
-    const config = FILE_CATEGORY_DEFINITIONS[category]
-    if (!config.badged) return null
+    let label: string | null = null
+    let variant: 'default' | 'secondary' | 'outline' | 'success' = 'secondary'
+
+    if (file.isPrimaryModel && ['dwg', 'dxf'].includes(extension ?? '')) {
+      // The native BricsCAD model is the actual CAD model; the exported
+      // STEP/PDF files are derivatives of it.
+      label = 'CAD Model'
+      variant = 'default'
+    } else if (isStep) {
+      label = '3D STEP'
+      variant = 'secondary'
+    } else if (isInventorPart) {
+      label = '3D Part'
+      variant = 'default'
+    } else if (isInventorAssembly) {
+      label = '3D Assembly'
+      variant = 'default'
+    } else if (is2dDrawing && extension !== 'dwg' && extension !== 'dxf') {
+      label = '2D Drawing'
+      variant = 'secondary'
+    } else if (is2dDrawing) {
+      label = 'Drawing'
+      variant = 'secondary'
+    }
+
+    if (!label && isFileCategory(file.fileCategory)) {
+      const config = FILE_CATEGORY_DEFINITIONS[file.fileCategory]
+      if (config.badged) {
+        label = config.badgeLabel
+        variant = config.badgeVariant as typeof variant
+      }
+    }
+
+    if (!label) return null
 
     return (
       <div className="flex items-center gap-1">
-        <Badge variant={config.badgeVariant} className="text-xs">
-          {config.badgeLabel}
+        <Badge variant={variant} className="text-xs">
+          {label}
         </Badge>
-        {isPrimary && (
+        {file.isPrimaryModel && (
           <Badge variant="success" className="text-xs">
             Primary
           </Badge>
@@ -442,7 +519,7 @@ export function FileList({
               <p className="font-medium text-slate-900 dark:text-white">
                 {file.originalFileName}
               </p>
-              {getCategoryBadge(file.fileCategory, file.isPrimaryModel)}
+              {getCategoryBadge(file)}
               {file.isItemThumbnail && (
                 <Badge variant="secondary" className="text-xs">
                   Thumbnail
@@ -737,7 +814,7 @@ export function FileList({
         </div>
       )}
       <DataGrid
-        data={effectiveFiles}
+        data={orderedFiles}
         columns={columns}
         getRowId={(row) => row.id}
         enableRowActions={true}

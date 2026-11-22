@@ -629,6 +629,39 @@ describe('BranchService', () => {
         expect(isProtected).toBe(true)
       })
 
+      it('classifies only released states as released items', async () => {
+        const draft = await ItemService.create(
+          'Part',
+          {
+            itemNumber: `PN-${Date.now()}-DRAFT`,
+            revision: 'A',
+            name: 'Draft Part',
+            state: 'Draft',
+            designId,
+          } as any,
+          user.id,
+        )
+        const released = await ItemService.create(
+          'Part',
+          {
+            itemNumber: `PN-${Date.now()}-RELEASED`,
+            revision: 'A',
+            name: 'Released Part',
+            state: 'Released',
+            designId,
+          } as any,
+          user.id,
+        )
+
+        expect(await BranchService.isItemReleased(designId, draft.state)).toBe(
+          false,
+        )
+        expect(
+          await BranchService.isItemReleased(designId, released.state),
+        ).toBe(true)
+        expect(await BranchService.isItemReleased(designId, null)).toBe(false)
+      })
+
       // Protection keys on the whole released FAMILY. A design whose released
       // items were all later obsoleted has no current row in a release-target
       // state — but its history is exactly what protection exists to guard,

@@ -1176,22 +1176,25 @@ describe('CheckoutService', () => {
       expect(result.commit).toBeDefined()
     })
 
-    it('throws error when creating on protected main branch', async () => {
-      // Main branch is only protected when design has released items
+    it('allows creating an unreleased item on protected main branch', async () => {
+      // Main is protected once anything in the design is released, but a new
+      // row starts unreleased and therefore has no released lineage to guard.
       await createReleasedPart({ name: 'Released Part' })
 
-      await expect(
-        CheckoutService.createOnBranch(
-          {
-            designId,
-            itemNumber: `PN-NEW-${Date.now()}`,
-            itemType: 'Part',
-          },
-          mainBranchId,
-          'Added new part',
-          user.id,
-        ),
-      ).rejects.toThrow(ValidationError)
+      const result = await CheckoutService.createOnBranch(
+        {
+          designId,
+          itemNumber: `PN-NEW-${Date.now()}`,
+          itemType: 'Part',
+          name: 'New Draft on Protected Main',
+        },
+        mainBranchId,
+        'Added new part',
+        user.id,
+      )
+
+      expect(result.item).toBeDefined()
+      expect(RevisionService.isWorkingRevision(result.item.revision)).toBe(true)
     })
 
     it('allows creating on unprotected main branch (pre-release)', async () => {
@@ -1819,6 +1822,28 @@ describe('CheckoutService', () => {
       await ItemService.removeRelationship(relationship.id, user.id)
     })
 
+    it('allows editing a draft item on protected main', async () => {
+      await createReleasedPart({ name: 'Released Baseline' })
+      const draft = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-DRAFT-EDIT`,
+          revision: 'A',
+          name: 'Draft Edit',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      const updated = await ItemService.update(
+        draft.id,
+        { name: 'Draft edit allowed' },
+        user.id,
+      )
+
+      expect(updated.name).toBe('Draft edit allowed')
+    })
+
     it('blocks BOM edits on released items on protected main', async () => {
       const parent = await createReleasedPart({ name: 'Released Parent' })
       const child = await createReleasedPart({ name: 'Released Child' })
@@ -1869,7 +1894,28 @@ describe('CheckoutService', () => {
       expect(updated.name).toBe('Free again')
     })
 
-    it('rejects checkout on protected main', async () => {
+    it('allows checkout of a draft item on protected main', async () => {
+      await createReleasedPart({ name: 'Released Baseline' })
+      const draft = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-DRAFT-CHECKOUT`,
+          revision: 'A',
+          name: 'Draft Checkout',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      const branchItem = await CheckoutService.checkout(
+        { itemMasterId: draft.masterId, branchId: mainBranchId },
+        user.id,
+      )
+
+      expect(branchItem.checkedOutBy).toBe(user.id)
+    })
+
+    it('rejects checkout of a released item on protected main', async () => {
       const part = await createReleasedPart()
 
       await expect(

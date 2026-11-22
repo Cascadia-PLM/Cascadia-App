@@ -337,24 +337,21 @@ export class ItemService {
       initialState = await this.resolveInitialStateId(type)
     }
 
-    // Check branch protection if item is associated with a design
-    // Skip this check if:
-    // - bypassBranchProtection is true (for ECO operations or tests)
-    // - The type is exempt, which its lifecycle decides: only Driven
-    //   lifecycles are ECO-controlled (see items/branch-protection.ts)
     const isChangeOrder = type === 'ChangeOrder'
+
+    // Per-item protection: a new row starts unreleased, so it may be created
+    // on main even after other items in the design have been released. Only a
+    // creation that asks for a released baseline state is refused.
     if (
       validatedData.designId &&
       !options?.bypassBranchProtection &&
-      !(await isBranchProtectionExempt(type))
+      !(await isBranchProtectionExempt(type)) &&
+      (await BranchService.isItemReleased(validatedData.designId, initialState))
     ) {
-      const canEdit = await this.canEditDirectly(validatedData.designId)
-      if (!canEdit.allowed) {
-        throw new BranchProtectionError(
-          `Cannot create ${type} directly on main branch: ${canEdit.reason}`,
-          { operation: 'create', designId: validatedData.designId },
-        )
-      }
+      throw new BranchProtectionError(
+        `Cannot create ${type} directly on main branch: the requested item state is released`,
+        { operation: 'create', designId: validatedData.designId },
+      )
     }
 
     // Generate master ID for first revision

@@ -73,6 +73,38 @@ export class ItemEditPolicy {
   }
 
   /**
+   * Whether this specific item may be edited directly on main.
+   *
+   * The design-level phase still decides whether *anything* is frozen, but a
+   * Draft item is not released lineage: it has never entered main's released
+   * baseline and may be edited in place. Only items whose own state is a
+   * released state require a branch/ECO.
+   */
+  static async canEditItemDirectly(item: {
+    designId?: string | null
+    state?: string | null
+  }): Promise<{
+    allowed: boolean
+    reason?: string
+    requiresCheckout: boolean
+  }> {
+    if (!item.designId) return { allowed: true, requiresCheckout: false }
+    const isProtected = await BranchService.isMainBranchProtected(item.designId)
+    if (!isProtected) {
+      return { allowed: true, requiresCheckout: false }
+    }
+    if (await BranchService.isItemReleased(item.designId, item.state)) {
+      return {
+        allowed: false,
+        reason:
+          'This item is released. Use an ECO or workspace branch to revise it.',
+        requiresCheckout: true,
+      }
+    }
+    return { allowed: true, requiresCheckout: false }
+  }
+
+  /**
    * Get branch information for an item if it's tracked on a non-main branch.
    * Returns null if the item is not on any ECO/workspace branch.
    *
@@ -288,7 +320,7 @@ export class ItemEditPolicy {
     // Exempt types (work instructions) skip the protection gate but still
     // honour another user's checkout below.
     if (!(await isBranchProtectionExempt(item.itemType))) {
-      const canEdit = await this.canEditDirectly(item.designId)
+      const canEdit = await this.canEditItemDirectly(item)
       if (!canEdit.allowed) {
         throw new BranchProtectionError(
           `Cannot modify item directly: ${canEdit.reason}`,

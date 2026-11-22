@@ -1176,6 +1176,22 @@ export class BranchService {
   }
 
   /**
+   * Whether one item's current state is one of the design's released states.
+   *
+   * Branch protection stays a design-level fact (one released item freezes the
+   * baseline), but the decision for a *write* is per item: a Draft that has
+   * never been released may still be edited on main.
+   */
+  static async isItemReleased(
+    designId: string,
+    state: string | null | undefined,
+  ): Promise<boolean> {
+    if (!state) return false
+    const releasedStates = await this.getReleasedStateIds(designId)
+    return releasedStates.includes(state)
+  }
+
+  /**
    * The state IDs that count as "released" for the item types present in a
    * design: whatever each type's lifecycle produces for `release` and for a
    * `revise`'s new version.

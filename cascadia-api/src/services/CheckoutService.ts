@@ -459,6 +459,19 @@ export class CheckoutService {
     return row ? isBranchProtectionExempt(row.itemType) : false
   }
 
+  private static async isReleasedMaster(
+    itemMasterId: string,
+    designId: string,
+  ): Promise<boolean> {
+    const row = await db
+      .select({ state: items.state })
+      .from(items)
+      .where(eq(items.masterId, itemMasterId))
+      .limit(1)
+      .then((rows) => rows.at(0))
+    return row ? BranchService.isItemReleased(designId, row.state) : false
+  }
+
   static async checkout(
     data: CheckoutInput,
     userId: string,
@@ -496,9 +509,13 @@ export class CheckoutService {
       const isProtected = await BranchService.isMainBranchProtected(
         branch.designId,
       )
-      if (isProtected && !(await this.isExemptMaster(validated.itemMasterId))) {
+      if (
+        isProtected &&
+        !(await this.isExemptMaster(validated.itemMasterId)) &&
+        (await this.isReleasedMaster(validated.itemMasterId, branch.designId))
+      ) {
         throw new ValidationError(
-          'Cannot checkout items on the protected main branch. Use an ECO or workspace branch.',
+          'Cannot checkout released items on the protected main branch. Use an ECO or workspace branch.',
         )
       }
     }
@@ -1380,17 +1397,6 @@ export class CheckoutService {
     }
 
     BranchService.assertNotArchived(branch, 'createOnBranch')
-
-    if (branch.branchType === 'main') {
-      const isProtected = await BranchService.isMainBranchProtected(
-        branch.designId,
-      )
-      if (isProtected) {
-        throw new ValidationError(
-          'Cannot create items directly on the main branch',
-        )
-      }
-    }
 
     if (branch.isLocked) {
       throw new ValidationError('Cannot create items on a locked branch')

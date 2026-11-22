@@ -34,6 +34,7 @@ import {
   getThumbnailImageExtensions,
   isFileTypeAllowed,
   isThumbnailableImage,
+  canonicalizeItemFileName,
   sanitizeFilename,
   validateFileSize,
 } from '../utils'
@@ -172,6 +173,18 @@ export class FileService {
 
     if (!item) {
       throw new NotFoundError('Item', itemId)
+    }
+
+    // The PDM owns the visible filename. Keep the submitted name for audit but
+    // store native CAD under the item number so a checked-in drawing does not
+    // inherit whatever the user's local file happened to be called.
+    const submittedFileName = metadata.originalFileName
+    metadata.originalFileName = canonicalizeItemFileName(
+      item.itemNumber,
+      submittedFileName,
+    )
+    if (metadata.originalFileName !== submittedFileName) {
+      metadata.sourceFileName = submittedFileName
     }
 
     const normalizedApplicability = await this.normalizeApplicability(
@@ -1380,6 +1393,18 @@ export class FileService {
 
       if (!item) {
         throw new NotFoundError('Item', file.itemId)
+      }
+
+      // A new version keeps the version chain's canonical name. The local
+      // filename is irrelevant to PDM identity, and must not fork the chain
+      // or rename the attachment in the web UI.
+      const submittedFileName = metadata.originalFileName
+      metadata.originalFileName = canonicalizeItemFileName(
+        item.itemNumber,
+        file.originalFileName,
+      )
+      if (metadata.originalFileName !== submittedFileName) {
+        metadata.sourceFileName = submittedFileName
       }
 
       // Create new version

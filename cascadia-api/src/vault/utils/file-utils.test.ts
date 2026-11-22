@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { detectFileCategory, isFileTypeAllowed } from './file-utils'
+import {
+  canonicalizeItemFileName,
+  detectFileCategory,
+  isFileTypeAllowed,
+} from './file-utils'
 
 const PDF = 'application/pdf'
 
@@ -70,5 +74,24 @@ describe('isFileTypeAllowed', () => {
     expect(
       isFileTypeAllowed('cascadia-installer.exe', 'application/octet-stream'),
     ).toBe(true)
+  })
+})
+
+describe('canonicalizeItemFileName', () => {
+  it('names native CAD files after the item number', () => {
+    expect(canonicalizeItemFileName('10298', 'Drawing2.dwg')).toBe('10298.dwg')
+    expect(canonicalizeItemFileName('10298', 'plate.DXF')).toBe('10298.dxf')
+    expect(canonicalizeItemFileName('10298', 'export-10298.step')).toBe(
+      '10298.step',
+    )
+  })
+
+  it('leaves documents and images with their submitted names', () => {
+    expect(canonicalizeItemFileName('10298', 'A3_L.pdf')).toBe('A3_L.pdf')
+    expect(canonicalizeItemFileName('10298', 'preview.png')).toBe('preview.png')
+  })
+
+  it('does nothing when the item has no number', () => {
+    expect(canonicalizeItemFileName('', 'Drawing2.dwg')).toBe('Drawing2.dwg')
   })
 })

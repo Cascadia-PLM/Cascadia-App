@@ -268,6 +268,33 @@ export function isCADFile(filename: string): boolean {
 }
 
 /**
+ * PDM-owned filename for an item attachment.
+ *
+ * CAD files are named after the item, not after the local file the user
+ * happened to have open. Storage paths already contain a UUID, so the visible
+ * name can stay human-readable and stable across versions.
+ *
+ * Non-CAD attachments (PDFs, images, documents) keep their submitted name:
+ * their filename carries meaning the database cannot reconstruct (for example
+ * which drawing layout a PDF represents).
+ */
+export function canonicalizeItemFileName(
+  itemNumber: string | null | undefined,
+  fileName: string,
+): string {
+  if (!itemNumber || !isCADFile(fileName)) return fileName
+
+  const extension = path.extname(fileName)
+  if (!extension) return fileName
+
+  const itemStem = path.basename(
+    sanitizeFilename(itemNumber),
+    path.extname(itemNumber),
+  )
+  return `${itemStem}${extension.toLowerCase()}`
+}
+
+/**
  * Build a filename-hint matcher.
  *
  * Each term must appear as a whole token — bounded by the start of the name or

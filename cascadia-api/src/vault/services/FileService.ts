@@ -1395,14 +1395,11 @@ export class FileService {
         throw new NotFoundError('Item', file.itemId)
       }
 
-      // A new version keeps the version chain's canonical name. The local
-      // filename is irrelevant to PDM identity, and must not fork the chain
-      // or rename the attachment in the web UI.
+      // A new version keeps the version chain's existing name. The local
+      // filename is irrelevant to PDM identity; allowing it to rename the
+      // attachment would fork the chain or change the web UI name on check-in.
       const submittedFileName = metadata.originalFileName
-      metadata.originalFileName = canonicalizeItemFileName(
-        item.itemNumber,
-        file.originalFileName,
-      )
+      metadata.originalFileName = file.originalFileName
       if (metadata.originalFileName !== submittedFileName) {
         metadata.sourceFileName = submittedFileName
       }

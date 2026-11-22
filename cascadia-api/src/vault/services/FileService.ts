@@ -25,6 +25,7 @@ import {
 } from '../../db/schema'
 import { StorageFactory } from '../storage'
 import {
+  canonicalizeItemFileName,
   detectFileCategory,
   extractFileMetadata,
   generateFileHash,
@@ -34,7 +35,6 @@ import {
   getThumbnailImageExtensions,
   isFileTypeAllowed,
   isThumbnailableImage,
-  canonicalizeItemFileName,
   sanitizeFilename,
   validateFileSize,
 } from '../utils'

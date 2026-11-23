@@ -22,6 +22,7 @@ import { isDisplayableImage } from '@cascadia/commons/vault/image-files'
 import {
   FILE_CATEGORY_DEFINITIONS,
   FILE_CATEGORY_OPTIONS,
+  FILE_CATEGORY_VALUES,
   isFileCategory,
 } from '@cascadia/commons/vault/file-categories'
 import { isPreviewable } from '@cascadia/commons/vault/preview'
@@ -56,6 +57,32 @@ import { OptionConditionChips } from '@/components/variants/OptionConditionChips
 import { Slot } from '@/ui/slot-registry'
 import { apiErrorFromResponse } from '@/api/client'
 import { downloadBlob } from '@/utils/download'
+
+/**
+ * Category order comes from the shared vocabulary, not from file extensions.
+ * A deployment that wants DWG before STEP changes the category definition or
+ * the stored category, not this comparator.
+ */
+const categoryOrderRank = (file: FileRecord): number => {
+  if (!isFileCategory(file.fileCategory)) return FILE_CATEGORY_VALUES.length
+  return FILE_CATEGORY_VALUES.indexOf(file.fileCategory)
+}
+
+const compareFilesForDisplay = (a: FileRecord, b: FileRecord): number => {
+  // The primary file is the one the user cares about, whatever the CAD system.
+  if (Boolean(a.isPrimaryModel) !== Boolean(b.isPrimaryModel)) {
+    return a.isPrimaryModel ? -1 : 1
+  }
+
+  const rank = categoryOrderRank(a) - categoryOrderRank(b)
+  if (rank !== 0) return rank
+
+  const version = b.fileVersion - a.fileVersion
+  if (version !== 0) return version
+  const uploaded = String(b.uploadedAt).localeCompare(String(a.uploadedAt))
+  if (uploaded !== 0) return uploaded
+  return String(a.originalFileName).localeCompare(String(b.originalFileName))
+}
 
 export interface FileRecord {
   id: string
@@ -147,6 +174,7 @@ export function FileList({
         applicabilityMatches(file.applicability, selectedMake.selections),
       )
     : files
+  const orderedFiles = effectiveFiles.slice().sort(compareFilesForDisplay)
 
   const loadFiles = () => invalidate('files')
 
@@ -351,25 +379,31 @@ export function FileList({
     return <FileIcon className="w-4 h-4" />
   }
 
-  const getCategoryBadge = (
-    category: string | undefined,
-    isPrimary: boolean | undefined,
-  ) => {
-    if (!isFileCategory(category)) return null
+  const getCategoryBadge = (file: FileRecord) => {
+    const primary = file.isPrimaryModel ? (
+      <Badge variant="success" className="text-xs">
+        Primary
+      </Badge>
+    ) : null
 
-    const config = FILE_CATEGORY_DEFINITIONS[category]
-    if (!config.badged) return null
+    // The stored category is the user's or the server's classification. It is
+    // deliberately not overridden by an extension rule here: the category
+    // picker and filter use the same field, so the badge must agree with them.
+    if (!isFileCategory(file.fileCategory)) {
+      return primary
+    }
+
+    const config = FILE_CATEGORY_DEFINITIONS[file.fileCategory]
+    if (!config.badged) {
+      return primary
+    }
 
     return (
       <div className="flex items-center gap-1">
         <Badge variant={config.badgeVariant} className="text-xs">
           {config.badgeLabel}
         </Badge>
-        {isPrimary && (
-          <Badge variant="success" className="text-xs">
-            Primary
-          </Badge>
-        )}
+        {primary}
       </div>
     )
   }
@@ -466,7 +500,7 @@ export function FileList({
               <p className="font-medium text-slate-900 dark:text-white">
                 {file.originalFileName}
               </p>
-              {getCategoryBadge(file.fileCategory, file.isPrimaryModel)}
+              {getCategoryBadge(file)}
               {file.isItemThumbnail && (
                 <Badge variant="secondary" className="text-xs">
                   Thumbnail
@@ -749,7 +783,7 @@ export function FileList({
         </div>
       )}
       <DataGrid
-        data={effectiveFiles}
+        data={orderedFiles}
         columns={columns}
         getRowId={(row) => row.id}
         enableRowActions={true}

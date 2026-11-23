@@ -20,6 +20,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui'
 import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
@@ -217,15 +222,45 @@ function PartsListPage() {
       {/* Parts Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Parts</CardTitle>
-          <CardDescription>
-            {total} {total === 1 ? 'part' : 'parts'} in the system
-            {selectedDesign && context.type !== 'main' && (
-              <span className="ml-2 text-amber-600 dark:text-amber-400">
-                (viewing {contextLabel})
-              </span>
-            )}
-          </CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>All Parts</CardTitle>
+              <CardDescription>
+                {total} {total === 1 ? 'part' : 'parts'} in the system
+                {selectedDesign && context.type !== 'main' && (
+                  <span className="ml-2 text-amber-600 dark:text-amber-400">
+                    (viewing {contextLabel})
+                  </span>
+                )}
+              </CardDescription>
+            </div>
+            <Select
+              value={selectedDesignId ?? 'all'}
+              onValueChange={(value) =>
+                navigate({
+                  to: '/parts',
+                  search: {
+                    ...searchParams,
+                    designId: value === 'all' ? undefined : value,
+                  },
+                })
+              }
+            >
+              <SelectTrigger className="w-[240px]" aria-label="Design scope">
+                <SelectValue placeholder="All designs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All designs</SelectItem>
+                {[...designs]
+                  .sort((a, b) => a.code.localeCompare(b.code))
+                  .map((design) => (
+                    <SelectItem key={design.id} value={design.id}>
+                      {design.code} - {design.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <PartTable

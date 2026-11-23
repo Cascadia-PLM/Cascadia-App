@@ -5,6 +5,7 @@ import {
   canonicalizeItemFileName,
   detectFileCategory,
   isFileTypeAllowed,
+  nativeCadNamingMode,
 } from './file-utils'
 
 const PDF = 'application/pdf'
@@ -74,6 +75,27 @@ describe('isFileTypeAllowed', () => {
     expect(
       isFileTypeAllowed('cascadia-installer.exe', 'application/octet-stream'),
     ).toBe(true)
+  })
+})
+
+describe('nativeCadNamingMode', () => {
+  afterEach(() => {
+    delete process.env.VAULT_NATIVE_CAD_NAMING
+  })
+
+  it('defaults to preserve', () => {
+    delete process.env.VAULT_NATIVE_CAD_NAMING
+    expect(nativeCadNamingMode()).toBe('preserve')
+  })
+
+  it('enables item-number naming when configured', () => {
+    process.env.VAULT_NATIVE_CAD_NAMING = 'itemNumber'
+    expect(nativeCadNamingMode()).toBe('itemNumber')
+  })
+
+  it('ignores unknown values', () => {
+    process.env.VAULT_NATIVE_CAD_NAMING = 'unknown'
+    expect(nativeCadNamingMode()).toBe('preserve')
   })
 })
 

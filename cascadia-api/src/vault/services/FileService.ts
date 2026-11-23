@@ -35,6 +35,7 @@ import {
   getThumbnailImageExtensions,
   isFileTypeAllowed,
   isThumbnailableImage,
+  nativeCadNamingMode,
   sanitizeFilename,
   validateFileSize,
 } from '../utils'
@@ -175,16 +176,17 @@ export class FileService {
       throw new NotFoundError('Item', itemId)
     }
 
-    // The PDM owns the visible filename. Keep the submitted name for audit but
-    // store native CAD under the item number so a checked-in drawing does not
-    // inherit whatever the user's local file happened to be called.
+    // Native CAD naming is a deployment policy. Preserve the submitted name
+    // unless the deployment opted into PDM-owned names.
     const submittedFileName = metadata.originalFileName
-    metadata.originalFileName = canonicalizeItemFileName(
-      item.itemNumber,
-      submittedFileName,
-    )
-    if (metadata.originalFileName !== submittedFileName) {
-      metadata.sourceFileName = submittedFileName
+    if (nativeCadNamingMode() === 'itemNumber') {
+      metadata.originalFileName = canonicalizeItemFileName(
+        item.itemNumber,
+        submittedFileName,
+      )
+      if (metadata.originalFileName !== submittedFileName) {
+        metadata.sourceFileName = submittedFileName
+      }
     }
 
     const normalizedApplicability = await this.normalizeApplicability(
@@ -1395,13 +1397,14 @@ export class FileService {
         throw new NotFoundError('Item', file.itemId)
       }
 
-      // A new version keeps the version chain's existing name. The local
-      // filename is irrelevant to PDM identity; allowing it to rename the
-      // attachment would fork the chain or change the web UI name on check-in.
-      const submittedFileName = metadata.originalFileName
-      metadata.originalFileName = file.originalFileName
-      if (metadata.originalFileName !== submittedFileName) {
-        metadata.sourceFileName = submittedFileName
+      // In PDM-owned naming mode a new version keeps the version chain's
+      // existing name. In preserve mode the submitted name is retained.
+      if (nativeCadNamingMode() === 'itemNumber') {
+        const submittedFileName = metadata.originalFileName
+        metadata.originalFileName = file.originalFileName
+        if (metadata.originalFileName !== submittedFileName) {
+          metadata.sourceFileName = submittedFileName
+        }
       }
 
       // Create new version

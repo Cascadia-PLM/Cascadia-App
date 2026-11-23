@@ -24,6 +24,7 @@ import {
 import { tagged } from '../adapter'
 import { FileService } from '@/vault/services/FileService'
 import { JobService } from '@/jobs/JobService'
+import { defaultCadOutputFormats } from '@/jobs/definitions/conversion/types'
 import { apiHandler, jsonResponse, parseQuery } from '@/api/handler'
 import {
   FileTooLargeError,
@@ -80,10 +81,10 @@ const convertInputSchema = z.object({
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
   outputFormats: z
     .array(z.enum(['glb', 'stl']))
-    .default(['glb'])
+    .default(defaultCadOutputFormats())
     .describe(
       'Derivative formats to store. GLB is the web viewer format; STL is ' +
-        'only needed for 3D printing/import. Defaults to GLB only.',
+        'only needed for 3D printing/import. Defaults to both, configurable by deployment.',
     ),
   decompose: z
     .boolean()

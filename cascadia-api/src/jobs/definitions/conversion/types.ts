@@ -3,12 +3,33 @@
 
 import { z } from 'zod'
 
+export type CadOutputFormat = 'glb' | 'stl'
+
+/**
+ * Default derivative formats to store.
+ *
+ * The historical behavior was both GLB and STL. Deployments that only need the
+ * web viewer can set CAD_DEFAULT_OUTPUT_FORMATS=glb; CAM/printing deployments
+ * keep the default.
+ */
+export function defaultCadOutputFormats(): Array<CadOutputFormat> {
+  const raw = process.env.CAD_DEFAULT_OUTPUT_FORMATS?.trim()
+  if (!raw) return ['glb', 'stl']
+  const formats = raw
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter((value): value is CadOutputFormat =>
+      value === 'glb' || value === 'stl',
+    )
+  return formats.length > 0 ? [...new Set(formats)] : ['glb', 'stl']
+}
+
 export const cadConversionPayloadSchema = z.object({
   vaultFileId: z.string().uuid(),
   itemId: z.string().uuid(),
   outputBranchId: z.string().uuid().nullable().optional(),
   outputFormat: z.string().default('stl'),
-  outputFormats: z.array(z.enum(['glb', 'stl'])).default(['glb']),
+  outputFormats: z.array(z.enum(['glb', 'stl'])).default(defaultCadOutputFormats()),
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
   decompose: z.boolean().default(false),
   userId: z.string().uuid(),

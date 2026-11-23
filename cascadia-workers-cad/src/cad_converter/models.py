@@ -38,7 +38,7 @@ class CadConversionPayload(BaseModel):
     itemId: str
     outputBranchId: Optional[str] = None
     outputFormat: str = "stl"
-    outputFormats: list[str] = ["glb"]
+    outputFormats: list[str] = ["glb", "stl"]
     meshQuality: MeshQuality = MeshQuality.STANDARD
     decompose: bool = False
     userId: str

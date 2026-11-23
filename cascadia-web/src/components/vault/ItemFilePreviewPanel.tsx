@@ -141,9 +141,7 @@ export function ItemFilePreviewPanel({
       <Card className={className}>
         <CardContent className="py-12 text-center">
           <FileSearch className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" />
-          <p className="text-slate-600 dark:text-slate-400">
-            {emptyTitle}
-          </p>
+          <p className="text-slate-600 dark:text-slate-400">{emptyTitle}</p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-500">
             {emptyDescription}
           </p>

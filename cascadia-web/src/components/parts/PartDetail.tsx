@@ -100,7 +100,8 @@ const tabGridCols = (
   hasDrawings: boolean,
 ): string => {
   if (isCreateMode) return 'grid-cols-2'
-  const count = 5 + (hasGallery ? 1 : 0) + (hasVariants ? 1 : 0) + (hasDrawings ? 1 : 0)
+  const count =
+    5 + (hasGallery ? 1 : 0) + (hasVariants ? 1 : 0) + (hasDrawings ? 1 : 0)
   return {
     5: 'grid-cols-5',
     6: 'grid-cols-6',

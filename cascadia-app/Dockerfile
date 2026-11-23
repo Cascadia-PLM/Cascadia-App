@@ -17,7 +17,7 @@
 # seconds. The stages that install from it copy only `/manifests`, and BuildKit
 # keys that copy on the checksum of what it copies, so `npm ci` stays cached
 # until a manifest actually changes.
-FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS manifests
+FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a AS manifests
 
 WORKDIR /src
 COPY . .
@@ -36,7 +36,7 @@ RUN mkdir /manifests && cp package.json package-lock.json /manifests/ && \
 # =============================================================================
 # Stage 2: Dependencies
 # =============================================================================
-FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS deps
+FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a AS deps
 
 WORKDIR /app
 
@@ -51,7 +51,7 @@ RUN npm ci
 # =============================================================================
 # Stage 3: Builder
 # =============================================================================
-FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
+FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a AS builder
 
 WORKDIR /app
 
@@ -123,7 +123,7 @@ RUN mkdir /runtime && tar cf - tsconfig.base.json tsconfig.json scripts .edition
 # that copy is what used to drag a ten-minute Vite build in front of any
 # attempt to exercise the install below. CI's Docker Build Smoke job builds
 # this target for exactly that reason.
-FROM docker.io/library/node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime-deps
+FROM docker.io/library/node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a AS runtime-deps
 
 WORKDIR /app
 

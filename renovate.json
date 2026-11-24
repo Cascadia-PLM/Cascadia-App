@@ -34,6 +34,22 @@
       "prPriority": 5
     },
     {
+      "description": "TanStack AI is pre-1.0, and its 'minor' releases rewrite the streaming event model, the tool types and the chat options: 0.2 to 0.71 was 124 type errors across the chatbot, the tool registry and enrichment. The packages move as one set in their own PR, and like a major that PR waits on the Dependency Dashboard, so a migration neither blocks the weekly group nor takes one of the two PR slots unasked. Sits before the majors rule so a real major still gets a PR of its own.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@tanstack/ai", "@tanstack/ai-*"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "tanstack ai",
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "The lint config is pre-1.0 too, and a 'minor' can reorder every import in the repository and carry an ESLint major in transitively: 0.3 to 0.5 was 1560 import/order errors and ESLint 9 to 10. Against a zero-warning gate that is its own change with its own diff, taken when someone asks for it.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@tanstack/eslint-config"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "tanstack eslint-config",
+      "dependencyDashboardApproval": true
+    },
+    {
       "description": "Majors stay one per PR — each needs its own read of the changelog and its own CI verdict.",
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["major"],

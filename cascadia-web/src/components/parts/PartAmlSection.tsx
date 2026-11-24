@@ -52,6 +52,13 @@ interface AmlSource {
     mpn: string
     description?: string | null
     datasheetUrl?: string | null
+    supplierLinks?: Array<{
+      supplier: string
+      sku?: string
+      url?: string
+      price?: number
+      leadTimeDays?: number
+    }> | null
   }
 }
 
@@ -60,6 +67,8 @@ interface PartAmlSectionProps {
   partMasterId: string
   /** Hide mutating controls (e.g., viewer roles) */
   readOnly?: boolean
+  /** Require a supplier link for the added AML source. */
+  requireSupplier?: boolean
 }
 
 const STATUS_BADGE_VARIANT: Record<QualificationStatus, string> = {
@@ -77,11 +86,13 @@ const STATUS_BADGE_VARIANT: Record<QualificationStatus, string> = {
 export function PartAmlSection({
   partMasterId,
   readOnly = false,
+  requireSupplier = false,
 }: PartAmlSectionProps) {
   const invalidate = useInvalidateResources()
   const { handleError, showSuccess } = useErrorHandler()
   const [addOpen, setAddOpen] = useState(false)
   const [manufacturer, setManufacturer] = useState('')
+  const [supplier, setSupplier] = useState('')
   const [mpn, setMpn] = useState('')
   const [description, setDescription] = useState('')
   const [datasheetUrl, setDatasheetUrl] = useState('')
@@ -93,6 +104,7 @@ export function PartAmlSection({
 
   const resetForm = () => {
     setManufacturer('')
+    setSupplier('')
     setMpn('')
     setDescription('')
     setDatasheetUrl('')
@@ -101,6 +113,10 @@ export function PartAmlSection({
   const handleAdd = async () => {
     if (!manufacturer.trim() || !mpn.trim()) {
       handleError(new Error('Manufacturer and MPN are required'))
+      return
+    }
+    if (requireSupplier && !supplier.trim()) {
+      handleError(new Error('Supplier is required for purchased parts'))
       return
     }
     setSaving(true)
@@ -113,6 +129,9 @@ export function PartAmlSection({
             mpn: mpn.trim(),
             description: description.trim() || undefined,
             datasheetUrl: datasheetUrl.trim() || undefined,
+            supplierLinks: supplier.trim()
+              ? [{ supplier: supplier.trim() }]
+              : undefined,
           },
           // First source on a part defaults to preferred.
           isPreferred: sources.length === 0,
@@ -201,6 +220,7 @@ export function PartAmlSection({
               <TableRow>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>Manufacturer</TableHead>
+                <TableHead>Supplier</TableHead>
                 <TableHead>MPN</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
@@ -233,6 +253,10 @@ export function PartAmlSection({
                   </TableCell>
                   <TableCell className="font-medium">
                     {source.manufacturerPart.manufacturer}
+                  </TableCell>
+                  <TableCell>
+                    {source.manufacturerPart.supplierLinks?.[0]?.supplier ??
+                      '—'}
                   </TableCell>
                   <TableCell>
                     {source.manufacturerPart.datasheetUrl ? (
@@ -319,6 +343,32 @@ export function PartAmlSection({
                   onChange={(e) => setManufacturer(e.target.value)}
                   placeholder="Yamaha"
                 />
+              </div>
+              <div>
+                <label className="text-sm font-medium">
+                  Supplier {requireSupplier ? '*' : ''}
+                </label>
+                <Input
+                  value={supplier}
+                  onChange={(e) => setSupplier(e.target.value)}
+                  placeholder="Nord Gear"
+                  list="aml-supplier-options"
+                />
+                <datalist id="aml-supplier-options">
+                  {Array.from(
+                    new Set(
+                      sources
+                        .map(
+                          (source) =>
+                            source.manufacturerPart.supplierLinks?.[0]
+                              ?.supplier,
+                        )
+                        .filter((value): value is string => Boolean(value)),
+                    ),
+                  ).map((value) => (
+                    <option key={value} value={value} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="text-sm font-medium">MPN *</label>

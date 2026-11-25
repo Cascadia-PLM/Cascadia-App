@@ -475,13 +475,24 @@ Created (active) --> Merged/Archived (ECO released or cancelled)
 
 ### Branch Protection
 
-The main branch becomes protected after the first ECO release (when released items exist). In the protected state:
+The main branch becomes protected after the first ECO release (when released items exist). Before any items are released (pre-release phase), main is unprotected and allows direct editing for initial setup. Item types whose lifecycle is Free or Driving (work instructions, change orders) are exempt and stay editable on main in either phase.
 
-- Items cannot be checked out directly on main.
-- All changes must flow through ECO branches.
-- Only the merge operation (triggered by ECO release) can update main.
+What a protected main refuses is a per-program setting, `settings.branchProtectionScope`:
 
-Before any items are released (pre-release phase), main is unprotected and allows direct editing for initial setup.
+| Scope              | On a protected main, these change only through an ECO or workspace branch                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `design` (default) | Every item in the design. Nothing is checked out, created, edited or restructured on main; only the merge (triggered by ECO release) updates it.                    |
+| `released-items`   | An item whose state is in its lifecycle's released family, **and every item beneath one in the BOM on main**, at any depth. Everything else stays editable on main. |
+
+The structure rule exists because releasing an assembly does not require its children to be released. Under `released-items` without it, a Draft child of a released assembly could be edited on main, and BOM lines added under it, changing the released assembly with no change order. So the child, its own children, and the lines beneath them are protected exactly like the released item above them. Release rules themselves are unchanged under either scope.
+
+"Released" is decided from the item as main currently resolves it (`VersionResolver.getReleasedVersion`) and from the row being written, by its own lifecycle's released family (`LifecycleService.isReleasedFamilyState`) — never a state name. The structure walk follows BOM lines on main within the design, matching each line to its child by master, the same rule where-used uses. A new item may be created on main under `released-items` unless it asks to start in a released state.
+
+**One policy.** `canEditOnMain` in `cascadia-api/src/items/branch-protection.ts` is the only place this is decided. `ItemService.create`, the content-edit gate every field edit, delete and structure edit passes (`ItemEditPolicy.requireContentEditable`), `CheckoutService.checkout` and `.createOnBranch` on main, `GET /items/:id/edit-context` (which drives the Edit button), and the AI write tools' change-order suggestion all ask it, so none of them can disagree.
+
+**Status surfaces.** The design-wide fields keep their v1 meaning under either scope: `isMainBranchProtected`, `phase: 'post-release'`, `canEditMainDirectly: false` and the main branch's `isEditable: false` all say main is under change control — not every item on it is editable. What that means is carried by fields added beside them: `branchProtectionScope` on `GET /designs/:id/status` (both halves) and `GET /branches/:id/status`, and `branchOptions.canCreateOnMain` for whether a new item may go straight onto main. The per-item answer is the edit-context's `isMainProtected`. Sheet imports still require a branch for any post-release design, under either scope: their BOM wiring links to existing parents without the per-item edit gate.
+
+**Who may change it.** Changing the scope, or creating a program with a non-default one, requires `system:manage` (Administrator) in addition to whatever admits the program edit — a program admin or `programs:update` holder cannot loosen or tighten change control. Every change is recorded as a `program.branch_protection_scope_changed` domain event carrying the previous and new scope, a `loosensProtection` flag, the actor and the program.
 
 ---
 

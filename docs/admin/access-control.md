@@ -228,6 +228,22 @@ by demoting them. Changing a member's role re-baselines the three permission
 flags to the new role's defaults; flags passed explicitly in the same request
 win over those defaults.
 
+### Program Settings and Branch Protection Scope
+
+A program is edited (`PUT /api/v1/programs/:id`) by its program `admin` or a
+holder of `programs:update`. One setting takes more: changing
+`settings.branchProtectionScope` — what a protected main refuses for every
+design in the program, see
+[Branch Protection](../features/versioning.md#branch-protection) — also
+requires `system:manage`, the Administrator-only grant behind the rest of
+change control's configuration. So does creating a program with a scope other
+than the default `design`. An edit that leaves the scope as it is needs
+nothing extra. Each change is recorded as a
+`program.branch_protection_scope_changed` domain event (previous and new
+scope, a `loosensProtection` flag, the actor). `settings` is strict: only
+`approvalWorkflow`, `changeOrderNumberFormat` and `branchProtectionScope` are
+accepted, and a request writes the keys it names without removing the others.
+
 ### Program-Level Roles
 
 Within a program, users have one of four roles that control fine-grained permissions:

@@ -14787,8 +14787,338 @@
     },
     "/api/v1/items": {
       "get": {
+        "description": "Lists one design’s items at a version context (`designId`, with `branch`, `commit` or `tag`), or, without `designId`, searches one item type across the designs the caller can read (narrowed by `programId`). `includeFileSummary=true` adds `fileSummary`, keyed by item id: how many files each listed item has, by category and by extension — counted exactly as `GET /api/v1/items/{itemId}/files` would list them in the same version context, so a file uploaded on an open change-order branch is counted on that branch and nowhere else.",
         "operationId": "getApiV1Items",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "designId",
+            "required": false,
+            "schema": {
+              "description": "List one design's items, resolved at a version context: main unless `branch`, `commit` or `tag` names another.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "programId",
+            "required": false,
+            "schema": {
+              "description": "List the items of every design in a program. Ignored with `designId`.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "branch",
+            "required": false,
+            "schema": {
+              "description": "A branch of `designId`, by name (`main`, `eco/ECO-0001`). Ignored with `commit` or `tag`.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "commit",
+            "required": false,
+            "schema": {
+              "description": "A commit of `designId`, by id. Wins over `tag` and `branch`.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "description": "A tag of `designId`, by id. Wins over `branch`.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "itemType",
+            "required": false,
+            "schema": {
+              "description": "Item type to list. Without `designId`, defaults to `Part`.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "description": "Lifecycle state to filter on.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "globalSearch",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeDeleted",
+            "required": false,
+            "schema": {
+              "description": "`true` to include soft-deleted items. With `designId` only.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "description": "Page size. Defaults to 100.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "description": "Rows to skip. Defaults to 0.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortField",
+            "required": false,
+            "schema": {
+              "description": "Without `designId` only.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortDirection",
+            "required": false,
+            "schema": {
+              "description": "`asc` or `desc`. Without `designId` only.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "columnFilters",
+            "required": false,
+            "schema": {
+              "description": "A JSON object of grid column filters. Without `designId` only.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeCounts",
+            "required": false,
+            "schema": {
+              "description": "`true`, with `countStates`, to add `counts`.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "countStates",
+            "required": false,
+            "schema": {
+              "description": "Comma-separated states to count across every page.",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeFileSummary",
+            "required": false,
+            "schema": {
+              "description": "`true` to add `fileSummary`: a count of each listed item’s files, by category and by extension. Requires `documents:read`.",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "context": {
+                          "description": "The version context the items were resolved at. With `designId` only.",
+                          "type": "string"
+                        },
+                        "counts": {
+                          "additionalProperties": {
+                            "maximum": 9007199254740991,
+                            "minimum": -9007199254740991,
+                            "type": "integer"
+                          },
+                          "description": "Items per state named in `countStates`, with `includeCounts=true`.",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "type": "object"
+                        },
+                        "fileSummary": {
+                          "additionalProperties": {
+                            "properties": {
+                              "byCategory": {
+                                "description": "Files per category; every category is present, zero when absent. A file with no category counts toward `total` only.",
+                                "properties": {
+                                  "analysis": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "cad_model": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "drawing": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "other": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "reference": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "specification": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "cad_model",
+                                  "drawing",
+                                  "specification",
+                                  "analysis",
+                                  "reference",
+                                  "other"
+                                ],
+                                "type": "object"
+                              },
+                              "byExtension": {
+                                "additionalProperties": {
+                                  "maximum": 9007199254740991,
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
+                                "description": "Files per extension, lowercased and without the dot (`pdf`, `step`, `stp`); only extensions present appear. A file with no extension counts toward `total` only.",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "type": "object"
+                              },
+                              "total": {
+                                "description": "Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context.",
+                                "maximum": 9007199254740991,
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "total",
+                              "byCategory",
+                              "byExtension"
+                            ],
+                            "type": "object"
+                          },
+                          "description": "With `includeFileSummary=true`: one entry per listed item, keyed by item id.",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "type": "object"
+                        },
+                        "items": {
+                          "items": {
+                            "additionalProperties": {},
+                            "properties": {
+                              "id": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "itemNumber": {
+                                "type": "string"
+                              },
+                              "itemType": {
+                                "type": "string"
+                              },
+                              "masterId": {
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                                "type": "string"
+                              },
+                              "revision": {
+                                "type": "string"
+                              },
+                              "state": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "masterId",
+                              "itemNumber",
+                              "itemType",
+                              "revision",
+                              "state"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "total": {
+                          "maximum": 9007199254740991,
+                          "minimum": -9007199254740991,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "items",
+                        "total"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
           "400": {
             "$ref": "#/components/responses/ValidationError"
           },
@@ -14805,6 +15135,7 @@
             "$ref": "#/components/responses/ServerError"
           }
         },
+        "summary": "List items",
         "tags": [
           "Items"
         ]

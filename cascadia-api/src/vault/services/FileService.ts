@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, desc, eq, isNotNull, isNull, lt, ne, or } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, isNull, lt, ne, or, sql } from 'drizzle-orm'
 import { THUMBNAIL_FILE_CATEGORY } from '@cascadia/commons/vault/file-categories'
 import {
   applicabilityMatches,
@@ -17,6 +17,8 @@ import {
   publishDomainEvent,
 } from '../../events'
 import {
+  branches,
+  designs,
   items,
   parts,
   users,
@@ -124,6 +126,93 @@ export class FileService {
   }
 
   /**
+   * The name an uploaded or checked-in file is stored under, plus the name it
+   * was submitted as (`sourceFileName`) when the two differ.
+   *
+   * Under the default `VAULT_NATIVE_CAD_NAMING=preserve` this is the submitted
+   * name, always. Under `itemNumber`, a native CAD authoring file is stored as
+   * `<itemNumber>.<ext>` (`canonicalizeItemFileName`); the submitted name is
+   * kept in the file's metadata, where `GET /items/by-filename` still finds
+   * it. Neutral, mesh and non-CAD files are never renamed.
+   *
+   * The item-number name is only taken while it is free. When another current
+   * file on the item, visible in the same branch context, already has it —
+   * compared case-insensitively, as the Windows and macOS filesystems CAD
+   * workspaces live on do — the file keeps its submitted name rather than
+   * becoming a second attachment no workspace could hold beside the first.
+   * `replacingFileId` is the version chain a check-in extends; a new version
+   * of the canonical file is never a clash with itself.
+   */
+  private static async resolveStoredFileName(args: {
+    item: { id: string; itemNumber: string }
+    submittedFileName: string
+    branchId: string | null
+    replacingFileId?: string
+  }): Promise<{ originalFileName: string; sourceFileName?: string }> {
+    const { item, submittedFileName, branchId, replacingFileId } = args
+    const submitted = { originalFileName: submittedFileName }
+
+    if (nativeCadNamingMode() !== 'itemNumber') return submitted
+
+    const canonical = canonicalizeItemFileName(
+      item.itemNumber,
+      submittedFileName,
+    )
+    if (canonical === submittedFileName) return submitted
+
+    const clash = await db
+      .select({ id: vaultFiles.id })
+      .from(vaultFiles)
+      .where(
+        and(
+          eq(vaultFiles.itemId, item.id),
+          eq(vaultFiles.isLatestVersion, true),
+          isNull(vaultFiles.deletedAt),
+          eq(
+            sql`lower(${vaultFiles.originalFileName})`,
+            canonical.toLowerCase(),
+          ),
+          replacingFileId ? ne(vaultFiles.id, replacingFileId) : undefined,
+          await this.sharesBranchContextWith(branchId),
+        ),
+      )
+      .limit(1)
+    if (clash.length > 0) return submitted
+
+    return { originalFileName: canonical, sourceFileName: submittedFileName }
+  }
+
+  /**
+   * Files that some branch context lists together with a file on `branchId`,
+   * by the visibility rule `listItemFilesAtContext` applies: a file on no
+   * branch is visible everywhere, a file on the design's main branch is
+   * visible on every branch, and a file on any other branch only there.
+   * `undefined` when that is every file.
+   */
+  private static async sharesBranchContextWith(
+    branchId: string | null,
+  ): Promise<SQL | undefined> {
+    if (!branchId) return undefined
+
+    const branch = (
+      await db
+        .select({ mainBranchId: designs.defaultBranchId })
+        .from(branches)
+        .innerJoin(designs, eq(designs.id, branches.designId))
+        .where(eq(branches.id, branchId))
+        .limit(1)
+    ).at(0)
+    const mainBranchId = branch?.mainBranchId ?? null
+    if (branchId === mainBranchId) return undefined
+
+    return or(
+      isNull(vaultFiles.branchId),
+      eq(vaultFiles.branchId, branchId),
+      mainBranchId ? eq(vaultFiles.branchId, mainBranchId) : undefined,
+    )
+  }
+
+  /**
    * Upload a file to the vault
    */
   static async uploadFile(options: UploadFileOptions): Promise<FileRecord> {
@@ -131,7 +220,7 @@ export class FileService {
       itemId,
       branchId,
       file,
-      metadata,
+      metadata: submitted,
       uploadedBy,
       maxSizeBytes = 100 * 1024 * 1024, // 100MB default
       allowDuplicates = true, // Opt-in: set false to reject files with duplicate SHA-256 hashes per item
@@ -145,10 +234,10 @@ export class FileService {
     }
 
     // Validate file type
-    if (!isFileTypeAllowed(metadata.originalFileName, metadata.mimeType)) {
-      const ext = getFileExtension(metadata.originalFileName)
+    if (!isFileTypeAllowed(submitted.originalFileName, submitted.mimeType)) {
+      const ext = getFileExtension(submitted.originalFileName)
       throw new FileTypeNotAllowedError(
-        ext || metadata.mimeType,
+        ext || submitted.mimeType,
         getAllowedExtensions(),
       )
     }
@@ -156,7 +245,7 @@ export class FileService {
     // Reject a non-image thumbnail request before storing any bytes
     if (
       isItemThumbnail &&
-      !isThumbnailableImage(metadata.originalFileName, metadata.mimeType)
+      !isThumbnailableImage(submitted.originalFileName, submitted.mimeType)
     ) {
       throw new ValidationError(
         `Only image files can be used as an item thumbnail (${getThumbnailImageExtensions().join(', ')})`,
@@ -176,17 +265,15 @@ export class FileService {
       throw new NotFoundError('Item', itemId)
     }
 
-    // Native CAD naming is a deployment policy. Preserve the submitted name
-    // unless the deployment opted into PDM-owned names.
-    const submittedFileName = metadata.originalFileName
-    if (nativeCadNamingMode() === 'itemNumber') {
-      metadata.originalFileName = canonicalizeItemFileName(
-        item.itemNumber,
-        submittedFileName,
-      )
-      if (metadata.originalFileName !== submittedFileName) {
-        metadata.sourceFileName = submittedFileName
-      }
+    // The submitted name, unless this deployment names native CAD files
+    // after their item (VAULT_NATIVE_CAD_NAMING=itemNumber).
+    const metadata: FileUploadMetadata = {
+      ...submitted,
+      ...(await this.resolveStoredFileName({
+        item,
+        submittedFileName: submitted.originalFileName,
+        branchId: branchId ?? null,
+      })),
     }
 
     const normalizedApplicability = await this.normalizeApplicability(
@@ -1397,21 +1484,26 @@ export class FileService {
         throw new NotFoundError('Item', file.itemId)
       }
 
-      // In PDM-owned naming mode a new version keeps the version chain's
-      // existing name. In preserve mode the submitted name is retained.
-      if (nativeCadNamingMode() === 'itemNumber') {
-        const submittedFileName = metadata.originalFileName
-        metadata.originalFileName = file.originalFileName
-        if (metadata.originalFileName !== submittedFileName) {
-          metadata.sourceFileName = submittedFileName
-        }
+      // The same naming rule as an upload, with the chain being extended
+      // excluded from the clash check: a new version of `10298.sldprt` stays
+      // `10298.sldprt` whatever the local copy was called, while anything the
+      // rule does not rename (a PDF, a STEP, any file under the default
+      // `preserve` mode) takes the name it was checked in with.
+      const stored: FileUploadMetadata = {
+        ...metadata,
+        ...(await this.resolveStoredFileName({
+          item,
+          submittedFileName: metadata.originalFileName,
+          branchId: file.branchId,
+          replacingFileId: file.id,
+        })),
       }
 
       // Create new version
       const newVersionNumber = file.fileVersion + 1
       const newFileId = crypto.randomUUID()
       const fileHash = await generateFileHash(newFileData)
-      const sanitized = sanitizeFilename(metadata.originalFileName)
+      const sanitized = sanitizeFilename(stored.originalFileName)
       const storagePath = generateStoragePath(
         item.masterId,
         item.revision,
@@ -1427,8 +1519,8 @@ export class FileService {
       await storage.store(storagePath, newFileData)
 
       const extractedMetadata = await extractFileMetadata(
-        metadata.originalFileName,
-        metadata.mimeType,
+        stored.originalFileName,
+        stored.mimeType,
         newFileData,
       )
 
@@ -1463,9 +1555,9 @@ export class FileService {
                 itemId: file.itemId,
                 branchId: file.branchId,
                 fileName: sanitized,
-                originalFileName: metadata.originalFileName,
+                originalFileName: stored.originalFileName,
                 fileSize: newFileData.length,
-                mimeType: metadata.mimeType,
+                mimeType: stored.mimeType,
                 fileHash,
                 storageType: (process.env.VAULT_TYPE as string) || 'local',
                 storagePath,
@@ -1473,7 +1565,7 @@ export class FileService {
                 isLatestVersion: true,
                 isCheckedOut: false,
                 uploadedBy: userId,
-                metadata: { ...extractedMetadata, ...metadata },
+                metadata: { ...extractedMetadata, ...stored },
                 applicability: file.applicability,
                 // The category rides the version chain. A manual category is a
                 // person's answer about the file's role, which a new revision of
@@ -1483,8 +1575,8 @@ export class FileService {
                   file.categorySource === 'manual'
                     ? file.fileCategory
                     : detectFileCategory(
-                        metadata.originalFileName,
-                        metadata.mimeType,
+                        stored.originalFileName,
+                        stored.mimeType,
                       ),
                 categorySource: file.categorySource,
                 // Carry the thumbnail designation onto the new version, but only if
@@ -1492,8 +1584,8 @@ export class FileService {
                 isItemThumbnail:
                   file.isItemThumbnail &&
                   isThumbnailableImage(
-                    metadata.originalFileName,
-                    metadata.mimeType,
+                    stored.originalFileName,
+                    stored.mimeType,
                   ),
               })
               .returning(),

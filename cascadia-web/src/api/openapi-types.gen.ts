@@ -10294,9 +10294,11 @@ export interface operations {
                     description?: string | null;
                     fileId?: string | null;
                     fileName?: string | null;
+                    fileSize?: number | null;
                     mimeType?: string | null;
                     name?: string | null;
                     state?: string;
+                    storagePath?: string | null;
                 };
             };
         };

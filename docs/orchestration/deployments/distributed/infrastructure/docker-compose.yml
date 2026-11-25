@@ -4,7 +4,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: docker.io/library/postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+    image: docker.io/library/postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
     container_name: cascadia-postgres
     restart: unless-stopped
     environment:

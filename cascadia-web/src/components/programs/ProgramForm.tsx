@@ -4,11 +4,18 @@
 import { useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
+import {
+  DEFAULT_BRANCH_PROTECTION_SCOPE,
+  branchProtectionScopeOf,
+  branchProtectionScopeSchema,
+} from '@cascadia/commons/types/program'
 import type {
+  BranchProtectionScope,
   CreateProgramInput,
   Program,
 } from '@cascadia/commons/types/program'
 import { zodValidator } from '@/form-validation'
+import { useSystemAccess } from '@/hooks/usePermissions'
 import {
   Button,
   FormField,
@@ -35,6 +42,7 @@ const programFormSchema = z.object({
   startDate: z.string().optional(),
   targetEndDate: z.string().optional(),
   status: z.enum(['Active', 'On Hold', 'Completed', 'Cancelled']).optional(),
+  branchProtectionScope: branchProtectionScopeSchema,
 })
 
 interface ProgramFormProps {
@@ -53,6 +61,13 @@ export function ProgramForm({
   const [attributes, setAttributes] = useState<Record<string, unknown>>(
     program?.attributes || {},
   )
+  // The scope decides what a protected main refuses for every design in the
+  // program; the server charges `system:manage` to change it. Offered only to
+  // those who hold it — the server enforces it regardless.
+  const { canManage: mayChangeScope } = useSystemAccess()
+  const storedScope = program
+    ? branchProtectionScopeOf(program.settings)
+    : DEFAULT_BRANCH_PROTECTION_SCOPE
 
   const form = useForm({
     defaultValues: {
@@ -71,6 +86,7 @@ export function ProgramForm({
         (program?.status as
           'Active' | 'On Hold' | 'Completed' | 'Cancelled' | undefined) ??
         'Active',
+      branchProtectionScope: storedScope,
     },
     validators: {
       onSubmit: zodValidator(programFormSchema),
@@ -86,6 +102,13 @@ export function ProgramForm({
         targetEndDate: value.targetEndDate || undefined,
         status: value.status,
         attributes: attributes,
+        // Only the key this form edits, and only when it changed: the server
+        // merges settings into what is stored, so echoing the rest back could
+        // only fail on a key it no longer accepts, and an unchanged scope needs
+        // no authority.
+        ...(value.branchProtectionScope !== storedScope && {
+          settings: { branchProtectionScope: value.branchProtectionScope },
+        }),
       }
       await onSubmit(submissionData)
     },
@@ -258,6 +281,43 @@ export function ProgramForm({
                 onBlur={field.handleBlur}
                 error={!!field.state.meta.errors.length}
               />
+            </FormField>
+          )}
+        </form.Field>
+
+        {/* Branch protection scope */}
+        <form.Field name="branchProtectionScope">
+          {(field) => (
+            <FormField
+              label="Branch protection"
+              helpText={
+                mayChangeScope
+                  ? 'What main protects once a design in this program has released items. "Released items only" still protects everything in the structure beneath a released item.'
+                  : 'What main protects once a design in this program has released items. Changing it requires an administrator.'
+              }
+              error={field.state.meta.errors[0]}
+              className="md:col-span-2"
+            >
+              <Select
+                value={field.state.value}
+                onValueChange={(value) =>
+                  field.handleChange(value as BranchProtectionScope)
+                }
+                disabled={!mayChangeScope}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select protection scope" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="design">
+                    Whole design (default) — any release protects all items
+                  </SelectItem>
+                  <SelectItem value="released-items">
+                    Released items only — and everything beneath them in the
+                    structure; other drafts stay editable on main
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </FormField>
           )}
         </form.Field>

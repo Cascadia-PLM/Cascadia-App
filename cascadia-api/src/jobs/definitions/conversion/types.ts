@@ -3,11 +3,101 @@
 
 import { z } from 'zod'
 
+/** The derivative formats the CAD converter can store. */
+export const CAD_OUTPUT_FORMATS = ['glb', 'stl'] as const
+export type CadOutputFormat = (typeof CAD_OUTPUT_FORMATS)[number]
+
+/**
+ * What a deployment stores when `CAD_DEFAULT_OUTPUT_FORMATS` is unset: both,
+ * as every conversion did before the setting existed. The Python worker's
+ * payload model carries the same pair for rows queued before `outputFormats`.
+ */
+const BUILTIN_CAD_OUTPUT_FORMATS: ReadonlyArray<CadOutputFormat> = [
+  'glb',
+  'stl',
+]
+
+/**
+ * A non-empty list of derivative formats, for the API body and the job
+ * payload alike: an empty one would queue a job that finishes "successfully"
+ * having been asked to store nothing.
+ */
+export const cadOutputFormatsSchema = z.array(z.enum(CAD_OUTPUT_FORMATS)).min(1)
+
+function isCadOutputFormat(value: string): value is CadOutputFormat {
+  return (CAD_OUTPUT_FORMATS as ReadonlyArray<string>).includes(value)
+}
+
+/**
+ * Parse a `CAD_DEFAULT_OUTPUT_FORMATS` value: a comma-separated list of
+ * {@link CAD_OUTPUT_FORMATS}, case-insensitive.
+ *
+ * Unset or blank means "not configured" and yields the built-in pair — blank
+ * included, because a compose file passing the variable through as
+ * `${CAD_DEFAULT_OUTPUT_FORMATS:-}` delivers an empty string when the operator
+ * set nothing. Anything else must name at least one known format and nothing
+ * unknown, or this throws an error naming the variable: a typo (`gltf`) or a
+ * list with no entries (`,`) is a misconfiguration to stop on, not one to
+ * guess around.
+ */
+export function parseCadOutputFormats(
+  raw: string | undefined,
+): Array<CadOutputFormat> {
+  const trimmed = raw?.trim()
+  if (!trimmed) return [...BUILTIN_CAD_OUTPUT_FORMATS]
+
+  const entries = trimmed
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => value !== '')
+  const unknown = entries.filter((value) => !isCadOutputFormat(value))
+  if (entries.length === 0 || unknown.length > 0) {
+    throw new Error(
+      `CAD_DEFAULT_OUTPUT_FORMATS must be a comma-separated list of ` +
+        `${CAD_OUTPUT_FORMATS.join(', ')} naming at least one format ` +
+        `(got ${JSON.stringify(raw)}` +
+        (unknown.length > 0 ? `; unknown: ${unknown.join(', ')}` : '') +
+        '). Unset it to store both.',
+    )
+  }
+  return [...new Set(entries.filter(isCadOutputFormat))]
+}
+
+/** The deployment's default derivative formats, from the environment. */
+export function configuredCadOutputFormats(): Array<CadOutputFormat> {
+  return parseCadOutputFormats(process.env.CAD_DEFAULT_OUTPUT_FORMATS)
+}
+
+/**
+ * The `outputFormats` a conversion job is submitted with: the formats asked
+ * for, deduplicated, plus STL whenever the assembly is decomposed — its
+ * manifest is keyed by each part's STL file id, so decomposition cannot run
+ * without one.
+ */
+export function cadJobOutputFormats(
+  formats: ReadonlyArray<CadOutputFormat>,
+  decompose: boolean,
+): Array<CadOutputFormat> {
+  const resolved = new Set(formats)
+  if (decompose) resolved.add('stl')
+  return [...resolved]
+}
+
 export const cadConversionPayloadSchema = z.object({
   vaultFileId: z.string().uuid(),
   itemId: z.string().uuid(),
   outputBranchId: z.string().uuid().nullable().optional(),
   outputFormat: z.string().default('stl'),
+  /**
+   * Submitters should resolve the deployment's default
+   * (`configuredCadOutputFormats`, via `cadJobOutputFormats`) and pass it, so
+   * the queued payload records exactly what this job stores; core's convert
+   * route always does. It stays optional because this is a core job type that
+   * modules submit too, and existing submitters predate the field: a payload
+   * without it, like a row queued before it existed, is read by the worker as
+   * both formats. Never empty — that would store nothing.
+   */
+  outputFormats: cadOutputFormatsSchema.optional(),
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
   decompose: z.boolean().default(false),
   userId: z.string().uuid(),
@@ -29,6 +119,14 @@ export const cadConversionResultSchema = z.object({
   conversionTimeMs: z.number().int().min(0),
   thumbnailFileId: z.string().uuid().optional(),
   glbFileIds: z.array(z.string().uuid()).optional(),
+  /** The formats that reached the vault. Absent on results written before it. */
+  storedFormats: z.array(z.enum(CAD_OUTPUT_FORMATS)).optional(),
+  /**
+   * True when STL was stored only because none of the requested formats
+   * could be produced or stored — GLB-only asked of an IGES source, say, or
+   * a STEP whose GLB step failed. The job log says which.
+   */
+  stlFallback: z.boolean().optional(),
   manifest: z
     .array(
       z.object({

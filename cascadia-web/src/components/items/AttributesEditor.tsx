@@ -12,6 +12,10 @@ import {
   CollapsibleTrigger,
   Input,
 } from '@/components/ui'
+import {
+  attributeEntriesInRowOrder,
+  sortedAttributeKeys,
+} from '@/utils/attribute-order'
 
 interface AttributesEditorProps {
   value: Record<string, unknown>
@@ -66,8 +70,13 @@ export function AttributesEditor({
   compact = false,
 }: AttributesEditorProps) {
   const [isOpen, setIsOpen] = useState(false)
+  // Rows open in the same alphabetical order as the read-only lists, then stay
+  // where they are while editing. Sorting on every render would move the row
+  // being typed into as its key changed, and the next keystroke would land in
+  // whichever row slid into its place.
+  const [rowOrder, setRowOrder] = useState(() => sortedAttributeKeys(value))
+  const entries = attributeEntriesInRowOrder(value, rowOrder)
 
-  const entries = Object.entries(value)
   const attributeCount = entries.length
 
   const handleAddAttribute = () => {
@@ -79,22 +88,26 @@ export function AttributesEditor({
       newKey = `attribute${index}`
     }
     onChange({ ...value, [newKey]: '' })
+    setRowOrder((order) => [...order, newKey])
     setIsOpen(true)
   }
 
   const handleKeyChange = (oldKey: string, newKey: string) => {
-    if (oldKey === newKey || !newKey.trim()) return
+    const trimmed = newKey.trim()
+    if (oldKey === newKey || !trimmed) return
 
     // Build new object preserving order, replacing old key with new key
     const newAttributes: Record<string, unknown> = {}
     for (const [key, val] of Object.entries(value)) {
       if (key === oldKey) {
-        newAttributes[newKey.trim()] = val
+        newAttributes[trimmed] = val
       } else {
         newAttributes[key] = val
       }
     }
     onChange(newAttributes)
+    // The renamed row keeps its place.
+    setRowOrder((order) => order.map((key) => (key === oldKey ? trimmed : key)))
   }
 
   const handleValueChange = (key: string, newValue: string) => {

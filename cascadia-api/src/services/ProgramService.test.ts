@@ -229,7 +229,7 @@ describe('ProgramService', () => {
         user.id,
       )
 
-      expect(updated?.startDate).toBeNull()
+      expect(updated.startDate).toBeNull()
     })
 
     it('leaves a date it was not asked about alone', async () => {
@@ -245,7 +245,7 @@ describe('ProgramService', () => {
         user.id,
       )
 
-      expect(updated?.startDate).toEqual(startDate)
+      expect(updated.startDate).toEqual(startDate)
     })
 
     it('accepts a full save of a program that has no dates', async () => {

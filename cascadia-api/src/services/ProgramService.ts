@@ -3,13 +3,28 @@
 
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import {
+  DEFAULT_BRANCH_PROTECTION_SCOPE,
+  branchProtectionScopeOf,
+  programSettingsSchema,
+} from '@cascadia/commons/types/program'
 import { db } from '../db'
-import { PROGRAM_CREATED, publishDomainEvent } from '../events'
+import {
+  PROGRAM_BRANCH_PROTECTION_SCOPE_CHANGED,
+  PROGRAM_CREATED,
+  publishDomainEvent,
+} from '../events'
 import { likeContains } from '../db/like-pattern'
 import { programMembers, programs, users } from '../db/schema'
-import { NotFoundError, ValidationError } from '../errors'
+import {
+  NotFoundError,
+  PermissionDeniedError,
+  ValidationError,
+} from '../errors'
 import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
+import type { BranchProtectionScope } from '@cascadia/commons/types/program'
+import type { TransactionClient } from '../db'
 import { takeFirst } from '@/db/take-first'
 import { clearableDate } from '@/api/wire-date'
 
@@ -28,12 +43,34 @@ export const programCreateSchema = z.object({
   targetEndDate: clearableDate().optional(),
   status: z.enum(['Active', 'On Hold', 'Completed', 'Cancelled']).optional(),
   attributes: z.record(z.string(), z.unknown()).optional(),
+  // Strict: only the declared settings keys, merged into what is stored.
+  // Changing `branchProtectionScope` is authorized separately — see
+  // `ProgramWriteOptions`.
+  settings: programSettingsSchema.optional(),
 })
 
 export const programUpdateSchema = programCreateSchema.partial()
 
 export type CreateProgramInput = z.infer<typeof programCreateSchema>
 export type UpdateProgramInput = z.infer<typeof programUpdateSchema>
+
+/**
+ * How a caller vouches for a change to the program's branch-protection scope.
+ *
+ * The scope decides what a protected main refuses for every design in the
+ * program, so changing it is not the ordinary program edit that
+ * `programs:update` (or being the program's admin) admits. The route supplies
+ * the check it can make — the caller's own grant, API-key scope included —
+ * and the service runs it only when the stored value would actually change,
+ * inside the transaction that writes it, after locking the row: a check
+ * against a value read earlier could be raced by a concurrent edit.
+ *
+ * With no authorizer a scope change is refused (`PermissionDeniedError` on
+ * `system:manage`), so a new caller cannot loosen change control by omission.
+ */
+export interface ProgramWriteOptions {
+  authorizeBranchProtectionScopeChange?: () => Promise<void>
+}
 
 export const programRoleSchema = z.enum(['admin', 'lead', 'engineer', 'viewer'])
 export type ProgramRole = z.infer<typeof programRoleSchema>
@@ -101,7 +138,11 @@ export class ProgramService {
   /**
    * Create a new program
    */
-  static async create(data: CreateProgramInput, userId: string) {
+  static async create(
+    data: CreateProgramInput,
+    userId: string,
+    options?: ProgramWriteOptions,
+  ) {
     // Validate input
     const validated = programCreateSchema.parse(data)
 
@@ -136,6 +177,7 @@ export class ProgramService {
             description: validated.description,
             contractNumber: validated.contractNumber,
             customer: validated.customer,
+            settings: validated.settings ?? {},
             startDate: validated.startDate,
             targetEndDate: validated.targetEndDate,
             status: validated.status || 'Active',
@@ -171,7 +213,70 @@ export class ProgramService {
         },
       })
 
+      // Born with a non-default scope: as much a change of change control as
+      // switching it later, so it takes the same authority and leaves the same
+      // record.
+      const scope = branchProtectionScopeOf(program.settings)
+      if (scope !== DEFAULT_BRANCH_PROTECTION_SCOPE) {
+        await this.recordBranchProtectionScopeChange(
+          tx,
+          program.id,
+          null,
+          scope,
+          userId,
+          options,
+        )
+      }
+
       return program
+    })
+  }
+
+  /**
+   * The scope a program's designs are protected under.
+   */
+  static async getBranchProtectionScope(
+    programId: string,
+  ): Promise<BranchProtectionScope> {
+    const row = await db
+      .select({ settings: programs.settings })
+      .from(programs)
+      .where(eq(programs.id, programId))
+      .limit(1)
+      .then((rows) => rows.at(0))
+    return branchProtectionScopeOf(row?.settings)
+  }
+
+  /**
+   * Authorize and record a scope change, inside the transaction that writes it.
+   */
+  private static async recordBranchProtectionScopeChange(
+    tx: TransactionClient,
+    programId: string,
+    previousScope: BranchProtectionScope | null,
+    scope: BranchProtectionScope,
+    userId: string,
+    options: ProgramWriteOptions | undefined,
+  ): Promise<void> {
+    if (!options?.authorizeBranchProtectionScopeChange) {
+      throw new PermissionDeniedError('system', 'manage', {
+        operation: 'changeBranchProtectionScope',
+      })
+    }
+    await options.authorizeBranchProtectionScopeChange()
+
+    await publishDomainEvent(tx, PROGRAM_BRANCH_PROTECTION_SCOPE_CHANGED, {
+      actorId: userId,
+      subject: { id: programId },
+      context: { programId },
+      payload: {
+        programId,
+        previousScope,
+        scope,
+        loosensProtection:
+          scope === 'released-items' &&
+          (previousScope ?? DEFAULT_BRANCH_PROTECTION_SCOPE) === 'design',
+      },
     })
   }
 
@@ -191,7 +296,12 @@ export class ProgramService {
   /**
    * Update a program
    */
-  static async update(id: string, data: UpdateProgramInput, userId: string) {
+  static async update(
+    id: string,
+    data: UpdateProgramInput,
+    userId: string,
+    options?: ProgramWriteOptions,
+  ) {
     const validated = programUpdateSchema.parse(data)
 
     const existing = await this.getById(id)
@@ -222,17 +332,55 @@ export class ProgramService {
       }
     }
 
-    const [updated] = await db
-      .update(programs)
-      .set({
-        ...validated,
-        updatedBy: userId,
-        updatedAt: new Date(),
-      })
-      .where(eq(programs.id, id))
-      .returning()
+    const { settings: settingsUpdate, ...fields } = validated
 
-    return updated
+    return db.transaction(async (tx) => {
+      // Settings merge key by key into what is stored, so they are read under
+      // a row lock: two concurrent edits would otherwise each merge into the
+      // same stale blob, and the scope comparison below would be against a
+      // value that is no longer the one being replaced.
+      const current = await tx
+        .select({ settings: programs.settings })
+        .from(programs)
+        .where(eq(programs.id, id))
+        .for('update')
+        .then((rows) => rows.at(0))
+      if (!current) {
+        throw new NotFoundError('Program', id, { operation: 'update' })
+      }
+
+      const updated = takeFirst(
+        await tx
+          .update(programs)
+          .set({
+            ...fields,
+            ...(settingsUpdate !== undefined
+              ? { settings: { ...(current.settings ?? {}), ...settingsUpdate } }
+              : {}),
+            updatedBy: userId,
+            updatedAt: new Date(),
+          })
+          .where(eq(programs.id, id))
+          .returning(),
+      )
+
+      // No event, and no extra authority, for a write that leaves the scope
+      // where it was — including a form that echoes the current value back.
+      const previousScope = branchProtectionScopeOf(current.settings)
+      const scope = branchProtectionScopeOf(updated.settings)
+      if (scope !== previousScope) {
+        await this.recordBranchProtectionScopeChange(
+          tx,
+          id,
+          previousScope,
+          scope,
+          userId,
+          options,
+        )
+      }
+
+      return updated
+    })
   }
 
   /**

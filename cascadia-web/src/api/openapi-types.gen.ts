@@ -2386,7 +2386,7 @@ export interface paths {
         put?: never;
         /**
          * Queue a CAD file for mesh conversion
-         * @description STEP (.step/.stp) and IGES (.iges/.igs) only. Returns 202 with the id of a background job — poll GET /api/v1/jobs/:id for its result; the STL and GLB appear as new files on the target item when it completes. The body is optional: an absent or unparseable one runs on the defaults below.
+         * @description STEP (.step/.stp) and IGES (.iges/.igs) only. Returns 202 with the id of a background job — poll GET /api/v1/jobs/:id for its result; the requested meshes (GLB and/or STL) appear as new files on the target item when it completes. The body is optional: an absent or unparseable one runs on the defaults below.
          */
         post: operations["postApiV1FilesByFileIdConvert"];
         delete?: never;
@@ -2727,6 +2727,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * List items
+         * @description Lists one design’s items at a version context (`designId`, with `branch`, `commit` or `tag`), or, without `designId`, searches one item type across the designs the caller can read (narrowed by `programId`). `includeFileSummary=true` adds `fileSummary`, keyed by item id: how many files each listed item has, by category and by extension — counted exactly as `GET /api/v1/items/{itemId}/files` would list them in the same version context, so a file uploaded on an open change-order branch is counted on that branch and nowhere else.
+         */
         get: operations["getApiV1Items"];
         put?: never;
         /**
@@ -3907,7 +3911,7 @@ export interface paths {
         put?: never;
         /**
          * Create a program
-         * @description Programs are the permission boundary: the creator is not made a member, so add members with POST /api/v1/programs/:id/members. `code` is unique system-wide.
+         * @description Programs are the permission boundary: the creator is not made a member, so add members with POST /api/v1/programs/:id/members. `code` is unique system-wide. A `settings.branchProtectionScope` other than `design` also requires `system:manage`, as does changing it later through PUT.
          */
         post: operations["postApiV1Programs"];
         delete?: never;
@@ -11164,6 +11168,8 @@ export interface operations {
                      * @enum {string}
                      */
                     meshQuality?: "preview" | "standard" | "high";
+                    /** @description Derivative formats to store: `glb` (the web viewer format) and/or `stl` (3D printing, CAM, import into other tools). Omitted, the server uses its configured default, `CAD_DEFAULT_OUTPUT_FORMATS` — both unless the deployment changes it. STL is stored regardless when `decompose` is true, and as a fallback when none of the requested formats could be produced (an IGES source has no GLB). */
+                    outputFormats?: ("glb" | "stl")[];
                     /**
                      * Format: uuid
                      * @description Attach the converted mesh to this item instead of the source file’s own — e.g. a STEP held on a Document producing an STL on the Part.
@@ -11830,13 +11836,83 @@ export interface operations {
     };
     getApiV1Items: {
         parameters: {
-            query?: never;
+            query?: {
+                designId?: string;
+                programId?: string;
+                branch?: string;
+                commit?: string;
+                tag?: string;
+                itemType?: string;
+                state?: string;
+                search?: string;
+                globalSearch?: string;
+                includeDeleted?: string;
+                limit?: string;
+                offset?: string;
+                sortField?: string;
+                sortDirection?: string;
+                columnFilters?: string;
+                includeCounts?: string;
+                countStates?: string;
+                includeFileSummary?: "true" | "false";
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** @description The version context the items were resolved at. With `designId` only. */
+                            context?: string;
+                            /** @description Items per state named in `countStates`, with `includeCounts=true`. */
+                            counts?: {
+                                [key: string]: number;
+                            };
+                            /** @description With `includeFileSummary=true`: one entry per listed item, keyed by item id. */
+                            fileSummary?: {
+                                [key: string]: {
+                                    /** @description Files per category; every category is present, zero when absent. A file with no category counts toward `total` only. */
+                                    byCategory: {
+                                        analysis: number;
+                                        cad_model: number;
+                                        drawing: number;
+                                        other: number;
+                                        reference: number;
+                                        specification: number;
+                                    };
+                                    /** @description Files per extension, lowercased and without the dot (`pdf`, `step`, `stp`); only extensions present appear. A file with no extension counts toward `total` only. */
+                                    byExtension: {
+                                        [key: string]: number;
+                                    };
+                                    /** @description Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context, each counted once at its latest version. */
+                                    total: number;
+                                };
+                            };
+                            items: ({
+                                /** Format: uuid */
+                                id: string;
+                                itemNumber: string;
+                                itemType: string;
+                                /** Format: uuid */
+                                masterId: string;
+                                revision: string;
+                                state: string;
+                            } & {
+                                [key: string]: unknown;
+                            })[];
+                            total: number;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -15200,6 +15276,12 @@ export interface operations {
                     customer?: string;
                     description?: string;
                     name: string;
+                    settings?: {
+                        approvalWorkflow?: string[];
+                        /** @enum {string} */
+                        branchProtectionScope?: "design" | "released-items";
+                        changeOrderNumberFormat?: string;
+                    };
                     startDate?: string | null;
                     /** @enum {string} */
                     status?: "Active" | "On Hold" | "Completed" | "Cancelled";
@@ -15273,6 +15355,12 @@ export interface operations {
                     customer?: string;
                     description?: string;
                     name?: string;
+                    settings?: {
+                        approvalWorkflow?: string[];
+                        /** @enum {string} */
+                        branchProtectionScope?: "design" | "released-items";
+                        changeOrderNumberFormat?: string;
+                    };
                     startDate?: string | null;
                     /** @enum {string} */
                     status?: "Active" | "On Hold" | "Completed" | "Cancelled";

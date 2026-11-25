@@ -431,7 +431,7 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 **Two-table pattern**: Base fields in `items` table, type-specific fields in `parts`/`documents`/`change_orders`/etc. `ItemService` handles both automatically.
 
-**Branch protection**: Cannot modify items on `main` directly. All changes flow through change-order branches, merged on release.
+**Branch protection**: Once anything in a design is released, `main` is protected and changes flow through change-order branches, merged on release. What it protects is the program's `settings.branchProtectionScope`: `design` (the default) protects every item in the design; `released-items` protects released items **and everything beneath one in the BOM on main** (a released assembly does not require released children, so without that a Draft child could change it), leaving other drafts editable on main. Free/Driving-lifecycle types are exempt either way. `canEditOnMain` (`cascadia-api/src/items/branch-protection.ts`) is the one verdict — every gate, the edit-context and the AI tools ask it; never re-derive it. Changing the scope takes `system:manage` and emits `program.branch_protection_scope_changed`. See `docs/features/versioning.md`.
 
 **Revision assignment**: Revision letters (A, B, C...) are assigned only when merging a change-order branch to main, not during work.
 

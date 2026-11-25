@@ -2305,38 +2305,6 @@ describe('ItemService', () => {
     })
   })
 
-  describe('canEditDirectly', () => {
-    it('returns allowed when no released items', async () => {
-      const result = await ItemService.canEditDirectly(designId)
-
-      expect(result.allowed).toBe(true)
-      expect(result.requiresCheckout).toBe(false)
-    })
-
-    it('returns not allowed when design has released items', async () => {
-      // Insert a released item directly to trigger protection
-      const { items: itemsTable } = await import('@/db/schema')
-      await testDb.db.insert(itemsTable).values({
-        masterId: crypto.randomUUID(),
-        designId,
-        itemNumber: `PN-${uniquePrefix}-RELEASED`,
-        revision: 'A',
-        name: 'Released Item',
-        itemType: 'Part',
-        state: 'Released',
-        isCurrent: true,
-        createdBy: user.id,
-        modifiedBy: user.id,
-      })
-
-      const result = await ItemService.canEditDirectly(designId)
-
-      expect(result.allowed).toBe(false)
-      expect(result.requiresCheckout).toBe(true)
-      expect(result.reason).toContain('released items')
-    })
-  })
-
   describe('getItemBranchInfo', () => {
     it('returns null for items not on ECO/workspace branch', async () => {
       const created = await ItemService.create(

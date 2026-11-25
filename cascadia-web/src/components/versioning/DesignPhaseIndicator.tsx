@@ -49,13 +49,16 @@ export function DesignPhaseIndicator({
     return null
   }
 
-  const { phase, releasedItemCount, draftItemCount } = status.protection
+  const { phase, releasedItemCount, draftItemCount, branchProtectionScope } =
+    status.protection
   const isPreRelease = phase === 'pre-release'
 
   // Build tooltip text
   const tooltipText = isPreRelease
     ? `Pre-Release Phase: Create and edit items directly on main branch. ${draftItemCount} draft item(s) ready for release.`
-    : `Change Control Active: Main branch is protected. Use change-order branches to make changes. ${releasedItemCount} item(s) released.`
+    : branchProtectionScope === 'released-items'
+      ? `Change Control Active: Released items, and everything in the structure beneath them, change only through change-order branches. Other drafts stay editable on main. ${releasedItemCount} item(s) released.`
+      : `Change Control Active: Main branch is protected. Use change-order branches to make changes. ${releasedItemCount} item(s) released.`
 
   return (
     <div

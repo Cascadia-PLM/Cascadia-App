@@ -10,6 +10,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from .output_formats import DEFAULT_OUTPUT_FORMATS
+
 
 class MeshQuality(str, Enum):
     PREVIEW = "preview"
@@ -38,6 +40,12 @@ class CadConversionPayload(BaseModel):
     itemId: str
     outputBranchId: Optional[str] = None
     outputFormat: str = "stl"
+    # Core's convert route always sends the formats it resolved. Absent from
+    # rows queued before the field existed and from submitters that do not set
+    # it (a module's own endpoint), which get both formats.
+    outputFormats: list[str] = Field(
+        default_factory=lambda: list(DEFAULT_OUTPUT_FORMATS)
+    )
     meshQuality: MeshQuality = MeshQuality.STANDARD
     decompose: bool = False
     userId: str
@@ -66,6 +74,11 @@ class CadConversionResult(BaseModel):
     manifest: Optional[list[ManifestPart]] = None
     thumbnailFileId: Optional[str] = None
     glbFileIds: Optional[list[str]] = None
+    #: The formats that reached the vault.
+    storedFormats: list[str] = Field(default_factory=list)
+    #: STL was stored only because none of the requested formats could be
+    #: produced or stored; the job log carries the reason.
+    stlFallback: bool = False
 
 
 class GlbNode(BaseModel):

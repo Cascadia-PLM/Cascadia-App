@@ -37,6 +37,26 @@ const adapt = tagged('Programs')
 
 const app = new Hono()
 
+/**
+ * The authority a branch-protection scope change takes: `system:manage`, the
+ * Administrator-only grant that already governs the rest of change control's
+ * configuration (item-type lifecycle assignment, which decides what is exempt
+ * from protection at all, lives behind it in the admin console).
+ *
+ * A program admin or a `programs:update` holder edits a program; neither may
+ * decide how much of its released baseline a protected main guards. Passed to
+ * the service as a callback so it runs only when the stored scope would
+ * actually change, inside the write's transaction — an ordinary edit that
+ * echoes the current scope back needs nothing extra.
+ */
+function branchProtectionScopeAuthority(request: Request) {
+  return {
+    authorizeBranchProtectionScopeChange: async () => {
+      await requirePermission(request, 'system', 'manage')
+    },
+  }
+}
+
 // GET /api/programs - pagination, sorting, filtering, optional status counts
 app.get(
   '/',
@@ -141,14 +161,20 @@ app.post(
           description:
             'Programs are the permission boundary: the creator is not made a ' +
             'member, so add members with POST /api/v1/programs/:id/members. ' +
-            '`code` is unique system-wide.',
+            '`code` is unique system-wide. A `settings.branchProtectionScope` ' +
+            'other than `design` also requires `system:manage`, as does ' +
+            'changing it later through PUT.',
           responses: {
             201: { schema: z.object({ program: programResponseSchema }) },
           },
         },
       },
-      async ({ body: data, user }) => {
-        const program = await ProgramService.create(data, user.id)
+      async ({ body: data, request, user }) => {
+        const program = await ProgramService.create(
+          data,
+          user.id,
+          branchProtectionScopeAuthority(request),
+        )
 
         return created({ program })
       },
@@ -336,8 +362,13 @@ app.put(
         },
         body: programUpdateSchema,
       },
-      async ({ params, body, user }) => {
-        const program = await ProgramService.update(params.id, body, user.id)
+      async ({ params, body, request, user }) => {
+        const program = await ProgramService.update(
+          params.id,
+          body,
+          user.id,
+          branchProtectionScopeAuthority(request),
+        )
         return { program }
       },
     ),

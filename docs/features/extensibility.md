@@ -143,7 +143,7 @@ A type absent there is a type nothing in that instance publishes.
 | Items        | `item.created`, `item.updated`, `item.deleted`, `item.released`, `item.obsoleted`, `item.checked_out`, `item.checked_in`, `item.checkout_cancelled` |
 | Change       | `change_order.released`, `change_order.cancelled`, `design.released`, `lifecycle.transitioned`, `approval.voted`                                    |
 | Structure    | `relationship.added`, `relationship.removed`, `relationship.updated`                                                                                |
-| Hierarchy    | `program.created`, `design.created`, `branch.created`, `branch.archived`                                                                            |
+| Hierarchy    | `program.created`, `program.branch_protection_scope_changed`, `design.created`, `branch.created`, `branch.archived`                                 |
 | Files        | `file.uploaded`, `file.checked_in`, `file.deleted`, `file.restored`                                                                                 |
 | Work         | `work_order.run_completed`, `work_order.sign_off_submitted`                                                                                         |
 | Verification | `test.executed`, `requirement.verification_changed`                                                                                                 |

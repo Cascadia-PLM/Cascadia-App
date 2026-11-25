@@ -60,7 +60,11 @@ interface ByFilenameResponse {
     items: Array<{ id: string; itemType: string }>
     exactMatch: { id: string } | null
     totalMatches?: number
-    matchingFiles?: Array<{ itemId: string }>
+    matchingFiles?: Array<{
+      itemId: string
+      originalFileName: string
+      sourceFileName: string | null
+    }>
     message?: string
   }
 }
@@ -87,11 +91,16 @@ describe('GET /items/by-filename — program isolation', () => {
     await testDb.teardown()
   })
 
-  async function attachFile(itemId: string, name: string) {
+  async function attachFile(
+    itemId: string,
+    name: string,
+    metadata: Record<string, unknown> | null = null,
+  ) {
     await testDb.db.insert(vaultFiles).values({
       itemId,
       fileName: name,
       originalFileName: name,
+      metadata,
       fileSize: 2048,
       mimeType: 'application/step',
       fileHash: randomUUID().replace(/-/g, ''),
@@ -328,6 +337,30 @@ describe('GET /items/by-filename — program isolation', () => {
     expect((await search(crossProgram)).items.map((i) => i.id)).toContain(
       changeOrder.id,
     )
+  })
+
+  // Under VAULT_NATIVE_CAD_NAMING=itemNumber a native CAD file is stored under
+  // its item number and the name it was uploaded as rides in its metadata. A
+  // CAD client still knows the file by that local name, so the lookup answers
+  // it — inside the same scope as every other match, not beside it.
+  it('finds a file by the name it was submitted under, within scope', async () => {
+    await attachFile(partA, 'PN-A.sldprt', { sourceFileName: 'bracket.sldprt' })
+    await attachFile(partB, 'PN-B.sldprt', { sourceFileName: 'bracket.sldprt' })
+
+    const result = await searchFor(memberA, 'bracket.sldprt')
+
+    expect(result.exactMatch?.id).toBe(partA)
+    expect(result.items.map((i) => i.id)).toEqual([partA])
+    expect(result.matchingFiles).toEqual([
+      expect.objectContaining({
+        itemId: partA,
+        originalFileName: 'PN-A.sldprt',
+        sourceFileName: 'bracket.sldprt',
+      }),
+    ])
+
+    // The stored name still answers, as it always did.
+    expect((await searchFor(memberA, 'PN-A.sldprt')).exactMatch?.id).toBe(partA)
   })
 
   // Aligns the route with its sibling read `GET /items/:id`, which goes

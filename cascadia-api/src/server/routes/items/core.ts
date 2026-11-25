@@ -15,8 +15,12 @@ import {
 } from 'drizzle-orm'
 import { z } from 'zod'
 import { MAX_ENRICHMENT_IMAGES } from '@cascadia/commons/items/enrichment/limits'
+import { FILE_CATEGORY_VALUES } from '@cascadia/commons/vault/file-categories'
 import { tagged } from '../../adapter'
 import { readableItemTypes } from './shared'
+import type { FileCategory } from '@cascadia/commons/vault/file-categories'
+import type { ItemFileSummary } from '@/vault/services/FileService'
+import type { Equal, Expect } from '@cascadia/commons/types/assert'
 import { requirePermission } from '@/auth/server'
 import { likeContains } from '@/db/like-pattern'
 import { NotFoundError, PermissionDeniedError, ValidationError } from '@/errors'
@@ -48,6 +52,7 @@ import { accessScopeCondition, notDeleted } from '@/db/filters'
 import { items, vaultFiles } from '@/db/schema'
 import { designs } from '@/db/schema/designs'
 import { LifecycleInstanceService } from '@/lifecycles/LifecycleInstanceService'
+import { FileService } from '@/vault/services/FileService'
 
 const adapt = tagged('Items')
 
@@ -228,6 +233,111 @@ const itemResponseSchema = z
   })
   .passthrough()
 
+const fileCount = z.number().int().min(0)
+
+/** One item's entry in `fileSummary`. See `ItemFileSummary`. */
+const itemFileSummarySchema = z.object({
+  total: fileCount.describe(
+    'Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context, each counted once at its latest version.',
+  ),
+  // An object with a property per category rather than a record keyed by the
+  // enum: the two validate alike, but only this one generates a client type
+  // that names the categories.
+  byCategory: z
+    .object(
+      Object.fromEntries(
+        FILE_CATEGORY_VALUES.map((category) => [category, fileCount]),
+      ) as Record<FileCategory, typeof fileCount>,
+    )
+    .describe(
+      'Files per category; every category is present, zero when absent. A file with no category counts toward `total` only.',
+    ),
+  byExtension: z
+    .record(z.string(), fileCount)
+    .describe(
+      'Files per extension, lowercased and without the dot (`pdf`, `step`, `stp`); only extensions present appear. A file with no extension counts toward `total` only.',
+    ),
+})
+
+// The documented shape and the one the service builds are separate
+// declarations; this keeps them the same one.
+export type _FileSummaryDocumented = Expect<
+  Equal<z.infer<typeof itemFileSummarySchema>, ItemFileSummary>
+>
+
+/**
+ * Query parameters for `GET /items`.
+ *
+ * Every parameter but `includeFileSummary` predates this schema and stays a
+ * plain optional string, read by the handler exactly as it was before: this
+ * documents them, it does not tighten them, so no request that worked is
+ * refused now. Non-strict for the reason `itemSearchQuerySchema` is.
+ */
+const itemListQuerySchema = z.object({
+  designId: z
+    .string()
+    .optional()
+    .describe(
+      "List one design's items, resolved at a version context: main unless `branch`, `commit` or `tag` names another.",
+    ),
+  programId: z
+    .string()
+    .optional()
+    .describe(
+      'List the items of every design in a program. Ignored with `designId`.',
+    ),
+  branch: z
+    .string()
+    .optional()
+    .describe(
+      'A branch of `designId`, by name (`main`, `eco/ECO-0001`). Ignored with `commit` or `tag`.',
+    ),
+  commit: z
+    .string()
+    .optional()
+    .describe('A commit of `designId`, by id. Wins over `tag` and `branch`.'),
+  tag: z
+    .string()
+    .optional()
+    .describe('A tag of `designId`, by id. Wins over `branch`.'),
+  itemType: z
+    .string()
+    .optional()
+    .describe('Item type to list. Without `designId`, defaults to `Part`.'),
+  state: z.string().optional().describe('Lifecycle state to filter on.'),
+  search: z.string().optional(),
+  globalSearch: z.string().optional(),
+  includeDeleted: z
+    .string()
+    .optional()
+    .describe('`true` to include soft-deleted items. With `designId` only.'),
+  limit: z.string().optional().describe('Page size. Defaults to 100.'),
+  offset: z.string().optional().describe('Rows to skip. Defaults to 0.'),
+  sortField: z.string().optional().describe('Without `designId` only.'),
+  sortDirection: z
+    .string()
+    .optional()
+    .describe('`asc` or `desc`. Without `designId` only.'),
+  columnFilters: z
+    .string()
+    .optional()
+    .describe('A JSON object of grid column filters. Without `designId` only.'),
+  includeCounts: z
+    .string()
+    .optional()
+    .describe('`true`, with `countStates`, to add `counts`.'),
+  countStates: z
+    .string()
+    .optional()
+    .describe('Comma-separated states to count across every page.'),
+  includeFileSummary: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe(
+      '`true` to add `fileSummary`: a count of each listed item’s files, by category and by extension. Requires `documents:read`.',
+    ),
+})
+
 /** The commit a branch write produces, as returned alongside the item. */
 const commitSummarySchema = z
   .object({
@@ -383,15 +493,24 @@ app.get(
           readableItemTypes(user.id),
         ])
 
+        // The name a file was submitted under, when the vault stored it under
+        // another: under VAULT_NATIVE_CAD_NAMING=itemNumber a CAD plugin
+        // asking about `bracket.sldprt` means the file now named
+        // `10298.sldprt`. Absent everywhere else, so it matches nothing there.
+        const sourceFileNameField = sql<
+          string | null
+        >`${vaultFiles.metadata}->>'sourceFileName'`
         const exactMatch = or(
           eq(vaultFiles.fileName, filename),
           eq(vaultFiles.originalFileName, filename),
+          eq(sourceFileNameField, filename),
         )!
         const conditions = [
           or(
             exactMatch,
             like(vaultFiles.fileName, likeContains(filename)),
             like(vaultFiles.originalFileName, likeContains(filename)),
+            like(sourceFileNameField, likeContains(filename)),
           )!,
           isNull(vaultFiles.deletedAt),
           eq(items.isCurrent, true),
@@ -411,6 +530,7 @@ app.get(
             fileId: vaultFiles.id,
             fileName: vaultFiles.fileName,
             originalFileName: vaultFiles.originalFileName,
+            sourceFileName: sourceFileNameField,
             itemId: vaultFiles.itemId,
             item: getTableColumns(items),
           })
@@ -433,7 +553,10 @@ app.get(
         // ORDER BY produced.
         const byId = new Map(visibleFiles.map((r) => [r.item.id, r.item]))
         const exactRow = visibleFiles.find(
-          (r) => r.fileName === filename || r.originalFileName === filename,
+          (r) =>
+            r.fileName === filename ||
+            r.originalFileName === filename ||
+            r.sourceFileName === filename,
         )
 
         // Counts come from the returned set: a total that still included
@@ -444,10 +567,17 @@ app.get(
           totalMatches: visibleFiles.length,
           truncated,
           matchingFiles: visibleFiles.map(
-            ({ fileId, fileName, originalFileName, itemId }) => ({
+            ({
               fileId,
               fileName,
               originalFileName,
+              sourceFileName,
+              itemId,
+            }) => ({
+              fileId,
+              fileName,
+              originalFileName,
+              sourceFileName,
               itemId,
             }),
           ),
@@ -461,12 +591,50 @@ app.get(
 // Parameterized routes with :id
 // =============================================
 
+/** `GET /items`: the list, and what it is documented to accept and return. */
+const listItemsOptions = {
+  query: itemListQuerySchema,
+  openapi: {
+    summary: 'List items',
+    description:
+      'Lists one design’s items at a version context (`designId`, with `branch`, `commit` or `tag`), or, without `designId`, searches one item type across the designs the caller can read (narrowed by `programId`). ' +
+      '`includeFileSummary=true` adds `fileSummary`, keyed by item id: how many files each listed item has, by category and by extension — counted exactly as `GET /api/v1/items/{itemId}/files` would list them in the same version context, so a file uploaded on an open change-order branch is counted on that branch and nowhere else.',
+    responses: {
+      200: {
+        schema: z.object({
+          items: z.array(itemResponseSchema),
+          total: z.number().int(),
+          context: z
+            .string()
+            .optional()
+            .describe(
+              'The version context the items were resolved at. With `designId` only.',
+            ),
+          counts: z
+            .record(z.string(), z.number().int())
+            .optional()
+            .describe(
+              'Items per state named in `countStates`, with `includeCounts=true`.',
+            ),
+          fileSummary: z
+            .record(z.string(), itemFileSummarySchema)
+            .optional()
+            .describe(
+              'With `includeFileSummary=true`: one entry per listed item, keyed by item id.',
+            ),
+        }),
+      },
+    },
+  },
+}
+
 // GET /api/items - supports programId filter, server-side sorting/filtering,
-// state counts (?includeCounts=true&countStates=Draft,InReview,Released)
+// state counts (?includeCounts=true&countStates=Draft,InReview,Released),
+// and a per-item file summary (?includeFileSummary=true)
 app.get(
   '/',
   adapt(
-    apiHandler({}, async ({ request, user }) => {
+    apiHandler(listItemsOptions, async ({ request, user, query }) => {
       const url = new URL(request.url)
       const designId = url.searchParams.get('designId')
       const programId = url.searchParams.get('programId')
@@ -485,6 +653,9 @@ app.get(
         undefined) as 'asc' | 'desc' | undefined
       const includeCounts = url.searchParams.get('includeCounts') === 'true'
       const countStates = url.searchParams.get('countStates')
+      // From the validated query rather than the raw string, so the value
+      // acted on is the one the schema accepted.
+      const includeFileSummary = query.includeFileSummary === 'true'
 
       let columnFilters:
         | Record<
@@ -508,6 +679,11 @@ app.get(
       if (itemType) {
         await requirePermission(request, getResourceType(itemType), 'read')
       }
+      // The summary describes files, which `GET /items/:id/files` serves
+      // only to `documents:read`; listing an item does not imply it.
+      if (includeFileSummary) {
+        await requirePermission(request, 'documents', 'read')
+      }
 
       // Resolve programId to designIds when no specific designId is set
       let resolvedDesignIds: Array<string> | undefined
@@ -526,6 +702,7 @@ app.get(
         resolvedDesignIds = programDesigns.map((d) => d.id)
         if (resolvedDesignIds.length === 0) {
           const result: Record<string, unknown> = { items: [], total: 0 }
+          if (includeFileSummary) result.fileSummary = {}
           if (includeCounts && countStates) {
             const counts: Record<string, number> = {}
             for (const s of countStates.split(',')) counts[s.trim()] = 0
@@ -595,6 +772,16 @@ app.get(
           context: contextDescription,
         }
 
+        if (includeFileSummary) {
+          response.fileSummary = await FileService.summarizeItemFiles(
+            result.items,
+            {
+              branchId:
+                context.type === 'branch' ? context.branchId : undefined,
+            },
+          )
+        }
+
         if (includeCounts && countStates) {
           const allItems = await ItemService.listAtContext(designId, context, {
             itemType,
@@ -640,6 +827,12 @@ app.get(
           items: result.items,
           total: result.total,
           context: contextDescription,
+        }
+
+        if (includeFileSummary) {
+          response.fileSummary = await FileService.summarizeItemFiles(
+            result.items,
+          )
         }
 
         // Same rollup the explicit-version-context path above performs. It
@@ -689,6 +882,14 @@ app.get(
       const response: Record<string, unknown> = {
         items: result.items,
         total: result.total,
+      }
+
+      // Each item on its own design's main, as its detail page reads it: this
+      // path names no version context, and a page can span designs.
+      if (includeFileSummary) {
+        response.fileSummary = await FileService.summarizeItemFiles(
+          result.items,
+        )
       }
 
       if (includeCounts && countStates) {

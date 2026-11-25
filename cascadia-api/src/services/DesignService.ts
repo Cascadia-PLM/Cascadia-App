@@ -22,6 +22,7 @@ import { branches, commits, designs, items, tags } from '../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import { paginatedOrderBy } from '../db/paginated-order'
 import type { SQL } from 'drizzle-orm'
+import type { BranchProtectionScope } from '@cascadia/commons/types/program'
 import { takeFirst } from '@/db/take-first'
 
 // Zod schemas for validation
@@ -830,6 +831,11 @@ export class DesignService {
    * counts below classify by each type's released family for the same reason;
    * `draftItemCount` is therefore everything not in that family, which is what
    * its one consumer ("N draft item(s) ready for release") means by it.
+   *
+   * `isMainBranchProtected` and `phase` keep their v1 meaning under either
+   * branch-protection scope — main is under change control once anything is
+   * released. `branchProtectionScope` (additive) says what that protects: the
+   * whole design, or only released items and the structure beneath them.
    */
   static async getProtectionStatus(designId: string): Promise<{
     designId: string
@@ -839,6 +845,7 @@ export class DesignService {
     draftItemCount: number
     totalItemCount: number
     isMainBranchProtected: boolean
+    branchProtectionScope: BranchProtectionScope
   }> {
     const design = await this.getById(designId)
     if (!design) {
@@ -887,6 +894,8 @@ export class DesignService {
 
     const isMainBranchProtected =
       await BranchService.isMainBranchProtected(designId)
+    const branchProtectionScope =
+      await BranchService.getBranchProtectionScope(designId)
 
     return {
       designId,
@@ -896,6 +905,7 @@ export class DesignService {
       draftItemCount,
       totalItemCount,
       isMainBranchProtected,
+      branchProtectionScope,
     }
   }
 

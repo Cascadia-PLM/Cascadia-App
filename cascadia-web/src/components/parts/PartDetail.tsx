@@ -83,6 +83,7 @@ import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   branchDetailQuery,
+  createRequiresBranch,
   designDetailQuery,
   designStatusQuery,
   useInvalidateResources,
@@ -307,7 +308,7 @@ export function PartDetail({
   const { data: designStatus = null } = useQuery(
     designStatusQuery(part.designId, isCreateMode && Boolean(part.designId)),
   )
-  const branchRequired = designStatus?.protection.phase === 'post-release'
+  const branchRequired = createRequiresBranch(designStatus)
 
   // A different design means a different set of branches.
   useEffect(() => {

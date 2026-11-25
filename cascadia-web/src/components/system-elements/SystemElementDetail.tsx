@@ -64,7 +64,12 @@ import {
 import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { itemAtContextQuery } from '@/query/options/items'
-import { branchDetailQuery, designStatusQuery, qk } from '@/query'
+import {
+  branchDetailQuery,
+  createRequiresBranch,
+  designStatusQuery,
+  qk,
+} from '@/query'
 import { apiFetch } from '@/api/client'
 import { StateBadge } from '@/components/items/StateBadge'
 import { ItemLink } from '@/components/items/ItemLink'
@@ -165,8 +170,7 @@ export function SystemElementDetail({
       isCreateMode && Boolean(element.designId),
     ),
   )
-  const createBranchRequired =
-    createDesignStatus?.protection.phase === 'post-release'
+  const createBranchRequired = createRequiresBranch(createDesignStatus)
 
   // Where the server says this item may be edited: the branch holding its
   // edit lock, and whether main is protected for this item's type.

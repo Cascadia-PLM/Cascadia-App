@@ -59,7 +59,11 @@ import { StateBadge } from '@/components/items/StateBadge'
 import { useReleasedFamily } from '@/hooks/useReleasedFamily'
 import { ItemCreateDesignSection } from '@/components/items/ItemCreateDesignSection'
 import { itemAtContextQuery } from '@/query/options/items'
-import { branchDetailQuery, designStatusQuery } from '@/query'
+import {
+  branchDetailQuery,
+  createRequiresBranch,
+  designStatusQuery,
+} from '@/query'
 
 const SOFTWARE_TYPE_OPTIONS = [
   { value: 'firmware', label: 'Firmware' },
@@ -261,7 +265,7 @@ export function SoftwareDetail({
       isCreateMode && Boolean(software.designId),
     ),
   )
-  const branchRequired = designStatus?.protection.phase === 'post-release'
+  const branchRequired = createRequiresBranch(designStatus)
 
   const branchActions = resolveItemBranchActions({
     itemLabel: 'Software',

@@ -26,7 +26,7 @@ import { takeFirst } from '../db/take-first'
 import { getTypeHandler } from '../items/type-handlers'
 import { copyTypeSpecificData } from '../items/type-handlers/copy'
 import '../items/type-handlers/init'
-import { isBranchProtectionExempt } from '../items/branch-protection'
+import { canEditOnMain } from '../items/branch-protection'
 import { NotFoundError, ResourceLockedError, ValidationError } from '../errors'
 import { guardOrThrow, hasGuardExtensions } from '../extensions/dispatch'
 import { ITEM_UPDATE } from '../extensions/operations'
@@ -440,23 +440,24 @@ export class CheckoutService {
   }
 
   /**
-   * Whether every version of this master belongs to a branch-protection
-   * exempt type.
+   * The item type of a master.
    *
-   * Keyed on the master rather than a single row because the caller has only
-   * a master id here; all versions of one master share an item type, so the
-   * first row answers for all of them. Fails closed twice over: a master with
-   * no rows is not exempt, and `isBranchProtectionExempt` itself propagates a
-   * lookup failure rather than answering "exempt".
+   * All versions of one master share an item type, so any row answers for
+   * all of them — this reads the type and nothing else; what the item *is* on
+   * main (its state, its place in the structure) is `canEditOnMain`'s to
+   * resolve. Null for a master with no rows, which the policy treats as not
+   * exempt: it fails closed.
    */
-  private static async isExemptMaster(itemMasterId: string): Promise<boolean> {
+  private static async masterItemType(
+    itemMasterId: string,
+  ): Promise<string | null> {
     const row = await db
       .select({ itemType: items.itemType })
       .from(items)
       .where(eq(items.masterId, itemMasterId))
       .limit(1)
       .then((rows) => rows.at(0))
-    return row ? isBranchProtectionExempt(row.itemType) : false
+    return row?.itemType ?? null
   }
 
   static async checkout(
@@ -477,28 +478,27 @@ export class CheckoutService {
     // tracks the item: the claim path below writes a lock and commits nothing
     BranchService.assertNotArchived(branch, 'checkout')
 
-    // Checkout on main is only possible in the pre-release phase. Once main
-    // is protected (released items exist) all changes flow through ECO or
-    // workspace branches. While unprotected, the checkout row on main is the
-    // edit lock behind the UI's Edit button for draft items.
-    //
-    // Protection is a property of the design, but exemption is a property of
-    // the item type, so both have to be asked. `isMainBranchProtected` answers
-    // for the whole design — one released Part protects main for everything in
-    // it — while `ItemEditPolicy.requireContentEditable` lets an exempt type
+    // Checkout on main is the edit lock behind the UI's Edit button, so it is
+    // offered exactly where a direct edit is: `canEditOnMain`, the same policy
+    // `ItemEditPolicy.requireContentEditable` applies to the write itself.
+    // Before anything is released that is every item; afterwards, exempt types
     // (a Free or Driving lifecycle: work instructions, test cases, the change
-    // order itself) write on that same protected main. Refusing those the lock
-    // therefore protected nothing: the write was going to be allowed either
-    // way, and all the refusal removed was the mutual exclusion the lock
-    // exists to provide. It also broke their Edit buttons outright, since the
-    // button acquires the lock before entering edit mode.
+    // order itself) and — under the `released-items` scope — items that are
+    // neither released nor beneath a released item in main's BOM. Refusing
+    // the lock where the write is allowed protects nothing and removes the
+    // mutual exclusion the lock exists to provide; granting it where the
+    // write is refused hands out a lock on an item nobody may edit.
     if (branch.branchType === 'main') {
-      const isProtected = await BranchService.isMainBranchProtected(
-        branch.designId,
-      )
-      if (isProtected && !(await this.isExemptMaster(validated.itemMasterId))) {
+      const onMain = await canEditOnMain({
+        designId: branch.designId,
+        itemType: await this.masterItemType(validated.itemMasterId),
+        masterId: validated.itemMasterId,
+      })
+      if (!onMain.allowed) {
         throw new ValidationError(
-          'Cannot checkout items on the protected main branch. Use an ECO or workspace branch.',
+          onMain.refusal === 'design-protected'
+            ? 'Cannot checkout items on the protected main branch. Use an ECO or workspace branch.'
+            : `Cannot checkout this item on the protected main branch: ${onMain.reason}`,
         )
       }
     }
@@ -1381,13 +1381,24 @@ export class CheckoutService {
 
     BranchService.assertNotArchived(branch, 'createOnBranch')
 
+    // The lifecycle decides where a new item starts; 'Draft' is only the
+    // fallback for a type with no lifecycle assigned
+    const initialState =
+      data.state ?? (await LifecycleService.getInitialStateId(data.itemType))
+
+    // On main, the same question `ItemService.create` asks: may a new item of
+    // this type, in the state it will be written with, go straight onto main?
     if (branch.branchType === 'main') {
-      const isProtected = await BranchService.isMainBranchProtected(
-        branch.designId,
-      )
-      if (isProtected) {
+      const onMain = await canEditOnMain({
+        designId: branch.designId,
+        itemType: data.itemType,
+        state: initialState,
+      })
+      if (!onMain.allowed) {
         throw new ValidationError(
-          'Cannot create items directly on the main branch',
+          onMain.refusal === 'design-protected'
+            ? 'Cannot create items directly on the main branch'
+            : `Cannot create items directly on the main branch: ${onMain.reason}`,
         )
       }
     }
@@ -1398,11 +1409,6 @@ export class CheckoutService {
 
     // A new item on an ECO branch is new scope
     await assertBranchAcceptsNewItems(branch)
-
-    // The lifecycle decides where a new item starts; 'Draft' is only the
-    // fallback for a type with no lifecycle assigned
-    const initialState =
-      data.state ?? (await LifecycleService.getInitialStateId(data.itemType))
 
     // Resolved before the transaction: a dynamic import inside one buys
     // nothing and the module is needed on every path.

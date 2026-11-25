@@ -14,15 +14,15 @@ import {
 import { BranchService } from '../../services/BranchService'
 import { LifecycleService } from '../../services/LifecycleService'
 import { RevisionService } from '../../services/RevisionService'
-import { isBranchProtectionExempt } from '../branch-protection'
+import { canEditOnMain } from '../branch-protection'
 
 /**
  * Who may edit an item's content right now.
  *
  * This is authorization and concurrency control, not versioning: it answers
  * "is this caller allowed to mutate this item at this moment", from branch
- * protection (has the design released anything?), branch state (is the ECO
- * locked for approval?), and the checkout recorded in
+ * protection (may this item on main be edited directly? — `canEditOnMain`),
+ * branch state (is the ECO locked for approval?), and the checkout recorded in
  * `branch_items.checkedOutBy` (does this caller hold the lock?).
  *
  * It lived in `ItemVersioningFacade` until the two concerns were separated —
@@ -41,37 +41,6 @@ import { isBranchProtectionExempt } from '../branch-protection'
  * this class, so the tests survive moves like this one.
  */
 export class ItemEditPolicy {
-  /**
-   * Check if direct editing is allowed for a design.
-   *
-   * In pre-release phase: Direct editing on main branch is allowed
-   * In post-release phase: Main branch is protected, must use ECO/workspace branches
-   *
-   * @param designId - The design to check
-   * @returns Whether direct editing is allowed and the reason if not
-   */
-  static async canEditDirectly(designId: string): Promise<{
-    allowed: boolean
-    reason?: string
-    requiresCheckout: boolean
-  }> {
-    const isProtected = await BranchService.isMainBranchProtected(designId)
-
-    if (isProtected) {
-      return {
-        allowed: false,
-        reason:
-          'Design has released items. Use an ECO or workspace branch to make changes.',
-        requiresCheckout: true,
-      }
-    }
-
-    return {
-      allowed: true,
-      requiresCheckout: false,
-    }
-  }
-
   /**
    * Get branch information for an item if it's tracked on a non-main branch.
    * Returns null if the item is not on any ECO/workspace branch.
@@ -191,10 +160,12 @@ export class ItemEditPolicy {
    *
    * - Working copy on an ECO/workspace branch: the branch must be unlocked and
    *   the caller must HOLD the checkout (exclusive lock, traditional PLM).
-   * - Main context: main must be unprotected (pre-release phase), and nobody
-   *   else may hold a checkout on the item's main-branch row. Holding no lock
-   *   is allowed here so programmatic flows keep working; a lock taken via the
-   *   Edit button still excludes other users.
+   * - Main context: `canEditOnMain` must allow the item (the design is
+   *   unreleased, the type is exempt, or — under the `released-items` scope —
+   *   the item is neither released nor beneath a released item in main's
+   *   BOM), and nobody else may hold a checkout on the item's main-branch
+   *   row. Holding no lock is allowed here so programmatic flows keep
+   *   working; a lock taken via the Edit button still excludes other users.
    * - Working copy an archived branch left behind: never editable, whoever
    *   asks — the branch is history (ValidationError).
    * - ChangeOrders and design-less items (Tool-pattern types) are exempt.
@@ -285,16 +256,25 @@ export class ItemEditPolicy {
     }
 
     // Main context — respects branch protection, then mutual exclusion.
-    // Exempt types (work instructions) skip the protection gate but still
-    // honour another user's checkout below.
-    if (!(await isBranchProtectionExempt(item.itemType))) {
-      const canEdit = await this.canEditDirectly(item.designId)
-      if (!canEdit.allowed) {
-        throw new BranchProtectionError(
-          `Cannot modify item directly: ${canEdit.reason}`,
-          { operation: 'requireContentEditable', itemId: item.id },
-        )
-      }
+    // Exempt types (work instructions) pass the protection gate but still
+    // honour another user's checkout below. The row's own state is checked as
+    // well as main's resolution of its master: a stale released row is no
+    // more editable than the current one.
+    const onMain = await canEditOnMain({
+      designId: item.designId,
+      itemType: item.itemType,
+      masterId: item.masterId,
+      state: item.state ?? null,
+    })
+    if (!onMain.allowed) {
+      throw new BranchProtectionError(
+        `Cannot modify item directly: ${onMain.reason}`,
+        {
+          operation: 'requireContentEditable',
+          itemId: item.id,
+          refusal: onMain.refusal,
+        },
+      )
     }
 
     const mainBranch = await BranchService.getMainBranch(item.designId)

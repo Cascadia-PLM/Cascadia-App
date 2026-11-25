@@ -27,6 +27,10 @@
  *    rejected request changes nothing
  *  - a program can never lose its last admin — by removal OR demotion
  *  - a role change re-baselines the flag columns to the new role's defaults
+ *  - program settings are strict, and changing the branch-protection scope —
+ *    on update or at creation — takes `system:manage`, beyond whatever
+ *    admitted the edit itself, and is recorded as a domain event; a write that
+ *    leaves the scope where it was needs nothing extra and records nothing
  *
  * Run: npx vitest run cascadia-api/src/server/routes/programs.permissions.test.ts
  */
@@ -41,10 +45,17 @@ import {
   it,
 } from 'vitest'
 import { Hono } from 'hono'
+import { and, eq } from 'drizzle-orm'
 import programsRoutes from './programs'
 import type { TestUser } from '@/__tests__/fixtures/users'
 import { TestDatabase } from '@/__tests__/helpers/db'
-import { insertTestUserWithRole } from '@/__tests__/fixtures/users'
+import {
+  assignRoleToUser,
+  createCustomTestRole,
+  insertTestRole,
+  insertTestUserWithRole,
+} from '@/__tests__/fixtures/users'
+import { domainEvents, programs } from '@/db/schema'
 import { ProgramService } from '@/services/ProgramService'
 import { SessionManager } from '@/auth/session'
 import { permissionService } from '@/auth/permission-service'
@@ -273,6 +284,195 @@ describe('programs routes — role × membership matrix', () => {
           })
         ).status,
       ).toBe(200)
+    })
+  })
+
+  describe('program settings and the branch-protection scope', () => {
+    const SCOPE_CHANGED = 'program.branch_protection_scope_changed'
+
+    async function scopeChanges(subjectId: string) {
+      return testDb.db
+        .select({
+          actorId: domainEvents.actorId,
+          payload: domainEvents.payload,
+        })
+        .from(domainEvents)
+        .where(
+          and(
+            eq(domainEvents.type, SCOPE_CHANGED),
+            eq(domainEvents.subjectId, subjectId),
+          ),
+        )
+    }
+
+    async function storedScope(): Promise<unknown> {
+      const row = await testDb.db
+        .select({ settings: programs.settings })
+        .from(programs)
+        .where(eq(programs.id, programId))
+      return row.at(0)?.settings?.branchProtectionScope
+    }
+
+    /** A user whose only program grants are `programs` actions — no `system`. */
+    async function withProgramGrants(actions: Array<string>) {
+      const role = await insertTestRole(
+        testDb.db,
+        createCustomTestRole(`Program Steward ${Math.random()}`, {
+          programs: actions,
+        }),
+      )
+      const steward = (await insertTestUserWithRole(testDb.db, 'User')).user
+      await assignRoleToUser(testDb.db, steward.id, role.id)
+      permissionService.clearCache()
+      const { sessionToken } = await SessionManager.createSession(steward.id)
+      cookies.set(steward.id, `session=${sessionToken}`)
+      return steward
+    }
+
+    it('neither the program admin nor programs:update may change the scope', async () => {
+      const programsEditor = await withProgramGrants(['read', 'update'])
+
+      for (const user of [progAdmin, programsEditor]) {
+        const res = await as(user).send(
+          'PUT',
+          `/api/v1/programs/${programId}`,
+          { settings: { branchProtectionScope: 'released-items' } },
+        )
+        expect(res.status).toBe(403)
+      }
+      expect(await storedScope()).toBeUndefined()
+      expect(await scopeChanges(programId)).toHaveLength(0)
+
+      // The same callers' ordinary edits still go through — including one
+      // that echoes the scope already in force.
+      const echo = await as(progAdmin).send(
+        'PUT',
+        `/api/v1/programs/${programId}`,
+        { name: 'Renamed', settings: { branchProtectionScope: 'design' } },
+      )
+      expect(echo.status).toBe(200)
+      expect(await scopeChanges(programId)).toHaveLength(0)
+    })
+
+    it('system:manage changes it, and every change is recorded with both values and the actor', async () => {
+      const loosen = await as(sysAdmin).send(
+        'PUT',
+        `/api/v1/programs/${programId}`,
+        { settings: { branchProtectionScope: 'released-items' } },
+      )
+      expect(loosen.status).toBe(200)
+      expect(await storedScope()).toBe('released-items')
+
+      const tighten = await as(sysAdmin).send(
+        'PUT',
+        `/api/v1/programs/${programId}`,
+        { settings: { branchProtectionScope: 'design' } },
+      )
+      expect(tighten.status).toBe(200)
+
+      // No change, no fact.
+      await as(sysAdmin).send('PUT', `/api/v1/programs/${programId}`, {
+        settings: { branchProtectionScope: 'design' },
+      })
+
+      // Unordered: inside the test's one transaction every event shares its
+      // timestamp, and `seq` is assigned only at commit.
+      const changes = await scopeChanges(programId)
+      expect(changes).toHaveLength(2)
+      expect(changes.every((c) => c.actorId === sysAdmin.id)).toBe(true)
+      expect(changes.map((c) => c.payload)).toEqual(
+        expect.arrayContaining([
+          {
+            programId,
+            previousScope: 'design',
+            scope: 'released-items',
+            loosensProtection: true,
+          },
+          {
+            programId,
+            previousScope: 'released-items',
+            scope: 'design',
+            loosensProtection: false,
+          },
+        ]),
+      )
+    })
+
+    it('creating a program with a non-default scope takes the same authority and is recorded', async () => {
+      const creator = await withProgramGrants(['create', 'read'])
+      const payload = (suffix: string) => ({
+        name: 'Loose Program',
+        code: `LOOSE-${Date.now()}-${suffix}`,
+        settings: { branchProtectionScope: 'released-items' },
+      })
+
+      const refused = await as(creator).send(
+        'POST',
+        '/api/v1/programs',
+        payload('A'),
+      )
+      expect(refused.status).toBe(403)
+
+      const res = await as(sysAdmin).send(
+        'POST',
+        '/api/v1/programs',
+        payload('B'),
+      )
+      expect(res.status).toBe(201)
+      const created = (await json(res)).data.program
+      const changes = await scopeChanges(created.id)
+      expect(changes).toHaveLength(1)
+      expect(changes[0]?.actorId).toBe(sysAdmin.id)
+      expect(changes[0]?.payload).toEqual({
+        programId: created.id,
+        previousScope: null,
+        scope: 'released-items',
+        loosensProtection: true,
+      })
+    })
+
+    it('settings are strict: an undeclared key is a 400 and changes nothing', async () => {
+      const res = await as(sysAdmin).send(
+        'PUT',
+        `/api/v1/programs/${programId}`,
+        { settings: { branchProtectionScop: 'released-items' } },
+      )
+      expect(res.status).toBe(400)
+      const body = await json(res)
+      expect(body.error.code).toBe('VALIDATION_FAILED')
+      expect(
+        body.error.fieldErrors.map((e: { code: string }) => e.code),
+      ).toContain('unrecognized_keys')
+
+      const bad = await as(sysAdmin).send(
+        'PUT',
+        `/api/v1/programs/${programId}`,
+        { settings: { branchProtectionScope: 'nothing' } },
+      )
+      expect(bad.status).toBe(400)
+      expect(await storedScope()).toBeUndefined()
+    })
+
+    it('declared keys merge into what is stored', async () => {
+      await as(sysAdmin).send('PUT', `/api/v1/programs/${programId}`, {
+        settings: { branchProtectionScope: 'released-items' },
+      })
+      const res = await as(progAdmin).send(
+        'PUT',
+        `/api/v1/programs/${programId}`,
+        {
+          settings: {
+            approvalWorkflow: ['Engineering', 'Quality'],
+            changeOrderNumberFormat: 'ECO-{YYYY}-{NNN}',
+          },
+        },
+      )
+      expect(res.status).toBe(200)
+      expect((await json(res)).data.program.settings).toEqual({
+        branchProtectionScope: 'released-items',
+        approvalWorkflow: ['Engineering', 'Quality'],
+        changeOrderNumberFormat: 'ECO-{YYYY}-{NNN}',
+      })
     })
   })
 

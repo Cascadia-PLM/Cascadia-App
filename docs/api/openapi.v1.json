@@ -24203,7 +24203,7 @@
         ]
       },
       "post": {
-        "description": "Programs are the permission boundary: the creator is not made a member, so add members with POST /api/v1/programs/:id/members. `code` is unique system-wide.",
+        "description": "Programs are the permission boundary: the creator is not made a member, so add members with POST /api/v1/programs/:id/members. `code` is unique system-wide. A `settings.branchProtectionScope` other than `design` also requires `system:manage`, as does changing it later through PUT.",
         "operationId": "postApiV1Programs",
         "requestBody": {
           "content": {
@@ -24235,6 +24235,33 @@
                     "maxLength": 200,
                     "minLength": 1,
                     "type": "string"
+                  },
+                  "settings": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "approvalWorkflow": {
+                        "items": {
+                          "maxLength": 100,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "maxItems": 50,
+                        "type": "array"
+                      },
+                      "branchProtectionScope": {
+                        "enum": [
+                          "design",
+                          "released-items"
+                        ],
+                        "type": "string"
+                      },
+                      "changeOrderNumberFormat": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
                   },
                   "startDate": {
                     "anyOf": [
@@ -24455,6 +24482,33 @@
                     "maxLength": 200,
                     "minLength": 1,
                     "type": "string"
+                  },
+                  "settings": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "approvalWorkflow": {
+                        "items": {
+                          "maxLength": 100,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "maxItems": 50,
+                        "type": "array"
+                      },
+                      "branchProtectionScope": {
+                        "enum": [
+                          "design",
+                          "released-items"
+                        ],
+                        "type": "string"
+                      },
+                      "changeOrderNumberFormat": {
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
                   },
                   "startDate": {
                     "anyOf": [

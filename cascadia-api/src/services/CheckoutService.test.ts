@@ -70,6 +70,7 @@ import { takeFirst } from '@/db/take-first'
 import '@/items/registerItemTypes.server'
 
 describe('CheckoutService', () => {
+  let setProtectionScope: (scope: 'design' | 'released-items') => Promise<void>
   const testDb = new TestDatabase()
   let user: TestUser
   let otherUser: TestUser
@@ -114,6 +115,12 @@ describe('CheckoutService', () => {
     )
 
     programId = program.id
+    setProtectionScope = async (scope) => {
+      await testDb.db
+        .update(programs)
+        .set({ settings: { branchProtectionScope: scope } })
+        .where(eq(programs.id, programId))
+    }
 
     // The program's creator is not automatically a member when the row is
     // inserted directly (ProgramService.create is what enrols them), and
@@ -1194,6 +1201,28 @@ describe('CheckoutService', () => {
       ).rejects.toThrow(ValidationError)
     })
 
+    it('allows creating an unreleased item on protected main branch under the released-items scope', async () => {
+      // Main is protected once anything in the design is released, but a new
+      // row starts unreleased and therefore has no released lineage to guard.
+      await setProtectionScope('released-items')
+      await createReleasedPart({ name: 'Released Part' })
+
+      const result = await CheckoutService.createOnBranch(
+        {
+          designId,
+          itemNumber: `PN-NEW-${Date.now()}`,
+          itemType: 'Part',
+          name: 'New Draft on Protected Main',
+        },
+        mainBranchId,
+        'Added new part',
+        user.id,
+      )
+
+      expect(result.item).toBeDefined()
+      expect(RevisionService.isWorkingRevision(result.item.revision)).toBe(true)
+    })
+
     it('allows creating on unprotected main branch (pre-release)', async () => {
       // When no released items exist, main branch is editable
       const result = await CheckoutService.createOnBranch(
@@ -1819,6 +1848,29 @@ describe('CheckoutService', () => {
       await ItemService.removeRelationship(relationship.id, user.id)
     })
 
+    it('allows editing a draft item on protected main under the released-items scope', async () => {
+      await setProtectionScope('released-items')
+      await createReleasedPart({ name: 'Released Baseline' })
+      const draft = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-DRAFT-EDIT`,
+          revision: 'A',
+          name: 'Draft Edit',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      const updated = await ItemService.update(
+        draft.id,
+        { name: 'Draft edit allowed' },
+        user.id,
+      )
+
+      expect(updated.name).toBe('Draft edit allowed')
+    })
+
     it('blocks BOM edits on released items on protected main', async () => {
       const parent = await createReleasedPart({ name: 'Released Parent' })
       const child = await createReleasedPart({ name: 'Released Child' })
@@ -1869,7 +1921,29 @@ describe('CheckoutService', () => {
       expect(updated.name).toBe('Free again')
     })
 
-    it('rejects checkout on protected main', async () => {
+    it('allows checkout of a draft item on protected main under the released-items scope', async () => {
+      await setProtectionScope('released-items')
+      await createReleasedPart({ name: 'Released Baseline' })
+      const draft = await ItemService.create(
+        'Part',
+        {
+          itemNumber: `PN-${uniquePrefix}-DRAFT-CHECKOUT`,
+          revision: 'A',
+          name: 'Draft Checkout',
+          designId,
+        } as any,
+        user.id,
+      )
+
+      const branchItem = await CheckoutService.checkout(
+        { itemMasterId: draft.masterId, branchId: mainBranchId },
+        user.id,
+      )
+
+      expect(branchItem.checkedOutBy).toBe(user.id)
+    })
+
+    it('rejects checkout of a released item on protected main', async () => {
       const part = await createReleasedPart()
 
       await expect(

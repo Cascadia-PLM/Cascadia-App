@@ -51,9 +51,8 @@ import {
   SUSPECTABLE_RELATIONSHIP_TYPES,
   isSuspectable,
 } from '@/items/trace-affirmation'
-import { BranchService } from '@/services/BranchService'
+import { canEditOnMain } from '@/items/branch-protection'
 import { DesignService } from '@/services/DesignService'
-import { LifecycleService } from '@/services/LifecycleService'
 import { ProgramService } from '@/services/ProgramService'
 import { getResourceType } from '@/items/item-type-resources'
 import { aiLogger } from '@/logging/logger'
@@ -209,11 +208,22 @@ async function resolveDesignId(
 }
 
 /**
- * Check if a design requires ECO for modifications.
- * Returns true if the design has any released items on main branch.
+ * Whether a write on main needs a change order — `canEditOnMain`, the policy
+ * the write itself enforces, so the tool suggests a change order exactly when
+ * going ahead would be refused and never otherwise.
+ *
+ * For a new item pass no `masterId`: it is asked about in its lifecycle's
+ * initial state, which is what `ItemService.create` will write. For an
+ * existing item pass its master and the row's state; a working copy on a live
+ * branch is not on main, so the caller does not ask about it at all.
  */
-async function designRequiresChangeOrder(designId: string): Promise<boolean> {
-  return BranchService.isMainBranchProtected(designId)
+async function mainRequiresChangeOrder(target: {
+  designId: string
+  itemType: string
+  masterId?: string
+  state?: string | null
+}): Promise<boolean> {
+  return !(await canEditOnMain(target)).allowed
 }
 
 /**
@@ -435,9 +445,12 @@ async function createItemHandlerImpl(
       await requireChangeOrderAccess(context.userId, input.changeOrderId)
     }
 
-    // Step 2: Check if design requires ECO (post-release)
+    // Step 2: Check whether main takes the new item directly
     if (designId && !input.changeOrderId) {
-      const requiresChangeOrder = await designRequiresChangeOrder(designId)
+      const requiresChangeOrder = await mainRequiresChangeOrder({
+        designId,
+        itemType: input.itemType,
+      })
       if (requiresChangeOrder) {
         const designName = await getDesignName(designId)
         return {
@@ -583,24 +596,26 @@ async function updateItemHandlerImpl(
       return errorResponse(`Item with ID ${input.itemId} not found`)
     }
 
-    // Step 2: Check if item requires ECO for editing.
-    // "Released" means "the lifecycle offers a revise from here", not the
-    // literal state name - a lifecycle whose released state is called something
-    // else would otherwise be edited in place, outside any change order.
-    const isReleased = (
-      await LifecycleService.getValidActions(item.itemType, item.state)
-    ).includes('revise')
+    // Step 2: Check if the item needs a change order to be edited — asked of
+    // the same policy the update will run into, so the two cannot disagree. A
+    // working copy on a live branch is edited there, not on main.
     const hasDesign = !!item.designId
+    const onBranch = hasDesign
+      ? await ItemService.getItemBranchInfo(item.id)
+      : null
+    const requiresChangeOrder =
+      hasDesign && !onBranch
+        ? await mainRequiresChangeOrder({
+            designId: item.designId!,
+            itemType: item.itemType,
+            masterId: item.masterId,
+            state: item.state,
+          })
+        : false
 
-    if (isReleased && hasDesign && !input.changeOrderId) {
-      // Check if design is protected
-      const requiresChangeOrder = await designRequiresChangeOrder(
-        item.designId!,
-      )
-      if (requiresChangeOrder) {
-        const designName = await getDesignName(item.designId!)
-        return suggestChangeOrder(item.itemNumber || 'item', designName)
-      }
+    if (requiresChangeOrder && !input.changeOrderId) {
+      const designName = await getDesignName(item.designId!)
+      return suggestChangeOrder(item.itemNumber || 'item', designName)
     }
 
     // Step 3: Without a redeemed confirmation token, return the preview
@@ -658,12 +673,12 @@ async function updateItemHandlerImpl(
     if (input.dueDate !== undefined) (updateData as any).dueDate = input.dueDate
 
     // Step 5: Execute update
-    // If ECO provided and item is Released, checkout first. The checkout
-    // acquires the edit lock and yields the branch working copy — the update
-    // must target that copy, not the released original (which branch
-    // protection rightly rejects).
+    // If an ECO is provided and main refuses the edit, checkout first. The
+    // checkout acquires the edit lock and yields the branch working copy — the
+    // update must target that copy, not main's row (which branch protection
+    // rightly rejects).
     let targetItemId = input.itemId
-    if (input.changeOrderId && isReleased && hasDesign) {
+    if (input.changeOrderId && requiresChangeOrder) {
       // Routing an edit through an ECO mutates that ECO's scope (design
       // association, branch, working copy, affected item). The tool's own
       // parts:update grant does not cover that.

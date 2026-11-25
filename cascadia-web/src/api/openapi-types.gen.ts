@@ -11890,7 +11890,7 @@ export interface operations {
                                     byExtension: {
                                         [key: string]: number;
                                     };
-                                    /** @description Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context. */
+                                    /** @description Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context, each counted once at its latest version. */
                                     total: number;
                                 };
                             };

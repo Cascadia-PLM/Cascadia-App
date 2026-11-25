@@ -238,7 +238,7 @@ const fileCount = z.number().int().min(0)
 /** One item's entry in `fileSummary`. See `ItemFileSummary`. */
 const itemFileSummarySchema = z.object({
   total: fileCount.describe(
-    'Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context.',
+    'Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context, each counted once at its latest version.',
   ),
   // An object with a property per category rather than a record keyed by the
   // enum: the two validate alike, but only this one generates a client type

@@ -135,10 +135,12 @@ export interface FileVisibilityContext {
 
 /**
  * What `fileSummary` reports for one item: the files its listing shows,
- * counted.
+ * counted once each.
  *
- * `total` is the number of rows `GET /items/:id/files` returns in the same
- * context. `byCategory` carries every category in the vocabulary, zero when
+ * `total` is the number of files `GET /items/:id/files` shows in the same
+ * context, counting each file at its latest version: the listing also returns
+ * a file's earlier versions as rows of their own, and a PDF checked in three
+ * times is still one PDF. `byCategory` carries every category in the vocabulary, zero when
  * absent; `byExtension` only the extensions present, lowercased and without
  * the dot. A file with no category in the vocabulary, or no extension, counts
  * toward `total` alone, so either breakdown can sum to less than it.
@@ -162,8 +164,8 @@ const FILE_SUMMARY_CHUNK = 10_000
  *
  * The one statement of the rule. `listItemFilesAtContext` lists with it and
  * `summarizeItemFiles` counts with it, because the summary's promise is to
- * count exactly what the listing would show — and a second copy of this rule
- * is how that promise would quietly stop being kept.
+ * count the files the listing would show — and a second copy of this rule is
+ * how that promise would quietly stop being kept.
  */
 function listedFileConditions(
   context: FileVisibilityContext,
@@ -892,8 +894,10 @@ export class FileService {
   /**
    * Count each listed item's files, for a whole page of items at once.
    *
-   * Each item is counted exactly as `listItemFilesAtContext` would list it in
-   * the context its detail page reads it in: against its own design's main
+   * Each item's files are the ones `listItemFilesAtContext` would list in the
+   * context its detail page reads it in, each counted once at its latest
+   * version (a check-in keeps the file's branch, so the latest version is on
+   * the same branch as the rest of its chain): against its own design's main
    * branch, plus `context.branchId` when the page was read on a branch. That
    * is what keeps a file uploaded on an open change-order branch out of the
    * item's summary on main. Item ids alone cannot: an unreleased item checked
@@ -966,6 +970,7 @@ export class FileService {
             ...[...groups].map(([mainBranchId, ids]) =>
               and(
                 inArray(vaultFiles.itemId, ids),
+                eq(vaultFiles.isLatestVersion, true),
                 ...listedFileConditions(
                   { branchId: context.branchId, mainBranchId },
                   false,

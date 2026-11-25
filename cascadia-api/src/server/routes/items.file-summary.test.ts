@@ -169,6 +169,7 @@ describe('GET /items?includeFileSummary=true', () => {
     fileCategory: string,
     branchId: string | null,
     deletedAt: Date | null = null,
+    isLatestVersion = true,
   ) {
     await testDb.db.insert(vaultFiles).values({
       itemId: partId,
@@ -181,7 +182,7 @@ describe('GET /items?includeFileSummary=true', () => {
       storageType: 'local',
       storagePath: `test/${name}`,
       fileVersion: 1,
-      isLatestVersion: true,
+      isLatestVersion,
       isCheckedOut: false,
       uploadedBy: admin.id,
       fileCategory,
@@ -233,6 +234,20 @@ describe('GET /items?includeFileSummary=true', () => {
       await listedCount(
         `branchId=${changeOrderBranch.id}&mainBranchId=${mainBranchId}`,
       ),
+    )
+  })
+
+  it('counts a checked-in file once, at its latest version', async () => {
+    // An earlier version of the main drawing: the listing returns it as a row
+    // of its own, the summary must not count it as a second PDF.
+    await addFile('bracket-dwg.pdf', 'drawing', mainBranchId, null, false)
+
+    const summary = await summaryOf(`designId=${designId}`)
+
+    expect(summary.byExtension.pdf).toBe(1)
+    expect(summary.byCategory.drawing).toBe(1)
+    expect(summary.total).toBe(
+      (await listedCount(`mainBranchId=${mainBranchId}`)) - 1,
     )
   })
 

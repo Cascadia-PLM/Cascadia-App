@@ -93,15 +93,16 @@ item:
 }
 ```
 
-The counts are exactly the files `GET /api/v1/items/{itemId}/files` lists for
-that item in the same version context — files are
+The counts are the files `GET /api/v1/items/{itemId}/files` lists for that
+item in the same version context — files are
 [branch-scoped](../features/file-vault.md#branch-aware-storage). A file
 uploaded on an open change-order branch is counted when the list is read on
 that branch (`branch=eco/...`) and not on main. Each item is counted against
 its own design's main branch, so the list without `designId` counts what each
 item's detail page shows on main. Like that listing, it leaves out generated
-thumbnails and deleted files, and counts each earlier version of a checked-in
-file as a row of its own.
+thumbnails and deleted files. Unlike it, each file counts once, at its latest
+version: the listing returns a checked-in file's earlier versions as rows of
+their own, the summary does not.
 
 `byCategory` always carries every [file category](../features/file-vault.md#file-categories);
 `byExtension` only the extensions present, lowercased and without the dot. A

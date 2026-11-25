@@ -40,8 +40,9 @@ class CadConversionPayload(BaseModel):
     itemId: str
     outputBranchId: Optional[str] = None
     outputFormat: str = "stl"
-    # Absent only from rows queued before the field existed; the API always
-    # sends the formats it resolved (see output_formats.DEFAULT_OUTPUT_FORMATS).
+    # Core's convert route always sends the formats it resolved. Absent from
+    # rows queued before the field existed and from submitters that do not set
+    # it (a module's own endpoint), which get both formats.
     outputFormats: list[str] = Field(
         default_factory=lambda: list(DEFAULT_OUTPUT_FORMATS)
     )

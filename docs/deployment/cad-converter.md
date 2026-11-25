@@ -329,7 +329,8 @@ Each job's payload names the formats to store in `outputFormats` (`glb`,
 `stl`). The app fills it in from the request, or from its own
 `CAD_DEFAULT_OUTPUT_FORMATS` setting — the converter reads no such variable; see
 [CAD Conversion Output](../orchestration/configuration.md#cad-conversion-output).
-A payload queued before the field existed stores both. When none of the
+A payload without it (queued before the field existed, or submitted by a
+module that does not set it) stores both. When none of the
 requested formats can be stored — GLB asked of an IGES file, or a STEP whose GLB
 step failed — the converter stores the STL instead, logs why, and sets
 `stlFallback: true` in the job result.

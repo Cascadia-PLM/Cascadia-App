@@ -89,13 +89,15 @@ export const cadConversionPayloadSchema = z.object({
   outputBranchId: z.string().uuid().nullable().optional(),
   outputFormat: z.string().default('stl'),
   /**
-   * Required, with no default: the submitter resolves the deployment's
-   * default (`configuredCadOutputFormats`) so the queued payload records
-   * exactly what this job stores, and a submitter that forgets fails here
-   * rather than silently ignoring `CAD_DEFAULT_OUTPUT_FORMATS`. Rows queued
-   * before the field existed carry none; the worker reads those as both.
+   * Submitters should resolve the deployment's default
+   * (`configuredCadOutputFormats`, via `cadJobOutputFormats`) and pass it, so
+   * the queued payload records exactly what this job stores; core's convert
+   * route always does. It stays optional because this is a core job type that
+   * modules submit too, and existing submitters predate the field: a payload
+   * without it, like a row queued before it existed, is read by the worker as
+   * both formats. Never empty — that would store nothing.
    */
-  outputFormats: cadOutputFormatsSchema,
+  outputFormats: cadOutputFormatsSchema.optional(),
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
   decompose: z.boolean().default(false),
   userId: z.string().uuid(),

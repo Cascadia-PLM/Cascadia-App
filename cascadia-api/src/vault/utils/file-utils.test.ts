@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { NATIVE_CAD_EXTENSIONS } from '@cascadia/commons/vault/native-cad-formats'
 import {
   canonicalizeItemFileName,
   detectFileCategory,
@@ -100,20 +101,102 @@ describe('nativeCadNamingMode', () => {
 })
 
 describe('canonicalizeItemFileName', () => {
-  it('names native CAD files after the item number', () => {
+  it('names a native CAD file after the item number, with its own extension', () => {
     expect(canonicalizeItemFileName('10298', 'Drawing2.dwg')).toBe('10298.dwg')
     expect(canonicalizeItemFileName('10298', 'plate.DXF')).toBe('10298.dxf')
-    expect(canonicalizeItemFileName('10298', 'export-10298.step')).toBe(
-      '10298.step',
+    expect(canonicalizeItemFileName('10298', 'bracket.SLDPRT')).toBe(
+      '10298.sldprt',
     )
   })
 
-  it('leaves documents and images with their submitted names', () => {
-    expect(canonicalizeItemFileName('10298', 'A3_L.pdf')).toBe('A3_L.pdf')
-    expect(canonicalizeItemFileName('10298', 'preview.png')).toBe('preview.png')
+  // Every case here was mangled once: the item number was run through the
+  // storage sanitizer and then parsed for an extension of its own.
+  it.each([
+    ['100.200.300', 'part.sldprt', '100.200.300.sldprt'],
+    ['100.200.301', 'part.sldprt', '100.200.301.sldprt'],
+    ['ASM-1.0', 'top.SLDASM', 'ASM-1.0.sldasm'],
+    ['DWG-001/A', 'sheet.dwg', 'DWG-001_A.dwg'],
+    ['DWG-001\\A', 'sheet.dwg', 'DWG-001_A.dwg'],
+    ['A:B*C?D"E<F>G|H', 'part.ipt', 'A_B_C_D_E_F_G_H.ipt'],
+    ['PN\u00017', 'part.prt', 'PN_7.prt'],
+    ['PN 100 (alt) #2', 'part.par', 'PN 100 (alt) #2.par'],
+    ['  PN-7. ', 'part.sldprt', 'PN-7.sldprt'],
+    ['PN-7...', 'part.sldprt', 'PN-7.sldprt'],
+    ['../etc/passwd', 'part.sldprt', '.._etc_passwd.sldprt'],
+    ['10298.sldprt', 'part.sldprt', '10298.sldprt.sldprt'],
+  ])('keeps item number %j whole: %s -> %s', (itemNumber, file, expected) => {
+    expect(canonicalizeItemFileName(itemNumber, file)).toBe(expected)
   })
 
-  it('does nothing when the item has no number', () => {
+  it('keeps distinct item numbers distinct', () => {
+    const numbers = ['100.200.300', '100.200.301', '100.200', '100_200']
+    const names = numbers.map((n) => canonicalizeItemFileName(n, 'p.sldprt'))
+    expect(new Set(names).size).toBe(numbers.length)
+  })
+
+  it('never produces a path', () => {
+    for (const itemNumber of ['a/b', 'a\\b', '../x', '/abs', 'C:\\x']) {
+      const name = canonicalizeItemFileName(itemNumber, 'p.sldprt')
+      expect(name).not.toMatch(/[/\\:]/)
+    }
+  })
+
+  it.each([
+    ['CON', 'CON_.sldprt'],
+    ['nul', 'nul_.sldprt'],
+    ['COM1', 'COM1_.sldprt'],
+    ['lpt9', 'lpt9_.sldprt'],
+    ['AUX.2', 'AUX_.2.sldprt'],
+    ['CONSOLE', 'CONSOLE.sldprt'],
+    ['COM10', 'COM10.sldprt'],
+    ['PRN-1', 'PRN-1.sldprt'],
+  ])(
+    'steers clear of the Windows device name in %j',
+    (itemNumber, expected) => {
+      expect(canonicalizeItemFileName(itemNumber, 'part.sldprt')).toBe(expected)
+    },
+  )
+
+  it('does nothing when no usable item number is left', () => {
     expect(canonicalizeItemFileName('', 'Drawing2.dwg')).toBe('Drawing2.dwg')
+    expect(canonicalizeItemFileName(null, 'Drawing2.dwg')).toBe('Drawing2.dwg')
+    expect(canonicalizeItemFileName(' . ', 'Drawing2.dwg')).toBe('Drawing2.dwg')
+  })
+
+  it.each(NATIVE_CAD_EXTENSIONS.map((ext) => [ext]))(
+    'renames native authoring format %s',
+    (ext) => {
+      expect(canonicalizeItemFileName('10298', `local${ext}`)).toBe(
+        `10298${ext}`,
+      )
+    },
+  )
+
+  it.each([
+    // Neutral exchange formats
+    'export.step',
+    'export.stp',
+    'export.iges',
+    'export.igs',
+    'export.x_t',
+    'export.x_b',
+    'export.sat',
+    'export.jt',
+    // Mesh and visualization formats
+    'mesh.stl',
+    'mesh.obj',
+    'mesh.glb',
+    'mesh.gltf',
+    'mesh.3mf',
+    'mesh.ply',
+    'mesh.fbx',
+    // Documents, images, archives
+    'A3_L.pdf',
+    'preview.png',
+    'spec.docx',
+    'bundle.zip',
+    'no-extension',
+  ])('leaves %s with its submitted name', (fileName) => {
+    expect(canonicalizeItemFileName('10298', fileName)).toBe(fileName)
   })
 })

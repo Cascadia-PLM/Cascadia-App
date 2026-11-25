@@ -7,6 +7,7 @@ import {
   DISPLAYABLE_IMAGE_EXTENSIONS,
   isDisplayableImage,
 } from '@cascadia/commons/vault/image-files'
+import { isNativeCadFile } from '@cascadia/commons/vault/native-cad-formats'
 import type { FileCategory } from '@cascadia/commons/vault/file-categories'
 
 /**
@@ -268,14 +269,15 @@ export function isCADFile(filename: string): boolean {
 }
 
 /**
- * Deployment policy for native CAD filenames.
+ * Deployment policy for native CAD filenames (`VAULT_NATIVE_CAD_NAMING`).
  *
- * `preserve` keeps the filename the client submitted. `itemNumber` rewrites
- * native CAD files to `<itemNumber>.<extension>` so local working-copy names
- * cannot rename the vault attachment.
+ * `preserve` keeps the filename the client submitted. `itemNumber` stores
+ * native CAD authoring files as `<itemNumber>.<extension>`, so the name of
+ * whatever local working copy was uploaded cannot rename the vault attachment.
+ * See `FileService.resolveStoredFileName` for when the rename is applied.
  *
- * Defaults to `preserve` so existing deployments are unchanged. NILATEK's
- * fork sets `VAULT_NATIVE_CAD_NAMING=itemNumber`.
+ * Defaults to `preserve`, which is the behaviour every deployment had before
+ * the setting existed; an unrecognised value also means `preserve`.
  */
 export type NativeCadNamingMode = 'preserve' | 'itemNumber'
 
@@ -284,31 +286,71 @@ export function nativeCadNamingMode(): NativeCadNamingMode {
   return value === 'itemnumber' ? 'itemNumber' : 'preserve'
 }
 
+/** Characters at least one of Windows, macOS or Linux refuses in a name. */
+const RESERVED_FILENAME_CHARACTERS = '/\\:*?"<>|'
+
 /**
- * PDM-owned filename for an item attachment.
+ * Device names Windows reserves regardless of extension: `CON.step` and
+ * `con.backup.step` cannot be created there, while `CONSOLE.step` can.
+ */
+const WINDOWS_RESERVED_NAME =
+  /^(?:con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(?=\s*(?:\.|$))/i
+
+/**
+ * An item number as a filename stem: the whole number, with only what no
+ * filesystem would accept changed.
  *
- * CAD files are named after the item, not after the local file the user
- * happened to have open. Storage paths already contain a UUID, so the visible
- * name can stay human-readable and stable across versions.
+ * Dots and everything else an item number legitimately contains survive, so
+ * `100.200.300` and `100.200.301` stay distinct and `ASM-1.0` keeps its
+ * `.0` — the stem is never parsed for an extension, because the extension
+ * comes from the uploaded file.
  *
- * Non-CAD attachments (PDFs, images, documents) keep their submitted name:
- * their filename carries meaning the database cannot reconstruct (for example
- * which drawing layout a PDF represents).
+ * - Path separators, the other characters Windows reserves, and control
+ *   characters become `_`, so `DWG-001/A` is `DWG-001_A` rather than a path
+ *   whose last segment is `A`.
+ * - Surrounding whitespace and trailing dots are dropped. Windows refuses a
+ *   name that ends in either; an extension always follows the stem here, so
+ *   they would be legal, but `PN-7 .sldprt` and `PN-7..sldprt` are never what
+ *   anyone meant.
+ * - A Windows device name gets a trailing `_` (`CON` → `CON_`).
+ *
+ * Returns `''` when nothing usable is left, which callers treat as "do not
+ * rename".
+ */
+function itemNumberFileStem(itemNumber: string): string {
+  const replaced = Array.from(itemNumber, (char) => {
+    const code = char.charCodeAt(0)
+    const isControl = code < 0x20 || (code >= 0x7f && code <= 0x9f)
+    return isControl || RESERVED_FILENAME_CHARACTERS.includes(char) ? '_' : char
+  }).join('')
+
+  const trimmed = replaced.trim().replace(/[.\s]+$/, '')
+  return trimmed.replace(WINDOWS_RESERVED_NAME, (name) => `${name}_`)
+}
+
+/**
+ * The PDM-owned name for a native CAD authoring file: the item number,
+ * followed by the uploaded file's own extension (lowercased).
+ *
+ * Only native authoring formats are renamed (`isNativeCadFile`). Neutral
+ * exchange formats (STEP, IGES, Parasolid…), meshes (STL, OBJ, glTF…) and
+ * every non-CAD attachment keep their submitted name: those names are often
+ * chosen on purpose, and no other file refers to them by name.
+ *
+ * Returns `fileName` unchanged when there is nothing to rename it to. This is
+ * the pure naming rule; whether the name is free on the item is decided by
+ * `FileService`, which owns the database.
  */
 export function canonicalizeItemFileName(
   itemNumber: string | null | undefined,
   fileName: string,
 ): string {
-  if (!itemNumber || !isCADFile(fileName)) return fileName
+  if (!itemNumber || !isNativeCadFile(fileName)) return fileName
 
-  const extension = path.extname(fileName)
-  if (!extension) return fileName
+  const stem = itemNumberFileStem(itemNumber)
+  if (!stem) return fileName
 
-  const itemStem = path.basename(
-    sanitizeFilename(itemNumber),
-    path.extname(itemNumber),
-  )
-  return `${itemStem}${extension.toLowerCase()}`
+  return `${stem}${getFileExtension(fileName)}`
 }
 
 /**

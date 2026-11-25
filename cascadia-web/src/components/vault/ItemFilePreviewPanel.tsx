@@ -18,6 +18,14 @@ interface PreviewContext {
   mainBranchId?: string
 }
 
+/** A PDF drawing is a PDF in the explicit `drawing` category. */
+export function isDrawingFile(file: FileRecord): boolean {
+  return (
+    file.fileCategory === 'drawing' &&
+    file.originalFileName.toLowerCase().endsWith('.pdf')
+  )
+}
+
 /**
  * An item's previewable attachments, for callers that need to know whether
  * there is anything to show before they render a tab for it.
@@ -47,7 +55,9 @@ export function useItemPreviewableFiles(
     (file) => previewKindFor(file.originalFileName) !== 'image',
   )
 
-  return { previewable, documents, isLoading }
+  const drawings = files.filter(isDrawingFile)
+
+  return { previewable, documents, drawings, isLoading }
 }
 
 interface ItemFilePreviewPanelProps {
@@ -61,6 +71,10 @@ interface ItemFilePreviewPanelProps {
    * tools.
    */
   canAnnotate?: boolean
+  /** Optional filter, e.g. drawing PDFs for the Drawings tab. */
+  fileFilter?: (file: FileRecord) => boolean
+  emptyTitle?: string
+  emptyDescription?: string
   className?: string
 }
 
@@ -76,12 +90,18 @@ export function ItemFilePreviewPanel({
   branchId,
   mainBranchId,
   canAnnotate = false,
+  fileFilter,
+  emptyTitle = 'No previewable files attached',
+  emptyDescription = 'Attach a PDF, drawing, image, or text file to read it here.',
   className,
 }: ItemFilePreviewPanelProps) {
-  const { previewable, isLoading } = useItemPreviewableFiles(itemId, {
-    branchId,
-    mainBranchId,
-  })
+  const { previewable: allPreviewable, isLoading } = useItemPreviewableFiles(
+    itemId,
+    { branchId, mainBranchId },
+  )
+  const previewable = fileFilter
+    ? allPreviewable.filter(fileFilter)
+    : allPreviewable
 
   const { data: session } = useQuery(authSessionQuery())
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -121,11 +141,9 @@ export function ItemFilePreviewPanel({
       <Card className={className}>
         <CardContent className="py-12 text-center">
           <FileSearch className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-slate-600" />
-          <p className="text-slate-600 dark:text-slate-400">
-            No previewable files attached
-          </p>
+          <p className="text-slate-600 dark:text-slate-400">{emptyTitle}</p>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-500">
-            Attach a PDF, drawing, image, or text file to read it here.
+            {emptyDescription}
           </p>
         </CardContent>
       </Card>

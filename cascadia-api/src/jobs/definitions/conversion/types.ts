@@ -117,6 +117,14 @@ export const cadConversionResultSchema = z.object({
   conversionTimeMs: z.number().int().min(0),
   thumbnailFileId: z.string().uuid().optional(),
   glbFileIds: z.array(z.string().uuid()).optional(),
+  /** The formats that reached the vault. Absent on results written before it. */
+  storedFormats: z.array(z.enum(CAD_OUTPUT_FORMATS)).optional(),
+  /**
+   * True when STL was stored only because none of the requested formats
+   * could be produced or stored — GLB-only asked of an IGES source, say, or
+   * a STEP whose GLB step failed. The job log says which.
+   */
+  stlFallback: z.boolean().optional(),
   manifest: z
     .array(
       z.object({

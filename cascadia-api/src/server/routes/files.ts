@@ -24,6 +24,11 @@ import {
 import { tagged } from '../adapter'
 import { FileService } from '@/vault/services/FileService'
 import { JobService } from '@/jobs/JobService'
+import {
+  cadJobOutputFormats,
+  cadOutputFormatsSchema,
+  configuredCadOutputFormats,
+} from '@/jobs/definitions/conversion/types'
 import { apiHandler, jsonResponse, parseQuery } from '@/api/handler'
 import {
   FileTooLargeError,
@@ -76,8 +81,29 @@ function batchDenial(
   return null
 }
 
+/**
+ * The deployment's default derivative formats, read once at boot so a
+ * malformed `CAD_DEFAULT_OUTPUT_FORMATS` stops the server with an error naming
+ * the variable rather than surfacing on the first conversion request.
+ *
+ * Deliberately not the body schema's `.default()`: that would publish this
+ * machine's environment as the v1 contract, and `openapi:snapshot` would
+ * record whatever the regenerating machine had set.
+ */
+const CONFIGURED_CAD_OUTPUT_FORMATS = configuredCadOutputFormats()
+
 const convertInputSchema = z.object({
   meshQuality: z.enum(['preview', 'standard', 'high']).default('standard'),
+  outputFormats: cadOutputFormatsSchema
+    .optional()
+    .describe(
+      'Derivative formats to store: `glb` (the web viewer format) and/or ' +
+        '`stl` (3D printing, CAM, import into other tools). Omitted, the ' +
+        'server uses its configured default, `CAD_DEFAULT_OUTPUT_FORMATS` — ' +
+        'both unless the deployment changes it. STL is stored regardless ' +
+        'when `decompose` is true, and as a fallback when none of the ' +
+        'requested formats could be produced (an IGES source has no GLB).',
+    ),
   decompose: z
     .boolean()
     .default(false)
@@ -555,9 +581,10 @@ app.post(
           description:
             'STEP (.step/.stp) and IGES (.iges/.igs) only. Returns 202 with ' +
             'the id of a background job — poll GET /api/v1/jobs/:id for its ' +
-            'result; the STL and GLB appear as new files on the target item ' +
-            'when it completes. The body is optional: an absent or ' +
-            'unparseable one runs on the defaults below.',
+            'result; the requested meshes (GLB and/or STL) appear as new ' +
+            'files on the target item when it completes. The body is ' +
+            'optional: an absent or unparseable one runs on the defaults ' +
+            'below.',
           request: {
             params: z.object({ fileId: z.string().uuid() }),
             // The schema comes from `body:` above; this says the body may be
@@ -610,7 +637,13 @@ app.post(
             vaultFileId: fileId,
             itemId: outputItemId,
             outputBranchId: outputBranch?.branchId ?? null,
-            outputFormat: 'stl',
+            // Always explicit: the job records the formats it was asked
+            // for, so a later change to the deployment default does not
+            // reinterpret rows already queued.
+            outputFormats: cadJobOutputFormats(
+              input.outputFormats ?? CONFIGURED_CAD_OUTPUT_FORMATS,
+              input.decompose,
+            ),
             meshQuality: input.meshQuality,
             decompose: input.decompose,
             userId: user.id,

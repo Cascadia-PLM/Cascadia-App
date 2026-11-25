@@ -146,6 +146,35 @@ check-in behaviour, name clashes and filename lookup.
 | -------------- | ------- | ---------------------- |
 | `RABBITMQ_URL` | -       | AMQP URL for job queue |
 
+### CAD Conversion Output
+
+| Variable                     | Default   | Description                                                                                                       |
+| ---------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `CAD_DEFAULT_OUTPUT_FORMATS` | `glb,stl` | Mesh formats a CAD conversion stores when its request names none. Comma-separated `glb`, `stl` (case-insensitive) |
+
+Read by the **app**, not the CAD converter. The app resolves the formats when it
+queues a conversion and writes them into the job, so the converter stores
+exactly what each job names and a change to the setting never reinterprets jobs
+already queued. A caller can still choose per request with `outputFormats` on
+`POST /api/v1/files/{fileId}/convert`.
+
+- `glb` is what the web viewer renders, with per-face colours; `stl` is for 3D
+  printing, CAM and importing into other tools. Set `glb` alone for a
+  deployment that only views models in the browser; keep the default wherever
+  anyone downloads STL.
+- Unset or blank means `glb,stl`. Any other value must name at least one of
+  `glb` and `stl` and nothing else: a typo (`gltf`) or an empty list (`,`)
+  stops the app at boot with an error naming the variable.
+- Decomposing an assembly (`decompose: true`) always stores STL as well — the
+  assembly manifest is keyed by each part's STL file.
+- **STL fallback.** A GLB cannot always be made: an IGES source never yields
+  one (colour extraction is STEP-only), and a STEP whose GLB step fails or
+  times out yields only the STL. When none of the requested formats could be
+  stored, the converter stores the STL it already has rather than finish with
+  nothing, adds a `warn` entry to the job log saying why, and sets
+  `stlFallback: true` in the job result (`storedFormats` lists what was
+  stored).
+
 ### OAuth Providers (Optional)
 
 GitHub and Google are the implemented providers. Setting a provider's client ID

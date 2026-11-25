@@ -46,10 +46,12 @@ from .models import (
     BoundingBox,
     CadConversionPayload,
     CadConversionResult,
+    ConversionOutput,
     JobMessage,
     ManifestPart,
     MeshQuality,
 )
+from .output_formats import GLB, STL, plan_storage, stl_fallback_reason
 
 logger = logging.getLogger(__name__)
 
@@ -336,6 +338,7 @@ def _run_job(
             "totalParts": result.totalParts,
             "polygonCount": result.polygonCount,
             "conversionTimeMs": result.conversionTimeMs,
+            "storedFormats": result.storedFormats,
         })
         logger.info("Job %s completed: %d parts, %d polygons", msg.jobId, result.totalParts, result.polygonCount)
 
@@ -458,51 +461,29 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
 
         update_job_progress(job_id, 90, "Storing output files...")
 
-        # Store output STL files in vault
         output_file_ids: list[str] = []
         manifest_parts: list[ManifestPart] = []
         total_polygons = 0
         combined_bbox: Optional[BoundingBox] = None
 
+        plan = plan_storage(payload.outputFormats, payload.decompose)
+
         for output in outputs:
-            file_size = os.path.getsize(output.stl_path)
-            file_hash = compute_file_hash(output.stl_path)
-
-            # Create vault storage path
-            stl_filename = os.path.basename(output.stl_path)
-            vault_subdir = os.path.join("cad-output", job_id)
-            vault_storage_path = os.path.join(vault_subdir, stl_filename)
-
-            # Copy to vault
-            dest_path = os.path.join(settings.vault_root, vault_storage_path)
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
-            _copy_file(output.stl_path, dest_path)
-
-            # Insert vault record
-            cad_meta = {
-                "software": "pythonocc-core",
-                "polygonCount": output.polygon_count,
-            }
-            if output.bounding_box:
-                cad_meta["boundingBox"] = output.bounding_box.model_dump()
-
-            file_id = insert_vault_file(
-                item_id=payload.itemId,
-                branch_id=payload.outputBranchId,
-                file_name=stl_filename,
-                original_file_name=stl_filename,
-                file_size=file_size,
-                mime_type="model/stl",
-                file_hash=file_hash,
-                storage_path=vault_storage_path,
-                uploaded_by=payload.userId,
-                file_category="cad_model",
-                cad_metadata=cad_meta,
-                applicability=output_applicability,
-            )
-
-            output_file_ids.append(file_id)
             total_polygons += output.polygon_count
+            if output.bounding_box:
+                if combined_bbox is None:
+                    combined_bbox = output.bounding_box
+                else:
+                    combined_bbox = BoundingBox(
+                        x=max(combined_bbox.x, output.bounding_box.x),
+                        y=max(combined_bbox.y, output.bounding_box.y),
+                        z=max(combined_bbox.z, output.bounding_box.z),
+                    )
+
+        # Store output STL files in vault
+        for output in outputs if plan.store_stl else []:
+            file_id = _store_stl(job_id, payload, output, output_applicability)
+            output_file_ids.append(file_id)
 
             if payload.decompose:
                 manifest_parts.append(ManifestPart(
@@ -514,20 +495,9 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                     color=output.color,
                 ))
 
-            # Combine bounding boxes (take max extents)
-            if output.bounding_box:
-                if combined_bbox is None:
-                    combined_bbox = output.bounding_box
-                else:
-                    combined_bbox = BoundingBox(
-                        x=max(combined_bbox.x, output.bounding_box.x),
-                        y=max(combined_bbox.y, output.bounding_box.y),
-                        z=max(combined_bbox.z, output.bounding_box.z),
-                    )
-
-        # Store GLB files in vault alongside STLs
+        # Store GLB files in vault
         glb_file_ids: list[str] = []
-        for i, output in enumerate(outputs):
+        for i, output in enumerate(outputs if plan.store_glb else []):
             if not output.glb_path or not os.path.exists(output.glb_path):
                 continue
 
@@ -584,6 +554,42 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
                 })
             except Exception as e:
                 logger.warning("Failed to store GLB file (non-blocking): %s", e)
+
+        # Nothing requested reached the vault: GLB alone asked of an IGES
+        # source, or of a STEP whose GLB step failed. The STL is already on
+        # disk, so store it rather than finish "successfully" with nothing.
+        # Before the thumbnail, so the fallback STL is linked to it too.
+        fallback_reason = stl_fallback_reason(
+            plan,
+            glb_produced=sum(
+                1 for o in outputs if o.glb_path and os.path.exists(o.glb_path)
+            ),
+            glb_stored=len(glb_file_ids),
+        )
+        if fallback_reason:
+            logger.warning(
+                "Job %s: storing STL as a fallback: %s", job_id, fallback_reason
+            )
+            add_job_log(
+                job_id,
+                "warn",
+                "No requested format could be stored; storing STL instead: "
+                f"{fallback_reason}",
+                {
+                    "requestedFormats": payload.outputFormats,
+                    "reason": fallback_reason,
+                },
+            )
+            for output in outputs:
+                output_file_ids.append(
+                    _store_stl(job_id, payload, output, output_applicability)
+                )
+
+        stored_formats = [
+            fmt
+            for fmt, ids in ((GLB, glb_file_ids), (STL, output_file_ids))
+            if ids
+        ]
 
         # Store thumbnail in vault and link to source/output files
         thumbnail_file_id: Optional[str] = None
@@ -646,6 +652,52 @@ def _execute_conversion(job_id: str, payload: CadConversionPayload) -> CadConver
         manifest=manifest_parts if manifest_parts else None,
         thumbnailFileId=thumbnail_file_id,
         glbFileIds=glb_file_ids if glb_file_ids else None,
+        storedFormats=stored_formats,
+        stlFallback=fallback_reason is not None,
+    )
+
+
+def _store_stl(
+    job_id: str,
+    payload: CadConversionPayload,
+    output: ConversionOutput,
+    applicability: Optional[dict],
+) -> str:
+    """Copy one converted STL into the vault and record it; returns its id."""
+    file_size = os.path.getsize(output.stl_path)
+    file_hash = compute_file_hash(output.stl_path)
+
+    # Create vault storage path
+    stl_filename = os.path.basename(output.stl_path)
+    vault_subdir = os.path.join("cad-output", job_id)
+    vault_storage_path = os.path.join(vault_subdir, stl_filename)
+
+    # Copy to vault
+    dest_path = os.path.join(settings.vault_root, vault_storage_path)
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    _copy_file(output.stl_path, dest_path)
+
+    # Insert vault record
+    cad_meta = {
+        "software": "pythonocc-core",
+        "polygonCount": output.polygon_count,
+    }
+    if output.bounding_box:
+        cad_meta["boundingBox"] = output.bounding_box.model_dump()
+
+    return insert_vault_file(
+        item_id=payload.itemId,
+        branch_id=payload.outputBranchId,
+        file_name=stl_filename,
+        original_file_name=stl_filename,
+        file_size=file_size,
+        mime_type="model/stl",
+        file_hash=file_hash,
+        storage_path=vault_storage_path,
+        uploaded_by=payload.userId,
+        file_category="cad_model",
+        cad_metadata=cad_meta,
+        applicability=applicability,
     )
 
 

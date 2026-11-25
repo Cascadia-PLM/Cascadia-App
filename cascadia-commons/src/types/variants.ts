@@ -89,17 +89,18 @@ export function normalizeOptionCondition(
  * Zod contract for a condition as it arrives over the wire. Normalises on the
  * way in, so every stored condition is canonical.
  */
-export const optionConditionSchema = z
-  .object({
-    all: z
-      .array(
-        z.object({
-          family: optionCodeSchema,
-          values: z.array(optionCodeSchema).min(1),
-        }),
-      )
-      .min(1),
-  })
+const optionConditionShapeSchema = z.object({
+  all: z
+    .array(
+      z.object({
+        family: optionCodeSchema,
+        values: z.array(optionCodeSchema).min(1),
+      }),
+    )
+    .min(1),
+})
+
+export const optionConditionSchema = optionConditionShapeSchema
   .transform(normalizeOptionCondition)
   .refine((c) => c.all.every((e) => e.values.length > 0), {
     message: 'Every family in a condition needs at least one value',
@@ -211,6 +212,17 @@ export const optionApplicabilitySchema = z
     any: z.array(optionConditionSchema).min(1).max(100),
   })
   .transform(normalizeOptionApplicability)
+
+/**
+ * The stored applicability shape, without the normalizing transforms, for
+ * describing a response. A transform has no JSON Schema for its output, so the
+ * OpenAPI generator renders a response field built on
+ * `optionApplicabilitySchema` as `{}` — an untyped field in the contract and
+ * the generated client types. Validate input with `optionApplicabilitySchema`.
+ */
+export const optionApplicabilityResponseSchema = z.object({
+  any: z.array(optionConditionShapeSchema).min(1).max(100),
+})
 
 /** A common file (null) always matches; otherwise any condition may admit it. */
 export function applicabilityMatches(

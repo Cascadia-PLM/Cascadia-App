@@ -5,9 +5,10 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import {
   makeCodeSchema,
-  optionApplicabilitySchema,
+  optionApplicabilityResponseSchema,
 } from '@cascadia/commons/types/variants'
 import { tagged } from '../../adapter'
+import type { optionApplicabilitySchema } from '@cascadia/commons/types/variants'
 import { requirePermission } from '@/auth/server'
 import { ValidationError } from '@/errors'
 import { getResourceType } from '@/items/item-type-resources'
@@ -82,7 +83,7 @@ const vaultFileResponseSchema = z
     fileVersion: z.number().int(),
     isPrimaryModel: z.boolean().nullable(),
     isItemThumbnail: z.boolean(),
-    applicability: optionApplicabilitySchema.nullable(),
+    applicability: optionApplicabilityResponseSchema.nullable(),
   })
   .passthrough()
 

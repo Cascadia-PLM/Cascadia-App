@@ -120,14 +120,25 @@ Raise the per-minute budgets for deployments where many users share one egress a
 
 ### Vault Configuration
 
-| Variable     | Default      | Description                      |
-| ------------ | ------------ | -------------------------------- |
-| `VAULT_TYPE` | `local`      | Storage backend: `local` or `s3` |
-| `VAULT_ROOT` | `/app/vault` | Local storage directory          |
+| Variable                  | Default      | Description                                                                                       |
+| ------------------------- | ------------ | ------------------------------------------------------------------------------------------------- |
+| `VAULT_TYPE`              | `local`      | Storage backend: `local` or `s3`                                                                  |
+| `VAULT_ROOT`              | `/app/vault` | Local storage directory                                                                           |
+| `VAULT_NATIVE_CAD_NAMING` | `preserve`   | `preserve` keeps uploaded filenames; `itemNumber` stores native CAD files as `<itemNumber>.<ext>` |
 
 > **Note:** the app always uses its configured storage backend directly — the
 > local root resolves DB setting → `VAULT_ROOT` → `./vault`. There is no
 > remote vault service to point it at.
+
+`VAULT_NATIVE_CAD_NAMING=itemNumber` is for PDM-style deployments where CAD
+clients expect a native file to be named after its part. It renames native
+authoring formats only (SolidWorks, Inventor, DWG/DXF, Creo, NX, CATIA, Solid
+Edge, FreeCAD, Fusion, Rhino) — never STEP/IGES and other exchange formats,
+meshes, PDFs or images — and applies to uploads and check-ins from the moment
+it is set, without renaming files already in the vault. Any other value,
+including unset, means `preserve`. See
+[Native CAD File Naming](../features/file-vault.md#native-cad-file-naming) for
+check-in behaviour, name clashes and filename lookup.
 
 ### Jobs Configuration
 

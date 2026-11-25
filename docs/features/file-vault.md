@@ -17,6 +17,7 @@ The file vault is Cascadia's enterprise file management system. It provides PDM-
 - [Check-Out for Edit](#check-out-for-edit)
 - [Check-In with Versioning](#check-in-with-versioning)
 - [Discard Checkout](#discard-checkout)
+- [Native CAD File Naming](#native-cad-file-naming)
 - [Lock Status](#lock-status)
 - [Lock Hierarchy](#lock-hierarchy)
 - [Primary File Designation](#primary-file-designation)
@@ -460,6 +461,58 @@ Note that this is distinct from item-level checkout cancellation (see [Lock Hier
 
 ---
 
+## Native CAD File Naming
+
+By default the vault stores every file under the name it was uploaded or
+checked in with. A PDM-style deployment can instead have native CAD files named
+after their item, so that whatever a local working copy happened to be called
+cannot rename the attachment, and an assembly or drawing that refers to its
+parts by filename finds them:
+
+```bash
+VAULT_NATIVE_CAD_NAMING=itemNumber   # default: preserve
+```
+
+**What is renamed.** Only native CAD authoring formats — SolidWorks, Inventor,
+AutoCAD/BricsCAD DWG and DXF, Creo/NX, CATIA, Solid Edge, FreeCAD, Fusion and
+Rhino. The list lives in `cascadia-commons/src/vault/native-cad-formats.ts`.
+Neutral exchange formats (STEP, IGES, Parasolid, ACIS, JT), mesh and
+visualization formats (STL, OBJ, glTF/GLB, 3MF, PLY, FBX), PDFs, images and
+everything else keep their names.
+
+**The name.** The whole item number followed by the uploaded file's extension,
+lowercased: `bracket.SLDPRT` on item `100.200.300` is stored as
+`100.200.300.sldprt`. Dots in an item number are kept. Characters that Windows,
+macOS or Linux refuse in a filename (`/ \ : * ? " < > |` and control
+characters) become `_`, so `DWG-001/A` gives `DWG-001_A.dwg`. Leading and
+trailing spaces and trailing dots are dropped, and a Windows device name such
+as `CON` gets a trailing `_`. When a file is renamed, the name it was submitted
+with is kept as `sourceFileName` in the file's `metadata`.
+
+**Check-in.** A check-in follows the same rule as an upload. A new version of
+`100.200.300.sldprt` keeps that name whatever the local file was called, and its
+local name is recorded as `sourceFileName`. A file the rule does not rename,
+such as a PDF, takes the name it is checked in with, just as under `preserve`.
+
+**Name clashes.** The item-number name is only used while it is free. If
+another current file on the same item already has it (compared
+case-insensitively), the new file keeps its submitted name. Only files that
+some branch context would list together count: a file on an ECO branch does not
+clash with one on a different ECO branch, but files on main or on no branch are
+listed on every branch and so clash with all of them. A new version of the
+canonical file is not a clash with itself.
+
+**Filename lookup.** `GET /api/v1/items/by-filename/{filename}` matches
+`sourceFileName` as well as the stored names, so a CAD client asking which item
+`bracket.sldprt` belongs to still finds it after the file has been stored as
+`100.200.300.sldprt`. Each entry in `matchingFiles` includes `sourceFileName`,
+or `null` when the file was stored under its submitted name.
+
+Changing the setting does not rename files already in the vault. It applies to
+the next upload or check-in.
+
+---
+
 ## Lock Status
 
 The lock (checkout) status of any file can be queried:
@@ -668,16 +721,17 @@ Every upload and check-in writes a small set of derived keys into the `metadata`
 JSONB column, alongside whatever the caller supplied (the caller's values win on
 a collision):
 
-| Key                | When                       | Value                                        |
-| ------------------ | -------------------------- | -------------------------------------------- |
-| `extension`        | always                     | Lowercased file extension, e.g. `.pdf`       |
-| `category`         | always                     | Broad MIME class, e.g. `pdf`, `image`, `cad` |
-| `detectedCategory` | always                     | The detected file category (see below)       |
-| `cadFormat`        | CAD extensions             | Format name, e.g. `STEP`, `SolidWorks`       |
-| `isViewable`       | CAD extensions             | Whether the in-app 3D viewer can render it   |
-| `pageCount`        | `.pdf` under 32 MB         | Number of pages                              |
-| `title` / `author` | `.pdf` under 32 MB, if set | PDF document properties                      |
-| `pdfProducer`      | `.pdf` under 32 MB, if set | Producing application                        |
+| Key                | When                       | Value                                                                         |
+| ------------------ | -------------------------- | ----------------------------------------------------------------------------- |
+| `extension`        | always                     | Lowercased file extension, e.g. `.pdf`                                        |
+| `category`         | always                     | Broad MIME class, e.g. `pdf`, `image`, `cad`                                  |
+| `detectedCategory` | always                     | The detected file category (see below)                                        |
+| `cadFormat`        | CAD extensions             | Format name, e.g. `STEP`, `SolidWorks`                                        |
+| `isViewable`       | CAD extensions             | Whether the in-app 3D viewer can render it                                    |
+| `pageCount`        | `.pdf` under 32 MB         | Number of pages                                                               |
+| `title` / `author` | `.pdf` under 32 MB, if set | PDF document properties                                                       |
+| `pdfProducer`      | `.pdf` under 32 MB, if set | Producing application                                                         |
+| `sourceFileName`   | renamed on store           | The submitted filename; see [Native CAD File Naming](#native-cad-file-naming) |
 
 PDF extraction is gated on the **file extension**, never the caller-supplied
 `mimeType`, and is bounded: files over 32 MB are not opened, and any parse

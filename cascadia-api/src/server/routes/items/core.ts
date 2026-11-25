@@ -383,15 +383,24 @@ app.get(
           readableItemTypes(user.id),
         ])
 
+        // The name a file was submitted under, when the vault stored it under
+        // another: under VAULT_NATIVE_CAD_NAMING=itemNumber a CAD plugin
+        // asking about `bracket.sldprt` means the file now named
+        // `10298.sldprt`. Absent everywhere else, so it matches nothing there.
+        const sourceFileNameField = sql<
+          string | null
+        >`${vaultFiles.metadata}->>'sourceFileName'`
         const exactMatch = or(
           eq(vaultFiles.fileName, filename),
           eq(vaultFiles.originalFileName, filename),
+          eq(sourceFileNameField, filename),
         )!
         const conditions = [
           or(
             exactMatch,
             like(vaultFiles.fileName, likeContains(filename)),
             like(vaultFiles.originalFileName, likeContains(filename)),
+            like(sourceFileNameField, likeContains(filename)),
           )!,
           isNull(vaultFiles.deletedAt),
           eq(items.isCurrent, true),
@@ -411,6 +420,7 @@ app.get(
             fileId: vaultFiles.id,
             fileName: vaultFiles.fileName,
             originalFileName: vaultFiles.originalFileName,
+            sourceFileName: sourceFileNameField,
             itemId: vaultFiles.itemId,
             item: getTableColumns(items),
           })
@@ -433,7 +443,10 @@ app.get(
         // ORDER BY produced.
         const byId = new Map(visibleFiles.map((r) => [r.item.id, r.item]))
         const exactRow = visibleFiles.find(
-          (r) => r.fileName === filename || r.originalFileName === filename,
+          (r) =>
+            r.fileName === filename ||
+            r.originalFileName === filename ||
+            r.sourceFileName === filename,
         )
 
         // Counts come from the returned set: a total that still included
@@ -444,10 +457,17 @@ app.get(
           totalMatches: visibleFiles.length,
           truncated,
           matchingFiles: visibleFiles.map(
-            ({ fileId, fileName, originalFileName, itemId }) => ({
+            ({
               fileId,
               fileName,
               originalFileName,
+              sourceFileName,
+              itemId,
+            }) => ({
+              fileId,
+              fileName,
+              originalFileName,
+              sourceFileName,
               itemId,
             }),
           ),

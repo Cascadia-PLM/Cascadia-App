@@ -1,7 +1,7 @@
 # Stage 1: Build conda environment with pythonocc-core
 # Base digests pinned (resolved 2026-08-27) so the fragile conda solve builds
 # from a known image; bump via `docker buildx imagetools inspect <image>`.
-FROM docker.io/condaforge/miniforge3:latest@sha256:0a788afa8b54165d855d08552ce6d86e1e2553be2a9a18d542c69cfb02a6deaa AS build
+FROM docker.io/condaforge/miniforge3:latest@sha256:006e761a6dcdb6e19e885c54616cad054c960a1191ce92fdf6fbbb9b34e9a279 AS build
 
 # Build context is the repo root (not this directory): the image also carries
 # the shared cascadia-workers-commons package alongside the worker source
@@ -31,7 +31,7 @@ RUN mkdir -p /licenses && \
      find . -path '*/info/licenses/*' -type f -exec cp --parents {} /licenses/ \;) || true
 
 # Stage 2: Slim runtime image
-FROM docker.io/library/debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS runtime
+FROM docker.io/library/debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS runtime
 
 # Install runtime dependencies for OpenCASCADE + Xvfb for offscreen rendering
 RUN apt-get update && \

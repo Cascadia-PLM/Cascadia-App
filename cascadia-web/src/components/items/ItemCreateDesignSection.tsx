@@ -7,7 +7,7 @@ import type { Design } from '@cascadia/commons/types/design'
 import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicator'
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { ViewEditSelect } from '@/components/ui'
-import { designStatusQuery } from '@/query'
+import { createRequiresBranch, designStatusQuery } from '@/query'
 
 interface ItemCreateDesignSectionProps {
   designs: Array<Design>
@@ -41,7 +41,7 @@ export function ItemCreateDesignSection({
     designStatusQuery(designId ?? '', isCreateMode && Boolean(designId)),
   )
 
-  const branchRequired = designStatus?.protection.phase === 'post-release'
+  const branchRequired = createRequiresBranch(designStatus)
   const showBranchSelector = isCreateMode && Boolean(designId)
   const designOptions = [...designs]
     .sort((a, b) => {

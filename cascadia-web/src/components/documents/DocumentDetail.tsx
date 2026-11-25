@@ -61,6 +61,7 @@ import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   branchDetailQuery,
+  createRequiresBranch,
   designDetailQuery,
   designStatusQuery,
   useInvalidateResources,
@@ -177,8 +178,7 @@ export function DocumentDetail({
       isCreateMode && Boolean(document.designId),
     ),
   )
-  const createBranchRequired =
-    createDesignStatus?.protection.phase === 'post-release'
+  const createBranchRequired = createRequiresBranch(createDesignStatus)
 
   // Where the server says this item may be edited: the branch holding its
   // edit lock, and whether main is protected for this item's TYPE (a design

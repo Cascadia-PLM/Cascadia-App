@@ -3,6 +3,7 @@
 
 import { queryOptions } from '@tanstack/react-query'
 import { qk } from '../keys'
+import type { BranchProtectionScope } from '@cascadia/commons/types/program'
 import { apiFetch } from '@/api/client'
 
 /** One branch, as `/api/v1/branches/:id` returns it. */
@@ -41,6 +42,12 @@ export function branchDetailQuery(branchId: string, enabled = true) {
  * The canonical shape for `/api/v1/designs/:id/status` — the branch selector,
  * the phase badge and the initial-release helper all read it, and each used
  * to declare its own narrower copy.
+ *
+ * `isMainBranchProtected` / `phase` say main is under change control; what
+ * that protects is `branchProtectionScope`. Under `released-items` an item's
+ * own answer is its edit-context (`isMainProtected`), and whether a new item
+ * may go straight onto main is `branchOptions.canCreateOnMain` — read through
+ * `createRequiresBranch`, never re-derived from the phase.
  */
 export interface DesignStatus {
   protection: {
@@ -51,12 +58,30 @@ export interface DesignStatus {
     draftItemCount: number
     totalItemCount: number
     isMainBranchProtected: boolean
+    branchProtectionScope: BranchProtectionScope
   }
   branchOptions: {
     phase: 'pre-release' | 'post-release'
+    /** Every item on main is directly editable — false once main is protected. */
     canEditMainDirectly: boolean
+    /** A new item may be created directly on main. */
+    canCreateOnMain: boolean
+    branchProtectionScope: BranchProtectionScope
     availableBranchTypes: Array<'eco' | 'workspace' | 'release'>
   }
+}
+
+/**
+ * Whether creating an item in this design has to name a branch.
+ *
+ * The server's answer (`canCreateOnMain`), not the phase: a design under the
+ * `released-items` scope is post-release and still takes new drafts on main.
+ * False while the status is unknown, as the phase check it replaces was.
+ */
+export function createRequiresBranch(
+  status: DesignStatus | null | undefined,
+): boolean {
+  return status ? !status.branchOptions.canCreateOnMain : false
 }
 
 /**

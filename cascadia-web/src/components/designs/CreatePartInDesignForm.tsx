@@ -17,7 +17,11 @@ import { DialogFooter } from '@/components/ui/Dialog'
 import { PART_TYPE_OPTIONS } from '@/components/parts/PartManufacturingCard'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import { apiFetch } from '@/api/client'
-import { designStatusQuery, useResourceMutation } from '@/query'
+import {
+  createRequiresBranch,
+  designStatusQuery,
+  useResourceMutation,
+} from '@/query'
 
 /**
  * What the create hands back that the caller needs. The item type's own
@@ -89,12 +93,11 @@ export function CreatePartInDesignForm({
   const [quantity, setQuantity] = useState('1')
   const [findNumber, setFindNumber] = useState('')
 
-  // A protected main refuses the create; say so before the attempt rather
-  // than after it. Shared query key with the page's phase card, so this
-  // costs no extra request.
+  // A main that takes no new items refuses the create; say so before the
+  // attempt rather than after it. Shared query key with the page's phase
+  // card, so this costs no extra request.
   const { data: status } = useQuery(designStatusQuery(designId))
-  const mainProtected = status?.protection.isMainBranchProtected ?? false
-  const blocked = mainProtected && !branchId
+  const blocked = createRequiresBranch(status) && !branchId
 
   const createPart = useResourceMutation({
     mutationFn: async (): Promise<CreateOutcome> => {

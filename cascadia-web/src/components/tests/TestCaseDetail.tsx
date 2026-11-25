@@ -60,6 +60,7 @@ import { useAlertDialog } from '@/hooks/useAlertDialog'
 import { useErrorHandler } from '@/hooks/useErrorHandler'
 import {
   branchDetailQuery,
+  createRequiresBranch,
   designStatusQuery,
   entityQuery,
   itemCollectionQuery,
@@ -188,8 +189,7 @@ export function TestCaseDetail({
       isCreateMode && Boolean(testCase.designId),
     ),
   )
-  const createBranchRequired =
-    createDesignStatus?.protection.phase === 'post-release'
+  const createBranchRequired = createRequiresBranch(createDesignStatus)
 
   // Execution dialog state
   const [showExecutionForm, setShowExecutionForm] = useState(false)

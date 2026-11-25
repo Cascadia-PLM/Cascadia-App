@@ -13,7 +13,7 @@ import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicat
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { ItemNumberField } from '@/components/items/ItemNumberField'
-import { designStatusQuery } from '@/query'
+import { createRequiresBranch, designStatusQuery } from '@/query'
 import { zodValidator } from '@/form-validation'
 import {
   Button,
@@ -108,9 +108,9 @@ export function RequirementForm({
     setSelectedBranchId(undefined)
   }, [currentDesignId])
 
-  // Check if we're in post-release phase and need branch selection
-  const isPostRelease = designStatus?.protection.phase === 'post-release'
-  const needsBranchSelection = isPostRelease && !requirement?.id
+  // Whether main takes the new item directly, or a branch must be named.
+  const needsBranchSelection =
+    createRequiresBranch(designStatus) && !requirement?.id
 
   return (
     <form

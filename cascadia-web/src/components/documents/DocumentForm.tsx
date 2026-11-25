@@ -13,7 +13,7 @@ import { DesignPhaseIndicator } from '@/components/versioning/DesignPhaseIndicat
 import { BranchSelector } from '@/components/versioning/BranchSelector'
 import { AttributesEditor } from '@/components/items/AttributesEditor'
 import { ItemNumberField } from '@/components/items/ItemNumberField'
-import { designStatusQuery } from '@/query'
+import { createRequiresBranch, designStatusQuery } from '@/query'
 import { zodValidator } from '@/form-validation'
 import { Button, FormField, Input, Textarea } from '@/components/ui'
 
@@ -81,11 +81,12 @@ export function DocumentForm({
     setSelectedBranchId(undefined)
   }, [currentDesignId])
 
-  // Check if we're in post-release phase and need branch selection
-  const isPostRelease = designStatus?.protection.phase === 'post-release'
-  // In post-release, branch is required. In pre-release, branch is optional (for private work).
+  // Whether main takes the new item directly. Under change control a branch
+  // is required — unless the program's scope protects only released items, in
+  // which case a new draft may still go on main. Otherwise a branch is
+  // optional (for private work).
   const showBranchSelector = currentDesignId && !document?.id
-  const branchRequired = isPostRelease
+  const branchRequired = createRequiresBranch(designStatus)
 
   return (
     <form

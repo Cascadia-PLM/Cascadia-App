@@ -317,7 +317,11 @@ export type {
   ItemRelationshipContext,
   ItemThreadParams,
 } from './options/relationships'
-export { branchDetailQuery, designStatusQuery } from './options/branches'
+export {
+  branchDetailQuery,
+  createRequiresBranch,
+  designStatusQuery,
+} from './options/branches'
 export type { BranchDetail, DesignStatus } from './options/branches'
 export {
   enterpriseSearchQuery,

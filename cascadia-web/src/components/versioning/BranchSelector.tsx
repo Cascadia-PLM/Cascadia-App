@@ -27,7 +27,10 @@ import { Badge, Button, FormField, Input } from '@/components/ui'
 import { apiFetch } from '@/api/client'
 import { useInvalidateResources } from '@/query'
 import { designBranchesQuery } from '@/query/options/designs'
-import { designStatusQuery } from '@/query/options/branches'
+import {
+  createRequiresBranch,
+  designStatusQuery,
+} from '@/query/options/branches'
 
 interface Branch {
   id: string
@@ -44,7 +47,7 @@ interface BranchSelectorProps {
   onChange: (branchId: string) => void
   /**
    * Whether to show the main branch option.
-   * If main is protected, it will be disabled.
+   * If main takes no new items, it will be disabled.
    */
   showMainOption?: boolean
   disabled?: boolean
@@ -88,7 +91,10 @@ export function BranchSelector({
   )
 
   const loading = loadingBranches || loadingStatus
-  const isProtected = status?.protection.isMainBranchProtected ?? false
+  // This selector picks where a new item is created, so main is locked when
+  // it takes no new items — not merely when it is under change control: a
+  // design whose program protects only released items still takes drafts.
+  const isProtected = createRequiresBranch(status)
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) {

@@ -2727,6 +2727,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * List items
+         * @description Lists one design’s items at a version context (`designId`, with `branch`, `commit` or `tag`), or, without `designId`, searches one item type across the designs the caller can read (narrowed by `programId`). `includeFileSummary=true` adds `fileSummary`, keyed by item id: how many files each listed item has, by category and by extension — counted exactly as `GET /api/v1/items/{itemId}/files` would list them in the same version context, so a file uploaded on an open change-order branch is counted on that branch and nowhere else.
+         */
         get: operations["getApiV1Items"];
         put?: never;
         /**
@@ -11832,13 +11836,83 @@ export interface operations {
     };
     getApiV1Items: {
         parameters: {
-            query?: never;
+            query?: {
+                designId?: string;
+                programId?: string;
+                branch?: string;
+                commit?: string;
+                tag?: string;
+                itemType?: string;
+                state?: string;
+                search?: string;
+                globalSearch?: string;
+                includeDeleted?: string;
+                limit?: string;
+                offset?: string;
+                sortField?: string;
+                sortDirection?: string;
+                columnFilters?: string;
+                includeCounts?: string;
+                countStates?: string;
+                includeFileSummary?: "true" | "false";
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** @description The version context the items were resolved at. With `designId` only. */
+                            context?: string;
+                            /** @description Items per state named in `countStates`, with `includeCounts=true`. */
+                            counts?: {
+                                [key: string]: number;
+                            };
+                            /** @description With `includeFileSummary=true`: one entry per listed item, keyed by item id. */
+                            fileSummary?: {
+                                [key: string]: {
+                                    /** @description Files per category; every category is present, zero when absent. A file with no category counts toward `total` only. */
+                                    byCategory: {
+                                        analysis: number;
+                                        cad_model: number;
+                                        drawing: number;
+                                        other: number;
+                                        reference: number;
+                                        specification: number;
+                                    };
+                                    /** @description Files per extension, lowercased and without the dot (`pdf`, `step`, `stp`); only extensions present appear. A file with no extension counts toward `total` only. */
+                                    byExtension: {
+                                        [key: string]: number;
+                                    };
+                                    /** @description Files `GET /api/v1/items/{itemId}/files` lists for this item in the same version context, each counted once at its latest version. */
+                                    total: number;
+                                };
+                            };
+                            items: ({
+                                /** Format: uuid */
+                                id: string;
+                                itemNumber: string;
+                                itemType: string;
+                                /** Format: uuid */
+                                masterId: string;
+                                revision: string;
+                                state: string;
+                            } & {
+                                [key: string]: unknown;
+                            })[];
+                            total: number;
+                        };
+                    };
+                };
+            };
             400: components["responses"]["ValidationError"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

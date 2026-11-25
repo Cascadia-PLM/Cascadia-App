@@ -4,6 +4,7 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { BRANCH_TYPES } from '@cascadia/commons/versioning/branch-types'
+import { branchProtectionScopeOf } from '@cascadia/commons/types/program'
 import { db, withTx } from '../db'
 import {
   BRANCH_ARCHIVED,
@@ -26,12 +27,14 @@ import {
   PermissionDeniedError,
   ValidationError,
 } from '../errors'
+import { getMainProtectionSummary } from '../items/branch-protection'
 import { CrossDesignReferenceService } from './CrossDesignReferenceService'
 import { DesignService } from './DesignService'
 import { releaseBranchLocks } from './checkout-locks'
 import type { CrossDesignReferenceToItem } from './CrossDesignReferenceService'
 import type { TransactionClient } from '../db'
 import type { BranchType } from '@cascadia/commons/versioning/branch-types'
+import type { BranchProtectionScope } from '@cascadia/commons/types/program'
 import { takeFirst } from '@/db/take-first'
 
 // Zod schemas for validation
@@ -1176,14 +1179,17 @@ export class BranchService {
   }
 
   /**
-   * Which writes main's protection governs for this design.
+   * Which writes a protected main refuses for this design: its program's
+   * `branchProtectionScope` setting.
    *
-   * Defaults to `design` so existing programs keep the original baseline
-   * behavior until an administrator opts into per-item protection.
+   * `design` — the default, and the only behaviour before the setting
+   * existed — for a design outside any program, a program that never chose,
+   * or a stored value this build does not recognise. The per-item verdict
+   * built on it is `canEditOnMain` (`items/branch-protection.ts`).
    */
   static async getBranchProtectionScope(
     designId: string,
-  ): Promise<'design' | 'released-items'> {
+  ): Promise<BranchProtectionScope> {
     const row = await db
       .select({ settings: programs.settings })
       .from(designs)
@@ -1191,25 +1197,7 @@ export class BranchService {
       .where(eq(designs.id, designId))
       .limit(1)
       .then((rows) => rows.at(0))
-    return row?.settings?.branchProtectionScope === 'released-items'
-      ? 'released-items'
-      : 'design'
-  }
-
-  /**
-   * Whether one item's current state is one of the design's released states.
-   *
-   * Branch protection stays a design-level fact (one released item freezes the
-   * baseline), but the decision for a *write* is per item: a Draft that has
-   * never been released may still be edited on main.
-   */
-  static async isItemReleased(
-    designId: string,
-    state: string | null | undefined,
-  ): Promise<boolean> {
-    if (!state) return false
-    const releasedStates = await this.getReleasedStateIds(designId)
-    return releasedStates.includes(state)
+    return branchProtectionScopeOf(row?.settings)
   }
 
   /**
@@ -1251,6 +1239,12 @@ export class BranchService {
   /**
    * Get branch protection status with detailed information.
    * Returns whether the branch is protected, why, and if it's editable.
+   *
+   * For main, `isProtected` / `isEditable` keep their v1 meaning under either
+   * scope: main is under change control, so not *everything* on it is
+   * editable. `branchProtectionScope` (additive) says what that means — under
+   * `released-items` the answer is per item, from
+   * `GET /items/:id/edit-context`, and new items may be created on main.
    */
   static async getBranchStatus(branchId: string): Promise<{
     branchId: string
@@ -1258,6 +1252,7 @@ export class BranchService {
     isProtected: boolean
     protectionReason: 'has-released-items' | 'locked' | 'archived' | null
     isEditable: boolean
+    branchProtectionScope: BranchProtectionScope
   }> {
     const branch = await this.getById(branchId)
     if (!branch) {
@@ -1265,6 +1260,10 @@ export class BranchService {
         operation: 'getBranchStatus',
       })
     }
+
+    const branchProtectionScope = await this.getBranchProtectionScope(
+      branch.designId,
+    )
 
     // Archived branches are never editable
     if (branch.isArchived) {
@@ -1274,6 +1273,7 @@ export class BranchService {
         isProtected: true,
         protectionReason: 'archived',
         isEditable: false,
+        branchProtectionScope,
       }
     }
 
@@ -1285,18 +1285,20 @@ export class BranchService {
         isProtected: true,
         protectionReason: 'locked',
         isEditable: false,
+        branchProtectionScope,
       }
     }
 
     // Main branch protection depends on released items
     if (branch.branchType === 'main') {
-      const isProtected = await this.isMainBranchProtected(branch.designId)
+      const summary = await getMainProtectionSummary(branch.designId)
       return {
         branchId,
         branchType: branch.branchType,
-        isProtected,
-        protectionReason: isProtected ? 'has-released-items' : null,
-        isEditable: !isProtected,
+        isProtected: summary.isProtected,
+        protectionReason: summary.isProtected ? 'has-released-items' : null,
+        isEditable: summary.everyItemEditable,
+        branchProtectionScope,
       }
     }
 
@@ -1307,6 +1309,7 @@ export class BranchService {
       isProtected: false,
       protectionReason: null,
       isEditable: true,
+      branchProtectionScope,
     }
   }
 
@@ -1315,17 +1318,28 @@ export class BranchService {
    * Workspace branches are available in both phases for private development.
    * ECO branches are always available for formal change management.
    * Release branches are only available post-release (to tag baselines).
+   *
+   * `canEditMainDirectly` keeps its v1 meaning — every item on main may be
+   * edited directly — so it is false once main is protected, under either
+   * scope. What a `released-items` design allows on main is carried by the
+   * additive fields: `canCreateOnMain` for new items, and per item the
+   * edit-context's `isMainProtected`.
    */
   static async getAvailableBranchTypes(designId: string): Promise<{
     phase: 'pre-release' | 'post-release'
     canEditMainDirectly: boolean
+    canCreateOnMain: boolean
+    branchProtectionScope: BranchProtectionScope
     availableBranchTypes: Array<'eco' | 'workspace' | 'release'>
   }> {
-    const isProtected = await this.isMainBranchProtected(designId)
+    const summary = await getMainProtectionSummary(designId)
+    const isProtected = summary.isProtected
 
     return {
       phase: isProtected ? 'post-release' : 'pre-release',
-      canEditMainDirectly: !isProtected,
+      canEditMainDirectly: summary.everyItemEditable,
+      canCreateOnMain: summary.canCreateOnMain,
+      branchProtectionScope: summary.scope,
       availableBranchTypes: isProtected
         ? [
             BRANCH_TYPES.changeOrder,

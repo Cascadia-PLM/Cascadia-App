@@ -7,7 +7,7 @@ import { tagged } from '../../adapter'
 import type { items } from '@/db/schema'
 import { NotFoundError, ValidationError } from '@/errors'
 import { ItemService } from '@/items/services/ItemService'
-import { isBranchProtectionExempt } from '@/items/branch-protection'
+import { canEditOnMain } from '@/items/branch-protection'
 import { BranchService } from '@/services/BranchService'
 import { CheckoutService } from '@/services/CheckoutService'
 import { apiHandler, created, jsonResponse } from '@/api/handler'
@@ -406,22 +406,20 @@ app.get(
         // presence of that row as "main is unprotected" re-enabled the global
         // Edit/Delete buttons when the Part was reopened without ?branch=.
         //
-        // Exempt types (work instructions) take the lock on main regardless of
-        // protection — they are editable there by design, so reporting main as
-        // protected would push the client into an ECO flow they do not use.
-        const designProtected = await BranchService.isMainBranchProtected(
-          item.designId,
-        )
-        const scope =
-          designProtected && !(await isBranchProtectionExempt(item.itemType))
-            ? await BranchService.getBranchProtectionScope(item.designId)
-            : 'design'
-        isMainProtected = (await isBranchProtectionExempt(item.itemType))
-          ? false
-          : scope === 'released-items'
-            ? designProtected &&
-              (await BranchService.isItemReleased(item.designId, item.state))
-            : designProtected
+        // The answer is `canEditOnMain`'s — the policy the write and the
+        // checkout on main both enforce — so the Edit button is offered on
+        // main exactly where saving there will succeed: exempt types (work
+        // instructions) always, and under the `released-items` scope any item
+        // that is neither released nor beneath a released item in main's BOM.
+        // A row on no live branch is main's own, and its state is checked as
+        // the write would check it.
+        const onMain = await canEditOnMain({
+          designId: item.designId,
+          itemType: item.itemType,
+          masterId: item.masterId,
+          ...(branchInfo ? {} : { state: item.state }),
+        })
+        isMainProtected = !onMain.allowed
         if (!branchInfo && !isMainProtected) {
           const mainBranch = await BranchService.getMainBranch(item.designId)
           lockBranchId = mainBranch?.id ?? null

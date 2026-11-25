@@ -26,7 +26,7 @@ import { NumberingService } from '../numbering'
 import { ItemTypeRegistry } from '../registry'
 import { getTypeHandler } from '../type-handlers'
 import { copyTypeSpecificData } from '../type-handlers/copy'
-import { isBranchProtectionExempt } from '../branch-protection'
+import { canEditOnMain } from '../branch-protection'
 import '../type-handlers/init'
 import {
   AlreadyExistsError,
@@ -200,8 +200,11 @@ export class ItemService {
   /**
    * Create a new item
    *
-   * In pre-release phase: Items can be created directly on main branch
-   * In post-release phase: Items must be created on a workspace or ECO branch using createOnBranch()
+   * Directly on main when `canEditOnMain` allows a new item of this type in
+   * the state it will start in: always before anything in the design is
+   * released, and afterwards for exempt types and — under the
+   * `released-items` scope — for any item that does not start released.
+   * Otherwise create it on a workspace or ECO branch with createOnBranch().
    *
    * @param options.bypassBranchProtection - Skip branch protection check (for ECO operations or tests)
    */
@@ -339,30 +342,24 @@ export class ItemService {
 
     const isChangeOrder = type === 'ChangeOrder'
 
-    // `design` scope blocks creation once anything is released. `released-items`
-    // scope allows a new row because it starts unreleased, and only refuses a
-    // creation that asks for a released baseline state.
-    if (
-      validatedData.designId &&
-      !options?.bypassBranchProtection &&
-      !(await isBranchProtectionExempt(type))
-    ) {
-      const scope = await BranchService.getBranchProtectionScope(
-        validatedData.designId,
-      )
-      const blocked =
-        scope === 'released-items'
-          ? await BranchService.isItemReleased(
-              validatedData.designId,
-              initialState,
-            )
-          : await this.canEditDirectly(validatedData.designId).then(
-              (result) => !result.allowed,
-            )
-      if (blocked) {
+    // Branch protection, unless the caller is ECO machinery or a test
+    // (`bypassBranchProtection`). The state asked about is the one the row
+    // will actually be written with — a caller-supplied state included — so
+    // a released row cannot be planted on a protected main by naming it.
+    if (validatedData.designId && !options?.bypassBranchProtection) {
+      const onMain = await canEditOnMain({
+        designId: validatedData.designId,
+        itemType: type,
+        state: validatedData.state || initialState,
+      })
+      if (!onMain.allowed) {
         throw new BranchProtectionError(
-          `Cannot create ${type} directly on main branch: ${scope === 'released-items' ? 'the requested item state is released' : 'the design has released items'}`,
-          { operation: 'create', designId: validatedData.designId },
+          `Cannot create ${type} directly on main branch: ${onMain.reason}`,
+          {
+            operation: 'create',
+            designId: validatedData.designId,
+            refusal: onMain.refusal,
+          },
         )
       }
     }
@@ -1895,15 +1892,6 @@ export class ItemService {
   // Same reasoning as the versioning delegates above: `ItemEditPolicy` is a
   // private split of this class, and these keep it that way.
   // ============================================================================
-
-  /** @see ItemEditPolicy.canEditDirectly */
-  static async canEditDirectly(designId: string): Promise<{
-    allowed: boolean
-    reason?: string
-    requiresCheckout: boolean
-  }> {
-    return ItemEditPolicy.canEditDirectly(designId)
-  }
 
   /** @see ItemEditPolicy.getItemBranchInfo */
   static async getItemBranchInfo(itemId: string): Promise<{

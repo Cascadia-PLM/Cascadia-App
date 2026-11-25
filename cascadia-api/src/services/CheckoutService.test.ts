@@ -1183,7 +1183,25 @@ describe('CheckoutService', () => {
       expect(result.commit).toBeDefined()
     })
 
-    it('allows creating an unreleased item on protected main branch', async () => {
+    it('throws error when creating on protected main branch', async () => {
+      // Main branch is only protected when design has released items
+      await createReleasedPart({ name: 'Released Part' })
+
+      await expect(
+        CheckoutService.createOnBranch(
+          {
+            designId,
+            itemNumber: `PN-NEW-${Date.now()}`,
+            itemType: 'Part',
+          },
+          mainBranchId,
+          'Added new part',
+          user.id,
+        ),
+      ).rejects.toThrow(ValidationError)
+    })
+
+    it('allows creating an unreleased item on protected main branch under the released-items scope', async () => {
       // Main is protected once anything in the design is released, but a new
       // row starts unreleased and therefore has no released lineage to guard.
       await setProtectionScope('released-items')
@@ -1830,7 +1848,7 @@ describe('CheckoutService', () => {
       await ItemService.removeRelationship(relationship.id, user.id)
     })
 
-    it('allows editing a draft item on protected main', async () => {
+    it('allows editing a draft item on protected main under the released-items scope', async () => {
       await setProtectionScope('released-items')
       await createReleasedPart({ name: 'Released Baseline' })
       const draft = await ItemService.create(
@@ -1903,7 +1921,7 @@ describe('CheckoutService', () => {
       expect(updated.name).toBe('Free again')
     })
 
-    it('allows checkout of a draft item on protected main', async () => {
+    it('allows checkout of a draft item on protected main under the released-items scope', async () => {
       await setProtectionScope('released-items')
       await createReleasedPart({ name: 'Released Baseline' })
       const draft = await ItemService.create(

@@ -49,7 +49,7 @@ name: cascadia-demo
 
 services:
   postgres:
-    image: docker.io/library/postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+    image: docker.io/library/postgres:18-alpine@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71
     container_name: cascadia-demo-postgres
     restart: unless-stopped
     environment:
@@ -103,7 +103,7 @@ services:
     networks: [cascadia-demo]
 
   app:
-    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:8d7b7e68f049d2e2876a29ca98f7e768c36b040947295b9b2b68581679604fab
+    image: ghcr.io/cascadia-plm/cascadia-app:latest@sha256:80563862704720b2c56cc38b2aee426fbcf82eda2c29dc9d5f8802c88791cc5b
     container_name: cascadia-demo-app
     restart: unless-stopped
     depends_on:
@@ -181,7 +181,7 @@ services:
     networks: [cascadia-demo]
 
   jobs-worker:
-    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest@sha256:970f5df98d6b18257ea75242836bc859d3af52af6edecdd5cb492c4ff9943521
+    image: ghcr.io/cascadia-plm/cascadia-jobs-worker:latest@sha256:7fea99abfb576f9c3d115fcbaa63e472a4b600a4c03dbfe1641ffca9e95c8f9c
     container_name: cascadia-demo-jobs-worker
     restart: unless-stopped
     depends_on:

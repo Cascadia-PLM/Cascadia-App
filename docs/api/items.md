@@ -25,18 +25,19 @@ Lists items with optional version context (branch, commit, or tag). Requires aut
 
 ### Query Parameters
 
-| Parameter        | Type    | Required    | Default | Description                                                              |
-| ---------------- | ------- | ----------- | ------- | ------------------------------------------------------------------------ |
-| `designId`       | UUID    | Recommended | -       | Design scope. Required for version-aware queries.                        |
-| `branch`         | string  | No          | -       | Branch name (e.g., `main`, `eco/ECO-2024-001`)                           |
-| `commit`         | UUID    | No          | -       | View items at a specific commit                                          |
-| `tag`            | UUID    | No          | -       | View items at a tagged version                                           |
-| `itemType`       | string  | No          | -       | Filter by type: `Part`, `Document`, `Requirement`, `Task`, `ChangeOrder` |
-| `state`          | string  | No          | -       | Filter by lifecycle state                                                |
-| `search`         | string  | No          | -       | Full-text search query                                                   |
-| `includeDeleted` | boolean | No          | `false` | Include soft-deleted items                                               |
-| `limit`          | integer | No          | `100`   | Maximum results (1-500)                                                  |
-| `offset`         | integer | No          | `0`     | Pagination offset                                                        |
+| Parameter            | Type    | Required    | Default | Description                                                                      |
+| -------------------- | ------- | ----------- | ------- | -------------------------------------------------------------------------------- |
+| `designId`           | UUID    | Recommended | -       | Design scope. Required for version-aware queries.                                |
+| `branch`             | string  | No          | -       | Branch name (e.g., `main`, `eco/ECO-2024-001`)                                   |
+| `commit`             | UUID    | No          | -       | View items at a specific commit                                                  |
+| `tag`                | UUID    | No          | -       | View items at a tagged version                                                   |
+| `itemType`           | string  | No          | -       | Filter by type: `Part`, `Document`, `Requirement`, `Task`, `ChangeOrder`         |
+| `state`              | string  | No          | -       | Filter by lifecycle state                                                        |
+| `search`             | string  | No          | -       | Full-text search query                                                           |
+| `includeDeleted`     | boolean | No          | `false` | Include soft-deleted items                                                       |
+| `limit`              | integer | No          | `100`   | Maximum results (1-500)                                                          |
+| `offset`             | integer | No          | `0`     | Pagination offset                                                                |
+| `includeFileSummary` | boolean | No          | `false` | Add `fileSummary`: each item's files counted (see below). Needs `documents:read` |
 
 ### Response
 
@@ -68,6 +69,45 @@ Lists items with optional version context (branch, commit, or tag). Requires aut
 }
 ```
 
+### File Summary
+
+`includeFileSummary=true` adds `fileSummary`, keyed by item id, with an entry
+for every item on the page — so a client that needs to know what each item has
+attached (a PDF yet? a STEP export?) asks once per page instead of once per
+item:
+
+```json
+"fileSummary": {
+  "550e8400-e29b-41d4-a716-446655440000": {
+    "total": 3,
+    "byCategory": {
+      "cad_model": 1,
+      "drawing": 2,
+      "specification": 0,
+      "analysis": 0,
+      "reference": 0,
+      "other": 0
+    },
+    "byExtension": { "pdf": 2, "step": 1 }
+  }
+}
+```
+
+The counts are exactly the files `GET /api/v1/items/{itemId}/files` lists for
+that item in the same version context — files are
+[branch-scoped](../features/file-vault.md#branch-aware-storage). A file
+uploaded on an open change-order branch is counted when the list is read on
+that branch (`branch=eco/...`) and not on main. Each item is counted against
+its own design's main branch, so the list without `designId` counts what each
+item's detail page shows on main. Like that listing, it leaves out generated
+thumbnails and deleted files, and counts each earlier version of a checked-in
+file as a row of its own.
+
+`byCategory` always carries every [file category](../features/file-vault.md#file-categories);
+`byExtension` only the extensions present, lowercased and without the dot. A
+file with no category in the vocabulary, or no extension, counts toward
+`total` alone.
+
 ### Examples
 
 ```bash
@@ -82,6 +122,9 @@ curl /api/v1/items?designId=UUID&search=motor&limit=20
 
 # Without designId, falls back to legacy search
 curl /api/v1/items?itemType=Part&search=motor
+
+# What each item on an ECO branch has attached
+curl /api/v1/items?designId=UUID&branch=eco/ECO-2024-001&includeFileSummary=true
 ```
 
 ## Create Item

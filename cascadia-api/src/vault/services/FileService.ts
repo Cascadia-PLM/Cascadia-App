@@ -1,8 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
-import { and, desc, eq, isNotNull, isNull, lt, ne, or } from 'drizzle-orm'
-import { THUMBNAIL_FILE_CATEGORY } from '@cascadia/commons/vault/file-categories'
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  ne,
+  or,
+} from 'drizzle-orm'
+import {
+  FILE_CATEGORY_VALUES,
+  THUMBNAIL_FILE_CATEGORY,
+  isFileCategory,
+} from '@cascadia/commons/vault/file-categories'
 import {
   applicabilityMatches,
   findUndeclared,
@@ -17,6 +31,7 @@ import {
   publishDomainEvent,
 } from '../../events'
 import {
+  designs,
   items,
   parts,
   users,
@@ -102,6 +117,99 @@ export interface UploadFileOptions {
 export interface CheckoutInfo {
   fileId: string
   userId: string
+}
+
+/**
+ * The version context an item's files are listed in. A vault file is visible
+ * everywhere when its `branchId` is null (legacy and promoted files), on main
+ * and every branch when it is the main branch's, and only on its own branch
+ * when it is a change-order or workspace branch's.
+ *
+ * Naming neither branch is no context at all, and every file shows — the
+ * listing's behaviour for a caller that sends no version context.
+ */
+export interface FileVisibilityContext {
+  branchId?: string
+  mainBranchId?: string
+}
+
+/**
+ * What `fileSummary` reports for one item: the files its listing shows,
+ * counted.
+ *
+ * `total` is the number of rows `GET /items/:id/files` returns in the same
+ * context. `byCategory` carries every category in the vocabulary, zero when
+ * absent; `byExtension` only the extensions present, lowercased and without
+ * the dot. A file with no category in the vocabulary, or no extension, counts
+ * toward `total` alone, so either breakdown can sum to less than it.
+ */
+export interface ItemFileSummary {
+  total: number
+  byCategory: Record<FileCategory, number>
+  byExtension: Record<string, number>
+}
+
+/**
+ * Item ids per summary query: well under Postgres's 65,535 bind parameters.
+ * The item list's `limit` is uncapped, so a page is not bounded by anything
+ * smaller.
+ */
+const FILE_SUMMARY_CHUNK = 10_000
+
+/**
+ * The conditions, beside the item's own, that decide which of its files a
+ * listing shows in a version context.
+ *
+ * The one statement of the rule. `listItemFilesAtContext` lists with it and
+ * `summarizeItemFiles` counts with it, because the summary's promise is to
+ * count exactly what the listing would show — and a second copy of this rule
+ * is how that promise would quietly stop being kept.
+ */
+function listedFileConditions(
+  context: FileVisibilityContext,
+  includeDeleted: boolean,
+): Array<SQL | undefined> {
+  const conditions: Array<SQL | undefined> = [
+    // Generated thumbnails are system-managed and never listed.
+    or(
+      isNull(vaultFiles.fileCategory),
+      ne(vaultFiles.fileCategory, THUMBNAIL_FILE_CATEGORY),
+    ),
+  ]
+
+  if (!includeDeleted) {
+    conditions.push(isNull(vaultFiles.deletedAt))
+  }
+
+  if (context.branchId || context.mainBranchId) {
+    const visible = [isNull(vaultFiles.branchId)]
+    if (context.mainBranchId) {
+      visible.push(eq(vaultFiles.branchId, context.mainBranchId))
+    }
+    if (context.branchId && context.branchId !== context.mainBranchId) {
+      visible.push(eq(vaultFiles.branchId, context.branchId))
+    }
+    conditions.push(or(...visible))
+  }
+
+  return conditions
+}
+
+function emptyFileSummary(): {
+  total: number
+  byCategory: Record<FileCategory, number>
+  byExtension: Map<string, number>
+} {
+  return {
+    total: 0,
+    byCategory: Object.fromEntries(
+      FILE_CATEGORY_VALUES.map((category) => [category, 0]),
+    ) as Record<FileCategory, number>,
+    // A Map rather than an object while counting: an extension is whatever
+    // follows the last dot of a stored name, and `constructor` or `__proto__`
+    // would read an inherited member out of a plain object.
+    byExtension: new Map(),
+  }
 }
 
 /**
@@ -734,23 +842,15 @@ export class FileService {
      */
     tx?: TransactionClient,
   ): Promise<Array<FileRecord>> {
-    const conditions = [
-      eq(vaultFiles.itemId, itemId),
-      // Exclude thumbnail files from normal listings
-      or(
-        isNull(vaultFiles.fileCategory),
-        ne(vaultFiles.fileCategory, 'thumbnail'),
-      ),
-    ]
-
-    if (!includeDeleted) {
-      conditions.push(isNull(vaultFiles.deletedAt))
-    }
-
     const files = await (tx ?? db)
       .select()
       .from(vaultFiles)
-      .where(and(...conditions))
+      .where(
+        and(
+          eq(vaultFiles.itemId, itemId),
+          ...listedFileConditions({}, includeDeleted),
+        ),
+      )
       .orderBy(desc(vaultFiles.uploadedAt))
 
     return files as Array<FileRecord>
@@ -761,58 +861,24 @@ export class FileService {
    * - Files with branchId = null are visible everywhere (legacy files)
    * - Files with branchId = mainBranchId are visible on main and all branches
    * - Files with branchId = branchId are visible on that specific branch
+   * - With neither branch given, every file is listed
    */
   static async listItemFilesAtContext(
     itemId: string,
-    context: {
-      branchId?: string
-      mainBranchId?: string
+    context: FileVisibilityContext & {
       selections?: Record<string, string>
     },
     includeDeleted: boolean = false,
   ): Promise<Array<FileRecord>> {
-    // If no context provided, fall back to listing all files
-    if (!context.branchId && !context.mainBranchId) {
-      const files = await this.listItemFiles(itemId, includeDeleted)
-      return context.selections
-        ? files.filter((file) =>
-            applicabilityMatches(file.applicability, context.selections!),
-          )
-        : files
-    }
-
-    // Build branch visibility conditions
-    // Files are visible if:
-    // 1. branchId is null (legacy/global files)
-    // 2. branchId matches mainBranchId (files uploaded on main)
-    // 3. branchId matches the current branchId (files uploaded on this branch)
-    const branchConditions = [isNull(vaultFiles.branchId)]
-
-    if (context.mainBranchId) {
-      branchConditions.push(eq(vaultFiles.branchId, context.mainBranchId))
-    }
-
-    if (context.branchId && context.branchId !== context.mainBranchId) {
-      branchConditions.push(eq(vaultFiles.branchId, context.branchId))
-    }
-
-    const baseConditions = [
-      eq(vaultFiles.itemId, itemId),
-      // Exclude thumbnail files from normal listings
-      or(
-        isNull(vaultFiles.fileCategory),
-        ne(vaultFiles.fileCategory, 'thumbnail'),
-      ),
-    ]
-
-    if (!includeDeleted) {
-      baseConditions.push(isNull(vaultFiles.deletedAt))
-    }
-
     const files = await db
       .select()
       .from(vaultFiles)
-      .where(and(...baseConditions, or(...branchConditions)))
+      .where(
+        and(
+          eq(vaultFiles.itemId, itemId),
+          ...listedFileConditions(context, includeDeleted),
+        ),
+      )
       .orderBy(desc(vaultFiles.uploadedAt))
 
     const records = files as Array<FileRecord>
@@ -821,6 +887,125 @@ export class FileService {
           applicabilityMatches(file.applicability, context.selections!),
         )
       : records
+  }
+
+  /**
+   * Count each listed item's files, for a whole page of items at once.
+   *
+   * Each item is counted exactly as `listItemFilesAtContext` would list it in
+   * the context its detail page reads it in: against its own design's main
+   * branch, plus `context.branchId` when the page was read on a branch. That
+   * is what keeps a file uploaded on an open change-order branch out of the
+   * item's summary on main. Item ids alone cannot: an unreleased item checked
+   * out to a branch is still main's row there until its first save, so an
+   * upload on the branch lands on the very row main lists.
+   *
+   * An item with no design is read with no context, as its listing is.
+   *
+   * One query for the designs' main branches and one for the files, per
+   * `FILE_SUMMARY_CHUNK` items — never one per item. Every item given has an
+   * entry in the result, zeroed when it has no files.
+   */
+  static async summarizeItemFiles(
+    rows: ReadonlyArray<{ id?: string; designId?: string | null }>,
+    context: { branchId?: string } = {},
+  ): Promise<Record<string, ItemFileSummary>> {
+    const summaries = new Map<string, ReturnType<typeof emptyFileSummary>>()
+    const designOf = new Map<string, string | null>()
+    for (const row of rows) {
+      if (!row.id) continue
+      summaries.set(row.id, emptyFileSummary())
+      designOf.set(row.id, row.designId ?? null)
+    }
+
+    const itemIds = [...summaries.keys()]
+    for (let i = 0; i < itemIds.length; i += FILE_SUMMARY_CHUNK) {
+      const chunk = itemIds.slice(i, i + FILE_SUMMARY_CHUNK)
+
+      const designIds = [
+        ...new Set(
+          chunk
+            .map((id) => designOf.get(id))
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ]
+      const mainBranchOf = new Map(
+        designIds.length === 0
+          ? []
+          : (
+              await db
+                .select({
+                  designId: designs.id,
+                  mainBranchId: designs.defaultBranchId,
+                })
+                .from(designs)
+                .where(inArray(designs.id, designIds))
+            ).map((d) => [d.designId, d.mainBranchId ?? undefined]),
+      )
+
+      // Items that share a main branch share a visibility rule, so a page of
+      // one design is one group and a cross-design page one per design.
+      const groups = new Map<string | undefined, Array<string>>()
+      for (const id of chunk) {
+        const designId = designOf.get(id)
+        const mainBranchId = designId ? mainBranchOf.get(designId) : undefined
+        const group = groups.get(mainBranchId)
+        if (group) group.push(id)
+        else groups.set(mainBranchId, [id])
+      }
+
+      const files = await db
+        .select({
+          itemId: vaultFiles.itemId,
+          fileCategory: vaultFiles.fileCategory,
+          originalFileName: vaultFiles.originalFileName,
+        })
+        .from(vaultFiles)
+        .where(
+          or(
+            ...[...groups].map(([mainBranchId, ids]) =>
+              and(
+                inArray(vaultFiles.itemId, ids),
+                ...listedFileConditions(
+                  { branchId: context.branchId, mainBranchId },
+                  false,
+                ),
+              ),
+            ),
+          ),
+        )
+
+      for (const file of files) {
+        const summary = summaries.get(file.itemId)
+        if (!summary) continue
+        summary.total += 1
+        if (isFileCategory(file.fileCategory)) {
+          summary.byCategory[file.fileCategory] += 1
+        }
+        // The vault's own notion of an extension — the one the upload
+        // allowlist and category detection read — without its dot.
+        const extension = getFileExtension(file.originalFileName).slice(1)
+        if (extension) {
+          summary.byExtension.set(
+            extension,
+            (summary.byExtension.get(extension) ?? 0) + 1,
+          )
+        }
+      }
+    }
+
+    return Object.fromEntries(
+      [...summaries].map(([itemId, summary]) => [
+        itemId,
+        {
+          total: summary.total,
+          byCategory: summary.byCategory,
+          byExtension: Object.fromEntries(
+            [...summary.byExtension].sort(([a], [b]) => a.localeCompare(b)),
+          ),
+        },
+      ]),
+    )
   }
 
   /**

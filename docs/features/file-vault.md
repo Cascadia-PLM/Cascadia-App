@@ -600,6 +600,11 @@ GET /api/v1/items/{itemId}/cad-files
 
 This endpoint traverses "CAD Doc" relationships to find viewable models attached to related Document items, returning both direct and related files.
 
+To learn what a whole page of items has attached without one request per item,
+list them with `GET /api/v1/items?includeFileSummary=true`: each item's files
+counted by category and by extension, under the same branch visibility as the
+listing above (see [the Items API](../api/items.md#file-summary)).
+
 ---
 
 ## Product Configuration Applicability

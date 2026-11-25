@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { z } from 'zod'
+import { branchProtectionScopeSchema } from '@cascadia/commons/types/program'
 import { defineDomainEvent } from '../publish'
 
 export const designCreatedPayloadSchema = z
@@ -92,4 +93,46 @@ export const PROGRAM_CREATED = defineDomainEvent({
   description: 'A program was created, with its creator as administrator',
   subjectType: 'program',
   payloadSchema: programCreatedPayloadSchema,
+})
+
+export const programBranchProtectionScopeChangedPayloadSchema = z
+  .object({
+    programId: z.string().uuid(),
+    /**
+     * The scope in force before the change. Null when the program was created
+     * with a scope other than the default — it had none before it existed.
+     */
+    previousScope: branchProtectionScopeSchema.nullable(),
+    scope: branchProtectionScopeSchema,
+    /**
+     * Whether main now protects less than it did (or than the default would
+     * have, at creation): `design` → `released-items`. A flag, so an auditor
+     * filtering for loosened change control need not know which value is the
+     * looser one.
+     */
+    loosensProtection: z.boolean(),
+  })
+  .strict()
+
+export type ProgramBranchProtectionScopeChangedPayload = z.infer<
+  typeof programBranchProtectionScopeChangedPayloadSchema
+>
+
+/**
+ * A program's branch-protection scope changed — what a protected main refuses
+ * for every design in it (see `BranchProtectionScope` in commons).
+ *
+ * The record of who loosened or tightened change control, and when: the
+ * setting is otherwise one key in a JSONB column, and an update leaves no
+ * history. Emitted in the transaction that writes the setting, only when the
+ * value actually changes, and also when a program is *created* with a
+ * non-default scope (`previousScope: null`) — otherwise a program born with
+ * loosened protection would never appear in the log.
+ */
+export const PROGRAM_BRANCH_PROTECTION_SCOPE_CHANGED = defineDomainEvent({
+  type: 'program.branch_protection_scope_changed',
+  schemaVersion: 1,
+  description: "A program's branch-protection scope changed",
+  subjectType: 'program',
+  payloadSchema: programBranchProtectionScopeChangedPayloadSchema,
 })

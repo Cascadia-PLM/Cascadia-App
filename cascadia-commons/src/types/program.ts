@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (c) 2026 Cascadia PLM LLC
 
+import { z } from 'zod'
 import type { Serialized } from './serialized'
 
-/**
- * A JSON value, spelled so a settings blob's index signature stays compatible
- * with Drizzle's JSONB type inference.
- */
+/** A JSON value, spelled so it stays compatible with Drizzle's JSONB inference. */
 export type JsonValue =
   | string
   | number
@@ -15,21 +13,62 @@ export type JsonValue =
   | Array<JsonValue>
   | { [key: string]: JsonValue }
 
-export type BranchProtectionScope = 'design' | 'released-items'
+/**
+ * Which writes a protected main refuses, set per program.
+ *
+ * Main becomes protected once anything in a design is released; the scope
+ * decides what that protects:
+ *
+ * - `design` (the default, and the rule before the setting existed): every
+ *   Driven item in the design changes only through a change-order or
+ *   workspace branch.
+ * - `released-items`: an item on main is protected when its own state is in
+ *   its lifecycle's released family, or when it sits — at any depth — in the
+ *   BOM, on main, beneath an item that is. Everything else stays editable on
+ *   main.
+ *
+ * The verdict for one item is `canEditOnMain` in
+ * `cascadia-api/src/items/branch-protection.ts`; nothing else decides it.
+ */
+export const BRANCH_PROTECTION_SCOPES = ['design', 'released-items'] as const
 
-export interface ProgramSettings {
-  approvalWorkflow?: Array<string> // ['Engineering', 'Manufacturing', 'Quality']
-  // Renamed from `ecoNumberFormat`; migration 0004 moves the stored key
-  changeOrderNumberFormat?: string // 'ECO-{YYYY}-{NNN}'
-  /**
-   * Which writes the design baseline guards.
-   *
-   * `design` (default): once any item is released, every item in the design
-   * needs a branch. `released-items`: only released items need a branch;
-   * Draft items remain editable on main.
-   */
-  branchProtectionScope?: BranchProtectionScope
-  [key: string]: JsonValue | undefined
+export const branchProtectionScopeSchema = z.enum(BRANCH_PROTECTION_SCOPES)
+
+export type BranchProtectionScope = z.infer<typeof branchProtectionScopeSchema>
+
+/** What a program that never chose a scope gets. */
+export const DEFAULT_BRANCH_PROTECTION_SCOPE: BranchProtectionScope = 'design'
+
+/**
+ * Every key a program's `settings` may carry, and the only ones a request may
+ * write.
+ *
+ * Strict, like every other request body since unknown keys became a 400: the
+ * column is JSONB, so a misspelled key would otherwise be stored, echoed back,
+ * and change nothing. `approvalWorkflow` and `changeOrderNumberFormat` are
+ * declared because they are this column's documented keys and stored rows
+ * carry them (migration 0004 renamed the second from `ecoNumberFormat`); no
+ * code reads either today. A request writes keys, never removes them: the
+ * service merges what it is given into what is stored.
+ */
+export const programSettingsSchema = z.strictObject({
+  /** Approval stages, e.g. `['Engineering', 'Manufacturing', 'Quality']`. */
+  approvalWorkflow: z.array(z.string().min(1).max(100)).max(50).optional(),
+  /** e.g. `'ECO-{YYYY}-{NNN}'`. */
+  changeOrderNumberFormat: z.string().min(1).max(100).optional(),
+  branchProtectionScope: branchProtectionScopeSchema.optional(),
+})
+
+export type ProgramSettings = z.infer<typeof programSettingsSchema>
+
+/** The scope a stored settings blob selects; anything unrecognised is the default. */
+export function branchProtectionScopeOf(
+  settings: { branchProtectionScope?: unknown } | null | undefined,
+): BranchProtectionScope {
+  const parsed = branchProtectionScopeSchema.safeParse(
+    settings?.branchProtectionScope,
+  )
+  return parsed.success ? parsed.data : DEFAULT_BRANCH_PROTECTION_SCOPE
 }
 
 /**

@@ -94,10 +94,13 @@ export {
 } from './definitions/verification'
 export {
   DESIGN_CREATED,
+  PROGRAM_BRANCH_PROTECTION_SCOPE_CHANGED,
   PROGRAM_CREATED,
   designCreatedPayloadSchema,
+  programBranchProtectionScopeChangedPayloadSchema,
   programCreatedPayloadSchema,
   type DesignCreatedPayload,
+  type ProgramBranchProtectionScopeChangedPayload,
   type ProgramCreatedPayload,
 } from './definitions/hierarchy'
 export {

@@ -3907,7 +3907,7 @@ export interface paths {
         put?: never;
         /**
          * Create a program
-         * @description Programs are the permission boundary: the creator is not made a member, so add members with POST /api/v1/programs/:id/members. `code` is unique system-wide.
+         * @description Programs are the permission boundary: the creator is not made a member, so add members with POST /api/v1/programs/:id/members. `code` is unique system-wide. A `settings.branchProtectionScope` other than `design` also requires `system:manage`, as does changing it later through PUT.
          */
         post: operations["postApiV1Programs"];
         delete?: never;
@@ -15201,10 +15201,10 @@ export interface operations {
                     description?: string;
                     name: string;
                     settings?: {
+                        approvalWorkflow?: string[];
                         /** @enum {string} */
                         branchProtectionScope?: "design" | "released-items";
-                    } & {
-                        [key: string]: unknown;
+                        changeOrderNumberFormat?: string;
                     };
                     startDate?: string | null;
                     /** @enum {string} */
@@ -15280,10 +15280,10 @@ export interface operations {
                     description?: string;
                     name?: string;
                     settings?: {
+                        approvalWorkflow?: string[];
                         /** @enum {string} */
                         branchProtectionScope?: "design" | "released-items";
-                    } & {
-                        [key: string]: unknown;
+                        changeOrderNumberFormat?: string;
                     };
                     startDate?: string | null;
                     /** @enum {string} */

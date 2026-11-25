@@ -323,6 +323,17 @@ The full job payload is fetched from the `jobs` table in PostgreSQL, not from th
 
 Quality can be set per-job via the `meshQuality` field in the job payload. Defaults to `standard`.
 
+## Output Formats
+
+Each job's payload names the formats to store in `outputFormats` (`glb`,
+`stl`). The app fills it in from the request, or from its own
+`CAD_DEFAULT_OUTPUT_FORMATS` setting — the converter reads no such variable; see
+[CAD Conversion Output](../orchestration/configuration.md#cad-conversion-output).
+A payload queued before the field existed stores both. When none of the
+requested formats can be stored — GLB asked of an IGES file, or a STEP whose GLB
+step failed — the converter stores the STL instead, logs why, and sets
+`stlFallback: true` in the job result.
+
 ## Health Check
 
 The worker runs an HTTP health server on a configurable port (default 3003):

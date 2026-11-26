@@ -1034,6 +1034,7 @@ export function PartDetail({
             <TabsContent value="sources" className="mt-6">
               <PartAmlSection
                 partMasterId={(currentPart.masterId ?? currentPart.id)!}
+                requireSupplier={currentPart.partType === 'Purchase'}
               />
             </TabsContent>
           )}

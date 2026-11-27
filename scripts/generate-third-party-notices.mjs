@@ -129,10 +129,7 @@ function rule(char = '-', width = 78) {
  * lets a caller render notices for a subset without re-deriving the rule for
  * what counts as distributed.
  */
-export function render({
-  packages = distributedPackages(),
-  edition = null,
-} = {}) {
+export function render({ packages = distributedPackages() } = {}) {
   const seen = new Set()
   const entries = []
   const noText = []
@@ -195,7 +192,6 @@ export function render({
     'THIRD-PARTY SOFTWARE NOTICES',
     rule('='),
     '',
-    edition ? `Edition: ${edition}` : null,
     `This product includes ${entries.length} third-party software packages.`,
     '',
     'Each package below is listed with its version, its declared licence, and',

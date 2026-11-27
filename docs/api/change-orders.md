@@ -671,33 +671,6 @@ Submit an approval or rejection vote for the current state. Requires `change_ord
 
 **Status:** `201 Created`
 
-#### Digital signatures (Advanced Auditing package)
-
-On instances licensed for [Advanced Auditing](../features/advanced-auditing.md),
-every vote must be digitally signed and two additional fields apply:
-
-| Field              | Type   | Required              | Description                                                           |
-| ------------------ | ------ | --------------------- | --------------------------------------------------------------------- |
-| `password`         | string | Only on password path | Account password. Not needed when a CAC/PIV certificate is presented. |
-| `signatureMeaning` | string | No                    | Overrides the default meaning (`Approved by` / `Rejected by`)         |
-
-When the approver's smart card is presented on the connection, the certificate
-supplies the credential and no password is sent. Call
-`GET /api/v1/signatures/capability` first to learn which path applies.
-
-The response gains a `signature` object alongside `vote`, and the vote plus its
-signature are written in one transaction — a failed signature leaves no vote
-behind.
-
-| Error code                         | HTTP | Meaning                                                        |
-| ---------------------------------- | ---- | -------------------------------------------------------------- |
-| `SIGNATURE_REQUIRED`               | 422  | Signing context missing                                        |
-| `SIGNATURE_INVALID`                | 401  | Bad password, or an expired/untrusted/revoked certificate      |
-| `SIGNATURE_CREDENTIAL_UNAVAILABLE` | 422  | Policy demands a credential the request cannot offer           |
-| `SIGNATURE_IDENTITY_MISMATCH`      | 403  | Certificate belongs to a different account, or is not enrolled |
-
-Unlicensed instances ignore both fields and behave exactly as documented above.
-
 ## Impact Assessment
 
 ### Get Impact Report

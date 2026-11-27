@@ -58,7 +58,7 @@ import { config as loadEnv } from 'dotenv'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import postgres from 'postgres'
 
-import { appDir, resolveApp } from './edition.mjs'
+import { APP_DIR } from './app.mjs'
 
 /* ------------------------------------------------------------------ *
  * Scratch database
@@ -99,8 +99,7 @@ for (const guard of ['DATABASE_URL', 'TEST_DATABASE_URL']) {
  * ------------------------------------------------------------------ */
 
 const repoRoot = process.cwd()
-const app = resolveApp(repoRoot)
-const migrationsFolder = resolve(repoRoot, appDir(app), 'drizzle')
+const migrationsFolder = resolve(repoRoot, APP_DIR, 'drizzle')
 
 const journal = JSON.parse(
   readFileSync(resolve(migrationsFolder, 'meta', '_journal.json'), 'utf8'),
@@ -239,7 +238,7 @@ async function scenario(name, body) {
 }
 
 try {
-  console.log(`Edition: ${app} — ${migrations.length} committed migration(s)\n`)
+  console.log(`${migrations.length} committed migration(s)\n`)
 
   // The reference: what `db:migrate` builds from empty. Every scenario below
   // has to land here.

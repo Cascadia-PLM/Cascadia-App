@@ -745,8 +745,8 @@ rest of its metadata intact. Extraction is not retroactive — files uploaded
 before this existed keep the keys they were given.
 
 Image EXIF and native CAD property parsing are deliberately out of scope. EXIF
-would mean a native binary dependency (`sharp`, `exif-parser`) in the published
-AGPL core package for fields nothing reads; CAD properties for converted models
+would mean a native binary dependency (`sharp`, `exif-parser`) in the core
+package for fields nothing reads; CAD properties for converted models
 already arrive in the typed `cadMetadata` column from the converter worker (see
 [CAD Metadata](#cad-metadata)), and the vendor formats that are never converted
 would need a vendor SDK.
@@ -879,18 +879,17 @@ CAD model files carry additional structured metadata in the `cadMetadata` JSONB 
 
 Every significant file action is logged to the `vault_file_history` table:
 
-| Action        | When Logged                                    |
-| ------------- | ---------------------------------------------- |
-| `upload`      | File first uploaded                            |
-| `download`    | File downloaded (including version downloads)  |
-| `view`        | File rendered in the in-app viewer             |
-| `watermark`   | A mark was stamped onto a PDF (new version)    |
-| `sign`        | A digital signature was embedded (new version) |
-| `checkout`    | File checked out                               |
-| `checkin`     | File checked in (with or without new version)  |
-| `delete`      | File soft-deleted                              |
-| `restore`     | Soft-deleted file restored                     |
-| `set_primary` | File designated as primary model               |
+| Action        | When Logged                                   |
+| ------------- | --------------------------------------------- |
+| `upload`      | File first uploaded                           |
+| `download`    | File downloaded (including version downloads) |
+| `view`        | File rendered in the in-app viewer            |
+| `watermark`   | A mark was stamped onto a PDF (new version)   |
+| `checkout`    | File checked out                              |
+| `checkin`     | File checked in (with or without new version) |
+| `delete`      | File soft-deleted                             |
+| `restore`     | Soft-deleted file restored                    |
+| `set_primary` | File designated as primary model              |
 
 Each history record includes the performing user, timestamp, and a JSONB `details` field with action-specific data (file size, version number, original filename, etc.).
 
@@ -1100,7 +1099,6 @@ The factory caches the storage instance and reuses it across requests. Call `Sto
 | PATCH  | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Revise markup (author only)                            |
 | DELETE | `/api/v1/files/{fileId}/annotations/{id}`            | `documents:update` | Remove markup                                          |
 | POST   | `/api/v1/files/{fileId}/watermark`                   | `documents:update` | Queue a watermark stamp (202, returns a job id)        |
-| POST   | `/api/v1/files/{fileId}/sign`                        | `documents:update` | Embed a signature (Advanced Auditing)                  |
 | GET    | `/api/v1/files/{fileId}/metadata`                    | `documents:read`   | Get file metadata                                      |
 | GET    | `/api/v1/files/{fileId}/versions`                    | `documents:read`   | List all versions                                      |
 | GET    | `/api/v1/files/{fileId}/versions/{version}/download` | `documents:read`   | Download specific version                              |

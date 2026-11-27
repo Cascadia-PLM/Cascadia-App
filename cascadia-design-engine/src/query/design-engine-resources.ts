@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Query resources belonging to this package. See the sibling file in
- * advanced-auditing for why these are per-package and why the filename is not
- * `module-resources`.
+ * Query resources belonging to this package, registered into core's
+ * invalidation graph with `registerResourceDependents()` — core cannot name a
+ * module's resources, so the module adds its own edges.
  */
 
 import { registerResourceDependents } from '@/query/invalidation'

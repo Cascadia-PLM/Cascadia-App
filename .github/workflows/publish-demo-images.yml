@@ -61,10 +61,9 @@ jobs:
   # Decide which images need building. Emits a JSON matrix consumed by `publish`.
   # ---------------------------------------------------------------------------
   plan:
-    # Only this repository publishes images. A fork that carries this file —
-    # an edition that merges from here — must not push to the org packages
-    # backing the public demo; every other job needs this one, so skipping it
-    # skips the workflow.
+    # Only this repository publishes images. A fork that carries this file must
+    # not push to the org packages backing the public demo; every other job
+    # needs this one, so skipping it skips the workflow.
     if: github.repository == 'Cascadia-PLM/Cascadia-App'
     runs-on: ubuntu-latest
     outputs:
@@ -118,7 +117,7 @@ jobs:
         with:
           filters: |
             # Anchor for the sources shared by cascadia-app and cascadia-jobs-worker.
-            # Both Dockerfiles `COPY . .` and run the identical `npm run build:app`,
+            # Both Dockerfiles `COPY . .` and run the identical `npm run build`,
             # so a change to any of these genuinely invalidates both images. It
             # surfaces as its own filter key, which the catalog below has no entry
             # for and drops.

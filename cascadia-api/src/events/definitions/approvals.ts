@@ -20,9 +20,9 @@ export type ApprovalVotedPayload = z.infer<typeof approvalVotedPayloadSchema>
 
 /**
  * An approver voted on a lifecycle state. Emitted in the vote's own
- * transaction — the same one advanced-auditing writes its signature in — so
- * the vote, its signature and this fact commit together. `actorId` is the
- * voter.
+ * transaction — the same one an `ApprovalRegistry` interceptor writes in — so
+ * the vote, anything an interceptor records with it and this fact commit
+ * together. `actorId` is the voter.
  */
 export const APPROVAL_VOTED = defineDomainEvent({
   type: 'approval.voted',

@@ -1,7 +1,7 @@
 # Cascadia PLM Feature List
 
 > **Last Updated:** August 2026
-> **Version:** 0.5.0 (Open-Source Edition)
+> **Version:** 0.5.0
 
 This document tracks all implemented features in Cascadia PLM, organized by category. Use ✅ for complete, 🟡 for partial/in-progress, and ⬜ for planned.
 
@@ -461,14 +461,13 @@ RESTful API for external system integration.
 
 ### CAD Integration
 
-Native CAD connectors are planned commercial-edition features (see
-[LICENSING.md](./LICENSING.md)). No connector code lives in this repository —
-CAD files reach Cascadia through the file vault today.
+Native CAD connectors are planned. No connector code exists yet — CAD files
+reach Cascadia through the file vault today.
 
-| Integration          | Status | Notes                                                                              |
-| -------------------- | ------ | ---------------------------------------------------------------------------------- |
-| Solid Edge connector | ⬜     | Planned, commercial edition. Phase 1 scope: Part/BOM push, no file transfer or PDM |
-| SolidWorks connector | ⬜     | Planned, commercial edition                                                        |
+| Integration          | Status | Notes                                                          |
+| -------------------- | ------ | -------------------------------------------------------------- |
+| Solid Edge connector | ⬜     | Planned. Phase 1 scope: Part/BOM push, no file transfer or PDM |
+| SolidWorks connector | ⬜     | Planned                                                        |
 
 ---
 
@@ -940,11 +939,11 @@ subscriptions are rows. See
 
 ### Near-Term
 
-| Feature              | Priority | Notes                                     |
-| -------------------- | -------- | ----------------------------------------- |
-| Flexible lifecycles  | High     | Ad-hoc routing per instance               |
-| Solid Edge connector | Medium   | Easy early CAD target; commercial edition |
-| SolidWorks connector | Medium   | Follows Solid Edge; commercial edition    |
+| Feature              | Priority | Notes                       |
+| -------------------- | -------- | --------------------------- |
+| Flexible lifecycles  | High     | Ad-hoc routing per instance |
+| Solid Edge connector | Medium   | Easy early CAD target       |
+| SolidWorks connector | Medium   | Follows Solid Edge          |
 
 ### Medium-Term
 

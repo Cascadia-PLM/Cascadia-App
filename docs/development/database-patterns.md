@@ -387,11 +387,10 @@ npm run db:push       # Applies to dev database
 
 A backfill, a dedup, a rename of seeded rows — anything that changes rows
 and not the schema — is a committed migration like any other, minted empty
-and written by hand, in both editions:
+and written by hand:
 
 ```bash
 node scripts/drizzle.mjs generate --custom --name=<what_it_changes>
-CASCADIA_APP=cascadia node scripts/drizzle.mjs generate --custom --name=<what_it_changes>
 ```
 
 Two rules follow from how such a migration reaches an install:
@@ -408,7 +407,7 @@ Two rules follow from how such a migration reaches an install:
   ratchet there refuses a row-dependent migration that has none.
 
 The row statements at the top of
-`0004_change_management_and_design_structure` in either edition's `drizzle/`
+`0004_change_management_and_design_structure` in `cascadia-app/drizzle/`
 are the shape to copy — each one guarded so the second run matches nothing.
 That file itself is no longer data-only: it is five migrations folded into one
 before publication, and two of them tightened a column. See "Consolidating unpublished migrations" in

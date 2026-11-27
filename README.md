@@ -88,7 +88,7 @@ The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local 
 
 ## What's included
 
-| Area                  | In the open core                                                                                                                                           |
+| Area                  | Included                                                                                                                                                   |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Change management     | ECO, ECN, MCO and deviation change orders on their own branches, impact analysis, conflict detection, approval voting, configurable lifecycles             |
 | Parts and BOMs        | Multi-level BOMs, where-used, product variants, approved manufacturer lists, spreadsheet import with BOM auto-detection                                    |
@@ -102,7 +102,7 @@ The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local 
 | AI                    | A chat assistant that can query and edit PLM data with confirmation (bring your own Anthropic or OpenAI key), and an MCP server exposing the same tools    |
 | AI design engine      | Collaborative, staged sessions that take a design brief to requirements, a BOM, real PLM items on a change order, generated CAD and a composed assembly    |
 
-The [feature list](./cascadia-feature-list.md) tracks the status of every capability, including what is partial or planned. Two gaps worth knowing up front: manufacturing BOM management is at an early stage, and native CAD connectors (Solid Edge, SolidWorks) are planned for the commercial edition. Today CAD files reach Cascadia through the vault.
+The [feature list](./cascadia-feature-list.md) tracks the status of every capability, including what is partial or planned. Two gaps worth knowing up front: manufacturing BOM management is at an early stage, and native CAD connectors (Solid Edge, SolidWorks) are planned but not yet built. Today CAD files reach Cascadia through the vault.
 
 ## How ECO-as-Branch works
 
@@ -186,11 +186,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines. Security issues should 
 
 ## License
 
-Cascadia is an **open-core, dual-licensed** project.
+Cascadia is **open source and dual-licensed**.
 
-The core PLM — parts, BOMs, ECO-as-Branch change management, documents, workflows, vault, search, and APIs — is licensed under the [GNU Affero General Public License v3.0 or later](./LICENSE), forever, with unlimited users. The AGPL's network-use clause means that if you run a modified version of Cascadia as a service, you must make the source available to users of that service.
+Everything in this repository — parts, BOMs, ECO-as-Branch change management, documents, workflows, vault, search, APIs and the AI design engine — is licensed under the [GNU Affero General Public License v3.0 or later](./LICENSE), with unlimited users. There is no separate paid edition. The AGPL's network-use clause means that if you run a modified version of Cascadia as a service, you must make the source available to users of that service.
 
-If the AGPL doesn't work for your organization, or you need enterprise capabilities (CAD connectors, SSO/AD, compliance pack, support SLAs), a commercial license is available — see [LICENSING.md](./LICENSING.md) or contact [kai@cascadiaplm.com](mailto:kai@cascadiaplm.com).
+If the AGPL doesn't work for your organization, a commercial license to the same code is available, as are support agreements — see [LICENSING.md](./LICENSING.md) or contact [kai@cascadiaplm.com](mailto:kai@cascadiaplm.com).
 
 Contributions require signing the [CLA](./CLA.md); see [CONTRIBUTING.md](./CONTRIBUTING.md).
 

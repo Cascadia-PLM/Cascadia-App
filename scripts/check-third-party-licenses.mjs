@@ -7,20 +7,20 @@
  *
  *   npm run license:thirdparty
  *
- * Cascadia is dual licensed: the same dependency closure ships under AGPL-3.0
- * and under a commercial licence. Those two editions pull in opposite
- * directions, and a single dependency can break either one:
+ * Cascadia is dual licensed: the same code, with the same dependency closure,
+ * is offered under AGPL-3.0 and under a commercial licence. Those two grants
+ * pull in opposite directions, and a single dependency can break either one:
  *
  *   - A **strong-copyleft** dependency (GPL, AGPL, SSPL) is fatal to the
- *     commercial edition. Linking it into the product would oblige us to offer
- *     the proprietary modules' source to every customer, which is precisely the
- *     thing being sold. It also breaks the *dual* grant: we can relicense our
- *     own copyright at will, never a third party's.
- *   - A **GPL-2.0-only** dependency is fatal to the AGPL edition too, in the
+ *     commercial licence. Linking it into the product would oblige a
+ *     commercial licensee to publish source the licence exists to let them
+ *     keep, and it breaks the *dual* grant: we can relicense our own
+ *     copyright at will, never a third party's.
+ *   - A **GPL-2.0-only** dependency is fatal to the AGPL grant too, in the
  *     other direction — GPLv2-only and AGPLv3 cannot be combined at all.
  *
- * So the gate is deliberately edition-blind: anything that fails for either
- * edition fails here. That is not over-caution, it is the shape of the check —
+ * So the gate checks both: anything that fails under either licence fails
+ * here. That is not over-caution, it is the shape of the check —
  * `third-party-closure.mjs` derives the closure from the lockfile, which spans
  * every workspace at once, so which manifest declares a package never changes
  * the verdict.
@@ -46,15 +46,15 @@ import { devOnlyCount, distributedPackages } from './third-party-closure.mjs'
 /**
  * Licence policy.
  *
- * `agpl` — may we ship it inside the AGPL-3.0 edition (inbound compatibility)?
- * `prop` — may we ship it inside the commercial edition without any obligation
+ * `agpl` — may we ship it under AGPL-3.0 (inbound compatibility)?
+ * `prop` — may we ship it under the commercial licence without any obligation
  *          to disclose *our* source?
  *
  * A licence absent from this table is unknown, and unknown fails. Adding a row
- * is the deliberate act of deciding what a licence means for both editions.
+ * is the deliberate act of deciding what a licence means for both grants.
  */
 const POLICY = {
-  // ── permissive: attribution only, safe in both editions ──────────────────
+  // ── permissive: attribution only, safe under both licences ──────────────
   '0BSD': { tier: 'permissive', agpl: true, prop: true },
   'Apache-2.0': { tier: 'permissive', agpl: true, prop: true },
   'BSD-2-Clause': { tier: 'permissive', agpl: true, prop: true },
@@ -79,19 +79,19 @@ const POLICY = {
   // ── weak copyleft: shippable in both, but with live obligations ──────────
   // File-level. Distributing it unmodified inside an image obliges us to say
   // where the source is; it never reaches our own files. §3.3 explicitly
-  // permits combination into a (A)GPL work, so the AGPL edition is fine too.
+  // permits combination into a (A)GPL work, so the AGPL grant is fine too.
   'MPL-2.0': { tier: 'weak-copyleft', agpl: true, prop: true },
-  // Library-level. Safe for the commercial edition only while the library stays
+  // Library-level. Safe for the commercial licence only while the library stays
   // replaceable by the user (unmodified, dynamically loaded) and we convey its
   // licence and source offer. LGPL-3.0 is GPL-3.0 plus permissions, so it flows
-  // into the AGPL edition without friction.
+  // into the AGPL grant without friction.
   'LGPL-2.1-only': { tier: 'weak-copyleft', agpl: true, prop: true },
   'LGPL-2.1-or-later': { tier: 'weak-copyleft', agpl: true, prop: true },
   'LGPL-3.0-only': { tier: 'weak-copyleft', agpl: true, prop: true },
   'LGPL-3.0-or-later': { tier: 'weak-copyleft', agpl: true, prop: true },
 
   // ── strong copyleft: named so the failure message can explain itself ─────
-  // GPL-2.0-only is the one that fails *both* editions: it is incompatible with
+  // GPL-2.0-only is the one that fails *both* licences: it is incompatible with
   // AGPL-3.0 in either direction, so it cannot even be taken as the copyleft
   // half of a dual-licensed dependency.
   'GPL-2.0-only': { tier: 'strong-copyleft', agpl: false, prop: false },
@@ -141,13 +141,13 @@ const ELECTIONS = {
     take: 'BSD-3-Clause',
     over: 'GPL-2.0',
     why:
-      'The GPL-2.0 half would fail both editions at once — it is ' +
+      'The GPL-2.0 half would fail both licences at once — it is ' +
       'incompatible with AGPL-3.0 as well as with commercial distribution.',
   },
   jszip: {
     take: 'MIT',
     over: 'GPL-3.0-or-later',
-    why: 'The GPL-3.0 half would oblige us to disclose the commercial modules.',
+    why: 'The GPL-3.0 half would oblige commercial licensees to disclose source.',
   },
 }
 
@@ -174,7 +174,7 @@ function baseId(id) {
 /**
  * Resolve a licence expression to a verdict.
  *
- * OR elects the first operand that clears both editions, which is what makes a
+ * OR elects the first operand that clears both licences, which is what makes a
  * dual-licensed dependency safe. AND must clear every operand, since the work
  * is only conveyable if all of its terms are satisfied at once.
  */
@@ -244,14 +244,12 @@ for (const { name, version, license } of distributed) {
     } else if (verdict.kind === 'no-safe-disjunct') {
       failures.push({
         id,
-        why: `every option in "${raw}" fails at least one edition`,
+        why: `every option in "${raw}" fails at least one licence`,
       })
     } else {
       const names = verdict.blocked.map((b) => b.id).join(', ')
       const which = verdict.blocked
-        .map((b) =>
-          b.rule.prop ? 'the AGPL edition' : 'the commercial edition',
-        )
+        .map((b) => (b.rule.prop ? 'the AGPL release' : 'a commercial licence'))
         .join(' and ')
       failures.push({ id, why: `${names} cannot ship in ${which}` })
     }
@@ -293,7 +291,7 @@ if (elections.length > 0) {
 
 if (weak.length > 0) {
   console.log(
-    '\nWeak copyleft — shippable in both editions, but each carries a notice',
+    '\nWeak copyleft — shippable under both licences, but each carries a notice',
   )
   console.log('and source-availability obligation on redistribution:')
   for (const w of weak) console.log(`   ${w.id}  (${w.licence})`)
@@ -330,6 +328,6 @@ if (failures.length > 0) {
 }
 
 console.log(
-  '\n✅ Every distributed dependency is compatible with both the AGPL and the commercial edition.\n',
+  '\n✅ Every distributed dependency is compatible with both the AGPL and the commercial licence.\n',
 )
 process.exit(0)

@@ -837,8 +837,8 @@ export class ApprovalService {
 
       const contributed = await ApprovalRegistry.afterVote(inserted.id, ctx, tx)
 
-      // The fact of the vote, in the vote's own transaction — beside the
-      // signature advanced-auditing writes there, when it is licensed.
+      // The fact of the vote, in the vote's own transaction — beside whatever
+      // an `afterVote` interceptor wrote there.
       // With the item's master and design: the master so a consumer can follow
       // the item across revisions as every other item fact allows, the design
       // so a program-scoped webhook subscription can match the vote at all. A

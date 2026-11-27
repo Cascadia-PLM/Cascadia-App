@@ -179,7 +179,7 @@ const TEST_FILE = /\.(?:test|spec)\.tsx?$/
 const MENTIONS_PERMISSION = /permission|resource\s*:/i
 
 /**
- * Every non-test source file in the workspace, both editions.
+ * Every non-test source file in the workspace, module packages included.
  *
  * Matched by regex over the whole file list rather than by a pathspec glob.
  * The glob the sibling body check uses — routes directly under a package's

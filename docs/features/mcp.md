@@ -137,9 +137,8 @@ Claude Code registration (`.mcp.json` in the checkout):
 
 | Tool              | Purpose                                                                                                                      |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `instance_status` | Env flag presence (never secret values), licensed packages, DB connectivity, row counts                                      |
+| `instance_status` | Env flag presence (never secret values), DB connectivity, row counts                                                         |
 | `list_item_types` | Registered item types with labels, tables, lifecycle state, runtime overrides                                                |
-| `list_packages`   | Optional licensed packages and enabled state (`CASCADIA_PACKAGES`)                                                           |
 | `list_roles`      | Built-in role definitions plus the roles present in the database                                                             |
 | `search_docs`     | Full-text search across `docs/**/*.md`, `CLAUDE.md`, `cascadia-feature-list.md`                                              |
 | `read_doc`        | Read one doc by repo-relative path (restricted to the doc tree)                                                              |

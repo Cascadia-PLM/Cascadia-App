@@ -27,6 +27,6 @@ export * from './crossReferences'
 export * from './componentCatalog'
 export * from './api-keys'
 
-// Module-owned schema files are deliberately absent. They are composed into an
-// edition by `src/modules.schema.ts`, which is what drizzle-kit reads; code
+// Module-owned schema files are deliberately absent. They are composed into the
+// app by `cascadia-app/src/modules.schema.ts`, which is what drizzle-kit reads; code
 // that needs a module's tables imports them from the module's own schema file.

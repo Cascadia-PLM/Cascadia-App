@@ -201,7 +201,7 @@ app.post(
 // POST /api/v1/parts/:id/generate-cad/convert
 //
 // Submits `conversion.cad.step-to-stl`, which is a *core* job type — STEP/IGES
-// conversion is core, only generation is licensed. The endpoint still belongs
+// conversion is core, only generation is this module's. The endpoint still belongs
 // here: it exists to finish the generation flow and nothing else reaches it. A
 // module using a core service is the expected direction; the reverse is not.
 app.post(

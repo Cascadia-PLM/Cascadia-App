@@ -14,12 +14,11 @@ The signature feature is "ECO-as-Branch" - each change order gets its own isolat
 
 ## Repository Context
 
-This is `Cascadia-PLM/Cascadia-App`, **the** Cascadia PLM repository. Everything
-in it is AGPL v3 — core, the design engine module and every worker. There is no
-separate proprietary codebase: the private `Cascadia-PLM/Cascadia-Proprietary`
-fork was retired in November 2026, when the design engine moved back here.
-Cascadia PLM LLC still offers the same code under a commercial license for
-organizations that cannot use the AGPL — see [LICENSING.md](./LICENSING.md).
+This is `Cascadia-PLM/Cascadia-App`, the Cascadia PLM repository. Everything in
+it is AGPL v3 — core, the design engine module and every worker — and there is
+one app, built from `cascadia-app/`. Cascadia PLM LLC also offers the same code
+under a commercial license for organizations that cannot use the AGPL — see
+[LICENSING.md](./LICENSING.md).
 
 Every change lands here by pull request. See
 [CONTRIBUTING.md](./CONTRIBUTING.md) for how to contribute.
@@ -54,7 +53,7 @@ Related repositories:
 ## Project Structure
 
 An npm workspace. Every workspace is a top-level `cascadia-<id>/` directory
-whose npm name is `@cascadia/<id>` — `scripts/edition-manifest.mjs` spells
+whose npm name is `@cascadia/<id>` — `scripts/workspaces.mjs` spells
 that convention out once. The application is four Node packages with a
 one-way dependency graph, one module package (`cascadia-design-engine`) that
 plugs into them, four Python packages that are not npm workspaces, and an app
@@ -147,7 +146,7 @@ cascadia-web/          The client
 │   ├── ui/            Slot registry — named UI extension points
 │   ├── routes/        TanStack Router file-based routes
 │   └── styles.css     Tailwind entry
-└── vite.config.base.ts  Shared Vite config, parameterized by edition
+└── vite.config.base.ts  Shared Vite config, parameterized by app
 cascadia-workers-job/  The Node.js jobs worker
 ├── src/
 │   ├── main.ts        runJobsWorker(): queue naming, health server, shutdown
@@ -170,8 +169,8 @@ cascadia-workers-freecad-runner/  Python worker: headless FreeCAD running AI-wri
 cascadia-workers-commons/  Python: jobs/vault DB layer shared by the Python workers
 cascadia-app/          Composition root
 ├── src/modules.{server,client,schema}.ts   Where modules register
-├── vite.config.ts     Route composition for this edition
-├── drizzle/           This edition's committed migrations
+├── vite.config.ts     Route composition: web routes + module routes
+├── drizzle/           The committed migrations
 ├── src/{main.tsx,router.tsx,server/,jobs-worker.ts}   Thin entry points
 ├── public/            Static assets (favicon, logo) — copied into the build
 └── Dockerfile         → ghcr.io/cascadia-plm/cascadia-app
@@ -185,10 +184,9 @@ docs/                 # Architecture & feature documentation
 scripts/              # Database seeding, deployment scripts
 ```
 
-An app's _name_ and its directory differ: `cascadia` lives in `cascadia-app/`,
-and a second app would be named the same way. `CASCADIA_APP`, the
-Dockerfiles' `APP` argument and `npm run build:app -- <name>` take the name;
-`scripts/edition.mjs` maps it to the directory.
+The app's _name_ and its directory differ: `cascadia` lives in `cascadia-app/`.
+The name namespaces the build output (`dist/cascadia/`, `.output/cascadia/`);
+`scripts/app.mjs` holds both, and every root script reads them from there.
 
 Paths were preserved across the splits, then flattened: a file that was
 `packages/core/src/lib/x.ts` became `packages/cascadia-<pkg>/src/lib/x.ts`,
@@ -203,9 +201,8 @@ job worker, which public's flatten cut out of the api:
 `src/`, and `jobs-worker-main.ts` is its `main.ts`. The module packages keep
 their own handlers under `src/jobs/node-handlers/`.
 
-The design engine's own history before it returned to this repository lives
-in the retired `Cascadia-PLM/Cascadia-Proprietary` repository; `git log` here
-starts at the commit that brought it back.
+The design engine's history before November 2026 is not in this repository:
+`git log` for its files starts at the commit that added them.
 
 ## Development Commands
 
@@ -286,7 +283,7 @@ Keep it at zero. **Do not raise `--max-warnings` in `package.json` to accommodat
 
 `npm run typecheck` is a **plain zero gate** against `tsconfig.json` — the same config your editor and ESLint see, with `noUncheckedIndexedAccess` on. Any error fails CI, exactly like `eslint --max-warnings 0`. Fix the error; there is no ceiling to raise.
 
-CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `cascadia-app*/src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
+CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `cascadia-app/src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
 
 **The Build job declares no `needs:`, and must not acquire one.** Gating this
 gate behind a cheaper one makes it hostage to the weakest check in the workflow:
@@ -329,11 +326,10 @@ registries core provides:
 | Jobs                          | `JobTypeRegistry.register()` / `.registerHandler()`                                                 |
 | Recurring maintenance         | `registerMaintenanceJobType()` — the jobs worker's sweep submits it on the module's own period      |
 | Cache resources               | `registerResourceDependents()` + declaration merging on `ModuleResources`                           |
-| Package catalog               | `registerPackage()`                                                                                 |
-| Schema                        | `cascadia-app*/src/modules.schema.ts` — a re-export, because drizzle-kit reads it statically        |
+| Schema                        | `cascadia-app/src/modules.schema.ts` — a re-export, because drizzle-kit reads it statically         |
 
 **Registration happens in a composition root**, never in core:
-`cascadia-app*/src/modules.{server,client,schema}.ts`. Order is load-bearing — route
+`cascadia-app/src/modules.{server,client,schema}.ts`. Order is load-bearing — route
 contributions mount while routers are being built, so `registerModules()` must
 run _before_ the app is imported. Every server entry uses a dynamic import for
 exactly that reason; a static `import app from …` is evaluated first and would
@@ -350,26 +346,6 @@ distinction is not academic: two grep-based checks once reported a package fully
 seamed while a dynamic `import()` and a bare package-id string were still live.
 Since the module ships in the same tree and is built with core, a core file that
 imported it would compile and run — this check is the only thing that says no.
-
-## Optional Packages
-
-Some functionality is **separately licensed** — an instance only has it when the
-package id appears in the `CASCADIA_PACKAGES` environment variable
-(comma-separated, or `*`). Read once at process start; there is deliberately no
-in-app toggle.
-
-- Registry: `cascadia-api/src/packages/` — `PackageRegistry.isEnabled(id)`,
-  `PackageRegistry.list()`, and `requirePackage(id)` which throws
-  `PackageNotLicensedError` (403).
-- Client: `usePackageEnabled(id)` from `@/hooks/usePackages` drives
-  presentation only. **Always re-check server-side** with `requirePackage()` in
-  the route or service — the client answer is a hint, not a gate.
-- Admin: `/admin` lists packages read-only via `GET /api/v1/packages`.
-
-**Current packages: none.** The registry is core — a build that composes a
-separately licensed module needs it — but no such module exists today. (The
-design engine is not one: it is AGPL and always registered.)
-Full guide: [`docs/development/adding-packages.md`](./docs/development/adding-packages.md).
 
 ## Documentation Reference
 
@@ -417,7 +393,6 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 | Domain events, the event log          | `./docs/development/adding-domain-events.md`   |
 | Extensions, the three phases          | `./docs/development/writing-extensions.md`     |
 | Webhooks, building a receiver         | `./docs/features/webhooks.md`                  |
-| Optional/licensed packages            | `./docs/development/adding-packages.md`        |
 | Demo data and seeding                 | `./docs/development/demo-datasets.md`          |
 | MCP servers, AI tool registry         | `./docs/features/mcp.md`                       |
 | `cascadia-design-engine/`, its stages | `./docs/features/design-engine.md`             |
@@ -581,7 +556,7 @@ Mount new route modules in `cascadia-api/src/server/index.ts` via `app.route('/a
 
 For responses needing custom status codes or headers (201 Created, Set-Cookie), return a raw `Response` from within the handler. Use `parseQuery(request, zodSchema)` for validated query parameters. Use `requireDesignAccess`/`requireBranchAccess` from `@/auth/access` for design/branch access checks.
 
-The OpenAPI document is regenerated from these annotations at request time (`/openapi.json`) and served as Scalar UI at `/api/docs`. The committed snapshot at `docs/api/openapi.v1.json` is the frozen v1 contract — `npm run openapi:check` enforces it on every pull request. Run `npm run openapi:snapshot` whenever you change a route signature, then commit the regenerated JSON; an edition that composes modules commits its own contract beside its app the same way. See [`docs/api/README.md`](./docs/api/README.md) for the versioning policy.
+The OpenAPI document is regenerated from these annotations at request time (`/openapi.json`) and served as Scalar UI at `/api/docs`. The committed snapshot at `docs/api/openapi.v1.json` is the frozen v1 contract — `npm run openapi:check` enforces it on every pull request. Run `npm run openapi:snapshot` whenever you change a route signature — a module's included, since the snapshot is taken with the modules registered — then commit the regenerated JSON. See [`docs/api/README.md`](./docs/api/README.md) for the versioning policy.
 
 ## Common Tasks
 

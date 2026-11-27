@@ -68,7 +68,7 @@ import { config as loadEnv } from 'dotenv'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import postgres from 'postgres'
 
-import { appDir, resolveApp } from './edition.mjs'
+import { APP_DIR } from './app.mjs'
 import {
   isDataOnly,
   rowDependentStatements,
@@ -119,8 +119,7 @@ for (const guard of ['DATABASE_URL', 'TEST_DATABASE_URL']) {
  * ------------------------------------------------------------------ */
 
 const repoRoot = process.cwd()
-const app = resolveApp(repoRoot)
-const dir = appDir(app)
+const dir = APP_DIR
 const migrationsFolder = resolve(repoRoot, dir, 'drizzle')
 
 const journal = JSON.parse(
@@ -792,8 +791,8 @@ const SCENARIOS = [
 
   {
     // Named outright rather than sniffed for like TRAVELER_TAG: this file was
-    // minted with an explicit `generate --custom --name=…`, so both editions
-    // carry the same tag.
+    // minted with an explicit `generate --custom --name=…`, so its tag is
+    // stable.
     tag: WORK_ORDER_PROGRAM_TAG(),
     name: 'work order programs are derived where the chain resolves, and only there',
     async seed(sql) {
@@ -862,7 +861,7 @@ const SCENARIOS = [
 
   {
     // Same reasoning as the tag above: minted with `generate --custom
-    // --name=…`, so both editions carry it verbatim.
+    // --name=…`, so its tag is stable.
     tag: ISSUE_PROGRAM_TAG(),
     name: 'issue programs are derived only where the hand-picked designs agree on one',
     async seed(sql) {
@@ -2509,8 +2508,8 @@ function refdesEdgesSeed() {
 }
 
 /**
- * The product-variants migration, named by the index it builds: the tag
- * differs per edition. It replaces the (source, target, type) constraint on
+ * The product-variants migration, named by the index it builds rather than by
+ * its generated tag, which a consolidation can rename. It replaces the (source, target, type) constraint on
  * item_relationships with two partial unique indexes, one for fixed lines and
  * one for lines carrying an option condition.
  */
@@ -2528,7 +2527,7 @@ function VARIANT_EDGES_TAG() {
 
 /**
  * The approver-uniqueness migration, named by what it builds for the same
- * reason as the three below: the tag differs per edition.
+ * reason as the three below: a generated tag can be renamed by a consolidation.
  */
 function APPROVERS_TAG() {
   const found = migrations.find((m) =>
@@ -2544,7 +2543,7 @@ function APPROVERS_TAG() {
 
 /**
  * The commits→ECO migration, named by what it builds for the same reason as
- * the two below: the tag differs per edition.
+ * the two below: a generated tag can be renamed by a consolidation.
  */
 function COMMIT_ECO_TAG() {
   const found = migrations.find((m) =>
@@ -2616,7 +2615,7 @@ function ISSUE_PROGRAM_TAG() {
 
 /**
  * The vault-thumbnail migration, named by what it builds for the same reason
- * as the others: the tag differs per edition. Both of its pre-cleanups — the
+ * as the others: a generated tag can be renamed by a consolidation. Both of its pre-cleanups — the
  * dangling self-FK pointers and the duplicate per-item designations — ship in
  * this one file, so both scenarios name it.
  */
@@ -2853,8 +2852,7 @@ function PERMISSION_RESOURCE_TAG() {
 }
 
 /**
- * The traveler migration carries a different tag in each edition (the two files
- * are byte-identical; only the generated name differs), so name it by position:
+ * The traveler migration has a generated tag, so name it by what it builds:
  * it is the one that creates `uq_instr_exec_open_run`.
  */
 function TRAVELER_TAG() {
@@ -3287,7 +3285,7 @@ function INTERFACES_TAG() {
 
 /**
  * The domain-event sequencing migration, named by what it builds for the same
- * reason as the helpers above: the tag differs per edition.
+ * reason as the helpers above: a generated tag can be renamed by a consolidation.
  */
 function DOMAIN_EVENTS_TAG() {
   const found = migrations.find((m) =>

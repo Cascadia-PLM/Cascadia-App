@@ -344,55 +344,6 @@ All S3 settings are configured via environment variables:
 | `S3_ENDPOINT`          | No       | Custom endpoint (for MinIO, etc.) |
 | `S3_FORCE_PATH_STYLE`  | No       | Use path-style URLs (for MinIO)   |
 
-## Licensed Packages
-
-Some Cascadia functionality is **separately licensed**. The `/admin` page lists
-every optional package the build knows about and whether this instance holds it.
-
-The listing is **read-only, by design**. Entitlement comes from the
-`CASCADIA_PACKAGES` environment variable, read once at process start — there is
-no in-app toggle, so an administrator cannot enable a package the organization
-has not purchased. Enabling one is a deployment change, not a settings change.
-
-```bash
-# Deployment manifest / .env
-CASCADIA_PACKAGES=advanced-auditing
-```
-
-### API Endpoint
-
-```
-GET /api/v1/packages
-```
-
-Returns every catalog package with its `enabled` state, name, description, and
-feature list. Requires authentication; no special role.
-
-```json
-{
-  "data": {
-    "packages": [
-      {
-        "id": "advanced-auditing",
-        "name": "Advanced Auditing",
-        "description": "Regulated-industry audit controls: signed approvals with a tamper-evident audit trail.",
-        "features": ["Digital signature collection on every workflow approval"],
-        "enabled": true
-      }
-    ]
-  }
-}
-```
-
-### Available Packages
-
-| Package             | Adds                                                                                                           |
-| ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `advanced-auditing` | CAC/PIV digital signatures on workflow approvals, certificate enrollment, hash-chained append-only audit trail |
-
-Each package has its own configuration and administration guidance — see
-[Advanced Auditing](../features/advanced-auditing.md).
-
 ---
 
 ## General Settings

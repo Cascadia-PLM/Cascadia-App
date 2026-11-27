@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": [
-    "Dependency updates for Cascadia. Nothing here automerges, deliberately: a green build is not the same as a decision, and with two editions rebuilt on every bump the judgement of whether to take one belongs to a person. Every Renovate PR is read by a human.",
+    "Dependency updates for Cascadia. Nothing here automerges, deliberately: a green build is not the same as a decision, and the judgement of whether to take one belongs to a person. Every Renovate PR is read by a human.",
     "Renovate autodetects the npm workspaces from package.json, so the top-level cascadia-* workspaces need no separate configuration.",
     "Security fixes do not wait for Monday. vulnerabilityAlerts PRs ignore the schedule and the hourly limit and have their own concurrency budget, but they are raised only from GitHub's Dependabot alerts, so the repository needs Dependency graph and Dependabot alerts switched on (Dependabot security updates stays off: the PRs are Renovate's). osvVulnerabilityAlerts adds osv.dev as a second source, for direct dependencies only.",
     "Transitive fixes (most of what npm audit reports) come from lock file maintenance, which regenerates package-lock.json within the declared ranges. It goes first on Mondays; between Mondays, the Dependency audit workflow goes red and the Lock file maintenance checkbox on the Dependency Dashboard runs it on demand."
@@ -27,7 +27,7 @@
       "prPriority": 10
     },
     {
-      "description": "One PR a week for every non-major npm update. Each bump rebuilds both editions, so grouping holds that to a single CI run rather than one per dependency. Second in line after lock file maintenance, ahead of image digests.",
+      "description": "One PR a week for every non-major npm update. Each bump rebuilds the app, so grouping holds that to a single CI run rather than one per dependency. Second in line after lock file maintenance, ahead of image digests.",
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "npm non-major",

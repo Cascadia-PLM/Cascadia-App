@@ -138,11 +138,6 @@ export interface DomainEventConsumer {
    * never-enabled consumer leaves no cursor, and its first enable starts
    * wherever `startAt` says).
    *
-   * One asymmetry worth knowing: `PackageRegistry` caches its parse of
-   * `CASCADIA_PACKAGES` in a static field, so a predicate built on
-   * `isEnabled` reflects boot-time licensing, while one reading `process.env`
-   * directly does re-read.
-   *
    * Async is permitted, and deliberately so: the plan's signature is sync, but
    * the one enablement source this codebase actually has is a settings row, and
    * a sync-only predicate would force that lookup back inside the handler —

@@ -29,7 +29,6 @@ import lifecycles from './routes/lifecycles'
 import manufacturerPartsRoutes from './routes/manufacturer-parts'
 import mbom from './routes/mbom'
 import mcp from './routes/mcp'
-import packages from './routes/packages'
 import parts from './routes/parts'
 import variants from './routes/variants'
 import physicalPartsRoutes from './routes/physical-parts'
@@ -113,7 +112,6 @@ app.route('/api/v1/mbom', mbom)
 // MCP endpoint speaks JSON-RPC (Streamable HTTP), not the REST envelope —
 // mounted outside the frozen /api/v1 contract. See docs/features/mcp.md.
 app.route('/api/mcp', mcp)
-app.route('/api/v1/packages', packages)
 app.route('/api/v1/parts', parts)
 app.route('/api/v1/parts', variants)
 app.route('/api/v1/physical-parts', physicalPartsRoutes)
@@ -140,10 +138,9 @@ app.route('/api/v1/work-orders', workOrders)
 app.route('/api/v1/workflows', workflows)
 app.route('/api/v1/workspaces', workspaces)
 
-// Whole resources owned by an optional package mount here — the collaborative
-// design engine and the signature manifest, today. Nothing is registered on a
-// core-only build, which is what lets this file compile with the proprietary
-// directories absent.
+// Whole resources owned by a module mount here — the collaborative design
+// engine's, today. Core never imports a module; it mounts whatever the app's
+// composition root registered before this file was evaluated.
 mountRoutes(app, 'api-root')
 
 // Machine-readable OpenAPI 3.1 document, regenerated from `apiHandler({ openapi })`
@@ -221,13 +218,11 @@ app.all('/api/*', (c) => {
 
 // In production, serve the Vite SPA build as static files.
 //
-// The client build has been per-edition since the Phase 2 split — `dist/<app>/`,
-// not `dist/` — so the static root has to name the app or every asset 404s and
-// `/` with them. The API kept answering, which is what hid this: the container
-// reported healthy while serving no UI at all. `APP` is set by
-// `scripts/serve.mjs` and by `cascadia-app/Dockerfile`; the bare fallback keeps a
-// flat build working.
-const DIST = process.env.APP ? `./dist/${process.env.APP}` : './dist'
+// The client build lands in `dist/cascadia/` (scripts/build-app.mjs), not
+// `dist/`, so the static root has to name it or every asset 404s and `/` with
+// them. The API kept answering, which is what hid this once: the container
+// reported healthy while serving no UI at all.
+const DIST = './dist/cascadia'
 if (process.env.NODE_ENV === 'production') {
   app.use('/*', serveStatic({ root: DIST }))
   // SPA fallback: serve index.html for all non-API routes

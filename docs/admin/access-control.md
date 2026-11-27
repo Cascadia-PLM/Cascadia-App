@@ -122,28 +122,6 @@ administrators.
 > its stored permissions include `programs:manage`, so the permission check
 > matches the same users the name check did.
 
-### Optional Package Permissions
-
-[Optional packages](../development/adding-packages.md) reuse the existing
-resource types rather than introducing their own — a package changes what an
-instance _has_, not how permissions are modeled. Entitlement is checked
-independently of RBAC: a user with the right permission on an unlicensed
-instance still gets a 403 with code `PACKAGE_NOT_LICENSED`.
-
-Endpoints added by the [Advanced Auditing](../features/advanced-auditing.md)
-package:
-
-| Endpoint                                      | Permission           | Notes                                          |
-| --------------------------------------------- | -------------------- | ---------------------------------------------- |
-| `GET /api/v1/packages`                        | Authenticated        | Entitlement listing; no specific permission    |
-| `GET /api/v1/signatures/capability`           | Authenticated        | Reports the caller's own signing options       |
-| `GET /api/v1/signatures/chain/:scope`         | `change_orders.read` | Signature manifest for a workflow instance     |
-| `POST /api/v1/signatures/chain/:scope/verify` | `system.read`        | Chain integrity verification — an audit action |
-
-Signing itself is gated by the approval permission (`change_orders.update`) plus
-the signer's own credential. RBAC decides _who may approve_; the signature
-decides _who actually did_, and the two are recorded separately.
-
 ### How Permission Checks Work
 
 The `PermissionService` (singleton at `cascadia-api/src/auth/permission-service.ts`) handles all permission checks:

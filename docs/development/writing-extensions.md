@@ -47,7 +47,7 @@ import { defineExtension } from '@cascadia/api/extensions'
 import type { ConsumedExtension } from '@cascadia/api/extensions'
 import type { WorkOrderRunCompletedPayload } from '@cascadia/api/events'
 import { WORK_ORDER_RUN_COMPLETED } from '@cascadia/api/events'
-import { PackageRegistry } from '@cascadia/api/packages'
+import { isConfigured } from './config'
 
 export function createRunAlertsConsumer(): ConsumedExtension<WorkOrderRunCompletedPayload> {
   return {
@@ -61,7 +61,7 @@ export function createRunAlertsConsumer(): ConsumedExtension<WorkOrderRunComplet
     // handler running.
     when: { countsTowardRequired: true },
     startAt: 'head',
-    enabled: () => PackageRegistry.isEnabled('your-module'),
+    enabled: () => isConfigured(),
     handler: async ({ event, tx, signal }) => {
       // …using `tx`…
     },
@@ -90,7 +90,7 @@ It is consulted **once**, when the cursor row is first created, and never again.
 ### `enabled` — a predicate, not a captured boolean
 
 ```typescript
-enabled: () => PackageRegistry.isEnabled('your-module') && isConfigured(),
+enabled: () => isConfigured(),
 ```
 
 This is the rule most easily got wrong, and the cost of getting it wrong is
@@ -247,7 +247,6 @@ Register from your module's **composition root**, not from core:
 ```typescript
 // cascadia-your-module/src/register.server.ts
 export function registerYourModule(): void {
-  registerYourModulePackage() // the catalog first — `enabled` reads it
   defineExtension(createRunAlertsConsumer())
 }
 ```
@@ -256,10 +255,10 @@ Registration is validated: a duplicate id throws, and re-registering the _same
 object_ is a no-op, which is what a re-imported module produces.
 
 Register in the broadest root that runs where your extension must run. The
-enterprise worker entry calls both roots, so a consumer registered in the server
-root is seen by the worker too — while the reverse is not true, and a consumer
-registered only in the worker root sits somewhere its package registration may
-not have run.
+app's worker entry (`cascadia-app/src/jobs-worker.ts`) calls both roots, so a
+consumer registered in the server root is seen by the worker too — while the
+reverse is not true, and a consumer registered only in the worker root is
+unknown to the app server.
 
 **Do not put a module file under a path that mirrors a core path under `@/`.**
 The boundary checker fails on alias-root collisions, so a module file under

@@ -13,8 +13,7 @@
  * records exactly those, and leaves the rest for `db:migrate` to apply for
  * real.
  *
- *   npm run db:baseline                       # enterprise tree
- *   CASCADIA_APP=cascadia npm run db:baseline # community tree
+ *   npm run db:baseline                       # stamp what the database satisfies
  *   npm run db:baseline -- --check            # report only, write nothing
  *
  * In Docker: docker exec <app-container> node_modules/.bin/tsx scripts/db-baseline.ts
@@ -75,12 +74,9 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { sql } from 'drizzle-orm'
 import { db, describeConnection } from '@cascadia/api/db'
-import { appDir, resolveApp } from './edition.mjs'
+import { APP_DIR } from './app.mjs'
 
-// Resolved at runtime rather than imported by name — same reasoning as
-// truncate-all.ts: this script serves whichever edition the tree contains.
-const app = resolveApp()
-const dir = appDir(app)
+const dir = APP_DIR
 const drizzleDir = resolve(import.meta.dirname, '..', dir, 'drizzle')
 const checkOnly = process.argv.includes('--check')
 
@@ -354,7 +350,7 @@ async function shapeOfDatabase(): Promise<Set<string>> {
  * Where does this database actually sit?
  * ------------------------------------------------------------------ */
 
-console.log(`Target database: ${describeConnection()}  (edition: ${app})`)
+console.log(`Target database: ${describeConnection()}`)
 
 const known = new Set<string>()
 for (const migration of migrations) {

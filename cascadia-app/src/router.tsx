@@ -4,5 +4,5 @@
 import { createAppRouter } from '@cascadia/web/create-router'
 import { routeTree } from './routeTree.gen'
 
-/** This edition's router, built around its own generated route tree. */
+/** The app's router, built around its own generated route tree. */
 export const getRouter = () => createAppRouter(routeTree as never)

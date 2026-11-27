@@ -301,19 +301,6 @@ In development mode, the `details` field is included with the underlying error m
 | `FileTypeNotAllowedError`       | `FILE_TYPE_NOT_ALLOWED`       | 415         | File type not permitted             |
 | `FileCheckoutRequiredError`     | `FILE_CHECKOUT_REQUIRED`      | 422         | File must be checked out first      |
 
-#### Licensing and Signature Errors
-
-Raised by [optional packages](../development/adding-packages.md). Instances that
-do not hold the package never see them.
-
-| Error Class                           | Error Code                         | HTTP Status | Description                                            |
-| ------------------------------------- | ---------------------------------- | ----------- | ------------------------------------------------------ |
-| `PackageNotLicensedError`             | `PACKAGE_NOT_LICENSED`             | 403         | Instance is not licensed for the package               |
-| `SignatureRequiredError`              | `SIGNATURE_REQUIRED`               | 422         | Action requires a digital signature that was not sent  |
-| `SignatureInvalidError`               | `SIGNATURE_INVALID`                | 401         | Bad password, or expired/untrusted/revoked certificate |
-| `SignatureCredentialUnavailableError` | `SIGNATURE_CREDENTIAL_UNAVAILABLE` | 422         | Policy demands a credential the request cannot offer   |
-| `SignatureIdentityMismatchError`      | `SIGNATURE_IDENTITY_MISMATCH`      | 403         | Certificate belongs to another account, or unenrolled  |
-
 #### System Errors
 
 | Error Class                       | Error Code                     | HTTP Status | Description                |

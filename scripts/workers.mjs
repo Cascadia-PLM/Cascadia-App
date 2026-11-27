@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { config as loadEnv } from 'dotenv'
-import { appDir, appTsconfig, resolveApp } from './edition.mjs'
+import { APP, APP_DIR, APP_TSCONFIG } from './app.mjs'
 
 // `.env` is what compose reads too, so the check below sees the same values
 // the containers will. A real environment variable still wins.
@@ -82,12 +82,7 @@ try {
       }
       execFileSync(
         'npx',
-        [
-          'tsx',
-          '--tsconfig',
-          appTsconfig(),
-          `${appDir(resolveApp())}/src/jobs-worker.ts`,
-        ],
+        ['tsx', '--tsconfig', APP_TSCONFIG, `${APP_DIR}/src/jobs-worker.ts`],
         {
           stdio: 'inherit',
           shell: process.platform === 'win32',
@@ -102,12 +97,7 @@ try {
     case 'jobs':
       execFileSync(
         'npx',
-        [
-          'tsx',
-          '--tsconfig',
-          appTsconfig(),
-          `${appDir(resolveApp())}/src/jobs-worker.ts`,
-        ],
+        ['tsx', '--tsconfig', APP_TSCONFIG, `${APP_DIR}/src/jobs-worker.ts`],
         {
           stdio: 'inherit',
           shell: process.platform === 'win32',
@@ -115,7 +105,7 @@ try {
       )
       break
     case 'jobs:built': {
-      const entry = `.output/${resolveApp()}/server/jobs-worker.mjs`
+      const entry = `.output/${APP}/server/jobs-worker.mjs`
       if (!existsSync(entry)) {
         console.error(`${entry} does not exist — run \`npm run build\` first.`)
         process.exit(1)

@@ -8,34 +8,24 @@
  *
  * "Core" is the four application packages and the root tooling; a "module" is
  * any other `cascadia-*` npm workspace (`MODULE_PACKAGES` in
- * `edition-manifest.mjs`), whatever its licence. Modules register into core's
- * extension points from an app's composition root (a `cascadia-app*` directory), which is
- * the one place allowed to name them. The check began life as the licensing
- * boundary of a dual-licensed repository, which is why its history below talks
- * about proprietary packages; it now guards the extension boundary itself.
+ * `scripts/workspaces.mjs`) — today `cascadia-design-engine`. Modules register
+ * into core's extension points from the app's composition root
+ * (`cascadia-app`), which is the one place allowed to name them.
  *
- * Two greps have already lied about this. After seams 1-3 the plan recorded
- * `advanced-auditing` as fully seamed while `files.ts` still reached it through
- * `await import('@/lib/advanced-auditing/...')`; seam 5 hid a coupling behind a
- * component path rather than a lib path. Three reference forms have each been
- * missed exactly once — dynamic `import()`, component paths, and a package id
- * passed as a bare string.
- *
- * So this does not match patterns. It **resolves** every import specifier in
- * every core file to a real path and classifies that path through
- * `edition-manifest.mjs`. A component path and a lib path resolve alike; a
+ * Greps have lied about this before: a coupling once survived behind a dynamic
+ * `await import('@/...')`, another behind a component path rather than a lib
+ * path. So this does not match patterns. It **resolves** every import
+ * specifier in every core file to a real path and asks whether that path is
+ * inside a module package. A component path and a lib path resolve alike; a
  * dynamic import and a static one are both specifiers. Renaming a directory
  * cannot quietly defeat it, because there is no pattern to fall out of date.
  *
- * String-literal package ids get a second, separate pass, since no amount of
- * import resolution will catch `usePackageEnabled(<a quoted module id>)`.
- * (Which is why this file spells no id in quotes — it scans itself.)
- *
- * The same resolver then answers two more questions. One package outward:
- * does any module package import *another* module package without declaring
- * it? See "Cross-module dependency honesty" below. And inward: does the
- * application's own layering hold — commons reaching nothing, the web never
- * reaching the api? See "Application layering" below.
+ * The same resolver then answers three more questions. Does any file exist at
+ * the same relative path under two `@/` roots (one would silently shadow the
+ * other)? See "Alias-root collisions". Does any module package import
+ * *another* module package without declaring it? See "Cross-module dependency
+ * honesty". And does the application's own layering hold — commons reaching
+ * nothing, the web never reaching the api? See "Application layering".
  *
  * There is no proof-by-deletion to fall back on: the modules ship in the same
  * tree as core and are built with it, so a core file that imported one would
@@ -45,27 +35,11 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import {
-  MODULE_PACKAGES,
-  PROPRIETARY_MODULE_PACKAGES,
-  editionOf,
-  normalize,
-  workspaceDir,
-} from './edition-manifest.mjs'
+import { MODULE_PACKAGES, normalize, workspaceDir } from './workspaces.mjs'
 
-// Both lists derive from the edition manifest so a new module package is
-// covered the day it exists as a workspace. Hardcoded copies here once
-// drifted: they omitted a module package entirely, so a core import under it
-// — or its quoted package id — passed this check silently. (No quoted ids in
-// this file: since .mjs is scanned, the checker checks itself.)
-
-/**
- * Entitlement ids that belong to a separately licensed module — the ones core
- * gates with `requirePackage()`/`usePackageEnabled()`, and so the ones a
- * quoted string in core could reach. Empty in this repository.
- */
-const PROPRIETARY_PACKAGE_IDS = PROPRIETARY_MODULE_PACKAGES
-
+// Derived from the workspace list, so a new module package is covered the day
+// it exists. Hardcoded copies here once drifted: they omitted a module package
+// entirely, so a core import under it passed this check silently.
 const MODULE_SRC = MODULE_PACKAGES.map((p) => `${workspaceDir(p)}/src`)
 
 /**
@@ -90,13 +64,13 @@ const appPackageOf = (file) =>
 /**
  * Entry points, which are allowed to import a composition root.
  *
- * The app workspaces (the `cascadia-app*` directories) are composition roots in their
- * entirety and are exempt by directory (`isCompositionRoot`, below). What
- * remains is root-level tooling that operates on one app's composition.
+ * The app workspace (`cascadia-app`) is composition roots in its entirety and
+ * is exempt by directory (`isCompositionRoot`, below). What remains is root
+ * tooling that loads the app's composition.
  */
 const ENTRY_POINTS = [
-  // Edition tooling: assembles or describes a specific edition, so naming its
-  // composition root is the job rather than a leak.
+  // Assembles or describes the composed app, so naming its composition root
+  // is the job rather than a leak.
   'scripts/snapshot-openapi.ts',
   'scripts/truncate-all.ts',
 ]
@@ -125,12 +99,11 @@ const moduleOf = (file) =>
   MODULE_PACKAGES.find((name) => file.startsWith(`${workspaceDir(name)}/`)) ??
   null
 
-/** An app workspace: composition roots, allowed to name every module. */
-const isCompositionRoot = (file) => /^cascadia-app[^/]*\//.test(file)
+/** The app workspace: composition roots, allowed to name every module. */
+const isCompositionRoot = (file) => file.startsWith('cascadia-app/')
 
-/** Core in the extension-boundary sense: not a module, not an app. */
-const isCore = (file) =>
-  editionOf(file) === 'core' && !moduleOf(file) && !isCompositionRoot(file)
+/** Core in the extension-boundary sense: not a module, not the app. */
+const isCore = (file) => !moduleOf(file) && !isCompositionRoot(file)
 
 function candidateFiles() {
   const out = execFileSync(
@@ -224,8 +197,7 @@ function resolveSpecifier(specifier, fromFile) {
       // still named a module, and the subpath test below reads straight past
       // it: only a trailing slash matched, so this fell through to null and
       // was never classified. Point it at the package manifest, a real file
-      // under cascadia-<name>/ that the edition manifest calls proprietary.
-      // The core package needs no equivalent: a core target records nothing.
+      // under cascadia-<name>/, so `moduleOf` recognises the target.
       if (specifier === `@cascadia/${name}`) {
         return tryExtensions(join(workspaceDir(name), 'package.json'))
       }
@@ -269,31 +241,8 @@ for (const file of allFiles) {
 
   for (const specifier of specifiersIn(source)) {
     const target = resolveSpecifier(specifier, file)
-    if (target && (moduleOf(target) || editionOf(target) === 'proprietary')) {
+    if (target && moduleOf(target)) {
       record(file, `imports ${specifier}  →  ${target}`)
-    }
-  }
-
-  // A template literal is the third way to write a string, and the pass knew
-  // only two — so a quoted id survived by being written in backticks. It is
-  // matched against code lines only: every comment in this repository names an
-  // identifier in Markdown backticks, so scanning prose for one would fail
-  // three honest sentences and teach the next author to stop naming the module
-  // they are explaining. In code a backtick opens a string; in a comment it is
-  // punctuation. The single- and double-quoted forms keep scanning everything,
-  // because a quoted id reads as code wherever it appears.
-  const code = source
-    .split('\n')
-    .filter((line) => !/^\s*(\/\/|\/\*|\*)/.test(line))
-    .join('\n')
-
-  for (const id of PROPRIETARY_PACKAGE_IDS) {
-    if (
-      source.includes(`'${id}'`) ||
-      source.includes(`"${id}"`) ||
-      code.includes(`\`${id}\``)
-    ) {
-      record(file, `names the package id '${id}'`)
     }
   }
 }

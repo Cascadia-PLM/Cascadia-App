@@ -6,8 +6,8 @@
  *
  * Needs no login — the sign-in page is enough.
  *
- * This exists because the whole application once rendered as unstyled HTML in
- * both editions and every gate stayed green, including these E2E tests. Tailwind
+ * This exists because the whole application once rendered as unstyled HTML
+ * and every gate stayed green, including these E2E tests. Tailwind
  * v4 detects sources automatically, rooted at the Vite root; the Phase 2 split
  * moved that root to the app directory while every component stayed in the web package,
  * so it found no class names and emitted preflight alone — resets and theme

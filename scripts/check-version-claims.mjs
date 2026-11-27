@@ -116,19 +116,14 @@ const ALLOW = [
     'historical record: a released changelog entry describes the state at its release',
   ],
   [
-    'RELEASING.md',
-    'pre-1\\.0',
-    'live statement of the versioning policy, not a claim about a feature',
-  ],
-  [
     'docs/deployment/upgrading.md',
     'as of v0\\.\\d',
     'provenance: names the release that introduced migration files, which does not change',
   ],
 ]
 
-// By name, not only by path: an edition keeps its own copy of a file beside
-// its composition root, and the allowance follows the file.
+// By name, not only by path: a module package keeps its own copy of a file
+// (its CLAUDE.md, say) beside its manifest, and the allowance follows the file.
 const allowed = (file, pattern) =>
   ALLOW.some(
     ([f, p]) => (f === file || file.endsWith(`/${f}`)) && p === pattern.source,

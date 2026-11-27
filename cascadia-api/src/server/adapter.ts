@@ -25,8 +25,8 @@ type AnnotatableHandler<TParams = Record<string, string>> =
  * whatever the sender wrote in `X-Forwarded-For`. See `api/client-ip`.
  *
  * `getConnInfo` reads the address off the Node `IncomingMessage` behind the
- * request, which exists only when @hono/node-server is serving — both editions
- * do (each app's `src/server/prod.ts`), but a Hono `app.request()` in a test
+ * request, which exists only when @hono/node-server is serving — the app does
+ * (`cascadia-app/src/server/prod.ts`), but a Hono `app.request()` in a test
  * does not, and it throws there. That is not a failure worth reporting: an
  * unrecorded request resolves to `'unknown'`, which is exactly what the
  * header-only predecessor produced for a request with no headers.

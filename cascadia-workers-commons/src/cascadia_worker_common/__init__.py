@@ -7,9 +7,8 @@ One copy of the jobs/vault SQL (JOBS-8): both workers used to carry a
 ~250-line db.py duplicated verbatim, and every fix had to land twice.
 The same argument since brought the timeout watchdog here — enforcement
 that must behave identically in both workers belongs in one file, not
-two. This package is AGPL like the published cad-converter that depends
-on it; the proprietary cad-generator depending on it mirrors the
-modules-on-core relationship.
+two. The CAD converter, the CAD generator and the FreeCAD runner all
+depend on it.
 
 Consumed via PYTHONPATH (each worker image copies ``py-common/src``
 alongside its own ``src``), not installed as a distribution.

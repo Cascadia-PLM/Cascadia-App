@@ -29,8 +29,8 @@ checkout. Typical flows:
 
 - Stand up an instance: instance_status → db_push → db_seed → instance_status.
 - Customize: search_docs / read_doc for the development guides
-  (adding item types, API routes, background jobs, packages), plus
-  list_item_types, list_roles, and list_packages to inspect current state.
+  (adding item types, API routes, background jobs), plus list_item_types
+  and list_roles to inspect current state.
 - Operate: instance_status for health; db_reset (destructive, requires
   confirm="RESET" — always ask the operator first) to wipe data.
 

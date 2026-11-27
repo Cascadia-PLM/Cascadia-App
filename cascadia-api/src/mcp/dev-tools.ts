@@ -126,18 +126,10 @@ async function instanceStatus(): Promise<Record<string, unknown>> {
     nodeEnv: process.env.NODE_ENV ?? 'development',
     databaseUrlSet: !!process.env.DATABASE_URL,
     rabbitmqUrlSet: !!process.env.RABBITMQ_URL,
-    cascadiaPackages: process.env.CASCADIA_PACKAGES ?? '(unset)',
     anthropicKeySet: !!process.env.ANTHROPIC_API_KEY,
     openaiKeySet: !!process.env.OPENAI_API_KEY,
     vaultRootSet: !!process.env.VAULT_ROOT,
   }
-
-  const { PackageRegistry } = await import('@/packages/registry')
-  const packages = PackageRegistry.list().map((p) => ({
-    id: p.id,
-    name: p.name,
-    enabled: p.enabled,
-  }))
 
   let database: Record<string, unknown>
   try {
@@ -169,7 +161,7 @@ async function instanceStatus(): Promise<Record<string, unknown>> {
     }
   }
 
-  return { environment, packages, database }
+  return { environment, database }
 }
 
 async function listItemTypes(): Promise<Record<string, unknown>> {
@@ -281,7 +273,7 @@ export function createDevToolSpecs(): Array<McpToolSpec> {
       name: 'instance_status',
       description: `Report the health and configuration of this Cascadia instance:
 environment flags (which settings are present — values of secrets are never returned),
-licensed packages, database connectivity, row counts, and whether the database is seeded.
+database connectivity, row counts, and whether the database is seeded.
 Start here when diagnosing a broken or freshly installed instance.`,
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true, openWorldHint: false },
@@ -295,17 +287,6 @@ overrides when the database is reachable. Use before customizing or adding item 
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true, openWorldHint: false },
       execute: () => listItemTypes(),
-    },
-    {
-      name: 'list_packages',
-      description: `List the optional, separately licensed Cascadia packages and whether
-each is enabled on this instance (via the CASCADIA_PACKAGES environment variable).`,
-      inputSchema: z.object({}),
-      annotations: { readOnlyHint: true, openWorldHint: false },
-      execute: async () => {
-        const { PackageRegistry } = await import('@/packages/registry')
-        return { packages: PackageRegistry.list() }
-      },
     },
     {
       name: 'list_roles',
@@ -365,7 +346,7 @@ command fails rather than apply destructive changes; set force=true to auto-appr
       annotations: { destructiveHint: true, openWorldHint: false },
       // Through the npm script, never bare `npx drizzle-kit`: drizzle-kit
       // resolves its schema and `.env` from its own working directory, and
-      // `scripts/drizzle.mjs` is what runs it from the edition's app dir with
+      // `scripts/drizzle.mjs` is what runs it from the app dir with
       // the root `.env` loaded. Called directly from the repo root it fails
       // with "No schema files found".
       execute: (input) =>

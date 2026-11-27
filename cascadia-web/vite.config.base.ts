@@ -17,7 +17,7 @@ const REPO_ROOT = resolve(WEB_DIR, '..')
 
 /**
  * Every workspace is a top-level `cascadia-<id>/` directory named
- * `@cascadia/<id>` — the same convention `scripts/edition-manifest.mjs`
+ * `@cascadia/<id>` — the same convention `scripts/workspaces.mjs`
  * spells out. Restated here because this file cannot import a script: it is
  * loaded by Vite inside the web package's own program.
  */
@@ -46,12 +46,9 @@ const isAppWorkspace = (dir: string) =>
     'cascadia-workers-job',
   ].includes(dir) || dir.startsWith('cascadia-app')
 
-// Discovered, not named: writing a module package's id here would put
-// proprietary knowledge in a core file — `boundary:check` says so, and it is
-// right, because this file is published to a tree where those packages do not
-// exist. Presence on disk is the test instead, the same principle as
-// `scripts/workers.mjs` choosing its CAD services by `existsSync`: a directory
-// that is not there contributes nothing, with no flag to get wrong.
+// Discovered, not named: core never names a module, so this file finds module
+// packages by presence on disk rather than by id — a directory that is not
+// there contributes nothing, with no flag to get wrong.
 //
 // A module is a `cascadia-*` directory with a `package.json` and a `src/`
 // that is not one of the application's own. The manifest test is what keeps
@@ -78,7 +75,7 @@ const posixPath = (...segments: Array<string>) =>
 
 /**
  * Resolve `@/`, `@cascadia/web/`, `@cascadia/commons/` and each
- * `@cascadia/<module>/` against the package roots this edition includes.
+ * `@cascadia/<module>/` against the package roots the app includes.
  *
  * Written out rather than delegating to `vite-tsconfig-paths` because that
  * plugin scopes each mapping to its tsconfig's `include`, and web's tsconfig
@@ -88,7 +85,7 @@ const posixPath = (...segments: Array<string>) =>
  * every route file.
  *
  * `@/` tries each root in order, exactly as the `paths` arrays in the app
- * tsconfigs do: web first, then the module package if this edition has one.
+ * tsconfig does: web first, then the module packages.
  *
  * `@cascadia/api/` is refused outright rather than left unresolved: an
  * unresolved bare specifier is a generic Vite error three screens long, and
@@ -155,27 +152,23 @@ export interface AppViteOptions {
    */
   appName: string
   /**
-   * Extra package source roots this edition includes, searched after web when
-   * resolving `@/`. Empty for the community edition — which is what makes its
-   * bundle unable to reach module code even by accident.
+   * Extra package source roots the app includes, searched after web when
+   * resolving `@/` — the module packages, and commons as module code
+   * addresses it.
    */
   moduleRoots?: Array<string>
   /**
-   * How this edition's route tree is assembled.
-   *
-   * The one thing that genuinely differs between editions on the client: which
-   * directories are scanned for route files. See "Client route composition" in
-   * the loadable-modules architecture document, kept with the edition that
-   * composes modules.
+   * How the app's route tree is assembled: which directories are scanned for
+   * route files — the web package's, then each module's `src/routes`.
    */
   virtualRouteConfig: VirtualRootRoute
 }
 
 /**
- * The shared Vite configuration, parameterized by edition.
+ * The Vite configuration, parameterized by app.
  *
- * Everything here is identical across editions; an app supplies only its own
- * directory and its route composition. Paths that reach outside the app — the
+ * An app supplies only its own directory, its module roots and its route
+ * composition. Paths that reach outside the app — the
  * pdf.js assets below — are resolved from the repo root rather than the Vite
  * root, because the Vite root is now the app rather than the repository.
  */
@@ -191,9 +184,9 @@ export function createAppViteConfig({
     plugins: [
       cascadiaAliases([resolve(WEB_DIR, 'src'), ...moduleRoots]),
       tailwindcss(),
-      // The routes *directory* is the web package's — every edition shares
-      // its pages and its `__root.tsx`. The generated *tree* is the app's,
-      // because which extra directories get scanned is the edition's business.
+      // The routes *directory* is the web package's, with its pages and its
+      // `__root.tsx`. The generated *tree* is the app's, because which extra
+      // directories get scanned is the app's business.
       TanStackRouterVite({
         routesDirectory: resolve(WEB_DIR, 'src/routes'),
         generatedRouteTree: resolve(appDir, 'src/routeTree.gen.ts'),

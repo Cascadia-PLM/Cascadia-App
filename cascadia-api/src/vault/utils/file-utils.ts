@@ -541,9 +541,8 @@ export function isCADViewable(filename: string): boolean {
  * Content-based extraction stops there, deliberately:
  *
  * - **No image EXIF.** Reading it needs `sharp` or `exif-parser`, neither in the
- *   tree, and both native. This module lives in `cascadia-api`, the published
- *   AGPL package, so that binary would land in every community-edition install —
- *   for fields nothing in the app reads today.
+ *   tree, and both native. This module lives in `cascadia-api`, so that binary
+ *   would land in every install — for fields nothing in the app reads today.
  * - **No native CAD property parsing.** Converted CAD already gets units,
  *   polygon count and bounding box written to the typed `cadMetadata` column by
  *   the Python converter worker. What is left is vendor formats (`.sldprt`,

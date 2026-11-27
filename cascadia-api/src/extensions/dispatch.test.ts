@@ -644,8 +644,8 @@ describe('extension dispatch', () => {
       for (let i = 0; i < 5; i++) await publish(`m${i}`)
 
       // One read for the burst, not one per dispatch. The per-dispatch
-      // enablement lookup is the obvious way to break the promise that the
-      // community edition does not pay for a feature it does not use.
+      // enablement lookup is the obvious way to break the promise that an
+      // install does not pay for a feature it does not use.
       expect(extensionEnablementLoadCount()).toBe(1)
     })
   })

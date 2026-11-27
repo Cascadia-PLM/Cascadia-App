@@ -105,8 +105,7 @@ This is an interactive command that uses `drizzle-kit push` to apply the schema 
 
 > **Note**: `db:push` is for development, CI, and demo stacks only. Released
 > installs upgrade with the committed migrations (`npm run db:migrate`), which
-> every schema change mints for both editions (`npm run db:generate` and
-> `CASCADIA_APP=cascadia npm run db:generate`). A pre-v0.5 database that has
+> every schema change mints with `npm run db:generate`. A pre-v0.5 database that has
 > tables but no migration journal is stamped once with `npm run db:baseline`. See
 > [Database Patterns](../development/database-patterns.md).
 

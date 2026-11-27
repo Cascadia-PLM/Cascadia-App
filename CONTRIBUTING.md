@@ -165,6 +165,6 @@ See [CLAUDE.md](./CLAUDE.md) for the full architecture reference.
 
 ## License and CLA
 
-Cascadia is an open-core, dual-licensed project: the core is [AGPL-3.0](./LICENSE), and the same code is also offered under a commercial license. See [LICENSING.md](./LICENSING.md) for the full policy, including exactly which capabilities stay open.
+Cascadia is open source and dual-licensed: everything in this repository is [AGPL-3.0](./LICENSE), and the same code is also offered under a commercial license. See [LICENSING.md](./LICENSING.md) for the full policy.
 
-Because of dual licensing, external contributions require signing our [Contributor License Agreement](./CLA.md). It's quick: a bot will prompt you on your first pull request, and you sign by replying with a single comment. You retain ownership of your work; the CLA grants the project the license needed to keep the open-core model viable.
+Because of dual licensing, external contributions require signing our [Contributor License Agreement](./CLA.md). It's quick: a bot will prompt you on your first pull request, and you sign by replying with a single comment. You retain ownership of your work; the CLA grants the project the license needed to keep dual licensing possible.

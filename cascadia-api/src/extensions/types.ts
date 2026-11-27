@@ -158,7 +158,7 @@ export interface ConsumedExtensionContext<
 /** Fields every extension carries, whatever its phase. */
 interface ExtensionCommon {
   /**
-   * Stable identity, `<area>.<purpose>` — e.g. `odoo.sync-released-design`.
+   * Stable identity, `<area>.<purpose>` — e.g. `erp.sync-released-design`.
    * For a `consumed` extension this also names its cursor row, so renaming one
    * means starting over from seq 0.
    */

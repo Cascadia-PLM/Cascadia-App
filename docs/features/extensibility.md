@@ -10,10 +10,10 @@ Handler bodies are TypeScript in a compiled package. Enablement, subscriptions
 and parameters are rows. That line is the whole design: **code decides what runs;
 data decides whether, where and with what parameters.**
 
-**Maturity.** The log, all three phases, webhook delivery and the ERP connector
-ship in v0.6.0 and are used by first-party code in production paths. What is not
-true yet, stated plainly: **event coverage is not universal** — more than a
-dozen non-test files write `items` outside `ItemService`, so "every update fires
+**Maturity.** The log, all three phases and webhook delivery ship in v0.6.0
+and are used by first-party code in production paths. What is not true yet,
+stated plainly: **event coverage is not universal** — more than a dozen
+non-test files write `items` outside `ItemService`, so "every update fires
 `item.updated`" is false of this tree, and a lifecycle transition writes `items`
 and fires no `item.updated` at all (see [Gaps](#known-gaps)). **Not every fact
 names a program**: a fact about something outside any design carries none, and a
@@ -52,9 +52,9 @@ A webhook subscription is a row, so adding a subscriber is an insert. The
 dispatcher that reads those rows is TypeScript, compiled, reviewed and tested.
 
 The defect that made this urgent is worth naming, because it is the argument in
-one sentence. The ERP connector's release trigger was a post-commit hook, and the
-loop that called it lived inside `mergeBranchToMain` alone — so a change order
-releasing through the branchless arm fired **no hook at all**, and nothing
+one sentence. Release hooks were post-commit callbacks, and the loop that called
+them lived inside `mergeBranchToMain` alone — so a change order releasing
+through the branchless arm fired **no hook at all**, and nothing
 recorded that one was owed. A seam whose failures are swallowed cannot report its
 own gaps. The log records the fact; a consumer keys on the fact rather than on
 one code path; and a failure is a row an operator can see.
@@ -77,9 +77,9 @@ one operation ──────┤
                     │              the event log                 │
                     └─────────────────────┬─────────────────────┘
                                           │ polled, per-consumer cursor
-              ┌───────────────┬───────────┴────────┬──────────────────┐
-     consumed extensions   RabbitMQ relay    webhook dispatcher   ERP connector
-     (watermarks, alerts)  (a consumer,      (fan-out to rows)    (design.released)
+              ┌───────────────┬───────────┴────────┐
+     consumed extensions   RabbitMQ relay    webhook dispatcher
+     (watermarks, alerts)  (a consumer,      (fan-out to rows)
                             not the bus)
 ```
 
@@ -300,7 +300,7 @@ Full descriptions in
 settings row holds a list of extension ids, read per dispatch and cached for five
 seconds, so an operator can stop a misbehaving extension without a rebuild. The
 other half is the extension's own `enabled` declaration, where a module says it
-is not licensed or not configured here; `GET /api/v1/extensions` reports which
+is not configured here; `GET /api/v1/extensions` reports which
 of the two switched an extension off.
 
 ## Known gaps
@@ -409,18 +409,15 @@ of the two switched an extension off.
   retries through an outage indefinitely, so a row written ahead of a failed
   publish became one failed job per retry. An unreachable broker now fails the
   submission with nothing written; a key already held is answered without it.
-- **One ERP sync of a design at a time**, by a per-design advisory lock. A dedupe
-  key per event cannot serialise two releases of one design.
 
 ---
 
 **Provenance.** The event bus began as a design spike in September 2026 and was
 reframed during review from "an event bus" into **an extensibility platform** —
-the log is the foundation, not the headline. It shipped across nine stages in
-v0.6.0: the log and its runtime, the emission coverage, operability and
-retention, the three-phase dispatch layer, the release path moved onto it, the
-catalog growth, webhooks, and the ERP connector's migration from a post-commit
-hook to a consumer. Two proposal documents carried the reasoning during
+the log is the foundation, not the headline. It shipped in stages in v0.6.0:
+the log and its runtime, the emission coverage, operability and retention, the
+three-phase dispatch layer, the release path moved onto it, the catalog growth,
+and webhooks. Two proposal documents carried the reasoning during
 implementation and were deleted when it landed here.
 
 **See also:** [Webhooks](./webhooks.md) ·

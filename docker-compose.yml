@@ -160,7 +160,7 @@ services:
     networks:
       - cascadia-network
     # `src/jobs-worker.ts` has not existed since the Phase 2 split — the worker
-    # lives in the app (`cascadia-app*/src/`) because it registers the same modules
+    # lives in the app (`cascadia-app/src/`) because it registers the same modules
     # the server does. scripts/workers.mjs already resolves that path for the
     # npm scripts; this service was the one call site still naming the old one.
     # --no-save because this install runs over the `.:/app` bind mount: a

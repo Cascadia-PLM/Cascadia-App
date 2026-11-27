@@ -4,11 +4,12 @@
 # Nothing else on Kubernetes applies migrations. The compose templates start
 # the app with `sh -c "tsx scripts/boot-migrate.ts && npm run serve"`, so a
 # single-container install migrates as it boots; the Deployment here overrides
-# no command, so its pods run the image's bare `CMD node .output/…/index.mjs`
-# and touch the schema not at all. This Job is the piece that closes that gap,
-# and it is a Job rather than an initContainer because the Deployment has two
-# replicas and an HPA above it — every replica would race the others through
-# drizzle's migrator, which is not proven safe to run concurrently.
+# no command, so its pods run the image's bare
+# `CMD node .output/cascadia/server/index.mjs` and touch the schema not at all.
+# This Job is the piece that closes that gap, and it is a Job rather than an
+# initContainer because the Deployment has two replicas and an HPA above it —
+# every replica would race the others through drizzle's migrator, which is not
+# proven safe to run concurrently.
 #
 # It is deliberately NOT listed in kustomization.yaml. A Job's pod template is
 # immutable, so `kubectl apply -k .` on an upgrade fails on this object instead
@@ -62,7 +63,7 @@ spec:
 
           # Overrides the image CMD, not its ENTRYPOINT, so this still runs
           # under dumb-init. boot-migrate.ts applies the committed migrations
-          # under cascadia-app*/drizzle and refuses rather than guessing when the
+          # under cascadia-app/drizzle and refuses rather than guessing when the
           # database predates the journal.
           command: ['tsx', 'scripts/boot-migrate.ts']
 

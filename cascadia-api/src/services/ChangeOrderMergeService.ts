@@ -2753,10 +2753,10 @@ export class ChangeOrderMergeService {
     //
     // **Deprecated, and kept deliberately.** `ReleaseHookRegistry` is
     // superseded by a `consumed` extension on `design.released`; see the note
-    // on the registry itself for why. Neither edition registers a hook any
-    // more — the Odoo connector moved to a consumer — so this loop runs over
-    // nothing. It stays one more release because the registry is documented
-    // public API in the published edition, and it stays *here*, on the
+    // on the registry itself for why. Nothing registers a hook any more — its
+    // last registrant moved to a consumer — so this loop runs over nothing. It
+    // stays one more release because the registry is documented public API,
+    // and it stays *here*, on the
     // branch-merge path only: widening it to the other release arms would be
     // perpetuating the thing being retired.
     for (const hook of ReleaseHookRegistry.all()) {

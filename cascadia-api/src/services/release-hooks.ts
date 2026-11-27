@@ -9,11 +9,11 @@ import type { UpstreamChangeItem } from '@/db/schema'
  *
  * @deprecated Register a `consumed` extension on `design.released` instead
  * (`defineExtension` from `@cascadia/api/extensions`). **This registry now has
- * zero registrants in both editions** — the Odoo connector, its last one, moved
- * to a consumer — so the loop in `ChangeOrderMergeService` iterates an empty
- * array on every release. It is kept for one more wave and then removed: it is
- * a documented public API in the published AGPL edition, and deleting it in the
- * same release that deprecated it would give downstream forks no warning.
+ * zero registrants** — its last one moved to a consumer — so the loop in
+ * `ChangeOrderMergeService` iterates an empty array on every release. It is
+ * kept for one more wave and then removed: it is a documented public API, and
+ * deleting it in the same release that deprecated it would give downstream
+ * forks no warning.
  *
  * **Why it is superseded rather than merely duplicated.** `afterRelease` runs
  * post-commit with its failure swallowed, so it can only ever observe — it

@@ -2,26 +2,31 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Stamp every source file with the SPDX header its edition requires.
+ * Stamp every source file with the AGPL SPDX header, and check that every
+ * workspace declares the AGPL.
  *
  *   node scripts/license-headers.mjs           # apply
  *   node scripts/license-headers.mjs --check   # verify, exit 1 on drift
  *
- * Core files get `AGPL-3.0-or-later`; a file under a proprietary root gets the
- * proprietary header, both per `HEADERS` in `scripts/edition-manifest.mjs`.
- * A file's text is the same in every tree that holds it — nothing rewrites a
- * header on the way between editions — so the header has to be right where
- * the file lives. The `--check` mode is the CI gate that keeps it that way,
- * mirroring the `openapi:check` idiom.
+ * Every source file gets `HEADER` from `scripts/workspaces.mjs`. `--check` is
+ * the CI gate that keeps it that way, mirroring the `openapi:check` idiom; it
+ * also refuses a workspace whose `package.json` declares any licence other
+ * than `AGPL-3.0-or-later`, which is what catches code copied in from
+ * somewhere else with its old licence still attached.
  *
- * Markdown is classified by the manifest but not stamped: an HTML comment at
- * the top of a doc renders badly and buys nothing. Phase 3 reads the manifest
- * directly for those.
+ * Markdown is not stamped: an HTML comment at the top of a doc renders badly
+ * and buys nothing.
  */
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { HEADERS, editionOf, normalize } from './edition-manifest.mjs'
+import {
+  HEADER,
+  LICENSE,
+  WORKSPACES,
+  licenseOf,
+  normalize,
+} from './workspaces.mjs'
 
 const CHECK = process.argv.includes('--check')
 
@@ -102,30 +107,40 @@ function restamp(content, header, prefix) {
 
 const drift = []
 let stamped = 0
-let core = 0
-let proprietary = 0
+let scanned = 0
 
 for (const file of candidateFiles()) {
   const prefix = COMMENT[extensionOf(file)]
   if (!prefix) continue
-
-  const edition = editionOf(file)
-  if (edition === 'core') core++
-  else proprietary++
+  scanned++
 
   const content = readFileSync(file, 'utf8')
-  const next = restamp(content, HEADERS[edition], prefix)
+  const next = restamp(content, HEADER, prefix)
   if (next === null) continue
 
   if (CHECK) {
-    drift.push(`${file}  (expected ${edition})`)
+    drift.push(file)
   } else {
     writeFileSync(file, next)
     stamped++
   }
 }
 
-console.log(`Classified ${core} core, ${proprietary} proprietary.`)
+console.log(`Scanned ${scanned} source file(s).`)
+
+// A workspace manifest's licence is a declaration npm and license scanners
+// read, so it has to agree with the headers. Not fixable by stamping — a
+// different licence is a decision, never drift.
+const wrongLicence = WORKSPACES.filter((dir) => licenseOf(dir) !== LICENSE)
+if (wrongLicence.length > 0) {
+  console.error(
+    `\n✗ ${wrongLicence.length} workspace(s) do not declare ${LICENSE}:\n`,
+  )
+  for (const dir of wrongLicence) {
+    console.error(`  ${dir}/package.json  (license: ${licenseOf(dir)})`)
+  }
+  process.exit(1)
+}
 
 if (CHECK) {
   if (drift.length > 0) {
@@ -137,7 +152,7 @@ if (CHECK) {
     console.error('\nRun: npm run license:fix')
     process.exit(1)
   }
-  console.log('✅ All license headers match the edition manifest.')
+  console.log(`✅ Every source file and workspace is ${LICENSE}.`)
 } else {
   console.log(`✅ Stamped ${stamped} file(s).`)
 }

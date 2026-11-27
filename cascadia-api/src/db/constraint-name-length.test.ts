@@ -16,15 +16,15 @@
  * the source made look distinct.
  *
  * This reads the committed artefact rather than a live database on purpose.
- * The names ship in each edition's `drizzle/` directory and are what a
- * customer's install replays; the checked-in snapshot is where a too-long name
- * first exists, one `db:generate` before it reaches anyone. No database and no
- * fixtures — the guard costs a file read and covers both editions.
+ * The names ship in `cascadia-app/drizzle/` and are what a customer's install
+ * replays; the checked-in snapshot is where a too-long name first exists, one
+ * `db:generate` before it reaches anyone. No database and no fixtures — the
+ * guard costs a file read.
  *
  * Run: npx vitest run cascadia-api/src/db/constraint-name-length.test.ts
  */
 
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
@@ -69,35 +69,12 @@ const journalSchema = z.object({
   entries: z.array(z.object({ idx: z.number().int(), tag: z.string() })),
 })
 
-interface Edition {
-  /** The app directory name, e.g. `cascadia-app-enterprise`. */
-  app: string
-  /** Absolute path to that edition's `drizzle/` directory. */
-  drizzleDir: string
-}
+/** The app's committed migrations. */
+const DRIZZLE_DIR = path.join(REPO_ROOT, 'cascadia-app', 'drizzle')
 
-/**
- * The editions present in this checkout. The published community tree holds
- * only `cascadia-app`, so this discovers rather than hardcodes — the same
- * reason `scripts/edition.mjs` exists.
- */
-function editions(): Array<Edition> {
-  return readdirSync(REPO_ROOT, { withFileTypes: true })
-    .filter(
-      (entry) => entry.isDirectory() && entry.name.startsWith('cascadia-app'),
-    )
-    .map((entry) => ({
-      app: entry.name,
-      drizzleDir: path.join(REPO_ROOT, entry.name, 'drizzle'),
-    }))
-    .filter((edition) =>
-      existsSync(path.join(edition.drizzleDir, 'meta', '_journal.json')),
-    )
-}
-
-/** Every constraint and index name in an edition's newest snapshot. */
-function headSnapshotNames(edition: Edition): Array<string> {
-  const metaDir = path.join(edition.drizzleDir, 'meta')
+/** Every constraint and index name in the journal's newest snapshot. */
+function headSnapshotNames(): Array<string> {
+  const metaDir = path.join(DRIZZLE_DIR, 'meta')
   const journal = journalSchema.parse(
     JSON.parse(
       readFileSync(path.join(metaDir, '_journal.json'), { encoding: 'utf8' }),
@@ -106,15 +83,14 @@ function headSnapshotNames(edition: Edition): Array<string> {
 
   const head = journal.entries.at(-1)
   if (!head) {
-    throw new Error(`${edition.app} has an empty migration journal.`)
+    throw new Error('The migration journal is empty.')
   }
 
   const prefix = String(head.idx).padStart(4, '0')
   const snapshotFile = path.join(metaDir, `${prefix}_snapshot.json`)
   if (!existsSync(snapshotFile)) {
     throw new Error(
-      `${edition.app} journal head ${head.tag} has no snapshot at ` +
-        `${snapshotFile}.`,
+      `Journal head ${head.tag} has no snapshot at ${snapshotFile}.`,
     )
   }
 
@@ -132,28 +108,20 @@ function headSnapshotNames(edition: Edition): Array<string> {
 }
 
 describe('committed schema identifiers fit Postgres', () => {
-  const found = editions()
+  it('declares no identifier over 63 bytes', () => {
+    const names = headSnapshotNames()
+    // Without this the case would pass by scanning nothing, which is the
+    // failure mode a file-based guard is most prone to.
+    expect(names.length).toBeGreaterThan(0)
 
-  // Without this the per-edition cases below would pass by scanning nothing,
-  // which is the failure mode a file-based guard is most prone to.
-  it('finds a migration journal for at least one edition', () => {
-    expect(found.length).toBeGreaterThan(0)
+    const tooLong = names
+      .filter((name) => byteLength(name) > MAX_IDENTIFIER_BYTES)
+      .map((name) => `${name} (${byteLength(name)} bytes)`)
+      .sort()
+
+    // The fix, when this fails: give the constraint an explicit `name` in its
+    // table's extras — drizzle's `foreignKey` / `unique` / `check` / `index`
+    // all take one — then re-mint the migration.
+    expect(tooLong).toEqual([])
   })
-
-  for (const edition of found) {
-    it(`${edition.app} declares no identifier over 63 bytes`, () => {
-      const names = headSnapshotNames(edition)
-      expect(names.length).toBeGreaterThan(0)
-
-      const tooLong = names
-        .filter((name) => byteLength(name) > MAX_IDENTIFIER_BYTES)
-        .map((name) => `${name} (${byteLength(name)} bytes)`)
-        .sort()
-
-      // The fix, when this fails: give the constraint an explicit `name` in
-      // its table's extras — drizzle's `foreignKey` / `unique` / `check` /
-      // `index` all take one — then re-mint the migrations for BOTH editions.
-      expect(tooLong).toEqual([])
-    })
-  }
 })

@@ -6,18 +6,16 @@
 //
 //   node scripts/app-tsx.mjs scripts/truncate-all.ts [args…]
 //
-// For the scripts that load an app's composition roots and so reach module
+// For the scripts that load the app's composition roots and so reach module
 // code, which imports its own files through `@/`. The root tsconfig cannot
-// resolve those — see `appTsconfig()` in scripts/edition.mjs — and tsx reads
-// the tsconfig nearest the working directory unless told otherwise, so the
-// npm script or compose command that starts such an entry starts it here.
-// In a tree that composes only the community app this is the community
-// tsconfig, which maps `@/` exactly as the root one does.
+// resolve those — see `APP_TSCONFIG` in scripts/app.mjs — and tsx reads the
+// tsconfig nearest the working directory unless told otherwise, so the npm
+// script or compose command that starts such an entry starts it here.
 
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { appTsconfig } from './edition.mjs'
+import { APP_TSCONFIG } from './app.mjs'
 
 const [entry, ...args] = process.argv.slice(2)
 if (!entry) {
@@ -53,7 +51,7 @@ function tsxCommand() {
 const tsx = tsxCommand()
 const result = spawnSync(
   tsx.cmd,
-  [...tsx.args, '--tsconfig', resolve(appTsconfig()), entry, ...args],
+  [...tsx.args, '--tsconfig', resolve(APP_TSCONFIG), entry, ...args],
   { stdio: 'inherit', shell: tsx.shell },
 )
 if (result.error) {

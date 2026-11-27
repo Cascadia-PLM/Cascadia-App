@@ -30,7 +30,7 @@ const extensionSchema = z.object({
   /**
    * Whether it runs on this instance: false when an operator switched it off in
    * `extensions.disabled`, or when the extension's own declaration says it does
-   * not belong here — a module that is not licensed or not configured.
+   * not belong here — a module that is not configured.
    */
   enabled: z.boolean(),
   /** Who switched it off when `enabled` is false; null when it runs. */
@@ -95,7 +95,7 @@ app.get(
         const disabled = await disabledExtensionIds()
         // The operator's switch first, then the extension's own answer,
         // evaluated as dispatch evaluates it. Reading the switch alone reported
-        // an unlicensed module's extension as enabled while it never ran.
+        // an unconfigured module's extension as enabled while it never ran.
         const extensions = await Promise.all(
           describeExtensions(on).map(async (extension) => {
             if (disabled.has(extension.id)) {

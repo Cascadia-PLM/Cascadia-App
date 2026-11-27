@@ -109,10 +109,10 @@ const contributed = new Map<Resource, Array<Resource>>()
  * Declare that mutating each key also staleness-marks its listed resources.
  *
  * Additive in both directions, which is the point: a module both introduces its
- * own resources *and* adds edges to core's. Advanced Auditing needs
- * `signatures → lifecycles` because a signature changes what an approval panel
- * shows, and equally `lifecycles → signatures`, because core has no reason to
- * know that approving something produces a signature.
+ * own resources *and* adds edges to core's. A module whose records change what
+ * a core screen shows needs an edge from its resource to core's, and equally
+ * one back, because core has no reason to know that its own writes produce the
+ * module's records.
  *
  * Call from a composition root at boot, before the first invalidation.
  */

@@ -453,11 +453,10 @@ once; the claim in step 1 is what makes that harmless, so there is
 deliberately no cross-process lock around the sweep.
 
 The reap in step 4 skips any row whose type this process has no definition
-for — a community jobs worker sweeping a database that also carries
-enterprise rows, or a type dropped by an upgrade while rows of it are still
-in flight. Its timeout is simply unknowable here, so the row is left exactly
-as it is (warned about once per type per process) for whichever worker fleet
-does own the type.
+for — a worker built without a module whose rows the database carries, or a
+type dropped by an upgrade while rows of it are still in flight. Its timeout
+is simply unknowable here, so the row is left exactly as it is (warned about
+once per type per process) for whichever worker fleet does own the type.
 
 One deployment caveat: Python-executed types (CAD conversion/generation)
 park their retries in the same table, and the sweep that re-publishes them

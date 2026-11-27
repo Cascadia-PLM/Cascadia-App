@@ -53,7 +53,7 @@ export { widgets } from './items'
 npm run db:push       # Applies to dev database
 ```
 
-Apply the change to your dev database with `npm run db:push` (interactive — drizzle-kit prompts), then mint the migrations that ship it for **both editions**: `npm run db:generate` and `CASCADIA_APP=cascadia npm run db:generate`, and commit what appears under `cascadia-app*/drizzle/` — CI's drift gate fails on schema/migration drift. Committed migrations are the upgrade path for released installs (`npm run db:migrate`); `db:push` is dev/CI/demo only. See [database-patterns.md](./database-patterns.md#migration-workflow) and docs/deployment/upgrading.md.
+Apply the change to your dev database with `npm run db:push` (interactive — drizzle-kit prompts), then mint the migration that ships it with `npm run db:generate`, and commit what appears under `cascadia-app/drizzle/` — CI's drift gate fails on schema/migration drift. Committed migrations are the upgrade path for released installs (`npm run db:migrate`); `db:push` is dev/CI/demo only. See [database-patterns.md](./database-patterns.md#migration-workflow) and docs/deployment/upgrading.md.
 
 ## Step 3: Create Type Definition
 
@@ -415,7 +415,7 @@ Not pinned — forgetting one degrades quietly, so check them by hand:
 Ordinary application work:
 
 - [ ] Type-specific table in `cascadia-api/src/db/schema/items.ts`, exported from `schema/index.ts`
-- [ ] Migrations generated for **both** editions and committed
+- [ ] Migration generated and committed
 - [ ] API schemas in `cascadia-api/src/api/schemas.ts` (at minimum an update schema — `itemUpdateSchemaFor` has a test that covers every type)
 - [ ] API routes in `cascadia-api/src/server/routes/widgets.ts`, mounted in `server/index.ts`
 - [ ] `npm run openapi:snapshot` and commit the result

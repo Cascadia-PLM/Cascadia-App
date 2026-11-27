@@ -1,0 +1,16 @@
+name: freecad-runner
+channels:
+  - conda-forge
+dependencies:
+  # FreeCAD is built with INSTALL_TO_SITEPACKAGES on conda-forge, so this
+  # environment's own interpreter can `import FreeCAD` — which is how the
+  # runner drives it (runner.py), with `freecadcmd` never needed.
+  - python>=3.11,<3.14
+  - freecad>=1.0
+  - pip
+  - pip:
+      - pika>=1.3
+      - 'psycopg[binary]>=3.1'
+      - pydantic>=2.0
+      - pydantic-settings>=2.0
+      - pytest>=7.0

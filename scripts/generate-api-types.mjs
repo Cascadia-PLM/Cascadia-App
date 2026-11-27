@@ -11,10 +11,9 @@
  * after `openapi:check`, so one job owns contract drift end to end
  * (routes → snapshot → generated types).
  *
- * The types are generated from `docs/api/openapi.v1.json`, which is the
- * community contract in every tree, whichever edition the tree composes — so
- * the committed .gen.ts is identical across editions. Module packages type
- * their own routes; core's generated surface must not carry their shapes.
+ * The types are generated from `docs/api/openapi.v1.json`, the app's whole
+ * contract — the routes the modules contribute included, since the snapshot
+ * is taken with them registered.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs'

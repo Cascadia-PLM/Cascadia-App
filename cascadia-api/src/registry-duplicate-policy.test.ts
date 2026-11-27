@@ -4,14 +4,14 @@
 /**
  * Every registry a module registers into decides the same question: what
  * happens when two contributions claim one name. The answer used to differ per
- * registry — `registerTool` and `registerPackage` threw, `JobTypeRegistry`
+ * registry — `registerTool` threw, `JobTypeRegistry`
  * overwrote silently, and `ApprovalRegistry` appended a second entry under the
  * same name — and the silent halves lose configuration nothing else can catch:
  * an overwritten job config takes its timeout, retry delays and routing key
  * with it. Not a type error, and not logged at a level anyone reads.
  *
- * `ReleaseHookRegistry` was covered here too until the Odoo connector moved off
- * it. It now has **zero registrants in both editions**, so there is nothing left
+ * `ReleaseHookRegistry` was covered here too until its last registrant moved
+ * off it. It now has **zero registrants**, so there is nothing left
  * for a duplicate policy to protect; the registry is deprecated and removed a
  * wave later, and this block went with its last registrant rather than testing a
  * seam nothing uses.

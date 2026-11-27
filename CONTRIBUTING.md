@@ -45,10 +45,11 @@ the end of it: this repository is the upstream for Cascadia's core. Review, CI
 and discussion all happen here, in public, on your branch; a maintainer merges
 it, and your commits stay yours, author and all.
 
-Cascadia is dual licensed. The proprietary edition is a fork of this repository
-that adds separately licensed modules on top of the same core and merges `main`
-from here. Nothing flows the other way: a core change is made here or it is not
-made, so there is no second tree for your change to be reconciled with.
+Cascadia is dual licensed: Cascadia PLM LLC also offers this same code under a
+commercial license (see [LICENSING.md](./LICENSING.md)), which is why
+contributions come under the [CLA](./CLA.md). There is no second codebase —
+core and every module, the design engine included, live in this repository, so
+there is no other tree for your change to be reconciled with.
 
 ## Development Setup
 
@@ -164,6 +165,6 @@ See [CLAUDE.md](./CLAUDE.md) for the full architecture reference.
 
 ## License and CLA
 
-Cascadia is an open-core, dual-licensed project: the core is [AGPL-3.0](./LICENSE), and the same code is also offered under a commercial license. See [LICENSING.md](./LICENSING.md) for the full policy, including exactly which capabilities stay open.
+Cascadia is open source and dual-licensed: everything in this repository is [AGPL-3.0](./LICENSE), and the same code is also offered under a commercial license. See [LICENSING.md](./LICENSING.md) for the full policy.
 
-Because of dual licensing, external contributions require signing our [Contributor License Agreement](./CLA.md). It's quick: a bot will prompt you on your first pull request, and you sign by replying with a single comment. You retain ownership of your work; the CLA grants the project the license needed to keep the open-core model viable.
+Because of dual licensing, external contributions require signing our [Contributor License Agreement](./CLA.md). It's quick: a bot will prompt you on your first pull request, and you sign by replying with a single comment. You retain ownership of your work; the CLA grants the project the license needed to keep dual licensing possible.

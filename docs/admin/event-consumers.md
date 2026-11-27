@@ -2,7 +2,7 @@
 
 Cascadia records business facts in a durable log, and **consumers** read that log
 to do work: stamping superseded drawings, alerting on changed work
-instructions, delivering webhooks, syncing an ERP. Each consumer keeps its own
+instructions, delivering webhooks. Each consumer keeps its own
 position in the log — its **cursor** — so a consumer that stops falls behind
 rather than losing anything.
 
@@ -70,8 +70,8 @@ using either.
 Clears the failure count, the backoff and the parked flag. The consumer retries
 the **same event** on its next run.
 
-Use it when you have fixed the cause: restarted the ERP, corrected the
-configuration, deployed the fix. If the cause is still there, it parks again,
+Use it when you have fixed the cause: restarted the remote service, corrected
+the configuration, deployed the fix. If the cause is still there, it parks again,
 which costs nothing.
 
 Resume is refused for an **abandoned** consumer: retention may already have
@@ -102,8 +102,8 @@ already delivered.
 
 It exists because neither resume nor skip removes a cursor, and a cursor nobody
 owns **pins retention forever** (below). Use it for a consumer no process owns
-any more — an ERP consumer on an instance that dropped the package, a webhook
-dispatcher on one that abandoned webhooks — not to unstick a working one.
+any more — a consumer from a module the build no longer includes, a webhook
+dispatcher on an instance that abandoned webhooks — not to unstick a working one.
 
 ## Why a parked cursor pins retention
 

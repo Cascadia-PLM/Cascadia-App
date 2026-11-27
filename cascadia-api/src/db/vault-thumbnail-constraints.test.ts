@@ -13,7 +13,7 @@
  *  - `uq_vault_files_item_thumbnail` makes "at most one per item" — until now
  *    a comment on the column and nothing else — true of the table.
  *  - `thumbnail_file_id` was a bare uuid carrying a comment claiming a raw-SQL
- *    migration had made it a foreign key. No migration in either edition ever
+ *    migration had made it a foreign key. No migration ever
  *    did, and a hard-deleted vault_files row would have left an item
  *    advertising a thumbnail id that resolves to nothing.
  *

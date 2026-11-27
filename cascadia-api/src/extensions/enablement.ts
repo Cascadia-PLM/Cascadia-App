@@ -113,7 +113,7 @@ export async function disabledExtensionIds(): Promise<ReadonlySet<string>> {
  * Whether an extension runs, combining its own declaration with the row.
  *
  * The extension's own answer is taken first and costs no query — that is how a
- * module package says "not licensed here" without an operator having to switch
+ * module says "not configured here" without an operator having to switch
  * anything off. It may be a static boolean or a predicate; see
  * `ExtensionCommon.enabled` for when each is right.
  *
@@ -123,9 +123,9 @@ export async function disabledExtensionIds(): Promise<ReadonlySet<string>> {
  * silently stops for a reason nothing reports. A `guard` or `in-transaction`
  * extension does not run. Those act inside a user's write — a guard can refuse
  * it, an in-transaction handler joins its transaction — and a predicate that
- * cannot say whether the extension belongs here (its licence check threw, say)
- * is no warrant for either. Skipping it lets the write proceed as if the
- * extension were not registered, which is what an unlicensed module's is.
+ * cannot say whether the extension belongs here (its configuration check
+ * threw, say) is no warrant for either. Skipping it lets the write proceed as
+ * if the extension were not registered.
  *
  * The row lookup is answered differently, on purpose. The row says nothing
  * about whether an extension belongs on this instance, only whether an operator

@@ -20,7 +20,7 @@ import { users } from './users'
 // in-file branches⇄commits⇄tags cycles. All safe because every such
 // reference sits inside a lazy `.references(() => ...)` callback, which
 // defers evaluation past module load. KEEP IT THAT WAY: moving one into
-// module-evaluation position crashes both editions at boot.
+// module-evaluation position crashes the app at boot.
 import { items } from './items'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 

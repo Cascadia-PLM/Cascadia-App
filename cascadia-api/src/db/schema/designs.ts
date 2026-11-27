@@ -19,7 +19,7 @@ import { users } from './users'
 // back). Safe because every cross-file table reference here sits inside a
 // lazy `.references(() => ...)` callback, which defers evaluation past both
 // modules' load. KEEP IT THAT WAY: moving one of these references into
-// module-evaluation position crashes both editions at boot.
+// module-evaluation position crashes the app at boot.
 import { branches, commits, tags } from './versioning'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import type {

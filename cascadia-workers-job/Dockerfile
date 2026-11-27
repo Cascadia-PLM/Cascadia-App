@@ -5,10 +5,10 @@
 # Stage 1: Workspace manifests
 # =============================================================================
 # The single copy of the manifest list, discovered rather than written: every
-# top-level `cascadia-*/package.json` the build context carries, whichever
-# edition this tree composes. Two stages below install from it. The list used
-# to be transcribed by hand, once per stage and then once per edition, and a
-# workspace that was renamed or deleted had to be fixed in every copy; the
+# top-level `cascadia-*/package.json` the build context carries. Two stages
+# below install from it. The list used to be transcribed by hand, once per
+# stage, and a workspace that was renamed or deleted had to be fixed in every
+# copy; the
 # deleted `cad-generation` outlived its package that way. Nothing here runs:
 # this stage is a file list the other stages read, not a layer either of them
 # inherits. See cascadia-app/Dockerfile for the caching note; the two files
@@ -57,17 +57,7 @@ COPY . .
 
 # Build application (increase heap for large TanStack Start builds)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-# Which edition's job handlers this worker carries. Empty by default: given no
-# name, scripts/build-app.mjs resolves the edition this tree composes, so one
-# Dockerfile builds whichever edition the context carries. See
-# cascadia-app/Dockerfile. Unquoted on purpose: an empty value must expand to
-# no argument at all, not to an empty one.
-ARG APP=
-RUN npm run build:app -- $APP
-
-# Record which app was built, for the runtime command: an ARG does not cross
-# stages (scripts/docker-entrypoint.sh exports it from this file).
-RUN echo "${APP:-$(node --input-type=module -e "import { resolveApp } from './scripts/edition.mjs'; console.log(resolveApp())")}" > .edition
+RUN npm run build
 
 # =============================================================================
 # Stage 4: Runtime dependencies
@@ -114,8 +104,7 @@ COPY --from=builder /app/.output ./.output
 # Copy job-related code
 COPY --from=builder /app/cascadia-api/src/db ./cascadia-api/src/db
 
-# The edition marker and the entrypoint that reads it
-COPY --from=builder /app/.edition ./.edition
+# The entrypoint
 COPY --from=builder /app/scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
 
 # Create non-root user
@@ -143,8 +132,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 LABEL org.opencontainers.image.title="Cascadia PLM - Jobs Server"
 LABEL org.opencontainers.image.description="Background job workers for Cascadia PLM"
 
-# The entrypoint exports APP from the builder's `.edition` marker unless the
-# caller set it, then hands off to dumb-init. Shell form for the command so
-# ${APP} expands — the exec form would pass it literally.
+# The entrypoint hands off to dumb-init so signals are forwarded.
 ENTRYPOINT ["sh", "/app/scripts/docker-entrypoint.sh"]
-CMD node ".output/${APP}/server/jobs-worker.mjs"
+CMD ["node", ".output/cascadia/server/jobs-worker.mjs"]

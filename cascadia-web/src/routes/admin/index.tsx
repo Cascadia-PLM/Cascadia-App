@@ -23,7 +23,6 @@ import { useState } from 'react'
 import { SettingKeys } from '@cascadia/commons/config/SettingKeys'
 import { APP_VERSION } from '@cascadia/commons/version'
 import { PageContainer } from '@/components/layout'
-import { PackagesCard } from '@/components/admin/PackagesCard'
 import { Slot } from '@/ui/slot-registry'
 import {
   Badge,
@@ -36,21 +35,13 @@ import {
   Input,
   Label,
 } from '@/components/ui'
-import {
-  packageListQuery,
-  useInvalidateResources,
-  vaultConfigQuery,
-} from '@/query'
+import { useInvalidateResources, vaultConfigQuery } from '@/query'
 import { apiFetch } from '@/api/client'
 
 export const Route = createFileRoute('/admin/')({
   component: AdminPage,
-  loader: async ({ context: { queryClient } }) => {
-    await Promise.all([
-      queryClient.ensureQueryData(vaultConfigQuery()),
-      queryClient.ensureQueryData(packageListQuery()),
-    ])
-  },
+  loader: ({ context: { queryClient } }) =>
+    queryClient.ensureQueryData(vaultConfigQuery()),
 })
 
 function AdminPage() {
@@ -391,9 +382,6 @@ function AdminPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Licensed Packages */}
-      <PackagesCard />
 
       {/* Item Type Configuration */}
       <Card>

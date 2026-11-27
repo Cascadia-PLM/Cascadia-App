@@ -13,7 +13,7 @@ as of v0.5.0 — the first release that ships migration files.
 `db:push` diffs the live database against the code and applies the
 difference directly — fine for ephemeral databases, but it writes no
 history and cannot be reviewed. Released versions ship migration files
-under `cascadia-app*/drizzle/`, and `db:migrate` applies exactly the
+under `cascadia-app/drizzle/`, and `db:migrate` applies exactly the
 committed, reviewed SQL in order, recording each file in the journal
 (`drizzle.__drizzle_migrations`).
 
@@ -91,8 +91,8 @@ applies the baseline and every later migration, journal included. Then seed
 
 v0.6.0 adds the domain event log and the extensibility layer. The schema change
 is **additive and safe on a populated database**: new tables (`domain_events`,
-`event_consumers`, `webhook_subscriptions`, `webhook_deliveries`, and on the
-enterprise edition `odoo_sync_intents`), one sequence, and one deferred
+`event_consumers`, `webhook_subscriptions`, `webhook_deliveries`), one
+sequence, and one deferred
 constraint trigger. Nothing existing is altered or backfilled, so
 `npm run db:migrate` needs no downtime window beyond its own runtime.
 
@@ -183,7 +183,7 @@ this:**
 ```bash
 # 1. Back up the database.
 # 2. See where db:baseline thinks the database sits. Writes nothing:
-npm run db:baseline -- --check   # community edition: prefix CASCADIA_APP=cascadia
+npm run db:baseline -- --check
 # 3. Record the migrations it already satisfies:
 npm run db:baseline
 # 4. Apply the ones it does not, and every upgrade after this:
@@ -327,7 +327,7 @@ A migration is _unpublished_, in this document's sense, while `main` has
 never carried it: it has reached no database other than a development one.
 Before it first lands on `main`, a run of them may be folded into a single
 file — which is what happened to the
-twenty-five (nineteen in the community edition) that the two remediation
+nineteen that the two remediation
 programs produced after `v0.5.0`. It happened in two passes: the first
 program's were folded while the second was still running, and the result was
 folded again with the second's into the same `0001_remediation`. Folding a
@@ -335,7 +335,7 @@ file that is itself a fold is fine; what matters is that nothing in it had
 ever reached `main`.
 
 This is the standing practice, not an occasional cleanup: each wave of
-development reaches `main` as **one** new migration per edition, folded from
+development reaches `main` as **one** new migration, folded from
 however many the work minted on its branch. Development iterates freely
 there; what lands is the consolidated result.
 
@@ -346,9 +346,9 @@ one. Three things make that true, and all three have to hold:
 1. **Every folded migration is one `main` has never carried.** A release tag
    is not the line — `main` is. A production database can only be tracking
    what `main` has carried, tagged or not, so check what `main` already holds
-   under `cascadia-app*/drizzle/`: anything there stays where it is, forever.
+   under `cascadia-app/drizzle/`: anything there stays where it is, forever.
    (This is stricter than the release check the first fold used —
-   `git ls-tree -r --name-only v0.5.0 -- cascadia-app*/drizzle/` — which is only
+   `git ls-tree -r --name-only v0.5.0 -- cascadia-app/drizzle/` — which is only
    equivalent while nothing has landed since the tag.)
 2. **The consolidated file keeps the `when` of the _last_ migration it
    folds.** Drizzle applies on `created_at < folderMillis`, so the timestamp
@@ -427,9 +427,10 @@ for.
 
 ## Rules for maintainers
 
-- Every schema change ships with migrations for **both editions** — run
-  `npm run db:generate` and `CASCADIA_APP=cascadia npm run db:generate`,
-  commit what appears under `cascadia-app*/drizzle/`. CI fails otherwise.
+- Every schema change ships with its migration — run `npm run db:generate`
+  and commit what appears under `cascadia-app/drizzle/`. That includes a
+  module's tables (`cascadia-design-engine/src/db/schema/`), which reach
+  drizzle-kit through `cascadia-app/src/modules.schema.ts`. CI fails otherwise.
 - Never edit a committed migration file. Nothing verifies the stored hash,
   so an edit does not fail — it silently divides your installs into those
   that ran the old statements and those that ran the new. Fix forward with a
@@ -437,7 +438,4 @@ for.
 - **Consolidating unpublished migrations is the one exception**, and it is a
   deliberate operation rather than an edit — see "Consolidating unpublished
   migrations" above. It happens once per wave, right before the release that
-  ships it, so each release carries at most one new migration per edition.
-- The enterprise migrations are proprietary (they name module tables) and
-  exist only in that edition's fork; the community migrations under
-  `cascadia-app/drizzle/` are developed here, and the fork merges them.
+  ships it, so each release carries at most one new migration.

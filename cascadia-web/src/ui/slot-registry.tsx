@@ -24,12 +24,6 @@ import type { Part } from '@cascadia/commons/items/types/part'
  */
 export interface SlotProps {
   /**
-   * Below the approval list on a change order. Receives the workflow instance
-   * rather than a signing-specific scope, because core does not know what a
-   * chain scope is — the module derives whatever it needs.
-   */
-  'change-order-approval-manifest': { instanceId: string }
-  /**
    * Extra sections at the foot of the admin AI settings page. Takes no props:
    * a module contributing here brings its own heading and copy, because core
    * has no basis for describing a feature it does not ship.
@@ -93,7 +87,7 @@ const registry = new Map<SlotName, Array<AnySlotComponent>>()
  * Contribute a component to a slot. Called from a composition root.
  *
  * Deliberately additive, unlike the name-keyed registries (`JobTypeRegistry`,
- * `ApprovalRegistry`, `ReleaseHookRegistry`, `registerPackage`) which throw on
+ * `ApprovalRegistry`, `ReleaseHookRegistry`) which throw on
  * a duplicate. A slot is a *list* of contributions rendered in registration
  * order — several modules decorating one extension point is the contract, not
  * a collision, so there is nothing here that could conflict.

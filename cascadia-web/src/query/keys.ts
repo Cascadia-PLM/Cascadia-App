@@ -46,7 +46,6 @@ export const RESOURCES = [
   'lifecycles',
   'manufacturer-parts',
   'mbom',
-  'packages',
   'parts',
   'physical-parts',
   'programs',

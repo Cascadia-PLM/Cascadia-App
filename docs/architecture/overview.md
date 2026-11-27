@@ -166,8 +166,8 @@ own. Directory layouts were preserved across the split, so a path under
 
 The jobs worker (`cascadia-workers-job`) sits above the api: it registers
 the handlers and runs them, and the api never imports it. The app
-(`cascadia-app`) composes the four (plus, in the enterprise edition, the
-module packages) into one deployable — see "The extension boundary" in
+(`cascadia-app`) composes the four, plus the `cascadia-design-engine` module
+package, into one deployable — see "The extension boundary" in
 [CLAUDE.md](../../CLAUDE.md) and
 [writing-extensions.md](../development/writing-extensions.md).
 
@@ -180,7 +180,6 @@ components/
 ├── ui/                  # Base primitives: Button, Card, DataGrid, Dialog, Badge, etc.
 │                        # Uses Radix UI + Tailwind. Import via @/components/ui/
 ├── ai/                  # AI chatbot panel and message rendering
-├── design-engine/       # Collaborative design workspace (stages, artifacts, BOM tools)
 ├── work-instructions/   # Work instruction authoring and execution
 ├── designs/             # Design management (AddPartToDesignDialog, DesignBranchSelector)
 ├── versioning/          # Version comparison, commit history, diff views
@@ -219,10 +218,16 @@ cascadia-api/src/
 ├── jobs/                # Background job system (RabbitMQ producer/consumer)
 ├── errors/              # Typed error hierarchy (AppError, NotFoundError, ValidationError, ...)
 ├── ai/                  # AI chatbot tools, adapters, session service
-├── design-engine/       # Collaborative design engine (stages, tools, materialization)
-├── cad-generation/      # CAD generation pipeline (FreeCAD agent, assembly composition) — same package
 └── sysml/               # SysML v2 serialization
 ```
+
+The collaborative design engine is not under `cascadia-api`: it is a module
+package, `cascadia-design-engine/`, whose `src/` mirrors this layout —
+`design-engine/` (stages, tools, materialization), `cad-generation/` (the
+FreeCAD agent, assembly composition), plus its own `components/`, `routes/`,
+`server/routes/`, `jobs/` and `db/schema/`. It registers into core from the
+app's composition root and core never imports it. See
+[design-engine.md](../features/design-engine.md).
 
 ### `cascadia-api/src/server/`
 

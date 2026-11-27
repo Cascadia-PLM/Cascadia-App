@@ -68,7 +68,7 @@ import { config as loadEnv } from 'dotenv'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import postgres from 'postgres'
 
-import { appDir, resolveApp } from './edition.mjs'
+import { APP_DIR } from './app.mjs'
 import {
   isDataOnly,
   rowDependentStatements,
@@ -119,8 +119,7 @@ for (const guard of ['DATABASE_URL', 'TEST_DATABASE_URL']) {
  * ------------------------------------------------------------------ */
 
 const repoRoot = process.cwd()
-const app = resolveApp(repoRoot)
-const dir = appDir(app)
+const dir = APP_DIR
 const migrationsFolder = resolve(repoRoot, dir, 'drizzle')
 
 const journal = JSON.parse(
@@ -792,8 +791,8 @@ const SCENARIOS = [
 
   {
     // Named outright rather than sniffed for like TRAVELER_TAG: this file was
-    // minted with an explicit `generate --custom --name=…`, so both editions
-    // carry the same tag.
+    // minted with an explicit `generate --custom --name=…`, so its tag is
+    // stable.
     tag: WORK_ORDER_PROGRAM_TAG(),
     name: 'work order programs are derived where the chain resolves, and only there',
     async seed(sql) {
@@ -862,7 +861,7 @@ const SCENARIOS = [
 
   {
     // Same reasoning as the tag above: minted with `generate --custom
-    // --name=…`, so both editions carry it verbatim.
+    // --name=…`, so its tag is stable.
     tag: ISSUE_PROGRAM_TAG(),
     name: 'issue programs are derived only where the hand-picked designs agree on one',
     async seed(sql) {
@@ -1641,9 +1640,6 @@ const SCENARIOS = [
       expectEqual(branchRows.n, 2, 'both branches are left as they were')
     },
   },
-
-  ...snapshotSeqScenarios(),
-  ...signingCredentialScenarios(),
 
   {
     tag: VARIANT_EDGES_TAG(),
@@ -2512,8 +2508,8 @@ function refdesEdgesSeed() {
 }
 
 /**
- * The product-variants migration, named by the index it builds: the tag
- * differs per edition. It replaces the (source, target, type) constraint on
+ * The product-variants migration, named by the index it builds rather than by
+ * its generated tag, which a consolidation can rename. It replaces the (source, target, type) constraint on
  * item_relationships with two partial unique indexes, one for fixed lines and
  * one for lines carrying an option condition.
  */
@@ -2531,7 +2527,7 @@ function VARIANT_EDGES_TAG() {
 
 /**
  * The approver-uniqueness migration, named by what it builds for the same
- * reason as the three below: the tag differs per edition.
+ * reason as the three below: a generated tag can be renamed by a consolidation.
  */
 function APPROVERS_TAG() {
   const found = migrations.find((m) =>
@@ -2547,7 +2543,7 @@ function APPROVERS_TAG() {
 
 /**
  * The commits→ECO migration, named by what it builds for the same reason as
- * the two below: the tag differs per edition.
+ * the two below: a generated tag can be renamed by a consolidation.
  */
 function COMMIT_ECO_TAG() {
   const found = migrations.find((m) =>
@@ -2619,7 +2615,7 @@ function ISSUE_PROGRAM_TAG() {
 
 /**
  * The vault-thumbnail migration, named by what it builds for the same reason
- * as the others: the tag differs per edition. Both of its pre-cleanups — the
+ * as the others: a generated tag can be renamed by a consolidation. Both of its pre-cleanups — the
  * dangling self-FK pointers and the duplicate per-item designations — ship in
  * this one file, so both scenarios name it.
  */
@@ -2856,182 +2852,7 @@ function PERMISSION_RESOURCE_TAG() {
 }
 
 /**
- * The snapshot-seq scenario, or nothing at all.
- *
- * `design_session_snapshots` is a design-engine table, so it exists only in
- * the enterprise journal; the community edition mints no migration for it and
- * a scenario naming one would fail in the published tree, where this script
- * also runs. Resolving to an empty list there is the difference between "not
- * applicable to this edition" and "the migration went missing".
- */
-function snapshotSeqScenarios() {
-  const found = migrations.find((m) =>
-    m.sql.some((s) => s.includes('uq_design_snapshots_session_seq')),
-  )
-  if (!found) return []
-
-  return [
-    {
-      tag: found.tag,
-      name: 'duplicate snapshot seqs are renumbered in order, clean sessions untouched',
-      async seed(sql) {
-        await exec(sql, snapshotSeqSeed())
-      },
-      async assert(sql) {
-        // The renumber is order-preserving: reading the rows by their old
-        // order gives 1..N, so the newest snapshot for a stage is still the
-        // newest and every rollback target keeps its meaning.
-        const expected = {
-          [id(340)]: 1,
-          [id(341)]: 2,
-          [id(342)]: 3,
-          [id(343)]: 4,
-          // A session with no duplicate is not touched at all, gap included.
-          [id(344)]: 1,
-          [id(345)]: 5,
-        }
-        const why = {
-          [id(341)]: 'the older of the tied pair keeps the number it had',
-          [id(342)]: 'the newer of the tied pair moves up one',
-          [id(343)]: 'everything above the tie shifts to stay above it',
-          [id(345)]: 'a clean session keeps its numbering, gaps and all',
-        }
-        for (const [row, seq] of Object.entries(expected)) {
-          const found_ = await one(
-            sql,
-            `select seq from design_session_snapshots where id = '${row}'`,
-          )
-          expectEqual(found_.seq, seq, why[row] ?? `${row} keeps seq ${seq}`)
-        }
-
-        const [dupes] = await sql.unsafe(`
-          select count(*)::int as n from (
-            select session_id, seq from design_session_snapshots
-            group by session_id, seq having count(*) > 1
-          ) d
-        `)
-        expectEqual(dupes.n, 0, 'no session may mint one seq twice')
-
-        expect(
-          await relationExists(sql, 'uq_design_snapshots_session_seq'),
-          'uq_design_snapshots_session_seq should exist once the seqs are distinct',
-        )
-      },
-    },
-  ]
-}
-
-/**
- * The signing-credential migration, or nothing at all.
- *
- * `signing_credentials` and `digital_signatures` are advanced-auditing tables,
- * so like the snapshot-seq scenario above this one exists only in the
- * enterprise journal; resolving to an empty list in the published tree is the
- * difference between "not applicable to this edition" and "the migration went
- * missing".
- *
- * This is the migration that made the validating-DDL hole visible: its only
- * data-dependent statements are an `ADD CONSTRAINT` and an `ADD COLUMN`, so
- * the writes-only classifier waved it through with no scenario at all.
- */
-function signingCredentialScenarios() {
-  // Named by the action, not just the constraint: the baseline adds this same
-  // foreign key under this same name, and it is the swap to `restrict` that
-  // this scenario is about.
-  const found = migrations.find((m) =>
-    m.sql.some(
-      (s) =>
-        s.includes('signing_credentials_user_id_users_id_fk') &&
-        /add\s+constraint/i.test(s) &&
-        /on\s+delete\s+restrict/i.test(s),
-    ),
-  )
-  if (!found) return []
-
-  return [
-    {
-      tag: found.tag,
-      name: 'an enrollment survives the restrict swap, and now blocks deleting its user',
-      async seed(sql) {
-        await exec(sql, signingCredentialSeed())
-      },
-      async assert(sql) {
-        // The migration re-adds a foreign key that already existed under the
-        // same name, so the only evidence it did anything is the action.
-        expectEqual(
-          await foreignKeyOnDelete(
-            sql,
-            'signing_credentials_user_id_users_id_fk',
-          ),
-          'r',
-          'the user foreign key is restrict, not cascade, once the migration runs',
-        )
-
-        // Validating that constraint against rows is the whole risk, so say
-        // out loud that the rows it validated are still there.
-        const [kept] = await sql.unsafe(
-          `select count(*)::int as n from signing_credentials where id in ('${id(350)}', '${id(351)}')`,
-        )
-        expectEqual(kept.n, 2, 'no enrollment is touched by the swap')
-
-        // The point of the swap: an enrollment is evidence of who held which
-        // card and when, and deleting the account must not be a way to erase
-        // it. Under the cascade this replaced, this DELETE would have
-        // succeeded and taken the enrollment with it. `UserService.deleteUser`
-        // reads exactly this violation as the signal to degrade to
-        // deactivation, so the code it raises is part of the contract:
-        // RESTRICT raises 23001, not the 23503 a plain NO ACTION would.
-        const error = await refused(sql, `delete from users where id = '${U1}'`)
-        expectEqual(error.code, '23001', 'SQLSTATE for the refused delete')
-        expectEqual(
-          error.constraint_name,
-          'signing_credentials_user_id_users_id_fk',
-          'the constraint that refused the delete',
-        )
-        const [survivor] = await sql.unsafe(
-          `select count(*)::int as n from users where id = '${U1}'`,
-        )
-        expectEqual(
-          survivor.n,
-          1,
-          'the refused delete leaves the user in place',
-        )
-
-        // A revoked enrollment is kept deliberately as history, so it protects
-        // its user too — a revoked card must not become a way to erase the
-        // record that it was ever issued.
-        const revoked = await refused(
-          sql,
-          `delete from users where id = '${U2}'`,
-        )
-        expectEqual(
-          revoked.constraint_name,
-          'signing_credentials_user_id_users_id_fk',
-          'a revoked enrollment protects its user as well',
-        )
-
-        // The other half of the file. `hash_version` is documented as needing
-        // no backfill because "the default is what an existing row reads" —
-        // which is a claim about rows that were already there, and therefore
-        // one only a populated database can check.
-        const signature = await one(
-          sql,
-          `select hash_version from digital_signatures where id = '${id(352)}'`,
-        )
-        expectEqual(
-          signature.hash_version,
-          1,
-          'a signature written before the column existed reads as version 1, ' +
-            'the format that actually produced its chain hash',
-        )
-      },
-    },
-  ]
-}
-
-/**
- * The traveler migration carries a different tag in each edition (the two files
- * are byte-identical; only the generated name differs), so name it by position:
+ * The traveler migration has a generated tag, so name it by what it builds:
  * it is the one that creates `uq_instr_exec_open_run`.
  */
 function TRAVELER_TAG() {
@@ -3391,69 +3212,6 @@ function vaultThumbnailFlagSeed() {
   `
 }
 
-/**
- * Two design sessions: one whose seq was minted twice by two concurrent
- * confirms, and one that is already correct — gap included, so a renumber that
- * reached past the sessions with an actual duplicate would be visible.
- */
-function snapshotSeqSeed() {
-  return `
-    ${USERS}
-    insert into programs (id, name, code, created_by) values
-      ('${id(330)}', 'Snapshot Program', 'FIX-PROG-SNAP', '${U1}');
-
-    insert into design_sessions (id, user_id, program_id, description) values
-      ('${id(331)}', '${U1}', '${id(330)}', 'Two confirms landed on one seq'),
-      ('${id(332)}', '${U1}', '${id(330)}', 'Already numbered correctly');
-
-    insert into design_session_snapshots
-      (id, session_id, stage, seq, artifacts, llm_history_length, created_at)
-    values
-      ('${id(340)}', '${id(331)}', 'requirements_review', 1, '{}'::jsonb, 0, '2024-01-01T00:00:00Z'),
-      -- The tie: both confirms read max(seq) = 1 and both wrote 2.
-      ('${id(341)}', '${id(331)}', 'bom_review', 2, '{}'::jsonb, 0, '2024-02-01T00:00:00Z'),
-      ('${id(342)}', '${id(331)}', 'bom_review', 2, '{}'::jsonb, 0, '2024-03-01T00:00:00Z'),
-      ('${id(343)}', '${id(331)}', 'cad_review', 3, '{}'::jsonb, 0, '2024-04-01T00:00:00Z'),
-      -- A session with no tie, whose numbering must not move.
-      ('${id(344)}', '${id(332)}', 'requirements_review', 1, '{}'::jsonb, 0, '2024-01-01T00:00:00Z'),
-      ('${id(345)}', '${id(332)}', 'bom_review', 5, '{}'::jsonb, 0, '2024-02-01T00:00:00Z');
-  `
-}
-
-/**
- * Two enrolled users and one signature written before `hash_version` existed.
- *
- * The signature deliberately names a *third* user as its signer. Its own
- * foreign key to `users` is ON DELETE NO ACTION, so a signer who also held an
- * enrollment would be protected by two constraints at once and which one
- * Postgres named in the error would be an implementation detail to depend on.
- */
-function signingCredentialSeed() {
-  const U3 = id(353)
-  return `
-    ${USERS}
-    insert into users (id, email, name) values
-      ('${U3}', 'three@fixture.invalid', 'User Three');
-
-    insert into signing_credentials
-      (id, user_id, cert_thumbprint, cert_subject_dn, cert_issuer_dn, cert_serial, revoked_at)
-    values
-      -- An active enrollment.
-      ('${id(350)}', '${U1}', 'thumb-350', 'CN=One', 'CN=CA', '350', null),
-      -- A revoked one. Revoked rows are kept as history deliberately, so this
-      -- user is protected by the restrict too.
-      ('${id(351)}', '${U2}', 'thumb-351', 'CN=Two', 'CN=CA', '351', '2024-01-01T00:00:00Z');
-
-    insert into digital_signatures
-      (id, subject_type, subject_id, chain_scope, signer_user_id, signer_name,
-       decision, meaning, method, assurance, signed_payload, payload_hash, chain_hash)
-    values
-      ('${id(352)}', 'workflow_vote', '${id(354)}', 'global', '${U3}', 'User Three',
-       'approve', 'I approve this change', 'password', 'basic',
-       '{}'::jsonb, 'p352', 'c352');
-  `
-}
-
 /* ------------------------------------------------------------------ *
  * The ratchet
  * ------------------------------------------------------------------ */
@@ -3527,7 +3285,7 @@ function INTERFACES_TAG() {
 
 /**
  * The domain-event sequencing migration, named by what it builds for the same
- * reason as the helpers above: the tag differs per edition.
+ * reason as the helpers above: a generated tag can be renamed by a consolidation.
  */
 function DOMAIN_EVENTS_TAG() {
   const found = migrations.find((m) =>

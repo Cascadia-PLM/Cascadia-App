@@ -1,0 +1,104 @@
+==============================================================================
+THIRD-PARTY SOFTWARE NOTICES - Cascadia CAD Generator
+==============================================================================
+
+This image generates parametric CAD from templates and composes assemblies. It
+includes the third-party software listed below, redistributed under the
+licences named.
+
+Nothing in this file changes the licence of any component it lists, and
+nothing in it grants rights in Cascadia itself.
+
+------------------------------------------------------------------------------
+COMPONENTS UNDER THE GNU LESSER GENERAL PUBLIC LICENCE
+------------------------------------------------------------------------------
+
+  casadi                    LGPL-3.0-or-later
+                            https://github.com/casadi/casadi
+                            Pulled in as a dependency of cadquery.
+
+  psycopg (psycopg 3)       LGPL-3.0-only
+                            https://github.com/psycopg/psycopg
+
+  Open CASCADE Technology   LGPL-2.1, with the Open CASCADE exception
+  (OCCT)                    https://github.com/Open-Cascade-SAS/OCCT
+                            Included as the native library underneath
+                            cadquery-ocp. The cadquery-ocp wrapper is itself
+                            Apache-2.0; the OCCT binaries it carries are not.
+
+Each of these is installed unmodified by conda or pip from its upstream
+package, and each is loaded at run time by the Python interpreter through the
+ordinary module import mechanism. None is statically linked into, or modified
+by, Cascadia's own code.
+
+You may replace any of them. They are ordinary installed packages inside this
+image, and you are entitled under their licences to modify them and to run
+this image against your modified version. Nothing in the image prevents that.
+
+The licence texts as published by their authors are collected under
+/app/licenses, alongside those of every other conda-installed component. The
+canonical texts are also published at:
+
+  LGPL-3.0    https://www.gnu.org/licenses/lgpl-3.0.html
+  GPL-3.0     https://www.gnu.org/licenses/gpl-3.0.html
+              (LGPL-3.0 applies as additional permissions on top of GPL-3.0)
+  LGPL-2.1    https://www.gnu.org/licenses/lgpl-2.1.html
+
+------------------------------------------------------------------------------
+OPEN CASCADE TECHNOLOGY NOTICE
+------------------------------------------------------------------------------
+
+This software uses the facilities of Open CASCADE Technology.
+
+Open CASCADE Technology is distributed under LGPL-2.1 together with an
+additional exception granted by Open Cascade SAS. That exception is the
+permission this image relies on, and the notice above is the condition it is
+granted in exchange for.
+
+------------------------------------------------------------------------------
+SOURCE AVAILABILITY
+------------------------------------------------------------------------------
+
+Source for each copyleft component above is available at the URL given with
+it. You may also obtain the corresponding source, on a medium customarily used
+for software interchange, by written request to:
+
+  info@cascadiaplm.com
+
+------------------------------------------------------------------------------
+PERMISSIVELY LICENSED COMPONENTS
+------------------------------------------------------------------------------
+
+  cadquery                  Apache-2.0
+                            https://github.com/CadQuery/cadquery
+  cadquery-ocp              Apache-2.0  (see the OCCT entry above for the
+                            native library this wrapper carries)
+  cq_gears                  Apache-2.0
+                            https://github.com/meadiode/cq_gears
+                            Pinned at commit e73874cf17a25447a99b1e7c22a4d5af38560e9c
+  nlopt                     MIT
+  pika                      BSD-3-Clause
+  numpy                     BSD-3-Clause
+  pydantic                  MIT
+  pydantic-settings         MIT
+  pytest                    MIT
+
+Apache-2.0 requires that a copy of the licence accompany the work. The full
+text is reproduced under /app/licenses, and is published at
+https://www.apache.org/licenses/LICENSE-2.0.
+
+------------------------------------------------------------------------------
+COMPLETE INVENTORY
+------------------------------------------------------------------------------
+
+The components named above are those this image installs directly, together
+with the copyleft-bearing libraries they pull in. They are not the whole
+dependency tree.
+
+For a complete inventory of everything actually resolved into this image, with
+exact versions and declared licences, run inside a container:
+
+  conda list -p /venv
+  /venv/bin/pip list
+
+and read the collected licence texts under /app/licenses.

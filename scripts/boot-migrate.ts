@@ -33,7 +33,7 @@ import { getTableName, is, sql } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 import { db, describeConnection } from '@cascadia/api/db'
 import { classifyMigrationState } from './boot-migrate-state.ts'
-import { appDir, resolveApp } from './edition.mjs'
+import { APP_DIR } from './app.mjs'
 
 /** Same defensive unwrap as db-baseline.ts — the driver returns a RowList. */
 function asRows<T>(result: unknown): Array<T> {
@@ -43,14 +43,10 @@ function asRows<T>(result: unknown): Array<T> {
 }
 
 async function main(): Promise<never> {
-  // Resolved at runtime, not imported by name: the image copies the app directory, so an
-  // enterprise image resolves cascadia-enterprise and a published community
-  // image resolves cascadia.
-  const app = resolveApp()
-  console.log(`[boot] database: ${describeConnection()}  (edition: ${app})`)
+  console.log(`[boot] database: ${describeConnection()}`)
 
   const schema = (await import(
-    `../${appDir(app)}/src/modules.schema.ts`
+    `../${APP_DIR}/src/modules.schema.ts`
   )) as Record<string, unknown>
   const expectedTables = Object.values(schema)
     .filter((value): value is PgTable => is(value, PgTable))

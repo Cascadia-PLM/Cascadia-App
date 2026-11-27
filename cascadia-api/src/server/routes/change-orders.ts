@@ -134,10 +134,9 @@ async function requireChangeOrderApprovalAccess(
 }
 
 /**
- * Collect whatever the licensed modules want carried into an approval vote.
+ * Collect whatever the registered modules want carried into an approval vote.
  *
- * Always called, and empty unless a module contributes — which is what lets
- * this route compile and run with the optional packages absent entirely. What
+ * Always called, and empty unless a module contributes. What
  * ends up inside is the module's business; this layer only forwards the
  * request, since that is what carries things like a client certificate.
  */
@@ -723,11 +722,11 @@ app.get(
  * An approval vote.
  *
  * **Passthrough, deliberately.** `ApprovalRegistry.buildExtras` hands the raw
- * body to every registered interceptor, and the advanced-auditing module reads
- * `password` and `signatureMeaning` off it to build the digital signature. A
- * schema that stripped unknown keys would leave a signed instance quietly
- * unable to sign — the vote would land, unsigned, with no error anywhere. Core
- * validates what core reads and lets the modules' own fields through.
+ * body to every registered interceptor, which may read fields of its own off
+ * it — a password re-entered to sign the vote, say. A schema that stripped
+ * unknown keys would leave such a module quietly starved of its input — the
+ * vote would land without it, with no error anywhere. Core validates what core
+ * reads and lets the modules' own fields through.
  */
 const approvalVoteSchema = z
   .object({

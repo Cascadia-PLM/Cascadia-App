@@ -4,7 +4,7 @@
 /**
  * Assert that the committed migrations build the schema the code declares.
  *
- *   npm run db:check-migrations                 # migrate vs push, this edition
+ *   npm run db:check-migrations                 # migrate vs push
  *   node scripts/check-migration-schema.mjs --dump <url>   # one side, for diffing
  *
  * `db:push` diff-applies `modules.schema.ts` directly; `db:migrate` replays the
@@ -141,9 +141,8 @@ function reportDifference(migrated, pushed) {
     console.error('')
   }
   console.error(
-    'A schema change ships with migrations for both editions — run\n' +
-      '`npm run db:generate` and `CASCADIA_APP=cascadia npm run db:generate`,\n' +
-      'and commit what appears under cascadia-app*/drizzle/. If they are already\n' +
+    'A schema change ships with its migration — run `npm run db:generate`\n' +
+      'and commit what appears under cascadia-app/drizzle/. If it is already\n' +
       'committed, one of them does not do what the schema says.',
   )
 }

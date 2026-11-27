@@ -263,7 +263,7 @@ describe('JobService — claim and retry invariants', () => {
     })
 
     it('an empty carried schedule falls back rather than indexing nothing', async () => {
-      // A type may declare `retryDelays: []` (advanced-auditing does). Empty
+      // A type may declare `retryDelays: []`. Empty
       // must behave exactly like absent in both executors.
       const job = await insertJob('queued', 0, [])
       await JobService.claimJob(job.id)

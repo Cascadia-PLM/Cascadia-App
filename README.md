@@ -88,7 +88,7 @@ The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local 
 
 ## What's included
 
-| Area                  | In the open core                                                                                                                                           |
+| Area                  | Included                                                                                                                                                   |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Change management     | ECO, ECN, MCO and deviation change orders on their own branches, impact analysis, conflict detection, approval voting, configurable lifecycles             |
 | Parts and BOMs        | Multi-level BOMs, where-used, product variants, approved manufacturer lists, spreadsheet import with BOM auto-detection                                    |
@@ -100,8 +100,9 @@ The demo's volumes are namespaced (`cascadia_demo_*`) and won't touch any local 
 | Software and firmware | Software items with a versioned source store, per-file diffs and change-order control alongside the hardware they ship with                                |
 | Platform              | REST API with an OpenAPI contract, webhooks, an ordered event log, role-based access by program, full-text search, reports, background jobs                |
 | AI                    | A chat assistant that can query and edit PLM data with confirmation (bring your own Anthropic or OpenAI key), and an MCP server exposing the same tools    |
+| AI design engine      | Collaborative, staged sessions that take a design brief to requirements, a BOM, real PLM items on a change order, generated CAD and a composed assembly    |
 
-The [feature list](./cascadia-feature-list.md) tracks the status of every capability, including what is partial or planned. Two gaps worth knowing up front: manufacturing BOM management is at an early stage, and native CAD connectors (Solid Edge, SolidWorks) are planned for the commercial edition. Today CAD files reach Cascadia through the vault.
+The [feature list](./cascadia-feature-list.md) tracks the status of every capability, including what is partial or planned. Two gaps worth knowing up front: manufacturing BOM management is at an early stage, and native CAD connectors (Solid Edge, SolidWorks) are planned but not yet built. Today CAD files reach Cascadia through the vault.
 
 ## How ECO-as-Branch works
 
@@ -152,17 +153,18 @@ The seed creates a bootstrap admin account (`admin@cascadia.local` / `Cascadia`)
 
 ### How the code is organized
 
-An npm workspace of four packages with a one-way dependency graph, plus the app that composes them:
+An npm workspace of four packages with a one-way dependency graph, a module that plugs into them, and the app that composes them:
 
-| Package                | Role                                                                             |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `cascadia-commons`     | Shared by server and client: item schemas, permissions, lifecycle and wire types |
-| `cascadia-api`         | The server: routes, services, the database schema, jobs, events, AI tools        |
-| `cascadia-web`         | The client: routes, components, the query layer                                  |
-| `cascadia-workers-job` | The background jobs worker                                                       |
-| `cascadia-app`         | Composition root: entry points, build configuration, migrations, Dockerfile      |
+| Package                  | Role                                                                             |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `cascadia-commons`       | Shared by server and client: item schemas, permissions, lifecycle and wire types |
+| `cascadia-api`           | The server: routes, services, the database schema, jobs, events, AI tools        |
+| `cascadia-web`           | The client: routes, components, the query layer                                  |
+| `cascadia-workers-job`   | The background jobs worker                                                       |
+| `cascadia-design-engine` | Module: the collaborative AI design engine and its generative CAD                |
+| `cascadia-app`           | Composition root: entry points, build configuration, migrations, Dockerfile      |
 
-`cascadia-workers-cad` holds the Python CAD converter. The [architecture overview](./docs/architecture/overview.md) explains how the pieces fit together.
+`cascadia-workers-cad` holds the Python CAD converter; `cascadia-workers-cad-generator` (CadQuery) and `cascadia-workers-freecad-runner` (headless FreeCAD) are the Python workers behind the design engine's CAD generation. The [architecture overview](./docs/architecture/overview.md) explains how the pieces fit together.
 
 ### Extending it
 
@@ -184,11 +186,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines. Security issues should 
 
 ## License
 
-Cascadia is an **open-core, dual-licensed** project.
+Cascadia is **open source and dual-licensed**.
 
-The core PLM — parts, BOMs, ECO-as-Branch change management, documents, workflows, vault, search, and APIs — is licensed under the [GNU Affero General Public License v3.0 or later](./LICENSE), forever, with unlimited users. The AGPL's network-use clause means that if you run a modified version of Cascadia as a service, you must make the source available to users of that service.
+Everything in this repository — parts, BOMs, ECO-as-Branch change management, documents, workflows, vault, search, APIs and the AI design engine — is licensed under the [GNU Affero General Public License v3.0 or later](./LICENSE), with unlimited users. There is no separate paid edition. The AGPL's network-use clause means that if you run a modified version of Cascadia as a service, you must make the source available to users of that service.
 
-If the AGPL doesn't work for your organization, or you need enterprise capabilities (CAD connectors, SSO/AD, compliance pack, the AI Design Engine, support SLAs), a commercial license is available — see [LICENSING.md](./LICENSING.md) or contact [kai@cascadiaplm.com](mailto:kai@cascadiaplm.com).
+If the AGPL doesn't work for your organization, a commercial license to the same code is available, as are support agreements — see [LICENSING.md](./LICENSING.md) or contact [kai@cascadiaplm.com](mailto:kai@cascadiaplm.com).
 
 Contributions require signing the [CLA](./CLA.md); see [CONTRIBUTING.md](./CONTRIBUTING.md).
 

@@ -4,10 +4,10 @@
 /**
  * The jobs worker itself — everything except which modules are attached.
  *
- * An app entry (`cascadia-app/src/jobs-worker.ts`) registers its edition's
+ * The app entry (`cascadia-app/src/jobs-worker.ts`) registers the app's
  * modules and then calls `runJobsWorker()`. Keeping the 100-odd lines of
- * queue-naming and shutdown logic here rather than duplicating them per app is
- * the whole reason this is a function and not an entry point.
+ * queue-naming and shutdown logic here, out of the composition root, is the
+ * whole reason this is a function and not an entry point.
  *
  * This package sits above the api: it imports the api's services, registry and
  * job definitions, and registers the handlers that run them. The api never

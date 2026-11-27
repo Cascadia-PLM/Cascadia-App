@@ -193,8 +193,9 @@ async function eligible(
  * failure vocabulary is unchanged.
  *
  * **Zero registrations cost nothing.** The registry lookup is two map reads
- * and this returns before building a context or touching the database, so the
- * community edition does not pay for a feature it does not use.
+ * and this returns before building a context or touching the database, so an
+ * install with no extensions registered does not pay for a feature it does not
+ * use.
  *
  * A handler that *throws* is a fault, not a refusal: it surfaces as
  * `ExtensionDispatchError`, which is distinguishable at the call site. A
@@ -346,8 +347,8 @@ export async function stampCausation(
  * For call sites whose *intent* costs a query to assemble — the lifecycle
  * transition needs the item's type, which it does not otherwise load before
  * the write. Checking first keeps the promise that zero registrations cost
- * zero queries, which is the difference between a feature the community
- * edition ignores and one it pays for.
+ * zero queries, which is the difference between a feature an install without
+ * extensions ignores and one it pays for.
  */
 export function hasGuardExtensions(operation: { operation: string }): boolean {
   return ExtensionRegistry.forSubject('guard', operation.operation).length > 0

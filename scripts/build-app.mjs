@@ -2,14 +2,13 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Build one edition end to end: client bundle, API server, jobs worker.
+ * Build the app end to end: client bundle, API server, jobs worker.
  *
- *   node scripts/build-app.mjs cascadia-enterprise
- *   node scripts/build-app.mjs cascadia
+ *   npm run build
  *
- * Replaces the old `build:server` / `build:jobs-worker` pair, which hardcoded
- * a single entry point back when there was only one app. Output is namespaced
- * per app so building one edition cannot overwrite the other's artifacts.
+ * Output lands under `dist/cascadia/` (client) and `.output/cascadia/` (server
+ * and jobs worker) — the paths the Dockerfiles and the server's static root
+ * name. See scripts/app.mjs.
  */
 
 import * as esbuild from 'esbuild'
@@ -23,21 +22,10 @@ import {
 } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { assertBundleParses, cjsInteropBanner } from './build-shared.mjs'
-import { appDir, resolveApp } from './edition.mjs'
+import { APP, APP_DIR } from './app.mjs'
 import { render } from './generate-third-party-notices.mjs'
 
-// No argument means "whichever edition this tree is", so `npm run build` works
-// in both without naming an app that one of them does not have.
-const app = process.argv[2] ?? resolveApp()
-
-// The app's *name* namespaces the artefacts (`dist/cascadia`,
-// `.output/cascadia`, and the `APP` the server reads to find its static root);
-// its *directory* is where the sources are. See scripts/edition.mjs.
-const APP_DIR = appDir(app)
-if (!existsSync(resolve(process.cwd(), APP_DIR))) {
-  console.error(`No such app: ${app} (looked for ${APP_DIR}/)`)
-  process.exit(1)
-}
+const app = APP
 
 const outBase = `.output/${app}`
 
@@ -78,7 +66,7 @@ async function bundle(entry, outfile) {
     },
     loader: { '.node': 'copy' },
     // esbuild reads `paths` from the app's tsconfig, which is what makes
-    // `@cascadia/api/`, `@cascadia/commons/` and `@cascadia/enterprise/` resolve here exactly
+    // `@cascadia/api/`, `@cascadia/commons/` and `@cascadia/design-engine/` resolve here exactly
     // as they do for tsc and Vite.
     tsconfig: `${APP_DIR}/tsconfig.json`,
     logLevel: 'info',
@@ -95,7 +83,7 @@ async function bundle(entry, outfile) {
  * Tailwind v4 detects sources automatically, rooted at the Vite root. The
  * Phase 2 split moved that root to the app directory while every component stayed
  * in the web package, so detection quietly found nothing: ~19 KB of resets and
- * theme variables, not one `.bg-*` rule, in **both** editions. Everything
+ * theme variables, not one `.bg-*` rule. Everything
  * worked — routing, auth, the API — and the application rendered as unstyled
  * HTML. `cascadia-web/src/styles.css` now declares its sources explicitly.
  *
@@ -103,8 +91,8 @@ async function bundle(entry, outfile) {
  * no utilities is silent, which is why this asserts on content rather than
  * existence. Found by someone standing the artefact up and looking at it.
  */
-function assertStyled(edition) {
-  const dir = resolve(`dist/${edition}/assets`)
+function assertStyled(app) {
+  const dir = resolve(`dist/${app}/assets`)
   const sheets = existsSync(dir)
     ? readdirSync(dir).filter((f) => f.endsWith('.css'))
     : []
@@ -114,7 +102,7 @@ function assertStyled(edition) {
   )
   if (utilities.size < 50) {
     console.error(
-      `\n✗ The ${edition} client bundle contains ${utilities.size} utility ` +
+      `\n✗ The ${app} client bundle contains ${utilities.size} utility ` +
         `class(es) across ${sheets.length} stylesheet(s).\n` +
         '  Tailwind found no source files to scan — the app will render ' +
         'unstyled.\n  Check the `@source` directives in ' +
@@ -166,7 +154,7 @@ await bundle(
  * artefact to drift out of date with the dependency it credits.
  */
 console.log(`\n▶ Third-party notices (${app})`)
-const notices = render({ edition: app })
+const notices = render()
 for (const dir of [`dist/${app}`, outBase]) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const target = resolve(dir, 'THIRD-PARTY-NOTICES.txt')

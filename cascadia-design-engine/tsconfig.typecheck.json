@@ -1,0 +1,6 @@
+{
+  // Same split as the web package's — see the note in
+  // `cascadia-web/tsconfig.typecheck.json`.
+  "extends": "./tsconfig.json",
+  "exclude": ["src/routes/**"]
+}

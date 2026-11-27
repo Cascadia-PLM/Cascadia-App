@@ -11,9 +11,8 @@ import { defineConfig } from 'vitest/config'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import viteReact from '@vitejs/plugin-react'
 
-// Filtered by existence: the published core repo has none of the module
-// packages,
-// and naming a missing tsconfig here would fail before a single test ran.
+// Filtered by existence: a checkout without a module package would otherwise
+// fail on the missing tsconfig before a single test ran.
 const tsconfigProjects = [
   './cascadia-commons/tsconfig.json',
   './cascadia-api/tsconfig.json',
@@ -21,9 +20,7 @@ const tsconfigProjects = [
   './cascadia-workers-job/tsconfig.json',
   // Root: `scripts/` and its tests, which name the packages by import name.
   './tsconfig.json',
-  './cascadia-advanced-auditing/tsconfig.json',
   './cascadia-design-engine/tsconfig.json',
-  './cascadia-odoo-integration/tsconfig.json',
 ].filter((project) => existsSync(project))
 
 export default defineConfig({

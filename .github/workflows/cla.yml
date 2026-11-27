@@ -15,7 +15,7 @@ permissions:
 jobs:
   cla-assistant:
     # Only this repository collects signatures. A fork that carries this file
-    # — an edition that merges from here — must not write a signatures branch.
+    # must not write a signatures branch.
     if: github.repository == 'Cascadia-PLM/Cascadia-App'
     runs-on: ubuntu-latest
     steps:

@@ -765,34 +765,9 @@ const status = await ApprovalService.areApprovalsComplete(instanceId, stateId)
 - When an instance transitions **backward** (the target state can reach the
   source again), all active votes on the re-traversable segment are
   **superseded** (`supersededAt` set) — the second pass requires fresh
-  approvals. Votes are never deleted: the [Advanced
-  Auditing](./advanced-auditing.md) trail must show they existed and were
-  superseded.
+  approvals. Votes are never deleted: the audit trail must show they existed
+  and were superseded.
 - Users can approve as themselves (direct approver) or on behalf of a role they hold.
-
-### Digital Signatures (Advanced Auditing package)
-
-On instances licensed for the [Advanced Auditing](./advanced-auditing.md)
-package, **every approval vote must be digitally signed**. The requirement is
-enforced inside `ApprovalService.submitApproval()` — the single path all
-approval routes take — so there is no unsigned route to an approval, and the
-vote and its signature are written in one transaction.
-
-What changes when the package is enabled:
-
-| Behavior          | Without the package         | With the package                                                                         |
-| ----------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
-| Submitting a vote | Session authentication only | Requires a CAC/PIV certificate on the connection, or account password re-authentication  |
-| Vote record       | `workflow_approval_votes`   | Same, plus a `digital_signatures` row hash-chained to the previous signature             |
-| Approval history  | Votes and comments          | Plus a signature manifest: printed name, meaning, credential, certificate evidence, time |
-
-Approval endpoints accept two extra body fields in this mode — `password` (only
-on the password path) and an optional `signatureMeaning` override. The signature
-snapshot binds to the item as it stood at signing time, so an auditor sees the
-number, revision, and state the signer actually saw.
-
-Unlicensed instances are unaffected: `submitApproval()` writes the vote exactly
-as documented above.
 
 ---
 

@@ -10,9 +10,8 @@
  * partial index in the database and rebuild them, which is only survivable
  * because push rebuilds them. Neither shows up in the output of a healthy run.
  *
- * The cases are synthetic on purpose. Both editions compose a different schema,
- * so a case naming a real index would assert something true in one tree and
- * absent from the other.
+ * The cases are synthetic on purpose: a case naming a real index would break
+ * the day that index is renamed, for reasons unrelated to what is tested here.
  *
  * Run: npx vitest run scripts/reconcile-index-predicates.test.ts
  */

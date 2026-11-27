@@ -30,7 +30,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui'
-import { Slot } from '@/ui/slot-registry'
 import { changeOrderApprovalsQuery, useInvalidateResources } from '@/query'
 
 interface ApprovalStatusPanelProps {
@@ -151,11 +150,6 @@ export function ApprovalStatusPanel({
           )}
         </CardContent>
       </Card>
-
-      <Slot
-        name="change-order-approval-manifest"
-        props={{ instanceId: data.instanceId }}
-      />
 
       {selectedStateId && (
         <ApprovalDialog

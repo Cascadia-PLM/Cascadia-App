@@ -1,18 +1,15 @@
 # Cascadia PLM Licensing
 
-> **TL;DR:** The core PLM is open source under AGPL-3.0, forever — unlimited users,
-> self-hosted, no artificial limits. Enterprise capabilities are commercially licensed
-> and fund the open core. Cascadia is dual-licensed: use it under the AGPL, or purchase
-> a commercial license if the AGPL doesn't work for your organization.
+> **TL;DR:** Cascadia is open source under AGPL-3.0 — all of it, unlimited users,
+> self-hosted, no artificial limits. There is no separate paid edition and no feature
+> held back from this repository. Cascadia is dual-licensed: use it under the AGPL, or
+> purchase a commercial license to the same code if the AGPL doesn't work for your
+> organization.
 
 ## The model
 
-Cascadia uses an **open-core, dual-license** model.
-
-### Open core — AGPL-3.0, forever
-
-The core product lifecycle management system is and will remain free software under the
-[GNU Affero General Public License v3.0](./LICENSE):
+Everything in this repository is free software under the
+[GNU Affero General Public License v3.0 or later](./LICENSE), including:
 
 - Parts, documents, requirements, tasks, and work instructions
 - Multi-level BOM management and where-used queries
@@ -25,29 +22,11 @@ The core product lifecycle management system is and will remain free software un
 - The REST and SysML v2 APIs
 - The in-browser 3D viewer and CAD conversion service
 - The AI chat assistant (bring your own API key)
+- The Collaborative Design Engine (AI-assisted requirements → BOM → CAD generation),
+  and the CAD generation workers it drives
 
 Unlimited users. No feature meters. Self-host it in production without ever talking to us.
-
-### Commercial edition — paid, funds the roadmap
-
-Capabilities aimed at enterprise deployment are licensed commercially and are not part
-of the AGPL distribution:
-
-- Native CAD connectors (Solid Edge, SolidWorks, and future connectors)
-- SSO / Active Directory / LDAP integration
-- Compliance & audit pack (audit reports, CUI marking support, export-control flags)
-- The Collaborative Design Engine (AI-assisted requirements → BOM → CAD generation)
-- Sovereign AI deployment options (GovCloud / self-hosted model support)
-- Priority support and SLAs; managed and sovereign hosting
-
-### The dividing line
-
-Our standing rule for every future feature:
-
-> **If a single engineering team needs it to do daily PLM work, it's open.
-> If it's enterprise integration, governance, or premium automation, it's commercial.**
-
-We publish this rule so you can predict where any future capability will land.
+New capabilities land here, under the same license.
 
 ## Dual licensing
 
@@ -57,7 +36,7 @@ modified source available to the users of that service.
 
 If the AGPL is incompatible with your organization's policies (common in defense and
 other regulated industries), a **commercial license** to the same code is available —
-no copyleft obligations, plus access to the commercial edition and support.
+no copyleft obligations. Support agreements, SLAs and hosting are available as well.
 
 Contact: **kai@cascadiaplm.com**
 
@@ -71,10 +50,13 @@ comment on your first pull request.
 ## A note on history
 
 Cascadia launched (April 2026) with all features, including AI features, in the AGPL
-repository. As of this policy, the Collaborative Design Engine is moving to the
-commercial edition; previously published AGPL versions of that code remain available
-under the AGPL in the repository history, as that license is irrevocable for what was
-already released. Everything listed under "Open core" above stays AGPL going forward.
+repository. For part of 2026 the Collaborative Design Engine and some enterprise
+modules were developed in a separate commercial edition. In November 2026 that edition
+was retired: the Design Engine returned to this repository under the AGPL, together
+with the two CAD workers it drives, and there is no longer a separate commercial
+codebase. Previously published AGPL versions of all code remain available under the
+AGPL in the repository history, as that license is irrevocable for what was already
+released.
 
 ---
 

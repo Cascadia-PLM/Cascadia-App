@@ -51,10 +51,9 @@
  *   asserted to *still* leak, so a stale entry fails the build the moment the
  *   fix lands and the map can only ever shrink.
  *
- * Scope: **core routers only.** Proprietary modules (design-engine,
- * advanced-auditing, odoo-integration) contribute their routes through
- * `registerRoutes` at composition time, and importing them here would break
- * `npm run boundary:check`. Their collection routes are therefore *not*
+ * Scope: **core routers only.** Modules (design-engine) contribute their
+ * routes through `registerRoutes` at composition time, and importing them
+ * here would break `npm run boundary:check`. Their collection routes are therefore *not*
  * covered by this ratchet — the gap is real, and closing it needs a
  * module-side twin of this suite living in the app composition root.
  *
@@ -96,7 +95,6 @@ import jobsRoutes from './jobs'
 import lifecyclesRoutes from './lifecycles'
 import manufacturerPartsRoutes from './manufacturer-parts'
 import mbomRoutes from './mbom'
-import packagesRoutes from './packages'
 import partsRoutes from './parts'
 import physicalPartsRoutes from './physical-parts'
 import programsRoutes from './programs'
@@ -185,7 +183,7 @@ function registeredRoutes(
  */
 const ALLOWLIST = new Map<string, string>([
   // Empty, and that is the point. The global catalogues this enumeration
-  // reaches — workflows, roles, users, packages, admin config, the import
+  // reaches — workflows, roles, users, admin config, the import
   // templates — hold no item, design or program rows at all, so they pass the
   // leak leg on their own and need no entry to do it.
   //
@@ -249,7 +247,6 @@ describe('collection routes, enumerated — outsider enumeration', () => {
     { mount: '/api/v1/lifecycles', router: lifecyclesRoutes },
     { mount: '/api/v1/manufacturer-parts', router: manufacturerPartsRoutes },
     { mount: '/api/v1/mbom', router: mbomRoutes },
-    { mount: '/api/v1/packages', router: packagesRoutes },
     { mount: '/api/v1/parts', router: partsRoutes },
     { mount: '/api/v1/physical-parts', router: physicalPartsRoutes },
     { mount: '/api/v1/programs', router: programsRoutes },

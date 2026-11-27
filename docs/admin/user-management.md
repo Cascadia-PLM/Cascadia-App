@@ -257,7 +257,7 @@ Cascadia implements brute-force protection with automatic account lockout:
 4. After the lockout period, the next login attempt proceeds normally
 5. A successful login resets both `failed_login_attempts` (to 0) and `locked_until` (to null)
 6. Changing a password also resets the lockout state
-7. The counter is shared by every password prompt, not just the sign-in form -- re-entering a password to sign an approval spends from the same ten attempts, and a correct one there resets it. The `metadata.source` on each event says which prompt it came from (`login` or `signature`)
+7. The counter belongs to the account, not to the sign-in form -- any other path that checks an account password through `AuthService` spends from the same ten attempts. The `metadata.source` on each event says which prompt it came from
 
 ### Lockout Events
 

@@ -165,28 +165,6 @@ npm run cad:worker:stop
 
 No additional environment variables are needed -- the converter connects to the same RabbitMQ and PostgreSQL instances.
 
-### Optional packages (licensed separately)
-
-Some functionality ships in the codebase but is only available on instances
-entitled to it. Entitlement is set at deploy time and read once at process
-start; there is deliberately no in-app toggle.
-
-| Variable            | Description                                                                 |
-| ------------------- | --------------------------------------------------------------------------- |
-| `CASCADIA_PACKAGES` | Comma-separated package ids, or `*` for all. Known ids: `advanced-auditing` |
-
-```bash
-CASCADIA_PACKAGES=advanced-auditing
-```
-
-If unset, no optional packages are enabled and the rest of the application works
-normally. Administrators can see which packages an instance holds at `/admin`.
-
-**Advanced Auditing** adds digital signatures on workflow approvals and has its
-own configuration — including the reverse proxy setup required for CAC/PIV
-signing — documented with the package, which is not part of this edition. See
-[Advanced Auditing](../features/advanced-auditing.md).
-
 ---
 
 ## Runtime configuration system

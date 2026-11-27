@@ -63,39 +63,27 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
-      # Every file carries the SPDX header its edition requires. This matters
-      # because the proprietary edition merges these files verbatim — there is
-      # no header-rewriting step, by design — so a wrong header here becomes a
-      # wrong licence there.
+      # Every source file carries the AGPL SPDX header, and every workspace's
+      # package.json declares AGPL-3.0-or-later — which is what catches code
+      # copied in from elsewhere with its old licence still attached.
       - name: Check license headers
         run: npm run license:check
 
-      # The manifest discovers what is proprietary from each workspace's own
-      # licence declaration, so a proprietary package that leaked into the
-      # public tree would classify itself and pass the header check above.
-      # This is the step that catches it: in the public repository nothing may
-      # be proprietary — no workspace may declare UNLICENSED, no pattern may
-      # match a path that exists, no file may carry the proprietary header.
-      # One shared file, active only where that must hold.
-      - name: Assert the community edition
-        if: github.repository == 'Cascadia-PLM/Cascadia-App'
-        run: node scripts/edition-manifest.mjs --assert-community
-
-      # No dependency may oblige us to publish source we sell. The gate is
-      # edition-blind by construction: its closure comes from the lockfile,
-      # which spans every workspace, so which manifest declares a package never
-      # changes the verdict and a strong-copyleft addition is caught wherever it
-      # was added. Reads the lockfile, so it needs no install of its own and
+      # No dependency may break either grant of the dual licence (AGPL and
+      # commercial). Its closure comes from the lockfile, which spans every
+      # workspace, so which manifest declares a package never changes the
+      # verdict and a strong-copyleft addition is caught wherever it was
+      # added. Reads the lockfile, so it needs no install of its own and
       # cannot drift from what ships.
       - name: Check third-party licenses
         run: npm run license:thirdparty
 
-      # Core must not reach proprietary code. Resolves every import specifier
-      # and classifies the target, rather than matching patterns: two rounds of
-      # grepping previously declared a package "fully seamed" while a dynamic
-      # import and a bare package-id string were still live. Ratcheted — the
-      # known-pending list may only shrink.
-      - name: Check core/proprietary boundary
+      # Core must not reach into a module (cascadia-design-engine). Resolves
+      # every import specifier and classifies the target, rather than matching
+      # patterns: grepping once declared a package "fully seamed" while a
+      # dynamic import was still live. Ratcheted — the known-pending list may
+      # only shrink.
+      - name: Check core/module boundary
         run: npm run boundary:check
 
       # `item_type_configs` holds one row per item type for the whole instance.
@@ -123,7 +111,7 @@ jobs:
       - name: Check permission tuples are satisfiable
         run: npm run permissions:check
 
-      # Since v0.5 the committed migrations under cascadia-app*/drizzle are the
+      # Since v0.5 the committed migrations under cascadia-app/drizzle are the
       # upgrade path for real installs. If the schema changed and drizzle-kit
       # can still mint a new migration, someone edited the schema without
       # committing the migration alongside it — the tree goes dirty and this
@@ -161,12 +149,12 @@ jobs:
       - name: Verify generated API types match the snapshot
         run: npm run types:openapi:check
 
-  # Since v0.5 the committed migrations under cascadia-app*/drizzle are the upgrade
-  # path for every real install, and until now nothing ever ran them. The drift
-  # gate in Lint proves a migration *exists* for each schema change; it says
-  # nothing about whether the SQL applies. This job applies both editions'
-  # migrations to their own empty database and then seeds the enterprise one,
-  # which is the fresh-install sequence docs/deployment/upgrading.md documents.
+  # Since v0.5 the committed migrations under cascadia-app/drizzle are the
+  # upgrade path for every real install, and until now nothing ever ran them.
+  # The drift gate in Lint proves a migration *exists* for each schema change;
+  # it says nothing about whether the SQL applies. This job applies them to an
+  # empty database and then seeds it, which is the fresh-install sequence
+  # docs/deployment/upgrading.md documents.
   #
   # Runs on push as well as pull_request, like Lint: it is cheap, and two
   # migrations that each apply cleanly alone can still collide once merged —
@@ -211,7 +199,7 @@ jobs:
       # cascadia_test — a database this job's service does not create. A real
       # environment variable wins over the repo's .env because dotenv does not
       # overwrite (scripts/drizzle.mjs).
-      - name: Apply enterprise migrations to an empty database
+      - name: Apply migrations to an empty database
         run: npm run db:migrate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate
@@ -238,18 +226,6 @@ jobs:
         env:
           MIGRATED_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate
           PUSHED_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_pushed
-      - name: Create a database for the community edition
-        run: psql -h localhost -U postgres -c 'CREATE DATABASE cascadia_migrate_community'
-        env:
-          PGPASSWORD: postgres
-
-      # The published edition has its own journal, and nothing else in CI runs
-      # it. CASCADIA_APP is the edition override (scripts/edition.mjs).
-      - name: Apply community migrations to an empty database
-        run: CASCADIA_APP=cascadia npm run db:migrate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascadia_migrate_community
-
       # Everything above applies migrations to empty databases, which is the
       # fresh-install path. This is the upgrade path: stage the journal to the
       # tag before the one under test, seed the shape of data that tag's SQL
@@ -257,10 +233,6 @@ jobs:
       # when a new migration's outcome depends on rows — whether it writes them
       # or merely asks Postgres to validate them — and registers no scenario,
       # so the gap cannot reopen on the next backfill or the next constraint.
-      #
-      # No CASCADIA_APP prefix: the script resolves the edition itself, so this
-      # step is correct in the published tree too, where only cascadia-app
-      # exists.
       - name: Create a database to replay the migrations against rows
         run: psql -h localhost -U postgres -c 'CREATE DATABASE cascadia_migrate_backfills'
         env:
@@ -278,9 +250,6 @@ jobs:
       # migrate-from-empty builds. It is what catches a stamp that records a
       # migration whose SQL never ran, which drizzle's resume-from-newest-row
       # migrator then skips in silence rather than retrying.
-      #
-      # No CASCADIA_APP prefix, same as the step above: the script resolves the
-      # edition itself.
       - name: Create a database to baseline and upgrade
         run: psql -h localhost -U postgres -c 'CREATE DATABASE cascadia_baseline'
         env:
@@ -328,10 +297,8 @@ jobs:
         run: npm run db:push
 
       # `npm run test`, not `test:coverage`: vitest.config.ts enforces no
-      # coverage thresholds, and the codecov upload that consumed the report was
-      # dropped when this repo went proprietary — it had no token here and would
-      # have shipped source paths and per-line coverage of closed code to a third
-      # party. Nothing consumed the report, so nothing generates it.
+      # coverage thresholds, and nothing consumes a coverage report, so nothing
+      # generates one.
       - name: Run unit tests
         run: npm run test
 
@@ -463,26 +430,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Both editions, because a change can break one and not the other — the
-      # community app is not a subset of the enterprise app's build, it is a
-      # separate composition with its own route tree.
-      - name: Build (enterprise)
+      - name: Build
         run: npm run build
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
-      - name: Build (community)
-        run: npm run build:community
-        env:
-          NODE_OPTIONS: '--max-old-space-size=4096'
-
       # Deliberately lives in this job, after Build, rather than standing alone:
-      # cascadia-app*/src/routeTree.gen.ts is gitignored and generated by
+      # cascadia-app/src/routeTree.gen.ts is gitignored and generated by
       # TanStackRouterVite during `vite build`. It carries the module
       # augmentation typing every createFileRoute() site, so on a fresh checkout
       # a standalone tsc job would report a number unrelated to the code and
-      # gate nothing. Running here reuses the trees the builds just produced —
-      # and both must exist, since `typecheck-all` checks each app separately.
+      # gate nothing. Running here reuses the tree the build just produced.
       #
       # No NODE_OPTIONS: tsc's heap is set inside typecheck-all, so every caller
       # of that script gets it. It lived here once, and a caller without it ran
@@ -584,7 +542,7 @@ jobs:
       # the context, and `npm ci` then proves that set and the lockfile agree.
       #
       # Stopping there is the deliberate trade. `builder` runs a full Vite
-      # build of the edition — ten-plus minutes on top of what `Build` already
+      # build of the app — ten-plus minutes on top of what `Build` already
       # spends, failing for reasons `Build` reports first and faster. What
       # that leaves unbuilt is the production stage's copies out of the
       # builder: the build outputs, and the runtime tree the builder assembles

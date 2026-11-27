@@ -4,7 +4,7 @@
 /**
  * Truncate all tables to reset the database for fresh seeding.
  *
- * Covers every `pgTable()` in the edition's composed schema — core's and every
+ * Covers every `pgTable()` in the app's composed schema — core's and every
  * module's — because it reads that schema rather than restating it.
  *
  * Queries pg_tables to skip any that haven't been migrated yet,
@@ -13,20 +13,17 @@
 import { getTableName, is, sql } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 import { db, describeConnection } from '@cascadia/api/db'
-import { appDir, resolveApp } from './edition.mjs'
+import { APP_DIR } from './app.mjs'
 
-// Resolved at runtime rather than imported by name: naming the enterprise app
-// outright breaks a core-only tree, which is what a core-only checkout
-// builds. This script serves whichever edition the tree actually contains.
-const app = resolveApp()
-const schema = (await import(
-  `../${appDir(app)}/src/modules.schema.ts`
-)) as Record<string, unknown>
+const schema = (await import(`../${APP_DIR}/src/modules.schema.ts`)) as Record<
+  string,
+  unknown
+>
 
-console.log(`Target database: ${describeConnection()}  (edition: ${app})`)
+console.log(`Target database: ${describeConnection()}`)
 
 /**
- * Every table this edition owns, derived from the composed schema rather than
+ * Every table the app owns, derived from the composed schema rather than
  * listed by hand.
  *
  * It used to be a hand-maintained array of ~110 names with a comment asking you

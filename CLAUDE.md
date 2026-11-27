@@ -14,19 +14,17 @@ The signature feature is "ECO-as-Branch" - each change order gets its own isolat
 
 ## Repository Context
 
-This is `Cascadia-PLM/Cascadia-App`, the **public AGPL edition** of Cascadia PLM.
-It is dual licensed by Cascadia PLM LLC: this repository is the AGPL v3 half, and
-a proprietary edition adds separately licensed modules on top of the same core.
+This is `Cascadia-PLM/Cascadia-App`, the Cascadia PLM repository. Everything in
+it is AGPL v3 — core, the design engine module and every worker — and there is
+one app, built from `cascadia-app/`. Cascadia PLM LLC also offers the same code
+under a commercial license for organizations that cannot use the AGPL — see
+[LICENSING.md](./LICENSING.md).
 
-**This repository is the upstream for core.** Every change to the `cascadia-*`
-packages and `cascadia-app` lands here first, by pull request, and merges here.
-The proprietary edition is a fork of this repository that adds its modules on
-top of the same core and merges `main` from here; nothing flows the other way.
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to contribute.
+Every change lands here by pull request. See
+[CONTRIBUTING.md](./CONTRIBUTING.md) for how to contribute.
 
-An edition that composes extra modules keeps its own guide beside its
-composition root (`cascadia-app-enterprise/CLAUDE.md`). When that file exists,
-read it before starting.
+Each module package keeps a short guide of its own beside its `package.json`
+(`cascadia-design-engine/CLAUDE.md`). Read it before working in that package.
 
 Related repositories:
 
@@ -55,13 +53,13 @@ Related repositories:
 ## Project Structure
 
 An npm workspace. Every workspace is a top-level `cascadia-<id>/` directory
-whose npm name is `@cascadia/<id>` — `scripts/edition-manifest.mjs` spells
+whose npm name is `@cascadia/<id>` — `scripts/workspaces.mjs` spells
 that convention out once. The application is four Node packages with a
-one-way dependency graph, two Python packages that are not npm workspaces,
-and an app (`cascadia-app`), which is a composition root plus a build config,
-choosing which modules exist. This edition composes the four alone —
-separately licensed modules register into the same extension points,
-described under "The extension boundary" below.
+one-way dependency graph, one module package (`cascadia-design-engine`) that
+plugs into them, four Python packages that are not npm workspaces, and an app
+(`cascadia-app`), which is a composition root plus a build config, choosing
+which modules exist. The module registers into core's extension points,
+described under "The extension boundary" below; core never imports it.
 
 ```
 @cascadia/web  ──►  @cascadia/commons  ◄──  @cascadia/api  ◄──  @cascadia/workers-job
@@ -82,9 +80,17 @@ described under "The extension boundary" below.
   Sits above the api (it runs the handlers, which call the services); the api
   never imports it — `JobService.submit` needs a job's _definition_, which
   stays in the api, never its handler.
+- **`@cascadia/design-engine`** (`cascadia-design-engine`) — a module: the
+  collaborative AI design engine and the generative CAD it drives. Depends on
+  api, web and commons; nothing depends on it except the app's composition
+  roots. See "Collaborative Design Engine" below.
 - **`cascadia-workers-cad`** and **`cascadia-workers-commons`** — Python: the
-  STEP/IGES → STL/GLB converter and the jobs/vault database layer it (and
-  upstream's other Python workers) import via `PYTHONPATH`.
+  STEP/IGES → STL/GLB converter and the jobs/vault database layer every
+  Python worker imports via `PYTHONPATH`.
+- **`cascadia-workers-cad-generator`** and **`cascadia-workers-freecad-runner`**
+  — Python: the CadQuery generator (parametric parts, mechanisms, assembly
+  STEPs) and the headless FreeCAD runner (AI-written scripts), both serving the
+  design engine.
 
 **The web never imports the api.** Its tsconfig maps no `@cascadia/api/*`
 path and the Vite alias plugin refuses the specifier, so a component that
@@ -140,7 +146,7 @@ cascadia-web/          The client
 │   ├── ui/            Slot registry — named UI extension points
 │   ├── routes/        TanStack Router file-based routes
 │   └── styles.css     Tailwind entry
-└── vite.config.base.ts  Shared Vite config, parameterized by edition
+└── vite.config.base.ts  Shared Vite config, parameterized by app
 cascadia-workers-job/  The Node.js jobs worker
 ├── src/
 │   ├── main.ts        runJobsWorker(): queue naming, health server, shutdown
@@ -149,13 +155,22 @@ cascadia-workers-job/  The Node.js jobs worker
 │   ├── handlers/      One handler per job type
 │   └── register.ts    Registers the handlers into JobTypeRegistry
 └── Dockerfile         → ghcr.io/cascadia-plm/cascadia-jobs-worker
+cascadia-design-engine/  Module: collaborative AI design + generative CAD
+└── src/               Mirrors the application's layout
+    ├── register.server.ts  What it contributes to the server
+    ├── register.client.ts  … and to the browser bundle
+    ├── design-engine/      The engine: stages/, tools/, prompts/, materialize
+    ├── cad-generation/     FreeCAD agent, assembly planner/renderer, DFM rules
+    └── components/, routes/, server/routes/, jobs/, db/schema/, …
 cascadia-workers-cad/  Python worker: STEP/IGES → STL/GLB (pythonocc)
 └── Dockerfile         → ghcr.io/cascadia-plm/cascadia-cad-converter
+cascadia-workers-cad-generator/   Python worker: parametric CAD + assemblies (CadQuery)
+cascadia-workers-freecad-runner/  Python worker: headless FreeCAD running AI-written scripts
 cascadia-workers-commons/  Python: jobs/vault DB layer shared by the Python workers
 cascadia-app/          Composition root
-├── src/modules.{server,client,schema}.ts   Where modules would register
-├── vite.config.ts     Route composition for this edition
-├── drizzle/           This edition's committed migrations
+├── src/modules.{server,client,schema}.ts   Where modules register
+├── vite.config.ts     Route composition: web routes + module routes
+├── drizzle/           The committed migrations
 ├── src/{main.tsx,router.tsx,server/,jobs-worker.ts}   Thin entry points
 ├── public/            Static assets (favicon, logo) — copied into the build
 └── Dockerfile         → ghcr.io/cascadia-plm/cascadia-app
@@ -169,10 +184,9 @@ docs/                 # Architecture & feature documentation
 scripts/              # Database seeding, deployment scripts
 ```
 
-An app's _name_ and its directory differ: `cascadia` lives in `cascadia-app/`,
-and an edition that adds an app names it the same way. `CASCADIA_APP`, the
-Dockerfiles' `APP` argument and `npm run build:app -- <name>` take the name;
-`scripts/edition.mjs` maps it to the directory.
+The app's _name_ and its directory differ: `cascadia` lives in `cascadia-app/`.
+The name namespaces the build output (`dist/cascadia/`, `.output/cascadia/`);
+`scripts/app.mjs` holds both, and every root script reads them from there.
 
 Paths were preserved across the splits, then flattened: a file that was
 `packages/core/src/lib/x.ts` became `packages/cascadia-<pkg>/src/lib/x.ts`,
@@ -186,6 +200,9 @@ job worker, which public's flatten cut out of the api:
 `lib/jobs/worker/` and `lib/jobs/scheduler.ts` moved under that package's
 `src/`, and `jobs-worker-main.ts` is its `main.ts`. The module packages keep
 their own handlers under `src/jobs/node-handlers/`.
+
+The design engine's history before November 2026 is not in this repository:
+`git log` for its files starts at the commit that added them.
 
 ## Development Commands
 
@@ -246,6 +263,8 @@ npm run workers:logs  # Tail Python worker logs
 # Individual workers (if you only need one)
 npm run jobs:worker:dev    # Node.js worker only (requires RabbitMQ)
 npm run cad:worker:dev     # CAD converter only (Docker)
+npm run cadgen:worker:dev  # CadQuery CAD generator only (Docker) — design engine
+npm run freecad:worker:dev # FreeCAD runner only (Docker) — design engine
 
 # Demo Stack (full pre-seeded environment via docker-compose.demo.yml)
 npm run demo:up       # Start the demo stack (Postgres, RabbitMQ, app, workers)
@@ -264,7 +283,7 @@ Keep it at zero. **Do not raise `--max-warnings` in `package.json` to accommodat
 
 `npm run typecheck` is a **plain zero gate** against `tsconfig.json` — the same config your editor and ESLint see, with `noUncheckedIndexedAccess` on. Any error fails CI, exactly like `eslint --max-warnings 0`. Fix the error; there is no ceiling to raise.
 
-CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `cascadia-app*/src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
+CI runs it as `npm run typecheck:strict` in the **Build** job (not standalone: `cascadia-app/src/routeTree.gen.ts` is gitignored and generated during `vite build`, and it carries the module augmentation typing every `createFileRoute()` site — so a fresh-checkout tsc job would report a number unrelated to the code).
 
 **The Build job declares no `needs:`, and must not acquire one.** Gating this
 gate behind a cheaper one makes it hostage to the weakest check in the workflow:
@@ -288,8 +307,10 @@ A TypeScript version bump can legitimately surface new errors — review such a 
 
 **Core never reaches into a module.** Extension runs one way: core declares the
 extension points, a module registers into them, and core stays unaware of what
-registered. That is what lets this edition be built and shipped on its own, and
-it is equally the mechanism any module — licensed or your own — plugs into.
+registered. That is what keeps core buildable and testable without any module,
+and it is the same mechanism the design engine and any module of your own plug
+into. A module's licence does not change the rule: `cascadia-design-engine` is
+AGPL and ships in this tree, and core still never imports it.
 
 A module is a package that registers; it is never imported by core. The
 registries core provides:
@@ -305,11 +326,10 @@ registries core provides:
 | Jobs                          | `JobTypeRegistry.register()` / `.registerHandler()`                                                 |
 | Recurring maintenance         | `registerMaintenanceJobType()` — the jobs worker's sweep submits it on the module's own period      |
 | Cache resources               | `registerResourceDependents()` + declaration merging on `ModuleResources`                           |
-| Package catalog               | `registerPackage()`                                                                                 |
-| Schema                        | `cascadia-app*/src/modules.schema.ts` — a re-export, because drizzle-kit reads it statically        |
+| Schema                        | `cascadia-app/src/modules.schema.ts` — a re-export, because drizzle-kit reads it statically         |
 
 **Registration happens in a composition root**, never in core:
-`cascadia-app*/src/modules.{server,client,schema}.ts`. Order is load-bearing — route
+`cascadia-app/src/modules.{server,client,schema}.ts`. Order is load-bearing — route
 contributions mount while routers are being built, so `registerModules()` must
 run _before_ the app is imported. Every server entry uses a dynamic import for
 exactly that reason; a static `import app from …` is evaluated first and would
@@ -324,26 +344,8 @@ npm run boundary:check    # resolves every import; catches dynamic import() and 
 It resolves each import specifier to a real path rather than matching text. That
 distinction is not academic: two grep-based checks once reported a package fully
 seamed while a dynamic `import()` and a bare package-id string were still live.
-
-## Optional Packages
-
-Some functionality is **separately licensed** — an instance only has it when the
-package id appears in the `CASCADIA_PACKAGES` environment variable
-(comma-separated, or `*`). Read once at process start; there is deliberately no
-in-app toggle.
-
-- Registry: `cascadia-api/src/packages/` — `PackageRegistry.isEnabled(id)`,
-  `PackageRegistry.list()`, and `requirePackage(id)` which throws
-  `PackageNotLicensedError` (403).
-- Client: `usePackageEnabled(id)` from `@/hooks/usePackages` drives
-  presentation only. **Always re-check server-side** with `requirePackage()` in
-  the route or service — the client answer is a hint, not a gate.
-- Admin: `/admin` lists packages read-only via `GET /api/v1/packages`.
-
-**Current packages: none in this edition.** The registry ships here because the
-mechanism is core — a build that composes a licensed module needs it — but the
-modules themselves are separately licensed and are not part of the AGPL tree.
-Full guide: [`docs/development/adding-packages.md`](./docs/development/adding-packages.md).
+Since the module ships in the same tree and is built with core, a core file that
+imported it would compile and run — this check is the only thing that says no.
 
 ## Documentation Reference
 
@@ -391,9 +393,11 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 | Domain events, the event log          | `./docs/development/adding-domain-events.md`   |
 | Extensions, the three phases          | `./docs/development/writing-extensions.md`     |
 | Webhooks, building a receiver         | `./docs/features/webhooks.md`                  |
-| Optional/licensed packages            | `./docs/development/adding-packages.md`        |
 | Demo data and seeding                 | `./docs/development/demo-datasets.md`          |
 | MCP servers, AI tool registry         | `./docs/features/mcp.md`                       |
+| `cascadia-design-engine/`, its stages | `./docs/features/design-engine.md`             |
+| Generative CAD, the FreeCAD agent     | `./docs/features/cad-services.md`              |
+| The Python workers' test suites       | `./docs/development/python-worker-tests.md`    |
 
 ## Architecture Quick Reference
 
@@ -401,31 +405,37 @@ Comprehensive documentation lives in-repo at [`./docs/`](./docs/README.md).
 
 ### Service Quick Reference
 
-| I need to...                                              | Use                                          |
-| --------------------------------------------------------- | -------------------------------------------- |
-| CRUD any item                                             | `ItemService`                                |
-| Manage change-order affected items                        | `ChangeOrderService`                         |
-| Release an approved change order                          | `ChangeOrderMergeService.merge()`            |
-| Checkout item for editing                                 | `CheckoutService.checkout()`                 |
-| Get item at a version/commit/tag                          | `VersionResolver.getItemAtContext()`         |
-| Create/manage branches                                    | `BranchService`                              |
-| Create commits                                            | `CommitService`                              |
-| Upload/download files                                     | `FileService`                                |
-| Manage programs                                           | `ProgramService`                             |
-| Manage designs                                            | `DesignService`                              |
-| Manage lifecycle transitions                              | `LifecycleService`                           |
-| Derive state predicates (released family, initial, final) | `LifecycleService`                           |
-| Detect merge conflicts                                    | `ConflictDetectionService`                   |
-| Assess change-order impact on items                       | `ImpactAssessmentService`                    |
-| AI chatbot conversations                                  | `SessionService` from `@/ai`                 |
-| Submit background jobs                                    | `JobService.submit()`                        |
-| Queue a route's work and answer 202 (503 if no queue)     | `submitForRequest()` + `jobAccepted()`       |
-| Write a sheet import / item batch-create (worker side)    | `ImportService` / `BatchCreateService`       |
-| Register job types                                        | `JobTypeRegistry.register()`                 |
-| Wrap an API route handler                                 | `apiHandler()` from `@/api/handler`          |
-| Parse & validate query params                             | `parseQuery(request, zodSchema)`             |
-| Check design access                                       | `requireDesignAccess()` from `@/auth/access` |
-| Check branch access                                       | `requireBranchAccess()` from `@/auth/access` |
+| I need to...                                              | Use                                                               |
+| --------------------------------------------------------- | ----------------------------------------------------------------- |
+| CRUD any item                                             | `ItemService`                                                     |
+| Manage change-order affected items                        | `ChangeOrderService`                                              |
+| Release an approved change order                          | `ChangeOrderMergeService.merge()`                                 |
+| Checkout item for editing                                 | `CheckoutService.checkout()`                                      |
+| Get item at a version/commit/tag                          | `VersionResolver.getItemAtContext()`                              |
+| Create/manage branches                                    | `BranchService`                                                   |
+| Create commits                                            | `CommitService`                                                   |
+| Upload/download files                                     | `FileService`                                                     |
+| Manage programs                                           | `ProgramService`                                                  |
+| Manage designs                                            | `DesignService`                                                   |
+| Manage lifecycle transitions                              | `LifecycleService`                                                |
+| Derive state predicates (released family, initial, final) | `LifecycleService`                                                |
+| Detect merge conflicts                                    | `ConflictDetectionService`                                        |
+| Assess change-order impact on items                       | `ImpactAssessmentService`                                         |
+| AI chatbot conversations                                  | `SessionService` from `@/ai`                                      |
+| Submit background jobs                                    | `JobService.submit()`                                             |
+| Queue a route's work and answer 202 (503 if no queue)     | `submitForRequest()` + `jobAccepted()`                            |
+| Write a sheet import / item batch-create (worker side)    | `ImportService` / `BatchCreateService`                            |
+| Register job types                                        | `JobTypeRegistry.register()`                                      |
+| Wrap an API route handler                                 | `apiHandler()` from `@/api/handler`                               |
+| Parse & validate query params                             | `parseQuery(request, zodSchema)`                                  |
+| Check design access                                       | `requireDesignAccess()` from `@/auth/access`                      |
+| Check branch access                                       | `requireBranchAccess()` from `@/auth/access`                      |
+| Collaborative design sessions (design-engine module)      | `DesignSessionService` from `@/design-engine`                     |
+| Run design engine stages                                  | `CollaborativeDesignEngine` from `@/design-engine`                |
+| Materialize a design session into PLM items               | `MaterializationService` from `@/design-engine`                   |
+| Generate CAD from text                                    | `generateAllParts()` from `@/cad-generation`                      |
+| Generate one part with the FreeCAD agent                  | `generatePartWithFreecad()` from `@/cad-generation/freecad-agent` |
+| Plan assembly composition                                 | `AssemblyPlanner` from `@/cad-generation`                         |
 
 ### Core Patterns
 
@@ -546,7 +556,7 @@ Mount new route modules in `cascadia-api/src/server/index.ts` via `app.route('/a
 
 For responses needing custom status codes or headers (201 Created, Set-Cookie), return a raw `Response` from within the handler. Use `parseQuery(request, zodSchema)` for validated query parameters. Use `requireDesignAccess`/`requireBranchAccess` from `@/auth/access` for design/branch access checks.
 
-The OpenAPI document is regenerated from these annotations at request time (`/openapi.json`) and served as Scalar UI at `/api/docs`. The committed snapshot at `docs/api/openapi.v1.json` is the frozen v1 contract — `npm run openapi:check` enforces it on every pull request. Run `npm run openapi:snapshot` whenever you change a route signature, then commit the regenerated JSON; an edition that composes modules commits its own contract beside its app the same way. See [`docs/api/README.md`](./docs/api/README.md) for the versioning policy.
+The OpenAPI document is regenerated from these annotations at request time (`/openapi.json`) and served as Scalar UI at `/api/docs`. The committed snapshot at `docs/api/openapi.v1.json` is the frozen v1 contract — `npm run openapi:check` enforces it on every pull request. Run `npm run openapi:snapshot` whenever you change a route signature — a module's included, since the snapshot is taken with the modules registered — then commit the regenerated JSON. See [`docs/api/README.md`](./docs/api/README.md) for the versioning policy.
 
 ## Common Tasks
 
@@ -684,7 +694,7 @@ const job = await JobService.submit(
 - Strict mode enabled, avoid `any` types
 - Use Zod schemas for validation and type inference
 - Prefer interfaces for object types, type for unions
-- Path alias: `@/*` means _the importing file's own package_ (`cascadia-<pkg>/src/*`). Reach another package by name — `@cascadia/commons/...` from api or web; `@cascadia/api/...` and `@cascadia/web/...` only from apps and scripts. Commons imports itself relatively (it is compiled inside the other two programs, where `@/` means something else). In an app's Vite build, `@/` searches web first, then this edition's module package
+- Path alias: `@/*` means _the importing file's own package_ (`cascadia-<pkg>/src/*`). Reach another package by name — `@cascadia/commons/...` from api or web; `@cascadia/api/...` and `@cascadia/web/...` only from apps and scripts. Commons imports itself relatively (it is compiled inside the other two programs, where `@/` means something else). In an app's Vite build, `@/` searches web first, then the module packages. Inside a module package, `@/` resolves across the application packages first and then the module's own `src/` — so module code writes the same `@/` imports core would, and a module file must never share a relative path with a core file (`boundary:check` refuses the collision)
 
 ### Database Queries
 
@@ -769,9 +779,44 @@ RABBITMQ_URL=amqp://localhost  # For background jobs
 There is no session secret: sessions are opaque random tokens stored hashed in
 the database, so no signing key exists to configure.
 
-## CAD Conversion Worker
+## Collaborative Design Engine
 
-**CAD converter** (`cascadia-workers-cad/`): Python worker using pythonocc-core. Processes STEP/IGES files into STL + GLB (with per-face color preservation). Connects to RabbitMQ for job processing.
+A multi-stage AI workflow in the `cascadia-design-engine` module, at
+`cascadia-design-engine/src/design-engine/`:
+
+**Stages** (sequential): Toolset Establishment → Toolset Review → Requirements Drafting → Requirements Review → BOM Drafting → BOM Review → Materialization → CAD Generation → CAD Review → Assembly Composition → Assembly Review
+
+The canonical stage enum is `DesignSessionStage` in `cascadia-design-engine/src/design-engine/types.ts`.
+
+**Key concepts:**
+
+- Sessions are persisted in the `design_sessions` table with JSONB artifacts; snapshots for rollback and forking in `design_session_snapshots`
+- Each drafting/review stage pair is one file in `stages/` (`toolset-establishment.ts`, `requirements.ts`, `bom.ts`, `cad-generation.ts`, `assembly-composition.ts`); materialization lives in `materialize.ts`, not `stages/`
+- Toolset Establishment captures the available manufacturing processes/tools and a scope (`in_house_only` | `in_house_preferred` | `unconstrained`); selections become per-BOM-node `ManufacturingConstraints` (FDM, laser-cut, CNC, …) that constrain downstream BOM and CAD generation
+- BOM drafting uses LLM tool-calling with tools defined in `tools/bom-tools.ts`
+- Materialization creates actual PLM items (parts, requirements, relationships, change order) from the draft, through the same services any other client uses
+- CAD generation has the AI provider write a FreeCAD Python script per part, executed by the FreeCAD runner (`cascadia-workers-freecad-runner/`) in an iterate-on-report loop (`cad-generation/freecad-agent.ts`); the accepted script's STEP lands in the vault
+- Assembly composition plans placements with the LLM, serializes them to an assembly script, and renders the STEP via the CadQuery worker (`cascadia-workers-cad-generator/`)
+- SSE streaming for real-time updates via `POST /api/v1/design-engine/sessions/:id/stream`
+- UI workspace at `/designs/collaborative/$sessionId` (routes under `cascadia-design-engine/src/routes/`, composed by `cascadia-app/vite.config.ts`)
+
+**How it attaches:** `registerDesignEngine()` / `registerCadGeneration()` in
+`cascadia-design-engine/src/register.server.ts` add the AI tool, the routes and
+the job definitions; `registerCadGenerationWorker()` adds the one Node job
+handler; `register.client.ts` adds the sidebar entry, the part-page CAD actions
+and the admin CAD-generation section through slots. All are called from
+`cascadia-app/src/modules.{server,client}.ts`, and its tables are re-exported
+from `modules.schema.ts`.
+
+## Python Workers
+
+**CAD converter** (`cascadia-workers-cad/`): pythonocc-core. Processes STEP/IGES files into STL + GLB (with per-face color preservation). Connects to RabbitMQ for job processing.
+
+**CAD generator** (`cascadia-workers-cad-generator/`): CadQuery. Parametric part templates, multi-part mechanisms, and the composed STEP assemblies the design engine's assembly stage renders.
+
+**FreeCAD runner** (`cascadia-workers-freecad-runner/`): headless FreeCAD (conda-forge). Executes AI-written scripts in a sandboxed child process — scrubbed environment, resource limits, wall-clock deadline — validates `result`, and stores the accepted STEP. A failing script is a completed job with `ok: false`; the agent's revision is the retry.
+
+CI runs none of the three workers' suites (only `cascadia-workers-commons`); they run locally — see `docs/development/python-worker-tests.md`.
 
 ## Windows-Specific Notes
 
@@ -1084,11 +1129,14 @@ Cascadia supports flexible deployment from single-server to distributed Kubernet
 - **Core App** (`cascadia-app`) - Web UI + API (file vault runs in-process)
 - **Jobs Server** (`cascadia-jobs`) - Background processing (optional standalone)
 - **CAD Converter** (`cascadia-cad-converter`) - Python STEP/IGES → STL/GLB conversion
+- **CAD Generator** and **FreeCAD Runner** - Python workers for the design engine's generative CAD (built locally from their Dockerfiles; no published images yet)
 
 ### Key Files
 
 - `cascadia-app/Dockerfile` - Core app container
 - `cascadia-workers-job/Dockerfile` - Node.js jobs worker container
 - `cascadia-workers-cad/Dockerfile` - CAD converter container
+- `cascadia-workers-cad-generator/Dockerfile` - CAD generator container
+- `cascadia-workers-freecad-runner/Dockerfile` - FreeCAD runner container
 - `docs/orchestration/README.md` - Full orchestration guide
 - `docs/orchestration/configuration.md` - All environment variables

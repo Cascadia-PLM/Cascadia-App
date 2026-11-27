@@ -5,7 +5,7 @@
 
 import { tanstackConfig } from '@tanstack/eslint-config'
 import tseslint from 'typescript-eslint'
-import { MODULE_PACKAGES } from './scripts/edition-manifest.mjs'
+import { MODULE_PACKAGES } from './scripts/workspaces.mjs'
 import noIndirectEffectFetch from './scripts/eslint-rules/no-indirect-effect-fetch.mjs'
 import paginatedQueryTotalOrder from './scripts/eslint-rules/paginated-query-total-order.mjs'
 
@@ -28,31 +28,24 @@ const local = {
 }
 
 /**
- * Import patterns that would put proprietary code inside core.
+ * Import patterns that would make core reach into a module.
  *
- * Derived from the edition manifest's package names rather than written out
+ * Derived from the workspace list's module names rather than written out
  * here, so the two cannot drift.
  */
-// `MODULE_PACKAGES` comes from the manifest, not a list here. Writing the
-// names here would put a proprietary package id inside a core file —
-// `boundary:check` says so, and it is right: this file is published, where
-// those packages do not exist. In the public tree no workspace is proprietary,
-// so `MODULE_PACKAGES` is empty, the list is empty and the rule below
-// restricts nothing, which is exactly correct there.
+// `MODULE_PACKAGES` comes from the manifest, not a list here: every
+// `cascadia-*` workspace that is not an application package or an app,
+// whatever its licence. A tree with no module packages gets an empty list and
+// the rule below restricts nothing.
 //
 // Each module keeps its code under `<module-name>/` and (where it
 // has any) its components under `components/<module-name>/`, so those
 // namespaces are patternable per package name. That convention is the whole
-// coverage: a module file OUTSIDE its namesake namespace — cad-generation's
-// components/{admin,parts}, advanced-auditing's server/routes/files-sign —
-// is invisible to this rule and belongs to `boundary:check` (which resolves
+// coverage: a module file OUTSIDE its namesake namespace — design-engine's
+// cad-generation/ and components/{admin,parts}, say — is invisible to this rule and belongs to `boundary:check` (which resolves
 // real paths) and its alias-collision pass.
 //
-// (A previous derivation filtered PROPRIETARY entries by '<pkg>/src/'
-// prefixes — which no manifest entry has ever contained, the entries being
-// '<pkg>/**' — so it provably contributed nothing and only the
-// @cascadia/* patterns were live.)
-const proprietaryImportPatterns = [
+const moduleImportPatterns = [
   ...MODULE_PACKAGES.flatMap((p) => [`@cascadia/${p}`, `@cascadia/${p}/**`]),
   ...MODULE_PACKAGES.flatMap((p) => [
     `@/${p}`,
@@ -108,7 +101,7 @@ export default [
       // Generated per app and gitignored. Type-aware linting two of these
       // alongside four TS programs exhausts the default heap, and there is
       // nothing to review in a file nobody writes.
-      'cascadia-app*/src/routeTree.gen.ts',
+      'cascadia-app/src/routeTree.gen.ts',
       // Generated from the OpenAPI snapshot (npm run types:openapi) and
       // committed; nothing to review here either.
       'cascadia-web/src/api/openapi-types.gen.ts',
@@ -129,13 +122,11 @@ export default [
   },
   // The plain-ESM tooling: every script.
   //
-  // All of these were matched by `'**/*.mjs'` in `ignores` — including, when
-  // this edition was still published from a private tree, the overlay that
-  // decided what reached it. A duplicate `SUBSTITUTE` key there silently
-  // discarded a rule and left `ARG APP=cascadia-enterprise` in both published
-  // Dockerfiles; `no-dupe-keys` is a core rule and would have said so the
-  // moment it was written. The most consequential file in the repository was
-  // the least checked.
+  // All of these were once matched by `'**/*.mjs'` in `ignores`. A duplicate
+  // key in one of them silently discarded a rule and shipped a wrong build
+  // argument in both Dockerfiles; `no-dupe-keys` is a core rule and would have
+  // said so the moment it was written. The most consequential files in the
+  // repository were the least checked.
   //
   // Type-aware rules stay off. `checkJs` is unset, so the program carries no
   // real types for these files and the type-directed rules either crash for
@@ -163,7 +154,7 @@ export default [
       'use-isnan': 'error',
     },
   },
-  // Core must not import proprietary code — the fast, in-editor half of the
+  // Core must not import a module — the fast, in-editor half of the
   // boundary invariant, and deliberately only half.
   //
   // `no-restricted-imports` matches the specifier *as written*: it sees the
@@ -178,14 +169,14 @@ export default [
   // grepping missed. This rule exists only so the common case surfaces as you
   // type rather than in CI. Do not treat a green lint as a clean boundary.
   //
-  // Proprietary files and the composition roots are exempt — a module importing
+  // Module files and the composition roots are exempt — a module importing
   // its own package, and a root wiring modules in, are the point.
   //
   // Omitted entirely when there is nothing to restrict. ESLint rejects an empty
-  // `group`, so a config that always declares the rule fails to *load* in the
-  // published tree, where `MODULE_PACKAGES` is empty by design — lint would not
-  // report a violation there, it would refuse to run at all.
-  ...(proprietaryImportPatterns.length > 0
+  // `group`, so a config that always declares the rule fails to *load* in a
+  // tree with no module packages — lint would not report a violation there, it
+  // would refuse to run at all.
+  ...(moduleImportPatterns.length > 0
     ? [
         {
           // Scoped to the application packages by path, so no ignore list is
@@ -200,9 +191,9 @@ export default [
               {
                 patterns: [
                   {
-                    group: proprietaryImportPatterns,
+                    group: moduleImportPatterns,
                     message:
-                      'Core cannot import proprietary code. Invert it through a registry — the registries are listed in CLAUDE.md under the extension boundary.',
+                      'Core cannot import a module. Invert it through a registry — the registries are listed in CLAUDE.md under the extension boundary.',
                   },
                 ],
               },
@@ -443,7 +434,7 @@ export default [
   // app's config must stay type-only. Cascadia-App#101 fixed this once; this
   // rule is what keeps it fixed.
   {
-    files: ['cascadia-app*/drizzle.config.ts'],
+    files: ['cascadia-app/drizzle.config.ts'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
         'error',

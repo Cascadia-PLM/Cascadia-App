@@ -110,14 +110,14 @@ AuthService.LOCKOUT_DURATION_MINUTES = 15
 - Lockout expiry is checked on every attempt
 
 **One budget, not one per endpoint.** Every path that checks an account
-password shares this counter, not just the sign-in form — re-entering a
-password to sign an approval spends from the same ten attempts and can lock the
+password shares this counter, not just the sign-in form — a failure at any
+other password prompt spends from the same ten attempts and can lock the
 account for login. Without that, an attacker holding a stolen session could
-guess a password at leisure against an account the login form would already
-have locked. The cost is the mirror image: someone spraying the signing prompt
-can lock a victim out of signing in, which is the same denial-of-service the
-login endpoint has always carried. The `auth_events` metadata records a
-`source` (`login` or `signature`) so an administrator can tell the two apart.
+guess a password at leisure through a second prompt against an account the
+login form would already have locked. The cost is the mirror image: someone
+spraying such a prompt can lock a victim out of signing in, which is the same
+denial-of-service the login endpoint has always carried. The `auth_events`
+metadata records a `source` so an administrator can tell the prompts apart.
 
 ### Session Cookie Security
 
@@ -476,89 +476,23 @@ Configuration is `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`, and `GOOGLE_CLIE
 
 ---
 
-## Client Certificate Signing (Advanced Auditing package)
-
-Instances licensed for the [Advanced Auditing](../features/advanced-auditing.md)
-package sign every workflow approval with the approver's CAC/PIV certificate.
-This introduces the one place where Cascadia treats a **request header** as
-evidence of identity, so the trust boundary is worth stating precisely.
-
-### The trust boundary
-
-Cascadia does not terminate TLS. A reverse proxy performs the mutual-TLS
-handshake, validates the client certificate chain, and forwards the certificate
-in a header. Cascadia then re-parses and independently re-verifies it.
-
-```
-Browser + CAC ──mTLS──> Reverse proxy ──header──> Cascadia
-   (PIN unlocks key)    (validates chain,        (re-verifies chain,
-                         sets header)             checks enrollment)
-```
-
-**A forwarded header is only as trustworthy as the edge that overwrites it.** If
-a client can set the header itself, it can assert any identity. Cascadia
-therefore fails closed by default:
-
-| Control                                | Behavior                                                                                                                 |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Header is opt-in                       | No certificate header is read at all unless the deployment names one in `CASCADIA_CLIENT_CERT_HEADER`                    |
-| Only the named header                  | A certificate in any other header is ignored, so a stray or forged header name is inert                                  |
-| Independent chain verification         | The certificate is re-verified against `CASCADIA_SIGNING_CA_BUNDLE` rather than trusting the proxy's assertion           |
-| Forwarded intermediates confer nothing | Intermediates help build a path but the walk must terminate at a configured anchor, so a client cannot attach its own CA |
-| Validity is enforced                   | Expired and not-yet-valid certificates are refused                                                                       |
-| Certificate bound to one account       | A certificate is enrolled to exactly one user; a valid card cannot sign under another user's session                     |
-
-Deployment requirement: the proxy must overwrite the header on **every**
-request, and Cascadia must not be reachable except through that proxy. The
-per-proxy examples are documented with the package that needs them, which is not
-part of this edition — see [Advanced Auditing](../features/advanced-auditing.md).
-
-### Why the certificate is not re-challenged
-
-The cardholder's PIN unlocks the private key during the TLS handshake, so
-possession is already proven when the request arrives. Re-prompting would add
-friction without adding evidence. Where no certificate is presented and policy
-permits it, the signer re-enters their **account password** instead — a
-deliberate act distinct from merely holding a live session — and the record is
-marked as the weaker credential (`method: password`, `assurance: password`).
-
-### Tamper evidence
-
-Signatures are append-only and hash-chained per workflow instance. The chain
-proves the audit trail has not been edited _through the application_, and makes
-direct database edits detectable: rewriting or deleting a row breaks
-verification for every signature after it. It is not a substitute for scoping
-database credentials — it is what makes misuse of them visible.
-
-### Revocation
-
-Revocation (CRL/OCSP) is enforced by the mTLS terminator during the handshake,
-which is where DoD deployments normally handle it. Cascadia does not
-independently re-check, and records `revocation_status: not_checked` rather than
-implying a check it did not perform.
-
----
-
 ## Session Security Summary
 
-| Attack                             | Mitigation                                                                                               |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Session hijacking**              | HttpOnly + Secure + SameSite=Strict cookies; SHA-256 hashed tokens in DB                                 |
-| **Session fixation**               | All sessions invalidated on login (session rotation)                                                     |
-| **Brute force**                    | Account lockout after 10 failures, 15-minute cooldown                                                    |
-| **CSRF**                           | SameSite=Strict cookies + Origin/Referer validation                                                      |
-| **XSS token theft**                | HttpOnly cookies (JavaScript cannot access)                                                              |
-| **MIME sniffing**                  | X-Content-Type-Options: nosniff                                                                          |
-| **Clickjacking**                   | X-Frame-Options: DENY                                                                                    |
-| **Cross-origin attacks**           | Same-origin CORS by default, explicit allowlist required                                                 |
-| **Path traversal (uploads)**       | Filename sanitization + isolated storage paths                                                           |
-| **Malicious uploads**              | Extension allowlist, size limits, SHA-256 hashing                                                        |
-| **Timing attacks**                 | Constant-time password comparison                                                                        |
-| **Stale sessions**                 | Periodic cleanup of expired sessions (`cleanupExpiredSessions()`)                                        |
-| **Deactivated users**              | Sessions immediately revoked when user is deactivated                                                    |
-| **Forged client-cert header**      | Header read only when explicitly named; chain re-verified against configured anchors (Advanced Auditing) |
-| **Signing under another identity** | Certificate enrolled to exactly one account; mismatches refused (Advanced Auditing)                      |
-| **Edited audit trail**             | Append-only, hash-chained signatures; edits break chain verification (Advanced Auditing)                 |
+| Attack                       | Mitigation                                                               |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| **Session hijacking**        | HttpOnly + Secure + SameSite=Strict cookies; SHA-256 hashed tokens in DB |
+| **Session fixation**         | All sessions invalidated on login (session rotation)                     |
+| **Brute force**              | Account lockout after 10 failures, 15-minute cooldown                    |
+| **CSRF**                     | SameSite=Strict cookies + Origin/Referer validation                      |
+| **XSS token theft**          | HttpOnly cookies (JavaScript cannot access)                              |
+| **MIME sniffing**            | X-Content-Type-Options: nosniff                                          |
+| **Clickjacking**             | X-Frame-Options: DENY                                                    |
+| **Cross-origin attacks**     | Same-origin CORS by default, explicit allowlist required                 |
+| **Path traversal (uploads)** | Filename sanitization + isolated storage paths                           |
+| **Malicious uploads**        | Extension allowlist, size limits, SHA-256 hashing                        |
+| **Timing attacks**           | Constant-time password comparison                                        |
+| **Stale sessions**           | Periodic cleanup of expired sessions (`cleanupExpiredSessions()`)        |
+| **Deactivated users**        | Sessions immediately revoked when user is deactivated                    |
 
 ---
 
@@ -580,4 +514,3 @@ implying a check it did not perform.
 | `cascadia-api/src/api/cors.ts`                  | `requestOrigin()`, the CORS grant and preflight, security headers |
 | `cascadia-api/src/api/client-ip.ts`             | Client address resolution; `TRUSTED_PROXY_COUNT`                  |
 | `cascadia-api/src/vault/utils/file-utils.ts`    | File validation, sanitization, allowlist                          |
-| `cascadia-api/src/packages/guard.ts`            | `requirePackage()` entitlement gate for optional packages         |

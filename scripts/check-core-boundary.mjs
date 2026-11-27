@@ -2,60 +2,44 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Assert the invariant: **core never reaches proprietary code.**
+ * Assert the invariant: **core never reaches into a module.**
  *
  *   npm run boundary:check
  *
- * Two greps have already lied about this. After seams 1-3 the plan recorded
- * `advanced-auditing` as fully seamed while `files.ts` still reached it through
- * `await import('@/lib/advanced-auditing/...')`; seam 5 hid a coupling behind a
- * component path rather than a lib path. Three reference forms have each been
- * missed exactly once — dynamic `import()`, component paths, and a package id
- * passed as a bare string.
+ * "Core" is the four application packages and the root tooling; a "module" is
+ * any other `cascadia-*` npm workspace (`MODULE_PACKAGES` in
+ * `scripts/workspaces.mjs`) — today `cascadia-design-engine`. Modules register
+ * into core's extension points from the app's composition root
+ * (`cascadia-app`), which is the one place allowed to name them.
  *
- * So this does not match patterns. It **resolves** every import specifier in
- * every core file to a real path and classifies that path through
- * `edition-manifest.mjs`. A component path and a lib path resolve alike; a
+ * Greps have lied about this before: a coupling once survived behind a dynamic
+ * `await import('@/...')`, another behind a component path rather than a lib
+ * path. So this does not match patterns. It **resolves** every import
+ * specifier in every core file to a real path and asks whether that path is
+ * inside a module package. A component path and a lib path resolve alike; a
  * dynamic import and a static one are both specifiers. Renaming a directory
  * cannot quietly defeat it, because there is no pattern to fall out of date.
  *
- * String-literal package ids get a second, separate pass, since no amount of
- * import resolution will catch `usePackageEnabled(<a quoted module id>)`.
- * (Which is why this file spells no id in quotes — it scans itself.)
+ * The same resolver then answers three more questions. Does any file exist at
+ * the same relative path under two `@/` roots (one would silently shadow the
+ * other)? See "Alias-root collisions". Does any module package import
+ * *another* module package without declaring it? See "Cross-module dependency
+ * honesty". And does the application's own layering hold — commons reaching
+ * nothing, the web never reaching the api? See "Application layering".
  *
- * The same resolver then answers two more questions. One package outward:
- * does any module package import *another* module package without declaring
- * it? See "Cross-module dependency honesty" below. And inward: does the
- * application's own layering hold — commons reaching nothing, the web never
- * reaching the api? See "Application layering" below.
- *
- * This is a stopgap with a known replacement. Phase 2 splits the workspace, at
- * which point CI can build and test `cascadia-app` with the proprietary
- * packages *deleted from the tree* — which proves the same property by
- * construction rather than by analysis. Until then, this is the gate.
+ * There is no proof-by-deletion to fall back on: the modules ship in the same
+ * tree as core and are built with it, so a core file that imported one would
+ * compile and run. This check is the gate.
  */
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import {
-  MODULE_PACKAGES,
-  editionOf,
-  normalize,
-  workspaceDir,
-} from './edition-manifest.mjs'
+import { MODULE_PACKAGES, normalize, workspaceDir } from './workspaces.mjs'
 
-// Both lists derive from the edition manifest so a new module package is
-// covered the day its manifest declares it UNLICENSED and the edition
-// manifest discovers it.
-// The old hardcoded copies here had already drifted: they omitted the
-// odoo-integration package entirely, so a core import under it — or its
-// quoted package id — passed this check silently. (No quoted ids in this
-// file: since .mjs is scanned, the checker checks itself.)
-
-/** Entitlement ids that belong to a proprietary package. */
-const PROPRIETARY_PACKAGE_IDS = MODULE_PACKAGES
-
+// Derived from the workspace list, so a new module package is covered the day
+// it exists. Hardcoded copies here once drifted: they omitted a module package
+// entirely, so a core import under it passed this check silently.
 const MODULE_SRC = MODULE_PACKAGES.map((p) => `${workspaceDir(p)}/src`)
 
 /**
@@ -80,14 +64,13 @@ const appPackageOf = (file) =>
 /**
  * Entry points, which are allowed to import a composition root.
  *
- * Since Phase 2 the app entry points live in the app workspaces (`cascadia-app`, `cascadia-app-enterprise`), and the enterprise app is
- * classified proprietary in its entirety — so they are no longer core files and
- * need no exemption. What remains is root-level tooling that operates on one
- * edition's composition.
+ * The app workspace (`cascadia-app`) is composition roots in its entirety and
+ * is exempt by directory (`isCompositionRoot`, below). What remains is root
+ * tooling that loads the app's composition.
  */
 const ENTRY_POINTS = [
-  // Edition tooling: assembles or describes a specific edition, so naming its
-  // composition root is the job rather than a leak.
+  // Assembles or describes the composed app, so naming its composition root
+  // is the job rather than a leak.
   'scripts/snapshot-openapi.ts',
   'scripts/truncate-all.ts',
 ]
@@ -101,17 +84,26 @@ const ENTRY_POINTS = [
  * with instructions to delete the entry, so the list cannot rot into a
  * permanent amnesty.
  *
- * Every entry names an open item from Phase 1 of the loadable-modules
- * architecture document, kept with the edition that composes modules.
+ * Every entry names the plan that will remove it.
  */
 const KNOWN_PENDING = new Map([
-  // Empty as of 2026-08-10, when Phase 1 closed. Core reaches nothing
-  // proprietary. An entry here is now a regression with a plan attached, not a
-  // backlog — and the stale-entry check means one cannot be left behind after
-  // the work that justified it lands.
+  // Empty since 2026-08-10. Core reaches no module. An entry here is a
+  // regression with a plan attached, not a backlog — and the stale-entry check
+  // means one cannot be left behind after the work that justified it lands.
 ])
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs']
+
+/** The module package a repo-relative path belongs to, or null. */
+const moduleOf = (file) =>
+  MODULE_PACKAGES.find((name) => file.startsWith(`${workspaceDir(name)}/`)) ??
+  null
+
+/** The app workspace: composition roots, allowed to name every module. */
+const isCompositionRoot = (file) => file.startsWith('cascadia-app/')
+
+/** Core in the extension-boundary sense: not a module, not the app. */
+const isCore = (file) => !moduleOf(file) && !isCompositionRoot(file)
 
 function candidateFiles() {
   const out = execFileSync(
@@ -205,8 +197,7 @@ function resolveSpecifier(specifier, fromFile) {
       // still named a module, and the subpath test below reads straight past
       // it: only a trailing slash matched, so this fell through to null and
       // was never classified. Point it at the package manifest, a real file
-      // under cascadia-<name>/ that the edition manifest calls proprietary.
-      // The core package needs no equivalent: a core target records nothing.
+      // under cascadia-<name>/, so `moduleOf` recognises the target.
       if (specifier === `@cascadia/${name}`) {
         return tryExtensions(join(workspaceDir(name), 'package.json'))
       }
@@ -242,7 +233,7 @@ function record(file, detail) {
 const allFiles = candidateFiles()
 
 for (const file of allFiles) {
-  if (editionOf(file) !== 'core') continue
+  if (!isCore(file)) continue
   if (ENTRY_POINTS.includes(file)) continue
   coreFilesScanned++
 
@@ -250,31 +241,8 @@ for (const file of allFiles) {
 
   for (const specifier of specifiersIn(source)) {
     const target = resolveSpecifier(specifier, file)
-    if (target && editionOf(target) === 'proprietary') {
+    if (target && moduleOf(target)) {
       record(file, `imports ${specifier}  →  ${target}`)
-    }
-  }
-
-  // A template literal is the third way to write a string, and the pass knew
-  // only two — so a quoted id survived by being written in backticks. It is
-  // matched against code lines only: every comment in this repository names an
-  // identifier in Markdown backticks, so scanning prose for one would fail
-  // three honest sentences and teach the next author to stop naming the module
-  // they are explaining. In code a backtick opens a string; in a comment it is
-  // punctuation. The single- and double-quoted forms keep scanning everything,
-  // because a quoted id reads as code wherever it appears.
-  const code = source
-    .split('\n')
-    .filter((line) => !/^\s*(\/\/|\/\*|\*)/.test(line))
-    .join('\n')
-
-  for (const id of PROPRIETARY_PACKAGE_IDS) {
-    if (
-      source.includes(`'${id}'`) ||
-      source.includes(`"${id}"`) ||
-      code.includes(`\`${id}\``)
-    ) {
-      record(file, `names the package id '${id}'`)
     }
   }
 }
@@ -331,9 +299,6 @@ const collisions = [...byRelativePath].filter(([, roots]) => roots.size > 1)
 //
 // A declared edge is fine — it is a fact recorded where npm and a human can
 // both see it. What is refused is an *undeclared* one.
-const moduleOf = (file) =>
-  MODULE_PACKAGES.find((name) => file.startsWith(`${workspaceDir(name)}/`)) ??
-  null
 
 /** Module package → the module packages its package.json admits to needing. */
 const declaredDeps = new Map(
@@ -448,9 +413,7 @@ if (pending.length > 0) {
 }
 
 if (fresh.length > 0) {
-  console.error(
-    `\n✗ ${fresh.length} core file(s) newly reach proprietary code:\n`,
-  )
+  console.error(`\n✗ ${fresh.length} core file(s) newly reach a module:\n`)
   for (const [file, details] of fresh) {
     console.error(`   ${file}`)
     for (const d of details) console.error(`      ${d}`)
@@ -458,7 +421,8 @@ if (fresh.length > 0) {
   }
   console.error(
     'Core must not reach a module. Invert the dependency through a registry —\n' +
-      'see "Phase 1 — Seams" in the loadable-modules architecture document.',
+      'see "The extension boundary" in CLAUDE.md and\n' +
+      'docs/development/writing-extensions.md.',
   )
   process.exit(1)
 }
@@ -533,7 +497,7 @@ if (layering.size > 0) {
 }
 
 if (violations.size === 0) {
-  console.log('\n✅ Core does not reach proprietary code, anywhere.')
+  console.log('\n✅ Core does not reach into a module, anywhere.')
 } else {
   console.log('\n✅ No new boundary violations.')
 }

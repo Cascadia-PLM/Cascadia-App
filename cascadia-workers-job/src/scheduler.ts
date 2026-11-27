@@ -59,9 +59,9 @@ const unregisteredTypesWarned = new Set<string>()
  * when this process has no definition for the job's type.
  *
  * Not knowing a type is a legitimate steady state rather than an error: a
- * community jobs worker may sweep a database that also carries enterprise
- * rows, and an upgrade can drop a type while rows of it are still in
- * flight. `undefined` therefore means "leave this row exactly as it is" —
+ * worker may sweep a database that also carries rows of a type another
+ * worker fleet owns, and an upgrade can drop a type while rows of it are
+ * still in flight. `undefined` therefore means "leave this row exactly as it is" —
  * whichever worker fleet does own the type is the one that can judge it.
  * The warning fires once per type per process; these sweeps run every few
  * seconds and a foreign row is permanent, so logging per tick would be a
@@ -137,9 +137,9 @@ const contributedMaintenanceJobs: Array<MaintenanceJobEntry> = []
  * before the worker starts its scheduler.
  *
  * This registry exists because the list above was a hardcoded `const` and a
- * `const` in core can only ever name core's own job types. A proprietary type
- * — advanced auditing's chain anchoring is the first — had no way in, so it
- * shipped with a sweep built for exactly its problem and no way to reach it.
+ * `const` in core can only ever name core's own job types. A module's type had
+ * no way in, so the first one that needed a recurring sweep had a sweep built
+ * for exactly its problem and no way to reach it.
  *
  * A duplicate type throws rather than being ignored, mirroring
  * `registerTool`: two entries for one type would mean two cadences competing

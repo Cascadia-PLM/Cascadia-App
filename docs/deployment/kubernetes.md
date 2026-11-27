@@ -172,7 +172,7 @@ kubectl logs job/cascadia-migrate -n cascadia
 That is a one-shot `batch/v1` Job named `cascadia-migrate` in the `cascadia`
 namespace. It runs the app image with its command replaced by
 `tsx scripts/boot-migrate.ts`, which applies the committed migrations under
-`cascadia-app*/drizzle/` and then exits. It reads `DATABASE_URL` from
+`cascadia-app/drizzle/` and then exits. It reads `DATABASE_URL` from
 `cascadia-secrets` and `NODE_ENV` from `cascadia-config` — both created by the
 steps above, and `NODE_ENV` is not decoration: with no `?sslmode=` in the URL it
 is what decides whether the connection requires TLS, so a Job without it would

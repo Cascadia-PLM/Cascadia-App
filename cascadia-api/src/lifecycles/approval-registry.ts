@@ -15,10 +15,10 @@ import type { SessionUser } from '@/auth/session'
  * voting behaves exactly as it did before this seam existed.
  *
  * `afterVote` runs **inside** the vote's transaction and is handed the `tx`
- * handle deliberately. Advanced Auditing's signature has to commit or roll back
- * with the vote it authorizes; an approval that exists without its signature,
- * or a signature without its approval, is a compliance defect rather than a
- * cosmetic one. Anything registered here inherits that guarantee, so do not
+ * handle deliberately. A record bound to a vote — an electronic signature, say
+ * — has to commit or roll back with the vote it authorizes; an approval that
+ * exists without its record, or a record without its approval, is a compliance
+ * defect rather than a cosmetic one. Anything registered here inherits that guarantee, so do not
  * reach for `db` inside an interceptor — use the `tx` you are given.
  */
 
@@ -84,8 +84,7 @@ export interface ApprovalContext {
  *
  * This exists so the API layer never has to name a module's types. A route
  * hands the raw request over and gets back whatever the registered modules want
- * carried into the vote; with nothing registered it gets `{}`, which is what
- * makes core's routes compile with the proprietary packages absent.
+ * carried into the vote; with nothing registered it gets `{}`.
  */
 export interface ApprovalExtrasInput {
   request: Request

@@ -50,9 +50,9 @@ export function ApprovalDialog({
   )
   const [comments, setComments] = useState('')
 
-  // Whatever the licensed modules want in this dialog: what to render, whether
-  // they are ready to let it submit, and what to add to the request. Empty on
-  // an instance with no such module, which is what lets this dialog stand alone.
+  // Whatever registered modules want in this dialog: what to render, whether
+  // they are ready to let it submit, and what to add to the request. Empty
+  // when no module contributes, which is what lets this dialog stand alone.
   const {
     slots: moduleSlots,
     blocked: moduleBlocked,

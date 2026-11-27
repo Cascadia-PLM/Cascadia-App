@@ -10,10 +10,9 @@
  * component lives in `cascadia-web/src`, outside that root, so detection found
  * a handful of entry files, no utility classes, and emitted preflight alone:
  * ~19 KB of resets and theme variables and not one `.bg-*` rule. The
- * application rendered correctly and looked like unstyled HTML, in **both**
- * editions.
+ * application rendered correctly and looked like unstyled HTML.
  *
- * The path is relative to this file and names no edition: the repo root covers
+ * The path is relative to this file and names no app: the repo root covers
  * this package, whatever module packages this tree has, and whichever
  * composition root is building (every workspace is a top-level `cascadia-*`
  * directory). Tailwind honours .gitignore, so node_modules, dist and the

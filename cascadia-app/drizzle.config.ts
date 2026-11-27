@@ -42,7 +42,7 @@ const parsed = parseConnectionUrl(rawUrl)
 
 export default {
   dialect: 'postgresql',
-  // This edition's composed schema — core plus every module's tables.
+  // The app's composed schema — core plus every module's tables.
   schema: './src/modules.schema.ts',
   // Resolved against the working directory — `scripts/drizzle.mjs` runs
   // drizzle-kit from this app's directory — so migration SQL lands in this

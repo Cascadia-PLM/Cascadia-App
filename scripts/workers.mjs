@@ -8,22 +8,18 @@
  *   node scripts/workers.mjs stop
  *   node scripts/workers.mjs logs
  *
- * The set of workers is a property of the edition, not a constant. The CAD
- * *converter* is core; the CAD *generator* and the *FreeCAD runner* are
- * proprietary and their directories are absent from the published tree — so a
- * script naming all of them would fail there with a compose build error about
- * a missing context.
- *
- * Presence on disk is the test rather than a flag, for the same reason the
- * edition itself is resolved by probing for its directory: a directory that
- * is not there cannot be misconfigured into being there.
+ * The CAD *converter* serves core's file previews; the CAD *generator*
+ * (CadQuery) and the *FreeCAD runner* serve the design engine's generative
+ * CAD. All three live in this tree. Each is still filtered by presence on
+ * disk, so a checkout that drops a worker directory gets a working script
+ * rather than a compose build error about a missing context.
  */
 
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { config as loadEnv } from 'dotenv'
-import { appDir, appTsconfig, resolveApp } from './edition.mjs'
+import { APP, APP_DIR, APP_TSCONFIG } from './app.mjs'
 
 // `.env` is what compose reads too, so the check below sees the same values
 // the containers will. A real environment variable still wins.
@@ -86,12 +82,7 @@ try {
       }
       execFileSync(
         'npx',
-        [
-          'tsx',
-          '--tsconfig',
-          appTsconfig(),
-          `${appDir(resolveApp())}/src/jobs-worker.ts`,
-        ],
+        ['tsx', '--tsconfig', APP_TSCONFIG, `${APP_DIR}/src/jobs-worker.ts`],
         {
           stdio: 'inherit',
           shell: process.platform === 'win32',
@@ -106,12 +97,7 @@ try {
     case 'jobs':
       execFileSync(
         'npx',
-        [
-          'tsx',
-          '--tsconfig',
-          appTsconfig(),
-          `${appDir(resolveApp())}/src/jobs-worker.ts`,
-        ],
+        ['tsx', '--tsconfig', APP_TSCONFIG, `${APP_DIR}/src/jobs-worker.ts`],
         {
           stdio: 'inherit',
           shell: process.platform === 'win32',
@@ -119,7 +105,7 @@ try {
       )
       break
     case 'jobs:built': {
-      const entry = `.output/${resolveApp()}/server/jobs-worker.mjs`
+      const entry = `.output/${APP}/server/jobs-worker.mjs`
       if (!existsSync(entry)) {
         console.error(`${entry} does not exist — run \`npm run build\` first.`)
         process.exit(1)

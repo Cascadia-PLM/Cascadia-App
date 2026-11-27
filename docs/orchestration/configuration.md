@@ -114,7 +114,7 @@ Sliding-window limits, held per instance and per resolved client address (above)
 | `RATE_LIMIT_API_PER_MINUTE`    | `1000`  | Budget for every other route that does not opt out                  |
 | `RATE_LIMIT_UPLOAD_PER_MINUTE` | `100`   | Budget for file uploads                                             |
 
-Limits are enforced whenever `NODE_ENV=production`, which every containerized deployment and both editions' built entrypoints set. `RATE_LIMIT_ENFORCE=true` is for the one case that gate misses: a staging box running the development server that still wants the login budget enforced.
+Limits are enforced whenever `NODE_ENV=production`, which every containerized deployment and the app's built entrypoints set. `RATE_LIMIT_ENFORCE=true` is for the one case that gate misses: a staging box running the development server that still wants the login budget enforced.
 
 Raise the per-minute budgets for deployments where many users share one egress address — a corporate NAT puts a whole office in one bucket, and a single page load spends several API requests. An unset, unparseable or non-positive value falls back to the default rather than removing the limit.
 
@@ -195,50 +195,6 @@ account, so personal accounts and consumer aliases at an allowed domain are refu
 No `AZURE_*` variable is read by any code; Azure AD is a roadmap item, not
 configuration.
 
-### Optional Packages
-
-Separately-licensed functionality. Read once at process start; there is no
-in-app toggle, so an instance cannot enable a package it is not entitled to.
-
-| Variable            | Default | Description                                                                                     |
-| ------------------- | ------- | ----------------------------------------------------------------------------------------------- |
-| `CASCADIA_PACKAGES` | -       | Comma-separated package ids, or `*` for all. Known ids: `advanced-auditing`, `odoo-integration` |
-
-### Advanced Auditing Package
-
-Only meaningful when `CASCADIA_PACKAGES` includes `advanced-auditing`. See
-[Advanced Auditing](../features/advanced-auditing.md) for the required reverse
-proxy configuration.
-
-| Variable                                   | Default              | Description                                                                                                   |
-| ------------------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `CASCADIA_SIGNATURE_METHOD`                | `pki-preferred`      | Credential required to sign: `pki`, `pki-preferred`, or `password`. Use `pki` for DoD deployments.            |
-| `CASCADIA_CLIENT_CERT_HEADER`              | -                    | Header the mTLS terminator forwards the client certificate in. **PKI signing is disabled until this is set.** |
-| `CASCADIA_SIGNING_CA_BUNDLE`               | -                    | Path to a PEM bundle of trusted issuers (e.g. the DoD PKI roots).                                             |
-| `CASCADIA_SIGNATURE_REQUIRE_TRUSTED_CHAIN` | `true` with a bundle | Reject certificates that do not chain to a configured anchor.                                                 |
-| `CASCADIA_SIGNATURE_ENROLLMENT`            | `auto`               | How a card binds to a user: `auto` (trust on first use) or `admin`.                                           |
-| `CASCADIA_PDF_SIGNING_P12`                 | -                    | PKCS#12 archive holding the instance signing key. **Signing released PDFs is disabled until this is set.**    |
-| `CASCADIA_PDF_SIGNING_PASSPHRASE`          | `''`                 | Passphrase for that archive.                                                                                  |
-| `CASCADIA_PDF_SIGNING_NAME`                | `Cascadia PLM`       | Signer name shown in a PDF reader's signature panel.                                                          |
-| `CASCADIA_PDF_SIGNING_CONTACT`             | -                    | Contact shown alongside the signature.                                                                        |
-| `CASCADIA_PDF_SIGNING_LOCATION`            | -                    | Location shown alongside the signature.                                                                       |
-| `CASCADIA_AUDIT_ANCHOR_PERIOD_MS`          | `86400000` (24h)     | Gap between scheduled chain anchors. `0` opts out of scheduled anchoring.                                     |
-
-> **Security:** `CASCADIA_CLIENT_CERT_HEADER` makes Cascadia trust a request
-> header as proof of identity. Only set it once the reverse proxy overwrites
-> that header on every request and the app is unreachable except through it.
-
-**Chain anchoring rides the jobs worker.** Setting `CASCADIA_PDF_SIGNING_P12`
-is what turns anchoring on: the worker's maintenance sweep then submits the
-`audit.anchor.chains` job every `CASCADIA_AUDIT_ANCHOR_PERIOD_MS`. A deployment
-with the package licensed but no signing credential never anchors and nothing
-fails to say so — `GET /api/v1/signatures/anchors` is the health check, and
-reports `configured: false` on exactly that instance. An instance that already
-submits the job from its own scheduler should set the period to `0`, or it will
-anchor twice a period (harmless — anchors are append-only evidence — but it
-doubles the reconciliation scan). Anchoring runs only where the jobs worker
-runs; an app-only deployment takes no anchors.
-
 ---
 
 ## Vault Storage Configuration
@@ -284,7 +240,7 @@ S3_FORCE_PATH_STYLE=false           # Set true for MinIO
 
 The event log's consumers: the RabbitMQ relay, the webhook dispatcher, core's
 release follow-ups (work-instruction change alerts, superseded-revision
-watermarks), and anything a licensed module registers. Each owns a cursor, so one falling behind or parking
+watermarks), and anything a module registers. Each owns a cursor, so one falling behind or parking
 never holds up another.
 
 | Variable                          | Default | Description                                                                                                              |
@@ -317,8 +273,8 @@ consequence is that one consumer stuck forever would pin the log's growth
 forever, so a consumer parked past a give-up horizon is excluded from the floor
 and marked **abandoned**: its backlog is forfeit, it must be re-registered, and
 the exclusion is reported by the prune job and shown on the admin panel rather
-than happening silently. To drop a cursor deliberately — an ERP consumer on an
-instance that no longer owns the package, say — use
+than happening silently. To drop a cursor deliberately — a consumer from a
+module the build no longer includes, say — use
 `DELETE /api/v1/events/consumers/:id`, which abandons that backlog on purpose.
 
 **`ENCRYPTION_KEY` must reach the jobs worker, not only the app tier.** It is

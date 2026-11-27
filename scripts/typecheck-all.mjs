@@ -35,15 +35,8 @@ const PROJECTS = [
   ['cascadia-api', 'tsconfig.json', null],
   ['cascadia-web', 'tsconfig.typecheck.json', null],
   ['cascadia-workers-job', 'tsconfig.json', null],
-  ['cascadia-advanced-auditing', 'tsconfig.json', null],
   ['cascadia-design-engine', 'tsconfig.typecheck.json', null],
-  ['cascadia-odoo-integration', 'tsconfig.json', null],
   ['cascadia-app', 'tsconfig.json', 'cascadia-app/src/routeTree.gen.ts'],
-  [
-    'cascadia-app-enterprise',
-    'tsconfig.json',
-    'cascadia-app-enterprise/src/routeTree.gen.ts',
-  ],
   ['.', 'tsconfig.json', null],
 ]
 
@@ -53,10 +46,12 @@ const skipped = []
 for (const [project, configName, requires] of PROJECTS) {
   const config = `${project}/${configName}`.replace('./', '')
 
-  // A project that is not in this tree is a different edition, not a failure —
-  // the core-only tree has no module packages by construction.
+  // Every project listed is in this tree, so a missing one is a stale entry
+  // here — fail rather than skip, or a renamed package would silently stop
+  // being type-checked.
   if (!existsSync(config)) {
-    skipped.push(`${project} (not present in this tree)`)
+    console.error(`✗ ${config} does not exist — update PROJECTS.`)
+    failed++
     continue
   }
   if (requires && !existsSync(requires)) {

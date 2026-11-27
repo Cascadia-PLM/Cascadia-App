@@ -7,8 +7,7 @@
  * One definition, because two would drift and the drift would be silent: the
  * licence gate would clear a set of packages while the notice generator
  * attributed a different set, and the gap between them is exactly the set of
- * packages we ship with neither permission nor credit. `edition-manifest.mjs`
- * is the same idea for core-vs-proprietary — the classification has one home.
+ * packages we ship with neither permission nor credit.
  *
  * "Distributed" is the lockfile's `dev` flag inverted. It is the right line
  * because it is the line npm itself draws: `cascadia-app/Dockerfile` and
@@ -17,8 +16,8 @@
  * images. Dev-only packages are build and test tooling that is never conveyed,
  * and neither licence obligations nor attribution follow them.
  *
- * Workspace roots are excluded: `@cascadia/*` is first-party, owned by
- * `edition-manifest.mjs` and stamped by `license-headers.mjs`, and crediting
+ * Workspace roots are excluded: `@cascadia/*` is first-party, listed by
+ * `workspaces.mjs` and stamped by `license-headers.mjs`, and crediting
  * ourselves in a third-party notice would be noise.
  *
  * Reads the lockfile rather than walking `node_modules`, so callers that only

@@ -33,11 +33,11 @@ All Node.js images use a four-stage build pattern to minimize image size and sep
 
 ### Core App (`cascadia-app/Dockerfile`)
 
-**Stage 1 -- manifests**: Copies the build context and keeps only the root `package.json` and `package-lock.json` plus every top-level `cascadia-*/package.json` it finds — the workspace list is discovered, not written, so it is right for whichever edition the tree composes. Nothing else runs in it; the two install stages copy `/manifests` out of it, and BuildKit keys that copy on the files' checksum, so `npm ci` stays cached until a manifest changes.
+**Stage 1 -- manifests**: Copies the build context and keeps only the root `package.json` and `package-lock.json` plus every top-level `cascadia-*/package.json` it finds — the workspace list is discovered, not written, so adding a workspace needs no Dockerfile change. Nothing else runs in it; the two install stages copy `/manifests` out of it, and BuildKit keys that copy on the files' checksum, so `npm ci` stays cached until a manifest changes.
 
 **Stage 2 -- deps**: Takes that list with `COPY --from=manifests /manifests/ ./` and installs all npm dependencies (including devDependencies needed for the build).
 
-**Stage 3 -- builder**: Copies dependencies and source, runs `npm run build:app -- $APP` — the `APP` build arg names the app to build, and left empty (the default) the build resolves the edition the tree composes, exactly as `npm run build` does. The builder also records that name in `.edition` and assembles the runtime tree (`scripts/`, the tsconfigs and every workspace, whole) that the production stage copies in one piece. Uses `NODE_OPTIONS="--max-old-space-size=4096"` because the Vite + Hono builds can be memory-intensive.
+**Stage 3 -- builder**: Copies dependencies and source, runs `npm run build`, and assembles the runtime tree (`scripts/`, the tsconfigs and every workspace, whole) that the production stage copies in one piece. Uses `NODE_OPTIONS="--max-old-space-size=4096"` because the Vite + Hono builds can be memory-intensive.
 
 **Stage 4 -- production**: Reuses the same manifests stage for its production-only install, then installs `dumb-init` for proper signal handling, copies the built `.output/` directory, Drizzle config, database schema, seed scripts, and auth modules. Creates a non-root `nodejs` user (UID 1001). Runs as that user.
 
@@ -47,7 +47,7 @@ Key details:
 - The workspace sources (`cascadia-*/`, `scripts/`) are copied so those tsx-run admin scripts — including `npm run db:migrate` (and the one-time `npm run db:baseline` stamp for a pre-v0.5 database) — work inside the container.
 - Storage directories `/app/storage/files` and `/app/vault` are created with correct ownership.
 - Health check hits `GET /api/v1/health` on port 3000.
-- Entrypoint is `scripts/docker-entrypoint.sh`, which exports `APP` from the builder's `.edition` marker unless the caller set it and then hands off to `dumb-init` for signal forwarding; the default command is `node .output/${APP}/server/index.mjs`. A compose `command:` override runs through the same entrypoint, so it sees the same `APP`.
+- Entrypoint is `scripts/docker-entrypoint.sh`, which hands off to `dumb-init` for signal forwarding; the default command is `node .output/cascadia/server/index.mjs`.
 
 ### Jobs Server (`cascadia-workers-job/Dockerfile`)
 
@@ -58,7 +58,7 @@ Same four-stage pattern. Differences:
 - Creates a `/app/tmp` directory for conversion scratch space.
 - Default environment: `WORKER_CONCURRENCY=5`, `JOB_TYPES=*`, `JOB_TIMEOUT=300000`.
 - Health check hits `GET /health` on port 3002.
-- Default command runs `node .output/server/jobs-worker.mjs`.
+- Default command runs `node .output/cascadia/server/jobs-worker.mjs`.
 
 ### CAD Converter (`cascadia-workers-cad/Dockerfile`)
 

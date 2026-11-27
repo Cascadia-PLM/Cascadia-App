@@ -8,8 +8,8 @@ import { z } from 'zod'
  * Stamping marks onto PDFs.
  *
  * Uses `@cantoo/pdf-lib` — the maintained MIT fork of `pdf-lib`, which has had
- * no release since 2022. MIT matters here: Cascadia is dual licensed, and its
- * proprietary edition cannot take an AGPL dependency such as MuPDF without a
+ * no release since 2022. MIT matters here: Cascadia is dual licensed, and the
+ * commercial licence cannot carry an AGPL dependency such as MuPDF without a
  * commercial licence from Artifex.
  *
  * A stamp is drawn as new page content, not as a PDF annotation, so it cannot

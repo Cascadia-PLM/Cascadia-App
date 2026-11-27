@@ -90,8 +90,8 @@ function subjectOf(extension: RegisteredExtension): string {
  *
  * Zero registrations costs zero queries and zero allocations on the write
  * path: the phase indexes are empty maps and every dispatch returns on a
- * `size === 0` check before it touches a database or builds a context. The
- * community edition must not pay for a feature it does not use.
+ * `size === 0` check before it touches a database or builds a context. An
+ * install must not pay for a feature it does not use.
  */
 export class ExtensionRegistry {
   private static extensions = new Map<string, RegisteredExtension>()

@@ -8,7 +8,7 @@ count.txt
 .nitro
 .tanstack
 .output
-cascadia-app*/src/routeTree.gen.ts
+cascadia-app/src/routeTree.gen.ts
 .vinxi
 todos.json
 .vscode/

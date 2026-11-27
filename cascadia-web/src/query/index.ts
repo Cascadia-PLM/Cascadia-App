@@ -292,7 +292,6 @@ export type {
   JobStatusSnapshot,
   JobSummary,
 } from './options/jobs'
-export { packageListQuery } from './options/packages'
 export { itemCheckoutQuery } from './options/checkout'
 export {
   itemBomTreeQuery,

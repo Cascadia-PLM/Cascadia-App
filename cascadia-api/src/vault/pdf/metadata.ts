@@ -8,9 +8,8 @@ import { PDFDocument } from '@cantoo/pdf-lib'
  *
  * Uses `@cantoo/pdf-lib`, already a dependency and already parsing PDFs inside
  * core for `./watermark.ts`. Nothing new is taken on for this: the alternatives
- * the original TODO named (`pdf-parse`) would be a second PDF stack, and core
- * is the published AGPL package — a dependency added here is one every
- * community-edition install carries.
+ * the original TODO named (`pdf-parse`) would be a second PDF stack, and a
+ * dependency added to core is one every install carries.
  *
  * This runs on the upload request path against bytes a caller chose, so it is
  * shaped defensively rather than thoroughly:

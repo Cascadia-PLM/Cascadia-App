@@ -160,7 +160,7 @@ services:
     networks:
       - cascadia-network
     # `src/jobs-worker.ts` has not existed since the Phase 2 split — the worker
-    # lives in the app (`cascadia-app*/src/`) because it registers the same modules
+    # lives in the app (`cascadia-app/src/`) because it registers the same modules
     # the server does. scripts/workers.mjs already resolves that path for the
     # npm scripts; this service was the one call site still naming the old one.
     # --no-save because this install runs over the `.:/app` bind mount: a
@@ -207,6 +207,88 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
+    networks:
+      - cascadia-network
+
+  # Parametric CAD Generator Worker (Python - CadQuery for STEP generation)
+  cad-generator-dev:
+    build:
+      # Context is the repo root so the image can carry the shared
+      # cascadia-workers-commons package alongside the worker's own source
+      # (JOBS-8).
+      context: .
+      dockerfile: cascadia-workers-cad-generator/Dockerfile
+    container_name: cascadia-cad-generator-dev
+    restart: unless-stopped
+    profiles:
+      - dev
+      - cad
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-host.docker.internal}:5432/${POSTGRES_DB:-cascadia}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@cascadia-rabbitmq:5672
+      VAULT_ROOT: /vault
+      WORKER_CONCURRENCY: 2
+      HEALTH_PORT: 3004
+    volumes:
+      - ./vault:/vault
+    ports:
+      - '127.0.0.1:3004:3004'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:3004/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cascadia-network
+
+  # FreeCAD Runner Worker (Python - headless FreeCAD executing AI-written scripts)
+  freecad-runner-dev:
+    build:
+      # Context is the repo root so the image can carry the shared
+      # cascadia-workers-commons package alongside the worker's own source
+      # (JOBS-8).
+      context: .
+      dockerfile: cascadia-workers-freecad-runner/Dockerfile
+    container_name: cascadia-freecad-runner-dev
+    restart: unless-stopped
+    profiles:
+      - dev
+      - cad
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-host.docker.internal}:5432/${POSTGRES_DB:-cascadia}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cascadia}:${RABBITMQ_PASSWORD:-cascadia}@cascadia-rabbitmq:5672
+      VAULT_ROOT: /vault
+      WORKER_CONCURRENCY: 2
+      HEALTH_PORT: 3005
+    volumes:
+      - ./vault:/vault
+    ports:
+      - '127.0.0.1:3005:3005'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:3005/health')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     networks:
       - cascadia-network
 

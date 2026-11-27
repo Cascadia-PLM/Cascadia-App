@@ -220,7 +220,7 @@ type PublicHandlerFn<
  *
  * Production always. Anywhere else only on an explicit opt-in, because the E2E
  * suite drives `npm run dev` (playwright.config.ts) and a throttled login would
- * make it flake. That gate is narrower than it looks: both editions' built
+ * make it flake. That gate is narrower than it looks: the built
  * entrypoints hard-set `NODE_ENV='production'` before importing the app, so the
  * only deployment that lands here unarmed is one running the dev server.
  * `RATE_LIMIT_ENFORCE=true` is for exactly that case — a staging box that wants

@@ -427,9 +427,10 @@ for.
 
 ## Rules for maintainers
 
-- Every schema change ships with migrations for **both editions** — run
-  `npm run db:generate` and `CASCADIA_APP=cascadia npm run db:generate`,
-  commit what appears under `cascadia-app*/drizzle/`. CI fails otherwise.
+- Every schema change ships with its migration — run `npm run db:generate`
+  and commit what appears under `cascadia-app/drizzle/`. That includes a
+  module's tables (`cascadia-design-engine/src/db/schema/`), which reach
+  drizzle-kit through `cascadia-app/src/modules.schema.ts`. CI fails otherwise.
 - Never edit a committed migration file. Nothing verifies the stored hash,
   so an edit does not fail — it silently divides your installs into those
   that ran the old statements and those that ran the new. Fix forward with a
@@ -438,6 +439,3 @@ for.
   deliberate operation rather than an edit — see "Consolidating unpublished
   migrations" above. It happens once per wave, right before the release that
   ships it, so each release carries at most one new migration per edition.
-- The enterprise migrations are proprietary (they name module tables) and
-  exist only in that edition's fork; the community migrations under
-  `cascadia-app/drizzle/` are developed here, and the fork merges them.

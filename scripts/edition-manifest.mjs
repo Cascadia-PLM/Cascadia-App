@@ -2,27 +2,35 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Edition manifest — the single source of truth for core vs proprietary.
+ * Edition manifest — what is a module, and what (if anything) is proprietary.
  *
- * Core is everything published under AGPL-3.0-or-later. Proprietary is a
- * top-level `cascadia-*` workspace whose manifest declares `UNLICENSED`, the
- * two proprietary Python workers (which carry no npm manifest), and one
- * stale-checkout backstop. The classification is discovered, not written:
- * this file is the same file in every edition, and an edition that composes
- * licensed modules is proprietary exactly where those packages exist. In the
- * AGPL edition no workspace is `UNLICENSED` and the workers are absent, so
- * every path is core — which this file can assert about the tree it is in
- * (`--assert-community`, below), and CI does where that must hold.
+ * Two separate questions, answered in one place:
  *
- * Consumed by `scripts/license-headers.mjs` (stamps each file with its
- * edition's SPDX header), `scripts/check-core-boundary.mjs` and
- * `eslint.config.js` (what core must not import), and whatever else needs to
- * know what an edition's tree contains.
+ * 1. **Which workspaces are modules?** A module is a top-level `cascadia-*`
+ *    npm workspace that is neither one of the four application packages nor an
+ *    app (`cascadia-app*`). Modules register into core's extension points from
+ *    a composition root and are never imported by core — that is the
+ *    extension boundary `scripts/check-core-boundary.mjs` and
+ *    `eslint.config.js` enforce. A module's licence does not change that:
+ *    `cascadia-design-engine` is AGPL, ships in this tree, and core still
+ *    never reaches into it.
  *
- * Default-core is deliberate: a new file is public unless it lives under a
- * proprietary root, so the failure mode is "we published something we meant
- * to keep" — loud and caught in review — rather than silent omission. When a
- * path is genuinely ambiguous, put it under a proprietary root.
+ * 2. **Which paths are proprietary?** A top-level `cascadia-*` workspace whose
+ *    manifest declares `UNLICENSED`, plus one stale-checkout backstop. The
+ *    classification is discovered, not written. Everything in this repository
+ *    is AGPL, so nothing here is proprietary — which this file can assert
+ *    about the tree it is in (`--assert-community`, below), and CI does. The
+ *    machinery stays because a private fork could still add a licensed module
+ *    on top, and because the assertion is what catches proprietary code
+ *    copied in by mistake.
+ *
+ * Consumed by `scripts/license-headers.mjs` (stamps each file with its SPDX
+ * header), `scripts/check-core-boundary.mjs` and `eslint.config.js` (what
+ * core must not import), and whatever else needs to know what the tree
+ * contains.
+ *
+ * Default-core is deliberate: a new file is AGPL unless it lives under a
+ * proprietary root.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -50,77 +58,73 @@ function licenseOf(dir) {
   return JSON.parse(readFileSync(manifest, 'utf8')).license
 }
 
-/** Top-level `cascadia-*` workspaces whose manifest declares UNLICENSED. */
-const unlicensedWorkspaces = readdirSync(ROOT)
+/** Every top-level `cascadia-*` directory that is an npm workspace. */
+const workspaces = readdirSync(ROOT)
   .filter(
     (dir) =>
-      dir.startsWith(WORKSPACE_PREFIX) && licenseOf(dir) === 'UNLICENSED',
+      dir.startsWith(WORKSPACE_PREFIX) &&
+      existsSync(join(ROOT, dir, 'package.json')),
   )
   .sort()
 
+/** Top-level `cascadia-*` workspaces whose manifest declares UNLICENSED. */
+const unlicensedWorkspaces = workspaces.filter(
+  (dir) => licenseOf(dir) === 'UNLICENSED',
+)
+
 /**
- * Paths belonging to a proprietary module.
+ * Paths that are proprietary. Empty in this repository by construction.
  *
  * A pattern ending in `/**` matches that directory and everything under it.
  * Anything else is an exact repo-relative path. Deliberately not a glob
  * library: directory prefixes cover every case, and they stay greppable.
  */
 export const PROPRIETARY = [
-  // ── the proprietary packages and the app that composes them ─────────────
-  // Structural, not per-file: proprietary code lives in its own workspace,
-  // and the workspace says so in its manifest. Nothing to list, so nothing to
-  // forget — a new module package is covered the day it declares its licence.
+  // ── a licensed module package ────────────────────────────────────────────
+  // Structural, not per-file: a licensed module lives in its own workspace,
+  // and the workspace says so in its manifest.
   ...unlicensedWorkspaces.map((dir) => `${dir}/**`),
-
-  // ── the proprietary Python workers ───────────────────────────────────────
-  // Top-level like every workspace, but not npm workspaces: no package.json,
-  // so nothing to discover. The CadQuery generator and the FreeCAD runner
-  // exist to serve design-engine's CAD generation. Named so that an edition
-  // that has them classifies them; where they are absent the patterns match
-  // nothing, which `--assert-community` relies on.
-  'cascadia-workers-cad-generator/**',
-  'cascadia-workers-freecad-runner/**',
 
   // ── generated output that must never publish ─────────────────────────────
   // Each app's drizzle config emits migration SQL into the app's own
-  // `drizzle/`, where the rules above classify it. This covers the *old*
-  // shared location, so a stale checkout or a hand-run drizzle-kit that
-  // recreates a repo-root `drizzle/` produces something unpublishable rather
-  // than an enterprise baseline in a public tree. The path is ambiguous by
-  // construction — its content is whichever edition generated it — and
-  // ambiguous means proprietary here.
+  // `drizzle/`. This covers the *old* shared location, so a stale checkout or
+  // a hand-run drizzle-kit that recreates a repo-root `drizzle/` produces
+  // something `--assert-community` refuses rather than an unreviewed journal.
   'drizzle/**',
 ]
 
 /**
  * The application's own packages, by id — never a module, whatever the
  * manifest says. The app workspaces (`cascadia-app*`) are excluded by the
- * `app` prefix test below rather than listed, since an edition adds its own.
+ * `app` prefix test below rather than listed.
  */
 const APP_PACKAGES = new Set(['api', 'web', 'commons', 'workers-job'])
 
 /**
- * The proprietary module packages, by id, derived from PROPRIETARY's
- * `cascadia-<id>/**` patterns, minus the application's own packages, the apps
- * and the Python workers, none of which is ever a module. One derivation,
- * consumed by the boundary check and eslint.config.js, so a module package's
- * licence declaration is the whole registration: nothing else to remember. In
- * the AGPL edition no workspace is proprietary, so this is empty.
+ * The module packages, by id: every npm workspace that is not an application
+ * package or an app. The Python workers (`cascadia-workers-*` without an npm
+ * manifest) are not workspaces, so they never appear. One derivation,
+ * consumed by the boundary check and eslint.config.js, so adding a module
+ * package is the whole registration: nothing else to remember.
  */
-export const MODULE_PACKAGES = [
-  ...new Set(
-    PROPRIETARY.map((p) => workspaceId(/^([^/]+)\//.exec(p)?.[1] ?? '')).filter(
-      (id) =>
-        id !== null &&
-        id !== '' &&
-        !APP_PACKAGES.has(id) &&
-        !id.startsWith('app') &&
-        // The proprietary Python workers are `cascadia-workers-*` too, and are
-        // not npm packages at all.
-        !id.startsWith('workers-'),
-    ),
-  ),
-]
+export const MODULE_PACKAGES = workspaces
+  .map(workspaceId)
+  .filter(
+    (id) =>
+      id !== null &&
+      !APP_PACKAGES.has(id) &&
+      !id.startsWith('app') &&
+      !id.startsWith('workers-'),
+  )
+
+/**
+ * The subset of `MODULE_PACKAGES` that is licensed separately — its manifest
+ * says `UNLICENSED`. Empty here. Their ids are what `boundary:check` refuses
+ * to see quoted in core, because a licensed module is gated by package id.
+ */
+export const PROPRIETARY_MODULE_PACKAGES = MODULE_PACKAGES.filter((id) =>
+  unlicensedWorkspaces.includes(workspaceDir(id)),
+)
 
 export const HEADERS = {
   core: [

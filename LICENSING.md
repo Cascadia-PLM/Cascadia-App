@@ -25,6 +25,7 @@ The core product lifecycle management system is and will remain free software un
 - The REST and SysML v2 APIs
 - The in-browser 3D viewer and CAD conversion service
 - The AI chat assistant (bring your own API key)
+- The Collaborative Design Engine (AI-assisted requirements → BOM → CAD generation)
 
 Unlimited users. No feature meters. Self-host it in production without ever talking to us.
 
@@ -36,7 +37,6 @@ of the AGPL distribution:
 - Native CAD connectors (Solid Edge, SolidWorks, and future connectors)
 - SSO / Active Directory / LDAP integration
 - Compliance & audit pack (audit reports, CUI marking support, export-control flags)
-- The Collaborative Design Engine (AI-assisted requirements → BOM → CAD generation)
 - Sovereign AI deployment options (GovCloud / self-hosted model support)
 - Priority support and SLAs; managed and sovereign hosting
 
@@ -75,6 +75,10 @@ repository. As of this policy, the Collaborative Design Engine is moving to the
 commercial edition; previously published AGPL versions of that code remain available
 under the AGPL in the repository history, as that license is irrevocable for what was
 already released. Everything listed under "Open core" above stays AGPL going forward.
+
+In November 2026 the Collaborative Design Engine returned to the AGPL repository,
+together with the two CAD workers it drives (the CadQuery generator and the headless
+FreeCAD runner). It is listed under "Open core" above and stays AGPL going forward.
 
 ---
 

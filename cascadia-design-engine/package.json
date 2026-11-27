@@ -1,0 +1,17 @@
+{
+  "name": "@cascadia/design-engine",
+  "version": "0.6.0",
+  "description": "Cascadia PLM module: collaborative multi-stage AI design sessions, materialization, and the generative CAD they drive.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts",
+    "./*.tsx": "./src/*.tsx"
+  },
+  "dependencies": {
+    "@cascadia/api": "*",
+    "@cascadia/commons": "*",
+    "@cascadia/web": "*"
+  }
+}

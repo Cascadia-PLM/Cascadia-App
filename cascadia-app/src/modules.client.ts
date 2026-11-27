@@ -2,13 +2,20 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Composition root for the community edition's browser bundle — empty, for the
- * same reason as `modules.server.ts`.
+ * Composition root for the browser bundle.
  *
- * Every UI slot core renders simply has nothing registered against it and
- * renders nothing, which is the designed behaviour rather than a degraded one.
+ * Split from `modules.server.ts` because everything that one registers reaches
+ * the database. Nothing imported here may touch a service, a schema, or
+ * `@/db`.
  */
 
+import {
+  registerCadGenerationClient,
+  registerDesignEngineClient,
+} from '@cascadia/design-engine/register.client'
+
+/** Attach every module's UI to core. Idempotent; each guards itself. */
 export function registerClientModules(): void {
-  // No modules in this edition.
+  registerCadGenerationClient()
+  registerDesignEngineClient()
 }

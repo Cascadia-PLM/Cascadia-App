@@ -427,29 +427,30 @@ RESTful API for external system integration.
 
 ### REST API ✅
 
-| Endpoint Category   | Status | Notes                                                         |
-| ------------------- | ------ | ------------------------------------------------------------- |
-| Items CRUD          | ✅     | All item types                                                |
-| Relationships       | ✅     | Create, update, delete                                        |
-| Files               | ✅     | Upload, download, check-in/out                                |
-| Lifecycles          | ✅     | Definitions, state approvers                                  |
-| Change Orders       | ✅     | Lifecycle instance, transitions, approvals, impact assessment |
-| Users & Roles       | ✅     | Administration                                                |
-| Reports             | ✅     | Execute and export                                            |
-| Search              | ✅     | Enterprise search                                             |
-| Work Instructions   | ✅     | Template CRUD, usage, change alerts                           |
-| Requirements & V&V  | ✅     | Derive, satisfy, verify, coverage, gap analysis               |
-| System architecture | ✅     | Elements, the tree, realizations, the design's architecture   |
-| Test Plans & Cases  | ✅     | Plan membership, execution recording                          |
-| Digital Thread      | ✅     | Thread graph, cross-context comparison                        |
-| Workspaces          | ✅     | CRUD, convert-to-change-order, merge-to-change-order          |
-| Physical Parts      | ✅     | Register, genealogy, recall, as-built                         |
-| Work Orders         | ✅     | Traveler, materials, qualification                            |
-| Software            | ✅     | Source tree, diff, draft commit                               |
-| MBOM                | ✅     | EBOM-to-MBOM creation and tracking                            |
-| Manufacturer Parts  | ✅     | AML bound to the part master                                  |
-| Dashboard           | ✅     | Cross-program stats and charts                                |
-| AI Chat             | ✅     | Conversations with tool use                                   |
+| Endpoint Category      | Status | Notes                                                         |
+| ---------------------- | ------ | ------------------------------------------------------------- |
+| Items CRUD             | ✅     | All item types                                                |
+| Relationships          | ✅     | Create, update, delete                                        |
+| Files                  | ✅     | Upload, download, check-in/out                                |
+| Lifecycles             | ✅     | Definitions, state approvers                                  |
+| Change Orders          | ✅     | Lifecycle instance, transitions, approvals, impact assessment |
+| Users & Roles          | ✅     | Administration                                                |
+| Reports                | ✅     | Execute and export                                            |
+| Search                 | ✅     | Enterprise search                                             |
+| Work Instructions      | ✅     | Template CRUD, usage, change alerts                           |
+| Requirements & V&V     | ✅     | Derive, satisfy, verify, coverage, gap analysis               |
+| System architecture    | ✅     | Elements, the tree, realizations, the design's architecture   |
+| Test Plans & Cases     | ✅     | Plan membership, execution recording                          |
+| Digital Thread         | ✅     | Thread graph, cross-context comparison                        |
+| Workspaces             | ✅     | CRUD, convert-to-change-order, merge-to-change-order          |
+| Physical Parts         | ✅     | Register, genealogy, recall, as-built                         |
+| Work Orders            | ✅     | Traveler, materials, qualification                            |
+| Software               | ✅     | Source tree, diff, draft commit                               |
+| MBOM                   | ✅     | EBOM-to-MBOM creation and tracking                            |
+| Manufacturer Parts     | ✅     | AML bound to the part master                                  |
+| Dashboard              | ✅     | Cross-program stats and charts                                |
+| AI Chat                | ✅     | Conversations with tool use                                   |
+| Design Engine Sessions | ✅     | Create, stream, update, complete                              |
 
 ### Batch Operations ✅
 
@@ -493,13 +494,14 @@ Enterprise-scale async processing.
 
 ### Job Types ✅
 
-| Job Type              | Status | Notes                                                          |
-| --------------------- | ------ | -------------------------------------------------------------- |
-| CAD file conversion   | ✅     | STEP/IGES → STL/GLB via Python worker                          |
-| Design clone/copy     | ✅     | Batch operation                                                |
-| Work instruction jobs | ✅     | Change alert processing                                        |
-| Notification jobs     | 🟡     | Infrastructure set up, need to complete service implementation |
-| Import/export         | 🟡     | Bulk data operations                                           |
+| Job Type              | Status | Notes                                                                                            |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------------ |
+| CAD file conversion   | ✅     | STEP/IGES → STL/GLB via Python worker                                                            |
+| CAD generation        | 🟡     | Design engine: FreeCAD scripts, CadQuery parts, mechanisms and assemblies via two Python workers |
+| Design clone/copy     | ✅     | Batch operation                                                                                  |
+| Work instruction jobs | ✅     | Change alert processing                                                                          |
+| Notification jobs     | 🟡     | Infrastructure set up, need to complete service implementation                                   |
+| Import/export         | 🟡     | Bulk data operations                                                                             |
 
 ### Admin UI ✅
 
@@ -609,6 +611,54 @@ LLM-powered chatbot for navigating and querying PLM data.
 | Dev server (`cascadia-dev`) | ✅     | Stdio server for self-hosters: status, docs, db push/seed/reset                         |
 | Shared tool registry        | ✅     | One tool stack for the in-app chatbot and MCP (`cascadia-api/src/ai/tools/registry.ts`) |
 | API key management UI       | ✅     | Self-service (profile) and admin issuance: scope editor, activity log, policy           |
+
+---
+
+## Collaborative Design Engine
+
+AI-assisted product design workflow that generates requirements, BOMs, CAD, and assemblies from a natural language description.
+
+### Design Stages ✅
+
+| Stage                 | Status | Notes                                                                                                                                                                                       |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Toolset establishment | ✅     | Captures available manufacturing processes/tools and a scope (in-house only / preferred / unconstrained)                                                                                    |
+| Toolset review        | ✅     | User confirms the toolset; selections become per-BOM-node manufacturing constraints (FDM, laser-cut, CNC, …) that steer BOM and CAD generation                                              |
+| Requirements drafting | ✅     | LLM analyzes description, proposes structured requirements                                                                                                                                  |
+| Requirements review   | ✅     | User edits/approves proposed requirements                                                                                                                                                   |
+| BOM drafting          | ✅     | LLM decomposes into hierarchical BOM, searches for reuse                                                                                                                                    |
+| BOM review            | ✅     | User validates BOM structure and requirement coverage                                                                                                                                       |
+| Materialization       | ✅     | Creates items + BOM relationships in Draft (pre-release designs on main; released designs via a change order). Requirement-to-part links stay in the draft — no SATISFIES edges are written |
+| CAD generation        | 🟡     | Generates STEP files for Manufacture parts: CadQuery templates when one fits, otherwise AI-written FreeCAD scripts run headless                                                             |
+| CAD review            | 🟡     | 3D viewer for reviewing generated models                                                                                                                                                    |
+| Assembly composition  | 🟡     | Bottom-up assembly: LLM-planned placements, a FreeCAD assembly script, STEP rendered by the CadQuery worker                                                                                 |
+| Assembly review       | 🟡     | Final assembly validation                                                                                                                                                                   |
+
+### BOM Drafting Tools ✅
+
+| Tool                              | Notes                                         |
+| --------------------------------- | --------------------------------------------- |
+| `search_parts`                    | Search PLM for existing parts to reuse        |
+| `get_existing_bom`                | Analyze BOM structure of existing assemblies  |
+| `get_item_details`                | Fetch full item details                       |
+| `propose_new_part`                | Propose new part with partType classification |
+| `add_existing_to_bom`             | Add existing item to BOM at specified parent  |
+| `set_bom_parent`                  | Reparent a BOM node                           |
+| `link_requirement_to_part`        | Map requirements to parts                     |
+| `set_part_interfaces`             | Define mechanical interfaces for assembly     |
+| `set_assembly_interface_mappings` | Define how children connect in assemblies     |
+| `ask_clarification`               | Request user input when ambiguous             |
+
+### Infrastructure ✅
+
+| Feature                 | Status | Notes                                                                                        |
+| ----------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| Session persistence     | ✅     | `design_sessions` table with JSONB artifacts                                                 |
+| SSE streaming           | ✅     | Real-time stage updates via server-sent events                                               |
+| Activity feed           | ✅     | Live log of engine actions                                                                   |
+| Requirements coverage   | 🟡     | Matrix over the draft's requirement-to-part mapping; not materialized into PLM relationships |
+| Materialization preview | ✅     | Shows what will be created before committing                                                 |
+| Interface definitions   | ✅     | Mechanical interfaces (mounting holes, mating faces, etc.)                                   |
 
 ---
 

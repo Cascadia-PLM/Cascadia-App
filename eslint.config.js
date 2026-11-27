@@ -28,17 +28,15 @@ const local = {
 }
 
 /**
- * Import patterns that would put proprietary code inside core.
+ * Import patterns that would make core reach into a module.
  *
  * Derived from the edition manifest's package names rather than written out
  * here, so the two cannot drift.
  */
-// `MODULE_PACKAGES` comes from the manifest, not a list here. Writing the
-// names here would put a proprietary package id inside a core file —
-// `boundary:check` says so, and it is right: this file is published, where
-// those packages do not exist. In the public tree no workspace is proprietary,
-// so `MODULE_PACKAGES` is empty, the list is empty and the rule below
-// restricts nothing, which is exactly correct there.
+// `MODULE_PACKAGES` comes from the manifest, not a list here: every
+// `cascadia-*` workspace that is not an application package or an app,
+// whatever its licence. A tree with no module packages gets an empty list and
+// the rule below restricts nothing.
 //
 // Each module keeps its code under `<module-name>/` and (where it
 // has any) its components under `components/<module-name>/`, so those
@@ -52,7 +50,7 @@ const local = {
 // prefixes — which no manifest entry has ever contained, the entries being
 // '<pkg>/**' — so it provably contributed nothing and only the
 // @cascadia/* patterns were live.)
-const proprietaryImportPatterns = [
+const moduleImportPatterns = [
   ...MODULE_PACKAGES.flatMap((p) => [`@cascadia/${p}`, `@cascadia/${p}/**`]),
   ...MODULE_PACKAGES.flatMap((p) => [
     `@/${p}`,
@@ -163,7 +161,7 @@ export default [
       'use-isnan': 'error',
     },
   },
-  // Core must not import proprietary code — the fast, in-editor half of the
+  // Core must not import a module — the fast, in-editor half of the
   // boundary invariant, and deliberately only half.
   //
   // `no-restricted-imports` matches the specifier *as written*: it sees the
@@ -178,14 +176,14 @@ export default [
   // grepping missed. This rule exists only so the common case surfaces as you
   // type rather than in CI. Do not treat a green lint as a clean boundary.
   //
-  // Proprietary files and the composition roots are exempt — a module importing
+  // Module files and the composition roots are exempt — a module importing
   // its own package, and a root wiring modules in, are the point.
   //
   // Omitted entirely when there is nothing to restrict. ESLint rejects an empty
-  // `group`, so a config that always declares the rule fails to *load* in the
-  // published tree, where `MODULE_PACKAGES` is empty by design — lint would not
-  // report a violation there, it would refuse to run at all.
-  ...(proprietaryImportPatterns.length > 0
+  // `group`, so a config that always declares the rule fails to *load* in a
+  // tree with no module packages — lint would not report a violation there, it
+  // would refuse to run at all.
+  ...(moduleImportPatterns.length > 0
     ? [
         {
           // Scoped to the application packages by path, so no ignore list is
@@ -200,9 +198,9 @@ export default [
               {
                 patterns: [
                   {
-                    group: proprietaryImportPatterns,
+                    group: moduleImportPatterns,
                     message:
-                      'Core cannot import proprietary code. Invert it through a registry — the registries are listed in CLAUDE.md under the extension boundary.',
+                      'Core cannot import a module. Invert it through a registry — the registries are listed in CLAUDE.md under the extension boundary.',
                   },
                 ],
               },

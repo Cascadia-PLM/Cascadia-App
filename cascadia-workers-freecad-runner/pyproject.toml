@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (c) 2026 Cascadia PLM LLC
+
+# Deliberately carries no `[project]` table: the worker is consumed via
+# PYTHONPATH in its image (`/app/src:/app/common/src`), never installed as a
+# distribution. The pytest section below gives the suite importability with
+# no install — `pytest cascadia-workers-freecad-runner` from the repo root resolves
+# `freecad_runner` and the shared `cascadia_worker_common` the same way the
+# image does.
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "../cascadia-workers-commons/src"]
+testpaths = ["tests"]

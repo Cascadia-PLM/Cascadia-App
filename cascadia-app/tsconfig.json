@@ -15,12 +15,14 @@
         "../cascadia-web/src/*",
         "../cascadia-api/src/*",
         "../cascadia-workers-job/src/*",
-        "../cascadia-commons/src/*"
+        "../cascadia-commons/src/*",
+        "../cascadia-design-engine/src/*"
       ],
       "@cascadia/api/*": ["../cascadia-api/src/*"],
       "@cascadia/web/*": ["../cascadia-web/src/*"],
       "@cascadia/workers-job/*": ["../cascadia-workers-job/src/*"],
-      "@cascadia/commons/*": ["../cascadia-commons/src/*"]
+      "@cascadia/commons/*": ["../cascadia-commons/src/*"],
+      "@cascadia/design-engine/*": ["../cascadia-design-engine/src/*"]
     }
   }
 }

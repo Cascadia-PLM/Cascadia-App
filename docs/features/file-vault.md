@@ -358,7 +358,7 @@ cannot parse must not stop the other forty being marked.
 
 Stamping uses [`@cantoo/pdf-lib`](https://www.npmjs.com/package/@cantoo/pdf-lib)
 — the maintained MIT fork of `pdf-lib`, which has had no release since 2022. MIT
-matters: Cascadia is dual licensed, and its proprietary edition cannot take an
+matters: Cascadia is dual licensed, and the commercial licence cannot carry an
 AGPL dependency such as MuPDF without a commercial licence from Artifex.
 
 ### Batch Uploads

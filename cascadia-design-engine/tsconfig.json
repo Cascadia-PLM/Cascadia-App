@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      // The application packages first, then this module. A specifier
+      // resolves against the application when it has it and against the
+      // module otherwise, which is what lets module code keep the same `@/`
+      // imports it would use inside core.
+      "@/*": [
+        "../cascadia-api/src/*",
+        "../cascadia-web/src/*",
+        "../cascadia-workers-job/src/*",
+        "../cascadia-commons/src/*",
+        "../cascadia-design-engine/src/*"
+      ],
+      "@test/*": ["../cascadia-api/src/__tests__/*"],
+      "@cascadia/api/*": ["../cascadia-api/src/*"],
+      "@cascadia/web/*": ["../cascadia-web/src/*"],
+      "@cascadia/workers-job/*": ["../cascadia-workers-job/src/*"],
+      "@cascadia/commons/*": ["../cascadia-commons/src/*"],
+      "@cascadia/design-engine/*": ["../cascadia-design-engine/src/*"]
+    }
+  }
+}

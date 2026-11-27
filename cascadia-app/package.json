@@ -1,7 +1,7 @@
 {
   "name": "@cascadia/app",
   "version": "0.6.0",
-  "description": "Cascadia PLM \u2014 community edition.",
+  "description": "Cascadia PLM \u2014 the application: core plus its first-party modules.",
   "license": "AGPL-3.0-or-later",
   "private": true,
   "type": "module",
@@ -9,6 +9,7 @@
     "@cascadia/api": "*",
     "@cascadia/commons": "*",
     "@cascadia/web": "*",
-    "@cascadia/workers-job": "*"
+    "@cascadia/workers-job": "*",
+    "@cascadia/design-engine": "*"
   }
 }

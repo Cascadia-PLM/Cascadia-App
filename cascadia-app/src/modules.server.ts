@@ -2,21 +2,30 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 /**
- * Composition root for the community edition — deliberately empty.
+ * Composition root for the server processes: which modules this app attaches.
  *
- * The enterprise app's sibling attaches licensed modules here. This one has
- * none to attach, and that is the entire difference between the two editions
- * on the server: not a stripped tree, not a conditional, just a shorter list.
+ * The module package owns what gets registered; this file only decides that it
+ * is registered at all. Core never imports a module — it declares extension
+ * points, and this list is the one place that wires modules into them.
  *
- * Keeping the file rather than deleting it is what lets the shared entry points
- * be identical between editions.
+ * **Server only.** Everything registered here reaches the database, so this
+ * file must never enter the client bundle — importing it from a component
+ * would drag `postgres` in behind it.
  */
 
+import {
+  registerCadGeneration,
+  registerCadGenerationWorker,
+  registerDesignEngine,
+} from '@cascadia/design-engine/register.server'
+
+/** Attach every module to core. Idempotent; each guards itself. */
 export function registerModules(): void {
-  // No modules in this edition.
+  registerCadGeneration()
+  registerDesignEngine()
 }
 
-/** Worker-only counterpart. Nothing to register here either. */
+/** Attach module job handlers. **Worker entry points only.** */
 export function registerWorkerModules(): void {
-  // No modules in this edition.
+  registerCadGenerationWorker()
 }

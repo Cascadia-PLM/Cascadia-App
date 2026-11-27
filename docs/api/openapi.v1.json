@@ -729,6 +729,107 @@
         ]
       }
     },
+    "/api/v1/admin/cad-settings": {
+      "get": {
+        "operationId": "getApiV1AdminCadSettings",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      },
+      "post": {
+        "operationId": "postApiV1AdminCadSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "maxIterations": {
+                    "maximum": 12,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "scriptTimeoutSeconds": {
+                    "maximum": 300,
+                    "minimum": 15,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "enabled"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/v1/admin/cad-settings/test": {
+      "post": {
+        "operationId": "postApiV1AdminCadSettingsTest",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/api/v1/admin/component-catalog": {
       "get": {
         "operationId": "getApiV1AdminComponentCatalog",
@@ -6812,6 +6913,497 @@
         },
         "tags": [
           "Dashboard"
+        ]
+      }
+    },
+    "/api/v1/design-engine/sessions": {
+      "get": {
+        "operationId": "getApiV1DesignEngineSessions",
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      },
+      "post": {
+        "operationId": "postApiV1DesignEngineSessions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "aiChatSessionId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "description": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "designId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  },
+                  "programId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description",
+                  "programId"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      }
+    },
+    "/api/v1/design-engine/sessions/{id}": {
+      "get": {
+        "operationId": "getApiV1DesignEngineSessionsById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      },
+      "patch": {
+        "operationId": "patchApiV1DesignEngineSessionsById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "artifacts": {
+                    "additionalProperties": {},
+                    "type": "object"
+                  },
+                  "description": {
+                    "maxLength": 20000,
+                    "type": "string"
+                  },
+                  "stage": {
+                    "enum": [
+                      "idle",
+                      "toolset_establishment",
+                      "toolset_review",
+                      "requirements_drafting",
+                      "requirements_review",
+                      "bom_drafting",
+                      "bom_review",
+                      "materialization",
+                      "cad_generation",
+                      "cad_review",
+                      "assembly_composition",
+                      "assembly_review",
+                      "complete",
+                      "error"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      }
+    },
+    "/api/v1/design-engine/sessions/{id}/fork": {
+      "post": {
+        "operationId": "postApiV1DesignEngineSessionsByIdFork",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "includeLlmHistory": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      }
+    },
+    "/api/v1/design-engine/sessions/{id}/materialize": {
+      "get": {
+        "operationId": "getApiV1DesignEngineSessionsByIdMaterialize",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      },
+      "post": {
+        "operationId": "postApiV1DesignEngineSessionsByIdMaterialize",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      }
+    },
+    "/api/v1/design-engine/sessions/{id}/snapshots": {
+      "get": {
+        "operationId": "getApiV1DesignEngineSessionsByIdSnapshots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      }
+    },
+    "/api/v1/design-engine/sessions/{id}/snapshots/{snapshotId}": {
+      "get": {
+        "operationId": "getApiV1DesignEngineSessionsByIdSnapshotsBySnapshotId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "snapshotId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
+        ]
+      }
+    },
+    "/api/v1/design-engine/sessions/{id}/stream": {
+      "post": {
+        "operationId": "postApiV1DesignEngineSessionsByIdStream",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "start_toolset",
+                      "start_requirements",
+                      "start_bom",
+                      "start_cad_generation",
+                      "start_assembly_composition",
+                      "regenerate_part",
+                      "resume",
+                      "confirm_toolset",
+                      "confirm_requirements",
+                      "confirm_bom",
+                      "confirm_cad",
+                      "confirm_assembly",
+                      "answer_clarification",
+                      "send_message",
+                      "revise",
+                      "reopen_stage"
+                    ],
+                    "type": "string"
+                  },
+                  "answer": {
+                    "type": "string"
+                  },
+                  "feedback": {
+                    "type": "string"
+                  },
+                  "force": {
+                    "type": "boolean"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "questionId": {
+                    "type": "string"
+                  },
+                  "queue": {
+                    "type": "boolean"
+                  },
+                  "targetStage": {
+                    "enum": [
+                      "toolset_review",
+                      "requirements_review",
+                      "bom_review"
+                    ],
+                    "type": "string"
+                  },
+                  "tempId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Design Engine"
         ]
       }
     },
@@ -23480,6 +24072,203 @@
           }
         },
         "summary": "Update a part",
+        "tags": [
+          "Parts"
+        ]
+      }
+    },
+    "/api/v1/parts/{id}/generate-cad": {
+      "post": {
+        "operationId": "postApiV1PartsByIdGenerateCad",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "method": {
+                        "const": "parametric",
+                        "type": "string"
+                      },
+                      "parameters": {
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "type": "object"
+                      },
+                      "template": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "units": {
+                        "enum": [
+                          "mm",
+                          "in"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "method",
+                      "template",
+                      "parameters"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "method": {
+                        "const": "freecad",
+                        "type": "string"
+                      },
+                      "parameters": {
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "type": "object"
+                      },
+                      "template": {
+                        "maxLength": 200,
+                        "type": "string"
+                      },
+                      "units": {
+                        "enum": [
+                          "mm",
+                          "in"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "method"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Parts"
+        ]
+      }
+    },
+    "/api/v1/parts/{id}/generate-cad/assess": {
+      "post": {
+        "operationId": "postApiV1PartsByIdGenerateCadAssess",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "tags": [
+          "Parts"
+        ]
+      }
+    },
+    "/api/v1/parts/{id}/generate-cad/convert": {
+      "post": {
+        "operationId": "postApiV1PartsByIdGenerateCadConvert",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "vaultFileId": {
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "vaultFileId"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
         "tags": [
           "Parts"
         ]

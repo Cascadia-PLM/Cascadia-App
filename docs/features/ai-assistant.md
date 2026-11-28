@@ -71,6 +71,15 @@ The `ChatInput` component provides two ways to send messages:
 | **Chat**   | Enter key or Send button    | Full conversational mode with all tools (read + write)                            |
 | **Search** | Ctrl+Enter or Search button | Lightweight search mode -- uses a concise prompt and only search/navigation tools |
 
+### Page Awareness
+
+The assistant knows which page the panel is open on. `useChatPage` (`cascadia-web/src/ai/chat-page.ts`) reads the deepest route match and sends the ids it names with every turn: the item on an item detail page (any registered type, including pages nested under one), the design on a design page, the program on a program page, and the `designId` / `programId` filter of a list page. Only ids travel; `resolveChatPage` (`cascadia-api/src/ai/page-context.ts`) checks each against what the user can reach, reads the names itself, and derives the design from the item and the program from the design rather than trusting the pairing it was sent. A page that does not resolve is dropped, never an error.
+
+Two things follow from it:
+
+- **Every turn** carries a `## Current Page` block as a second system prompt (`KnowledgeService.buildPagePrompt`), so "what uses this part?" needs no search and a create defaults to the design in view. It is separate from the main prompt so that navigating does not invalidate the cached prefix, and its names are rendered as inert inline code like the rest of Current Context.
+- **A new conversation** takes the page's program and design as its session scope, which is what selects per-program AI settings and the per-program token budget (see [Configuration Priority](#configuration-priority)). A conversation continued from another page keeps the scope it started with — the page then only informs the prompt.
+
 ---
 
 ## Chat Dialogs
@@ -703,6 +712,8 @@ Server code lives in `cascadia-api/src/items/enrichment/` (`enrich-item.ts`, `fe
 | `cascadia-api/src/ai/SessionService.ts`                 | Session and message persistence                                         |
 | `cascadia-api/src/ai/KnowledgeService.ts`               | Schema introspection and system prompt generation                       |
 | `cascadia-web/src/ai/chat-context.tsx`                  | React context for panel state management                                |
+| `cascadia-web/src/ai/chat-page.ts`                      | The page the panel is open on, as route ids                             |
+| `cascadia-api/src/ai/page-context.ts`                   | Verifies those ids and resolves them to item, design and program        |
 | `cascadia-api/src/ai/tools/definitions.ts`              | Read-only tool definitions (Zod schemas)                                |
 | `cascadia-api/src/ai/tools/write-definitions.ts`        | Write tool definitions with confirmation schemas                        |
 | `cascadia-api/src/ai/tools/handlers.ts`                 | Read-only tool handler implementations                                  |

@@ -22,8 +22,9 @@ import { PermissionDeniedError } from '@/errors'
  *   - **An existing session's own `programId` wins.** Ownership of the session
  *     is already verified, and the program it was created under is the scope it
  *     was created under; a body value that disagrees is ignored rather than
- *     honoured. That keeps the in-app client — which sends both — working
- *     unchanged.
+ *     honoured. The in-app panel relies on this: it sends the page it is on
+ *     with every turn (`./page-context`), and a conversation continued from
+ *     another program's page must not move to that program's key.
  *   - **A new session's `programId` must be one the caller can reach**, the
  *     same `canAccessProgram` check the design-engine session route makes.
  *     `designId` is gated with `requireDesignAccess` for the same reason.

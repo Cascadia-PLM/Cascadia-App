@@ -49,6 +49,7 @@ Uses the TanStack AI client format:
 | `data.programId`     | UUID   | No       | Scope chat to a specific program                                   |
 | `data.designId`      | UUID   | No       | Scope chat to a specific design                                    |
 | `data.mode`          | string | No       | `chat` (default) for full tool set, `search` for search-only tools |
+| `data.page`          | object | No       | The page the client is showing — see [Page context](#page-context) |
 
 ### Response
 
@@ -72,6 +73,24 @@ The stream contains TanStack AI chunks including:
 | -------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------- |
 | `chat`   | Full (read + write + design engine)                                                             | General-purpose assistant with all capabilities |
 | `search` | Search-only (search_items, get_item_details, offer_navigation, search_programs, search_designs) | Lightweight mode for quickly finding items      |
+
+### Page context
+
+`data.page` tells the assistant what the user is looking at, so "this part" resolves without a search:
+
+```json
+{
+  "page": {
+    "itemId": "item-uuid",
+    "designId": "design-uuid",
+    "programId": "program-uuid"
+  }
+}
+```
+
+All three fields are optional UUIDs; send whichever the page names. The server checks each against what the caller can reach and reads the names itself, deriving downwards — an item names its design, a design its program — so a `programId` that disagrees with the item or design beside it is ignored. Anything unknown, unreachable or malformed is dropped silently and the turn proceeds without it; page context never fails a request.
+
+The resolved page is given to the model on every turn, and it does one more thing on the first: a **new** session with no explicit `programId` / `designId` is scoped to the page's, which decides whose AI settings and token budget the conversation spends. An existing session keeps the scope it was created with, whatever page it is continued from.
 
 ### Session auto-creation
 
@@ -177,10 +196,11 @@ Create a new chat session explicitly (instead of relying on auto-creation via `/
 }
 ```
 
-| Field       | Type | Required | Description                      |
-| ----------- | ---- | -------- | -------------------------------- |
-| `programId` | UUID | No       | Associate session with a program |
-| `designId`  | UUID | No       | Associate session with a design  |
+| Field       | Type   | Required | Description                                                                                                                      |
+| ----------- | ------ | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `programId` | UUID   | No       | Associate session with a program                                                                                                 |
+| `designId`  | UUID   | No       | Associate session with a design                                                                                                  |
+| `page`      | object | No       | The page the client is showing; supplies the scope when `programId` / `designId` are omitted — see [Page context](#page-context) |
 
 ### Response (201 Created)
 

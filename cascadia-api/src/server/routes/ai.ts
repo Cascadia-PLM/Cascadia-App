@@ -19,6 +19,7 @@ import { knowledgeService } from '@/ai/KnowledgeService'
 import { sessionService } from '@/ai/SessionService'
 import { dialogService } from '@/ai/dialogs/DialogService'
 import { resolveChatScope } from '@/ai/chat-scope'
+import { chatPageSchema, resolveChatPage } from '@/ai/page-context'
 import { replayChatHistory } from '@/ai/history'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { acquireStreamSlot, releaseStreamSlot } from '@/ai/stream-limits'
@@ -70,6 +71,9 @@ const chatDataSchema = z.object({
   programId: z.string().uuid().optional(),
   designId: z.string().uuid().optional(),
   mode: z.enum(['chat', 'search']).optional(),
+  // The page the panel is open on — see `@/ai/page-context`. Ambient, so a
+  // malformed one is dropped rather than failing the turn.
+  page: chatPageSchema,
 })
 
 const chatRequestSchema = z.looseObject({
@@ -96,6 +100,7 @@ function wireMessageText(message: WireMessage): string {
 const createSessionSchema = z.object({
   programId: z.string().uuid().optional(),
   designId: z.string().uuid().optional(),
+  page: chatPageSchema,
 })
 
 /**
@@ -174,9 +179,22 @@ app.post(
         // the system prompt — and the body's programId is a claim, not a
         // fact. resolveChatScope turns it into the program this caller may
         // actually use, preferring an existing session's own scope.
+        //
+        // The page the panel is on is resolved before it, because a new
+        // session with no explicit scope takes the page's: that is what makes
+        // a conversation opened on a design spend that design's program's
+        // settings and budget. Only what `resolveChatPage` verified is passed
+        // on, and resolveChatScope checks it again like any other claim. An
+        // existing session keeps its own scope whatever page it is continued
+        // from — the page then only informs the prompt.
+        const page = await resolveChatPage(user.id, data?.page)
         const scope = await resolveChatScope(
           user.id,
-          { sessionId, programId, designId },
+          {
+            sessionId,
+            programId: programId ?? page?.program?.id,
+            designId: designId ?? page?.design?.id,
+          },
           sessionService,
         )
         const effectiveProgramId = scope.programId ?? undefined
@@ -296,7 +314,11 @@ app.post(
         try {
           stream = chat({
             adapter,
-            systemPrompts: [systemPrompt],
+            // The page rides as its own prompt, after the stable one, so
+            // navigating does not invalidate the cached prefix.
+            systemPrompts: page
+              ? [systemPrompt, knowledgeService.buildPagePrompt(page)]
+              : [systemPrompt],
             messages,
             tools,
             // The session is the conversation: a stable thread id is also the
@@ -468,13 +490,18 @@ app.post(
   adapt(
     apiHandler(
       { body: createSessionSchema },
-      async ({ body: { programId, designId }, user }) => {
+      async ({ body: { programId, designId, page: pageRequest }, user }) => {
         // Same rule as POST /chat: a session may only be scoped to a program
         // and design the caller can actually reach, because that scope is what
-        // later requests spend against.
+        // later requests spend against. With no explicit scope, the page the
+        // panel is open on supplies it.
+        const page = await resolveChatPage(user.id, pageRequest)
         const scope = await resolveChatScope(
           user.id,
-          { programId, designId },
+          {
+            programId: programId ?? page?.program?.id,
+            designId: designId ?? page?.design?.id,
+          },
           sessionService,
         )
 

@@ -7259,6 +7259,14 @@ export interface operations {
                         designId?: string;
                         /** @enum {string} */
                         mode?: "chat" | "search";
+                        page?: {
+                            /** Format: uuid */
+                            designId?: string;
+                            /** Format: uuid */
+                            itemId?: string;
+                            /** Format: uuid */
+                            programId?: string;
+                        };
                         /** Format: uuid */
                         programId?: string;
                         /** Format: uuid */
@@ -7270,6 +7278,14 @@ export interface operations {
                             designId?: string;
                             /** @enum {string} */
                             mode?: "chat" | "search";
+                            page?: {
+                                /** Format: uuid */
+                                designId?: string;
+                                /** Format: uuid */
+                                itemId?: string;
+                                /** Format: uuid */
+                                programId?: string;
+                            };
                             /** Format: uuid */
                             programId?: string;
                             /** Format: uuid */
@@ -7348,6 +7364,14 @@ export interface operations {
                 "application/json": {
                     /** Format: uuid */
                     designId?: string;
+                    page?: {
+                        /** Format: uuid */
+                        designId?: string;
+                        /** Format: uuid */
+                        itemId?: string;
+                        /** Format: uuid */
+                        programId?: string;
+                    };
                     /** Format: uuid */
                     programId?: string;
                 };

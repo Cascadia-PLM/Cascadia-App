@@ -25,6 +25,7 @@ import {
   CHAT_PANEL_MIN_WIDTH,
   useChatPanel,
 } from '@/ai/chat-context'
+import { useChatPage } from '@/ai/chat-page'
 import { apiFetch } from '@/api/client'
 import {
   aiSessionMessagesQuery,
@@ -96,6 +97,16 @@ export function ChatPanel() {
     sessionIdRef.current = currentSessionId
   }, [currentSessionId])
 
+  // The page the panel is open on, sent with every turn so the assistant
+  // knows what "this part" is and a new conversation takes the program the
+  // user is working in. A ref for the same reason as the session id: the
+  // connection reads it at send time, not at the render that built it.
+  const page = useChatPage()
+  const pageRef = useRef(page)
+  useEffect(() => {
+    pageRef.current = page
+  }, [page])
+
   // The client's conversation id. One per mounted panel, not per session:
   // `useChat` rebuilds its client — and drops the transcript on screen — when
   // this changes, and the panel switches sessions by hydrating `setMessages`
@@ -117,6 +128,7 @@ export function ChatPanel() {
         data: {
           sessionId: sessionIdRef.current, // Use ref for immediate access
           mode: modeRef.current,
+          page: pageRef.current,
         },
       },
     })),
@@ -141,7 +153,9 @@ export function ChatPanel() {
             data: { session: { id: string } }
           }>('/api/v1/ai/sessions', {
             method: 'POST',
-            body: JSON.stringify({}),
+            // The page scopes the new session: its program's AI settings
+            // and budget are the ones this conversation spends.
+            body: JSON.stringify({ page: pageRef.current }),
           })
           const newSessionId = result.data.session.id
           sessionIdRef.current = newSessionId

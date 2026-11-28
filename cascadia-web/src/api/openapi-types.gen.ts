@@ -7264,11 +7264,33 @@ export interface operations {
                         /** Format: uuid */
                         sessionId?: string;
                     };
-                    messages: {
-                        content: string | null;
-                        /** @enum {string} */
-                        role: "system" | "user" | "assistant";
-                    }[];
+                    forwardedProps?: {
+                        data?: {
+                            /** Format: uuid */
+                            designId?: string;
+                            /** @enum {string} */
+                            mode?: "chat" | "search";
+                            /** Format: uuid */
+                            programId?: string;
+                            /** Format: uuid */
+                            sessionId?: string;
+                        };
+                    } & {
+                        [key: string]: unknown;
+                    };
+                    messages: ({
+                        content?: unknown;
+                        parts?: ({
+                            type: string;
+                        } & {
+                            [key: string]: unknown;
+                        })[];
+                        role: string;
+                    } & {
+                        [key: string]: unknown;
+                    })[];
+                } & {
+                    [key: string]: unknown;
                 };
             };
         };

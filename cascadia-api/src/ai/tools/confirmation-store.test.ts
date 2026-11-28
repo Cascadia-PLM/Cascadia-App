@@ -34,8 +34,10 @@ import {
 } from '@/__tests__/fixtures/users'
 import {
   hashConfirmationParams,
+  isAwaitingApproval,
   issueConfirmationToken,
   redeemConfirmationToken,
+  respondToConfirmation,
 } from '@/ai/tools/confirmation-store'
 import { createProgramHandler } from '@/ai/tools/write-handlers'
 import { aiWriteConfirmations } from '@/db/schema/ai'
@@ -154,6 +156,121 @@ describe('AI write confirmation tokens', () => {
 
       const c = hashConfirmationParams({ name: 'Widget', itemType: 'Document' })
       expect(c).not.toBe(a)
+    })
+  })
+
+  // The token alone proves a preview happened. On the chat surface it must
+  // also prove a person answered it: the model reads the token out of the
+  // tool result, so without this a model that calls twice in one turn has
+  // previewed and executed a write nobody saw.
+  describe('human approval', () => {
+    const gated = () =>
+      issueConfirmationToken(user.id, TOOL, PARAMS, { requiresApproval: true })
+
+    it('an approval-gated token does not redeem until the user approves it', async () => {
+      const token = await gated()
+
+      expect(await isAwaitingApproval(user.id, token)).toBe(true)
+      expect(await redeemConfirmationToken(user.id, TOOL, PARAMS, token)).toBe(
+        false,
+      )
+      // The refused attempt left it live: the user can still answer the card.
+      expect(await respondToConfirmation(user.id, token, true)).toBe(true)
+      expect(await isAwaitingApproval(user.id, token)).toBe(false)
+      expect(await redeemConfirmationToken(user.id, TOOL, PARAMS, token)).toBe(
+        true,
+      )
+    })
+
+    it('approval does not loosen the other bindings', async () => {
+      const token = await gated()
+      await respondToConfirmation(user.id, token, true)
+
+      // Approved for these parameters, not for whatever is sent with it.
+      expect(
+        await redeemConfirmationToken(
+          user.id,
+          TOOL,
+          { ...PARAMS, name: 'Something else' },
+          token,
+        ),
+      ).toBe(false)
+    })
+
+    it("only the token's own user can approve it", async () => {
+      const token = await gated()
+
+      expect(await respondToConfirmation(other.id, token, true)).toBe(false)
+      expect(await isAwaitingApproval(user.id, token)).toBe(true)
+    })
+
+    it('a cancelled token never redeems, and cannot be approved afterwards', async () => {
+      const token = await gated()
+
+      expect(await respondToConfirmation(user.id, token, false)).toBe(true)
+      expect(await respondToConfirmation(user.id, token, true)).toBe(false)
+      expect(await redeemConfirmationToken(user.id, TOOL, PARAMS, token)).toBe(
+        false,
+      )
+    })
+
+    it('an expired token cannot be approved', async () => {
+      const token = await gated()
+      await testDb.db
+        .update(aiWriteConfirmations)
+        .set({ expiresAt: new Date(Date.now() - 1000) })
+
+      expect(await respondToConfirmation(user.id, token, true)).toBe(false)
+    })
+
+    it('a surface that requires approval refuses a token minted without the gate', async () => {
+      // An ungated token (MCP) must not be spendable from the chat surface.
+      const token = await issueConfirmationToken(user.id, TOOL, PARAMS)
+
+      expect(
+        await redeemConfirmationToken(user.id, TOOL, PARAMS, token, {
+          requireApproved: true,
+        }),
+      ).toBe(false)
+    })
+  })
+
+  describe('write handler gate on the chat surface (create_program)', () => {
+    it("repeating the call without the user's approval executes nothing; with it, executes once", async () => {
+      const { user: admin } = await insertTestUserWithRole(
+        testDb.db,
+        'Administrator',
+      )
+      const context = { userId: admin.id, surface: 'chat' as const }
+      const input = { name: 'Chat Approval Gate Program' }
+      const created = () =>
+        testDb.db.select().from(programs).where(eq(programs.name, input.name))
+
+      const preview = await createProgramHandler(input, context)
+      const confirmationToken = preview.confirmationToken ?? ''
+      expect(preview.requiresConfirmation).toBe(true)
+
+      // What a model does when it does not wait: call again with the token
+      // it just read. Nothing is written, and it is told why rather than
+      // handed a second card.
+      const eager = await createProgramHandler(
+        { ...input, confirmationToken },
+        context,
+      )
+      expect(eager.success).toBe(false)
+      expect(eager.requiresConfirmation).toBe(false)
+      expect(await created()).toHaveLength(0)
+
+      // The user clicks Confirm; the same call now goes through.
+      expect(
+        await respondToConfirmation(admin.id, confirmationToken, true),
+      ).toBe(true)
+      const executed = await createProgramHandler(
+        { ...input, confirmationToken },
+        context,
+      )
+      expect(executed.success).toBe(true)
+      expect(await created()).toHaveLength(1)
     })
   })
 

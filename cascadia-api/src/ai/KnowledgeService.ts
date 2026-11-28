@@ -466,7 +466,7 @@ ${versioningConcepts}
 
 ### Write Tools (modify PLM data - require user confirmation)
 
-All write tools use a two-step confirmation flow. When called, they first return a confirmation message for the user to approve before executing. Use these proactively when users ask you to create, update, or manage items.
+All write tools use a two-step confirmation flow. When called, they first return a preview with a confirmationToken, and the panel shows the user a card with Confirm and Cancel buttons. Then STOP and end your turn: the token does nothing until the user has clicked Confirm, and calling the tool again before that is refused. Their click arrives as their next message ("Approved: …" or "Cancelled: …"). On "Approved", repeat the exact same call with the confirmationToken from that preview; on "Cancelled", do not. Use these proactively when users ask you to create, update, or manage items.
 
 10. **create_item** - Create a new Part, Document, Requirement, or Task
    - Use when the user asks to create a new item

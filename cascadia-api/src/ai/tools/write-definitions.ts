@@ -13,7 +13,9 @@
  * 2. Returns requiresConfirmation: true with a message and a server-issued
  *    single-use confirmationToken bound to these exact parameters
  * 3. AI presents ConfirmationCard to user
- * 4. User clicks Confirm/Cancel
+ * 4. User clicks Confirm/Cancel — in the chat panel that click is an
+ *    authenticated request of its own (POST /ai/confirmations/respond), and
+ *    the token is inert until it lands; see `confirmation-store.ts`
  * 5. AI repeats the same call with the confirmationToken from step 2
  * 6. Tool redeems the token (once, within its short expiry) and executes
  *
@@ -186,7 +188,9 @@ Requires user confirmation before creating.`,
       .optional()
       .describe(
         'Single-use token from the preview response. After the user ' +
-          'approves, repeat the exact same call with this token to execute.',
+          'approves, repeat the exact same call with this token to execute. ' +
+          'In the chat panel the user approves with a button and the token ' +
+          'does nothing until they have — wait for their next message.',
       ),
     confirmed: z
       .boolean()
@@ -245,7 +249,9 @@ Requires user confirmation before updating.`,
       .optional()
       .describe(
         'Single-use token from the preview response. After the user ' +
-          'approves, repeat the exact same call with this token to execute.',
+          'approves, repeat the exact same call with this token to execute. ' +
+          'In the chat panel the user approves with a button and the token ' +
+          'does nothing until they have — wait for their next message.',
       ),
     confirmed: z
       .boolean()
@@ -306,7 +312,9 @@ Requires user confirmation before creating.`,
       .optional()
       .describe(
         'Single-use token from the preview response. After the user ' +
-          'approves, repeat the exact same call with this token to execute.',
+          'approves, repeat the exact same call with this token to execute. ' +
+          'In the chat panel the user approves with a button and the token ' +
+          'does nothing until they have — wait for their next message.',
       ),
     confirmed: z
       .boolean()
@@ -349,7 +357,9 @@ Requires user confirmation before transitioning.`,
       .optional()
       .describe(
         'Single-use token from the preview response. After the user ' +
-          'approves, repeat the exact same call with this token to execute.',
+          'approves, repeat the exact same call with this token to execute. ' +
+          'In the chat panel the user approves with a button and the token ' +
+          'does nothing until they have — wait for their next message.',
       ),
     confirmed: z
       .boolean()
@@ -411,7 +421,9 @@ Requires user confirmation before creating.`,
       .optional()
       .describe(
         'Single-use token from the preview response. After the user ' +
-          'approves, repeat the exact same call with this token to execute.',
+          'approves, repeat the exact same call with this token to execute. ' +
+          'In the chat panel the user approves with a button and the token ' +
+          'does nothing until they have — wait for their next message.',
       ),
     confirmed: z
       .boolean()
@@ -454,7 +466,9 @@ Requires user confirmation before creating.`,
       .optional()
       .describe(
         'Single-use token from the preview response. After the user ' +
-          'approves, repeat the exact same call with this token to execute.',
+          'approves, repeat the exact same call with this token to execute. ' +
+          'In the chat panel the user approves with a button and the token ' +
+          'does nothing until they have — wait for their next message.',
       ),
     confirmed: z
       .boolean()
@@ -490,7 +504,9 @@ Only affirm when the user has judged the claim still true; do not affirm to sile
       .optional()
       .describe(
         'Single-use token from the preview response. After the user ' +
-          'approves, repeat the exact same call with this token to execute.',
+          'approves, repeat the exact same call with this token to execute. ' +
+          'In the chat panel the user approves with a button and the token ' +
+          'does nothing until they have — wait for their next message.',
       ),
     confirmed: z
       .boolean()

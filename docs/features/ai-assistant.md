@@ -351,16 +351,37 @@ Write operations use a two-step confirmation flow to prevent unintended modifica
 ```
 User: "Create a new part called Motor Assembly"
 
-  1. AI calls create_item with confirmed: false
-  2. Tool returns { requiresConfirmation: true, confirmationMessage: "...", confirmationDetails: {...} }
-  3. AI renders a ConfirmationCard in the chat
+  1. AI calls create_item
+  2. Tool returns { requiresConfirmation: true, confirmationToken: "...", confirmationMessage: "...", confirmationDetails: {...} }
+  3. The panel renders a ConfirmationCard; the AI ends its turn
 
 User clicks "Confirm"
 
-  4. AI calls create_item again with confirmed: true
-  5. Tool executes the operation
-  6. AI reports the result (item number, success/failure)
+  4. The panel calls POST /api/v1/ai/confirmations/respond { confirmationToken, approved: true }
+  5. The panel sends "Approved: go ahead with create_item for "Motor Assembly", exactly as previewed."
+  6. AI calls create_item again with the same arguments plus the confirmationToken
+  7. Tool redeems the token and executes the operation
+  8. AI reports the result (item number, success/failure)
 ```
+
+### What the token proves
+
+The token is minted by the server on the preview, bound to the user, the tool and a hash of the exact previewed arguments, and redeems once. That alone proves only that a preview happened: the token is in the tool result, the model reads tool results, and a model that called the tool twice in one turn would have previewed and executed a write nobody saw.
+
+So a token minted for the chat panel is also **approval-gated**. It will not redeem until step 4 has recorded the user's approval, and step 4 is an authenticated request from the user's browser — a tool call cannot make it, and neither can anything the model gets the panel to render, since it is a `POST` with a JSON body. The chat message in step 5 only tells the model it may proceed; it grants nothing.
+
+| Situation                                           | Result                                                                                                  |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Model repeats the call before the user has answered | Refused with an explanation; nothing is written, the token stays live and no second card is minted      |
+| User clicks Cancel                                  | The token is spent; a repeat of the call yields a fresh preview, never an execution                     |
+| User answers after the window closed                | The approval is refused; the card says it expired and nothing changed                                   |
+| Arguments differ from the preview                   | The token is burned and a fresh preview returned — what executes is always exactly what the card showed |
+
+A card can be answered for 15 minutes; once approved, the model has 5 minutes to make the confirmed call. Confirm and Cancel are disabled while a response is streaming.
+
+Over MCP there is no panel, so tokens there are not approval-gated: showing the preview and collecting the user's approval is the external agent's contract (see [MCP](mcp.md)). A token minted over MCP cannot be redeemed from the chat surface.
+
+Implementation: `cascadia-api/src/ai/tools/confirmation-store.ts` (`issueConfirmationToken`, `respondToConfirmation`, `redeemConfirmationToken`), table `ai_write_confirmations`.
 
 ### ConfirmationCard Component
 
@@ -371,7 +392,7 @@ The `ConfirmationCard` (`cascadia-web/src/components/ai/ConfirmationCard.tsx`) d
 - Structured details: item type, item name, design name, ECO number, and additional info
 - **Confirm** and **Cancel** buttons
 
-After responding, the card collapses to a static badge showing "Confirmed" (green) or "Cancelled" (grey).
+After responding, the card collapses to a static badge showing "Confirmed" (green) or "Cancelled" (grey), or to a notice that the confirmation expired.
 
 ### ECO Suggestion Flow
 
@@ -451,16 +472,17 @@ This allows different programs to use different providers or models.
 
 ### Environment Variables
 
-| Variable            | Description                                    |
-| ------------------- | ---------------------------------------------- |
-| `OPENAI_API_KEY`    | OpenAI API key (fallback if no DB settings)    |
-| `OPENAI_MODEL`      | Override default OpenAI model                  |
-| `OPENAI_BASE_URL`   | Custom OpenAI-compatible endpoint              |
-| `ANTHROPIC_API_KEY` | Anthropic API key (fallback if no DB settings) |
-| `ANTHROPIC_MODEL`   | Override default Anthropic model               |
-| `DEEPSEEK_API_KEY`  | DeepSeek API key (fallback if no DB settings)  |
-| `DEEPSEEK_MODEL`    | Override default DeepSeek model                |
-| `DEEPSEEK_BASE_URL` | Custom DeepSeek-compatible endpoint            |
+| Variable                       | Description                                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `AI_CHAT_HISTORY_TOKEN_BUDGET` | Tokens of history replayed per chat turn (default 24000) — see [Context and Loop Limits](#context-and-loop-limits) |
+| `OPENAI_API_KEY`               | OpenAI API key (fallback if no DB settings)                                                                        |
+| `OPENAI_MODEL`                 | Override default OpenAI model                                                                                      |
+| `OPENAI_BASE_URL`              | Custom OpenAI-compatible endpoint                                                                                  |
+| `ANTHROPIC_API_KEY`            | Anthropic API key (fallback if no DB settings)                                                                     |
+| `ANTHROPIC_MODEL`              | Override default Anthropic model                                                                                   |
+| `DEEPSEEK_API_KEY`             | DeepSeek API key (fallback if no DB settings)                                                                      |
+| `DEEPSEEK_MODEL`               | Override default DeepSeek model                                                                                    |
+| `DEEPSEEK_BASE_URL`            | Custom DeepSeek-compatible endpoint                                                                                |
 
 ### Settings API
 
@@ -600,6 +622,21 @@ Database
 6. `useChat` on the client processes chunks and updates the message list in real time
 7. After the stream completes, the assistant's full response is saved to `ai_chat_messages`
 
+### Context and Loop Limits
+
+Three bounds keep a conversation's cost and length in check. All three apply in `POST /api/v1/ai/chat`.
+
+**History budget.** The session's stored transcript is not replayed whole. `fitHistory` (`cascadia-api/src/ai/history.ts`) cuts it to a token budget in two passes, cheapest loss first:
+
+1. Tool results in all but the two newest turns are shortened to their first 400 characters, with a note that the rest was left out and the tool can be called again. They are most of a transcript's bulk and the least useful part once the assistant has answered from them.
+2. The oldest turns are then dropped, whole, until the rest fits. When any are, the model is told so in a system prompt of its own (`HISTORY_TRIMMED_NOTE`), so it asks rather than guesses about what it cannot see.
+
+A turn — a user message and everything up to the next — is the unit, so a tool call is never sent without its result. The newest turn is always kept. The budget is an estimate (three characters per token) and defaults to 24,000 tokens; set `AI_CHAT_HISTORY_TOKEN_BUDGET` to change it, lower for a small local model or higher for a large-context one. Nothing is deleted: the full transcript stays in `ai_chat_messages` and the panel still shows all of it.
+
+**Output cap.** Each model turn may write at most 4,096 tokens.
+
+**Turn cap.** One request may take 12 model turns in chat mode and 5 in search mode, where a turn is either an answer or a round of tool calls.
+
 ### KnowledgeService
 
 The `KnowledgeService` (`cascadia-api/src/ai/KnowledgeService.ts`) makes the AI schema-aware by:
@@ -696,6 +733,7 @@ Server code lives in `cascadia-api/src/items/enrichment/` (`enrich-item.ts`, `fe
 | `/api/v1/ai/sessions/:id`          | DELETE | Authenticated (owner)                               | Delete session and messages                                                                  |
 | `/api/v1/ai/sessions/:id/messages` | GET    | Authenticated (owner)                               | Get message history                                                                          |
 | `/api/v1/ai/dialogs/:id`           | GET    | Authenticated (owner)                               | Get the payload behind a dialog button                                                       |
+| `/api/v1/ai/confirmations/respond` | POST   | Authenticated (token owner)                         | Approve or cancel a write the assistant previewed                                            |
 | `/api/v1/ai/settings`              | GET    | Authenticated                                       | Get AI settings                                                                              |
 | `/api/v1/ai/settings`              | POST   | `ai_settings:create`                                | Create AI settings                                                                           |
 | `/api/v1/ai/settings`              | PUT    | `ai_settings:update`                                | Update AI settings                                                                           |

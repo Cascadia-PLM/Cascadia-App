@@ -16,6 +16,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChatInput } from './ChatInput'
 import { ChatMessage } from './ChatMessage'
 import { ChatDialog } from './dialogs/ChatDialog'
+import type { ConfirmationResponse } from './ConfirmationCard'
+import type { ConfirmationRequest } from './message-parts'
 
 import type { ChatDialogDescriptor } from '@cascadia/commons/ai/dialogs'
 import { Button } from '@/components/ui/Button'
@@ -33,6 +35,19 @@ import {
   useInvalidateResources,
 } from '@/query'
 import { cn } from '@/utils'
+
+/** What a confirmation card is about, for the message that answers it. */
+function describeConfirmation(confirmation: ConfirmationRequest): string {
+  let name: unknown
+  try {
+    name = (JSON.parse(confirmation.toolArgs) as { name?: unknown }).name
+  } catch {
+    // Arguments that do not parse name nothing; the tool name still does.
+  }
+  return typeof name === 'string' && name
+    ? `${confirmation.toolName} for "${name}"`
+    : `the ${confirmation.toolName} operation`
+}
 
 export function ChatPanel() {
   const {
@@ -188,7 +203,7 @@ export function ChatPanel() {
 
   // Track which confirmations have been responded to
   const [respondedConfirmations, setRespondedConfirmations] = useState<
-    Map<string, 'confirmed' | 'cancelled'>
+    Map<string, ConfirmationResponse>
   >(new Map())
 
   // The dialog a "View results" / "Fill in details" button opened, if any.
@@ -199,33 +214,64 @@ export function ChatPanel() {
   )
   const closeDialog = useCallback(() => setOpenDialog(null), [])
 
-  const handleConfirm = useCallback(
-    (toolCallId: string, toolName: string, toolArgs: string) => {
-      setRespondedConfirmations((prev) =>
-        new Map(prev).set(toolCallId, 'confirmed'),
-      )
-      let argsObj: Record<string, unknown> = {}
-      try {
-        argsObj = JSON.parse(toolArgs)
-      } catch {
-        // use empty object
+  // Confirm and Cancel answer the server first, then tell the model.
+  //
+  // The message alone used to be the whole confirmation: the model read "yes"
+  // and repeated the call with a token it had held all along, so nothing
+  // proved a person had clicked. Now the token only works once this request
+  // has approved it, and the request carries the user's session — the one
+  // thing a tool call cannot produce. The chat message that follows is just
+  // how the model learns it may go ahead.
+  const answerConfirmation = useCallback(
+    async (confirmation: ConfirmationRequest, approved: boolean) => {
+      const mark = (response: ConfirmationResponse) =>
+        setRespondedConfirmations((prev) =>
+          new Map(prev).set(confirmation.toolCallId, response),
+        )
+
+      if (confirmation.confirmationToken) {
+        try {
+          await apiFetch('/api/v1/ai/confirmations/respond', {
+            method: 'POST',
+            body: JSON.stringify({
+              confirmationToken: confirmation.confirmationToken,
+              approved,
+            }),
+          })
+        } catch {
+          // A cancel the server no longer knows about is still a cancel. An
+          // approval it refused approved nothing: say so, and do not tell
+          // the model to proceed with a token that will not redeem.
+          if (approved) {
+            mark('expired')
+            return
+          }
+        }
       }
-      const summary = argsObj.name
-        ? `Yes, please proceed with ${toolName} for "${argsObj.name}".`
-        : `Yes, please proceed with the ${toolName} operation.`
-      sendMessage(summary)
+
+      mark(approved ? 'confirmed' : 'cancelled')
+      // Name the operation, so two cards answered in a row are not two
+      // indistinguishable "yes" messages.
+      const subject = describeConfirmation(confirmation)
+      void sendMessage(
+        approved
+          ? `Approved: go ahead with ${subject}, exactly as previewed.`
+          : `Cancelled: do not go ahead with ${subject}.`,
+      )
     },
     [sendMessage],
   )
 
+  const handleConfirm = useCallback(
+    (confirmation: ConfirmationRequest) =>
+      void answerConfirmation(confirmation, true),
+    [answerConfirmation],
+  )
+
   const handleCancel = useCallback(
-    (toolCallId: string) => {
-      setRespondedConfirmations((prev) =>
-        new Map(prev).set(toolCallId, 'cancelled'),
-      )
-      sendMessage('No, cancel that operation.')
-    },
-    [sendMessage],
+    (confirmation: ConfirmationRequest) =>
+      void answerConfirmation(confirmation, false),
+    [answerConfirmation],
   )
 
   // Auto-scroll to bottom on new messages
@@ -439,6 +485,7 @@ export function ChatPanel() {
               onConfirm={handleConfirm}
               onCancel={handleCancel}
               onOpenDialog={setOpenDialog}
+              confirmationsDisabled={isLoading}
               respondedConfirmations={respondedConfirmations}
             />
           ))

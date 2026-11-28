@@ -1,0 +1,2 @@
+ALTER TABLE "ai_write_confirmations" ADD COLUMN "requires_approval" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "ai_write_confirmations" ADD COLUMN "approved_at" timestamp with time zone;

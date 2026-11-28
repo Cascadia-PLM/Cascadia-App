@@ -35,8 +35,15 @@ interface ConfirmationCardProps {
   /** Whether this confirmation has already been responded to */
   responded?: boolean
   /** The response that was given (only shown if responded is true) */
-  response?: 'confirmed' | 'cancelled'
+  response?: ConfirmationResponse
 }
+
+/**
+ * Where a card stands once the user has answered it. `expired` is the
+ * server refusing the approval: the preview outlived its window, so nothing
+ * was approved and the assistant has to be asked again.
+ */
+export type ConfirmationResponse = 'confirmed' | 'cancelled' | 'expired'
 
 /**
  * Get a human-readable action label
@@ -81,6 +88,20 @@ export function ConfirmationCard({
   responded = false,
   response,
 }: ConfirmationCardProps) {
+  if (responded && response === 'expired') {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3 mt-2">
+        <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>
+            This confirmation expired and nothing was changed. Ask again to get
+            a fresh one.
+          </span>
+        </div>
+      </div>
+    )
+  }
+
   // If already responded, show a static card with the result
   if (responded) {
     return (
@@ -205,6 +226,7 @@ export function ConfirmationCard({
  */
 export function isConfirmationResult(result: unknown): result is {
   requiresConfirmation: true
+  confirmationToken?: string
   confirmationMessage?: string
   confirmationDetails?: ConfirmationDetails
 } {

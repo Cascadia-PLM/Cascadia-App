@@ -12,6 +12,7 @@ AI-powered chatbot that can search PLM data, answer questions, create items, and
 | `/api/v1/ai/sessions/:id`          | GET    | Auth required       | Get session details                   |
 | `/api/v1/ai/sessions/:id`          | DELETE | Auth required       | Delete a session                      |
 | `/api/v1/ai/sessions/:id/messages` | GET    | Auth required       | Get message history                   |
+| `/api/v1/ai/confirmations/respond` | POST   | Auth required       | Approve or cancel a previewed write   |
 | `/api/v1/ai/settings`              | GET    | Auth required       | Get AI provider settings              |
 | `/api/v1/ai/settings`              | POST   | Permission required | Create AI settings                    |
 | `/api/v1/ai/settings`              | PUT    | Permission required | Update AI settings                    |
@@ -154,6 +155,35 @@ Write tools use a two-step confirmation flow:
 | Tool                            | Description                                                                  |
 | ------------------------------- | ---------------------------------------------------------------------------- |
 | `initiate_collaborative_design` | Start a collaborative design session from the chat. Returns a workspace URL. |
+
+---
+
+## POST /api/v1/ai/confirmations/respond
+
+Record the user's answer to a write the assistant previewed. When a write tool returns `{ "requiresConfirmation": true, "confirmationToken": "…" }` in a chat stream, the token will not execute anything until this endpoint has approved it — which is what makes the confirmation a person's and not the model's. A client that renders the chat must call this from its Confirm and Cancel controls; sending "yes" as a chat message is not enough.
+
+### Request Body
+
+```json
+{ "confirmationToken": "token-from-the-preview", "approved": true }
+```
+
+| Field               | Type    | Required | Description                                            |
+| ------------------- | ------- | -------- | ------------------------------------------------------ |
+| `confirmationToken` | string  | Yes      | The `confirmationToken` from the tool's preview result |
+| `approved`          | boolean | Yes      | `true` to approve, `false` to cancel                   |
+
+### Response
+
+```json
+{ "data": { "status": "approved" } }
+```
+
+`status` is `approved` or `cancelled`. Approving gives the model five minutes to repeat the call with the token; cancelling spends the token.
+
+Returns `404` when the token is not the caller's live token — unknown, expired, already answered, or another user's, all alike. A preview can be answered for 15 minutes.
+
+Tokens issued over [MCP](../features/mcp.md) are not approval-gated and are not answered here.
 
 ---
 

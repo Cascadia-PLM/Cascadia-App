@@ -276,6 +276,12 @@ export const aiWriteConfirmations = pgTable(
       .notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     usedAt: timestamp('used_at', { withTimezone: true }),
+    // Set when the preview was minted for a surface with a person in front
+    // of it (the chat panel). Such a token redeems only once `approvedAt` is
+    // set — and only an authenticated request from that person's browser
+    // sets it, never a tool call. See `ai/tools/confirmation-store.ts`.
+    requiresApproval: boolean('requires_approval').notNull().default(false),
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
   },
   (table) => [
     // Opportunistic cleanup scans by expiry.

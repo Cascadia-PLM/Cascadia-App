@@ -19,14 +19,13 @@
  * - a per-attempt `AbortController` chained to the caller's signal
  * - chunk iteration: fatal vs transient vs non-fatal error handling, retrying
  *   the *same* request on transient failures up to `maxTransientRetries`
- * - delta-only text yield (the SDK resets its accumulated `content` at each
- *   agent-loop iteration, so slicing against an offset drops the leading
- *   characters after every tool call)
+ * - text yield, one `llm_text` per `TEXT_MESSAGE_CONTENT` delta
  * - tool-event translation through `createToolEventTracker`
  * - `guidance.maybeDrain()` at chunk boundaries: on a hit, abort and restart
  *   with the guidance injected as the next user turn
  * - clarification detection, reported as a clean pause outcome
- * - usage accumulation across `done` chunks, recorded once per stage run
+ * - usage accumulation across each model turn's `RUN_FINISHED`, recorded
+ *   once per stage run
  *
  * What a stage keeps: its prompt, its tools, its artifact shape, what "dirty"
  * means for it, and everything after the loop — completion validation, stage
@@ -55,6 +54,7 @@ import { buildSteeringUserMessage } from './guidance'
 import type { GuidanceChecker } from './guidance'
 import type { StageEvent, UserMessage } from '../types'
 import { UsageAccumulator, recordLlmUsage } from '@/ai/usage'
+import { maxOutputTokens, splitSystemPrompts } from '@/ai/chat-options'
 
 /** How many times one request is retried after a transient provider failure. */
 export const MAX_TRANSIENT_RETRIES = 2
@@ -105,12 +105,15 @@ export interface AgentLoopConfig {
    * Build the messages for one round. `steering` is null on the first round
    * and on a normal continuation; non-null when a restart is folding guidance
    * in, in which case the user turn should be the steering message.
+   *
+   * A leading `system` entry is the stage's system prompt and is sent in the
+   * provider's system slot; one further down stays in the conversation.
    */
   buildMessages: (round: {
     steering: Array<UserMessage> | null
     isResuming: boolean
     index: number
-  }) => Array<unknown>
+  }) => Array<{ role: string; content: unknown }>
   isResuming: boolean
 
   tools: unknown
@@ -181,7 +184,9 @@ export async function* runAgentLoop(
     let steering: Array<UserMessage> | null = null
 
     for (let round = 0; round <= maxSteeringContinuations; round++) {
-      const messages = buildMessages({ steering, isResuming, index: round })
+      const { systemPrompts, messages } = splitSystemPrompts(
+        buildMessages({ steering, isResuming, index: round }),
+      )
 
       // Drained mid-stream; injected as the next round's user turn.
       let drainedSteering: Array<UserMessage> | null = null
@@ -204,10 +209,18 @@ export async function* runAgentLoop(
         try {
           const stream = chat({
             adapter,
+            systemPrompts,
             messages,
             tools,
-            maxTokens,
+            // The design session is the conversation; the id is also the
+            // default prompt-cache key, so rounds and retries share a cache.
+            threadId: `design-session-${session.id}`,
+            modelOptions: maxOutputTokens(adapter, maxTokens),
             agentLoopStrategy: maxIterations(config.maxIterations),
+            // One tool at a time, in the order the model asked: the drafting
+            // tools all edit the same in-memory artifact, and a model that
+            // adds a node and then parents another to it means that order.
+            toolExecution: 'sequential',
             abortController,
           } as never) as AsyncIterable<Record<string, unknown>>
 
@@ -224,12 +237,7 @@ export async function* runAgentLoop(
               break
             }
 
-            usage.observe(
-              chunk as {
-                type: string
-                usage?: { promptTokens: number; completionTokens: number }
-              },
-            )
+            usage.observe(chunk as { type: string; usage?: unknown })
 
             // Adapter errors arrive as terminal error chunks, not throws — a
             // loop that ignores them mistakes a rejected request for an empty
@@ -256,8 +264,12 @@ export async function* runAgentLoop(
               continue
             }
 
-            if (chunk.type === 'content' && chunk.delta) {
-              yield { type: 'llm_text', text: chunk.delta as string }
+            if (
+              chunk.type === 'TEXT_MESSAGE_CONTENT' &&
+              typeof chunk.delta === 'string' &&
+              chunk.delta
+            ) {
+              yield { type: 'llm_text', text: chunk.delta }
             }
 
             for (const ev of tracker.handle(chunk)) yield ev

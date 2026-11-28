@@ -8,8 +8,9 @@
  * parametric service (CadQuery templates) or needs the FreeCAD script agent.
  */
 
-import { chat } from '@tanstack/ai'
+import { EventType, chat } from '@tanstack/ai'
 import { getAdapter, loadProviderConfig } from '@/ai/adapters'
+import { maxOutputTokens } from '@/ai/chat-options'
 import { UsageAccumulator, recordLlmUsage } from '@/ai/usage'
 
 export interface CadAssessmentResult {
@@ -106,10 +107,7 @@ export async function assessPartForCadGeneration(
       attributes,
     )
 
-    const messages: any = [
-      { role: 'system', content: ASSESSMENT_SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ]
+    const messages = [{ role: 'user' as const, content: userPrompt }]
 
     // Own controller, aborted by the caller's signal: `chat` takes a
     // controller, not a signal.
@@ -123,16 +121,19 @@ export async function assessPartForCadGeneration(
 
     const stream = chat({
       adapter,
+      systemPrompts: [ASSESSMENT_SYSTEM_PROMPT],
       messages,
-      maxTokens: 1024,
+      // A one-shot question, never a conversation to resume.
+      threadId: `cad-assessment-${crypto.randomUUID()}`,
+      modelOptions: maxOutputTokens(adapter, 1024),
       abortController,
     })
 
     let fullResponse = ''
     for await (const chunk of stream) {
       usage.observe(chunk)
-      if (chunk.type === 'content' && chunk.content) {
-        fullResponse = chunk.content
+      if (chunk.type === EventType.TEXT_MESSAGE_CONTENT) {
+        fullResponse += chunk.delta
       }
     }
 

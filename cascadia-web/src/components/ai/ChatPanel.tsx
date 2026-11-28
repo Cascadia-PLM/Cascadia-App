@@ -96,6 +96,13 @@ export function ChatPanel() {
     sessionIdRef.current = currentSessionId
   }, [currentSessionId])
 
+  // The client's conversation id. One per mounted panel, not per session:
+  // `useChat` rebuilds its client — and drops the transcript on screen — when
+  // this changes, and the panel switches sessions by hydrating `setMessages`
+  // instead. The server ignores it; it threads each request by the session
+  // id that rides in the body.
+  const [threadId] = useState(() => crypto.randomUUID())
+
   // TanStack AI chat hook
   const {
     messages,
@@ -113,6 +120,7 @@ export function ChatPanel() {
         },
       },
     })),
+    threadId,
     onFinish: () => {
       // Reset mode back to chat after response completes
       modeRef.current = 'chat'

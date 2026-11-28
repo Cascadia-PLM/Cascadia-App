@@ -8,6 +8,8 @@ import type { DesignSession } from '../session-service'
 import type { ClarificationEntry, RequirementDraft, StageEvent } from '../types'
 
 const chatCalls: Array<{
+  /** The stage's system prompt: sent in the provider's system slot. */
+  systemPrompts: Array<string>
   messages: Array<{ role: string; content: string }>
   tools: Array<unknown>
 }> = []
@@ -17,10 +19,15 @@ let chunks: Array<unknown> = []
 vi.mock('@tanstack/ai', async (importOriginal) => ({
   ...(await importOriginal<typeof TanStackAi>()),
   chat: (opts: {
+    systemPrompts: Array<string>
     messages: Array<{ role: string; content: string }>
     tools: Array<unknown>
   }) => {
-    chatCalls.push({ messages: opts.messages, tools: opts.tools })
+    chatCalls.push({
+      systemPrompts: opts.systemPrompts,
+      messages: opts.messages,
+      tools: opts.tools,
+    })
     return (async function* () {
       // Chunks arrive off the microtask queue, as they would from a real stream.
       await Promise.resolve()
@@ -141,6 +148,7 @@ async function collect(
 
 function lastMessage(role: string): string {
   const call = chatCalls[chatCalls.length - 1]
+  if (role === 'system') return call?.systemPrompts.join(' ') ?? ''
   return call?.messages.find((m) => m.role === role)?.content ?? ''
 }
 
@@ -196,7 +204,7 @@ describe('runRequirementsStage', () => {
   // A dropped socket ("terminated") is transient: retry rather than destroying
   // the run. A non-transient rejection (bad schema/400) must NOT retry.
   it('retries a transient provider error before giving up', async () => {
-    chunks = [{ type: 'error', error: { message: 'terminated' } }]
+    chunks = [{ type: 'RUN_ERROR', message: 'terminated' }]
 
     const events = await collect([])
 
@@ -215,8 +223,9 @@ describe('runRequirementsStage', () => {
   it('surfaces a non-transient provider error without retrying', async () => {
     chunks = [
       {
-        type: 'error',
-        error: { message: 'input_schema: JSON schema is invalid', code: '400' },
+        type: 'RUN_ERROR',
+        message: 'input_schema: JSON schema is invalid',
+        code: '400',
       },
     ]
 
@@ -248,7 +257,11 @@ describe('runRequirementsStage', () => {
     vi.mocked(DesignSessionService.updateStage).mockClear()
     const controller = new AbortController()
     chunks = [
-      { type: 'content', delta: 'thinking' },
+      {
+        type: 'TEXT_MESSAGE_CONTENT',
+        messageId: 'message-1',
+        delta: 'thinking',
+      },
       // Stands in for the client disconnecting mid-stream: the getter fires
       // while this chunk is being read, so the *next* iteration is the one
       // that sees the signal.
@@ -259,7 +272,11 @@ describe('runRequirementsStage', () => {
         },
         delta: '',
       },
-      { type: 'content', delta: 'never reached' },
+      {
+        type: 'TEXT_MESSAGE_CONTENT',
+        messageId: 'message-1',
+        delta: 'never reached',
+      },
     ]
 
     // Prior requirements, so the run would otherwise have something to

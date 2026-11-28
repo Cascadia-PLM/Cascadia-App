@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { chat, toServerSentEventsResponse } from '@tanstack/ai'
+import { EventType, chat, toServerSentEventsResponse } from '@tanstack/ai'
 import { eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
@@ -19,6 +19,7 @@ import { knowledgeService } from '@/ai/KnowledgeService'
 import { sessionService } from '@/ai/SessionService'
 import { dialogService } from '@/ai/dialogs/DialogService'
 import { resolveChatScope } from '@/ai/chat-scope'
+import { replayChatHistory } from '@/ai/history'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { acquireStreamSlot, releaseStreamSlot } from '@/ai/stream-limits'
 import { createSearchTools, createServerTools } from '@/ai/tools'
@@ -39,29 +40,58 @@ import '@/items/registerItemTypes.server'
 
 const adapt = tagged('AI')
 
-// TanStack AI request body format (from @tanstack/ai-client)
 /**
- * A chat turn, in TanStack AI's request format. The transcript is capped:
- * an unbounded array here is an unbounded prompt, and the budget chokepoint
- * only sees the request after it has been assembled.
+ * A chat turn, as `@tanstack/ai-client` posts it: an AG-UI `RunAgentInput`.
+ *
+ * Only two things are read from it. The newest user message is the turn — the
+ * rest of the transcript is the server's own, loaded from the session, so the
+ * client's copy of it is never trusted or replayed. And `forwardedProps.data`
+ * carries the panel's session and mode (the connection's `body` option lands
+ * in `forwardedProps`).
+ *
+ * A top-level `data` is still read. That is where the scope sat before the
+ * client spoke AG-UI, and `{ messages: [{ role, content }], data }` is the
+ * shape v1 of this API published — a caller written against it keeps working.
+ *
+ * The transcript is capped even though it is not replayed: an unbounded array
+ * here is an unbounded request body. `content` is a string for a typed
+ * message; the parts-based copy of the same message rides alongside it and is
+ * the fallback.
  */
-const modelMessageSchema = z.object({
-  role: z.enum(['system', 'user', 'assistant']),
-  content: z.string().max(100_000).nullable(),
+const wireMessageSchema = z.looseObject({
+  role: z.string().max(32),
+  content: z.unknown().optional(),
+  parts: z.array(z.looseObject({ type: z.string() })).optional(),
 })
-type ModelMessage = z.infer<typeof modelMessageSchema>
+type WireMessage = z.infer<typeof wireMessageSchema>
 
-const chatRequestSchema = z.object({
-  messages: z.array(modelMessageSchema).max(500),
-  data: z
-    .object({
-      sessionId: z.string().uuid().optional(),
-      programId: z.string().uuid().optional(),
-      designId: z.string().uuid().optional(),
-      mode: z.enum(['chat', 'search']).optional(),
-    })
-    .optional(),
+const chatDataSchema = z.object({
+  sessionId: z.string().uuid().optional(),
+  programId: z.string().uuid().optional(),
+  designId: z.string().uuid().optional(),
+  mode: z.enum(['chat', 'search']).optional(),
 })
+
+const chatRequestSchema = z.looseObject({
+  messages: z.array(wireMessageSchema).max(500),
+  forwardedProps: z.looseObject({ data: chatDataSchema.optional() }).optional(),
+  data: chatDataSchema.optional(),
+})
+
+/** The longest single message the assistant will take. */
+const MAX_MESSAGE_LENGTH = 100_000
+
+/** The text of a wire message: its `content`, or its text parts joined. */
+function wireMessageText(message: WireMessage): string {
+  if (typeof message.content === 'string') return message.content
+  return (message.parts ?? [])
+    .map((part) =>
+      part.type === 'text' && typeof part.content === 'string'
+        ? part.content
+        : '',
+    )
+    .join('')
+}
 
 const createSessionSchema = z.object({
   programId: z.string().uuid().optional(),
@@ -117,7 +147,8 @@ app.post(
         rateLimit: { windowMs: 60_000, maxRequests: 60 },
       },
       async ({ request, body, user, requestId }) => {
-        const { messages: clientMessages, data } = body
+        const { messages: clientMessages } = body
+        const data = body.forwardedProps?.data ?? body.data
         const sessionId = data?.sessionId
         const programId = data?.programId
         const designId = data?.designId
@@ -126,11 +157,17 @@ app.post(
         const userMessages = clientMessages.filter((m) => m.role === 'user')
         const latestUserMessage = userMessages[userMessages.length - 1]
 
-        if (!latestUserMessage?.content) {
+        const message = latestUserMessage
+          ? wireMessageText(latestUserMessage)
+          : ''
+        if (!message) {
           throw new ValidationError('Message is required')
         }
-
-        const message = latestUserMessage.content
+        if (message.length > MAX_MESSAGE_LENGTH) {
+          throw new ValidationError(
+            `Message is longer than ${MAX_MESSAGE_LENGTH} characters`,
+          )
+        }
 
         // Scope first. Everything below spends against a program — the API
         // key, the monthly token budget, the usage row, the program name in
@@ -209,14 +246,13 @@ app.post(
           content: message,
         })
 
-        // Build messages array in model format
-        const messages: Array<ModelMessage> = [
-          { role: 'system', content: systemPrompt },
-          ...history.map((msg) => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content,
-          })),
-          { role: 'user', content: message },
+        // The transcript the model sees: the session's own history, then this
+        // turn. The system prompt travels separately, in `systemPrompts`.
+        // Stored tool calls are replayed paired with their results, which is
+        // the only form a provider accepts them in — see `replayChatHistory`.
+        const messages = [
+          ...replayChatHistory(history),
+          { role: 'user' as const, content: message },
         ]
 
         // Create abort controller for request cancellation
@@ -256,15 +292,20 @@ app.post(
         }
 
         // Stream chat response with tools.
-        // The local ModelMessage shape matches at runtime; TanStack AI's
-        // ConstrainedModelMessage narrows role/content in a way this plain
-        // {role, content} list doesn't satisfy structurally.
         let stream: ReturnType<typeof chat>
         try {
           stream = chat({
             adapter,
-            messages: messages as Parameters<typeof chat>[0]['messages'],
+            systemPrompts: [systemPrompt],
+            messages,
             tools,
+            // The session is the conversation: a stable thread id is also the
+            // default prompt-cache key, so successive turns share a cache.
+            threadId: session.id,
+            // One tool at a time, in the order the model asked. The write
+            // tools mint confirmation previews against the same session, and
+            // an order the user did not see is not one to act on.
+            toolExecution: 'sequential',
             abortController,
           })
         } catch (error) {
@@ -276,16 +317,20 @@ app.post(
         const usage = new UsageAccumulator()
         const streamStartedAt = Date.now()
 
-        // Track assistant response for persistence
+        // Track assistant response for persistence. Text arrives as deltas
+        // per message, and each model turn of the agent loop opens a new
+        // message: what is persisted is the newest message that said
+        // anything, so a turn's closing answer replaces the aside it made
+        // before calling a tool.
         let fullResponse = ''
-        // Tool-call arguments stream in incrementally as JSON fragments keyed by
-        // `chunk.index`; accumulate them and finalize once the stream completes.
+        let currentMessageId: string | undefined
+        let currentMessageText = ''
+        // Tool-call arguments stream in as JSON fragments keyed by the call
+        // id; accumulate them and finalize once the stream completes.
         const toolCallAccum = new Map<
-          number,
+          string,
           { id: string; name: string; args: string }
         >()
-        // tool_result chunks carry no tool name — resolve it from the tool_call.
-        const toolCallIdToName = new Map<string, string>()
         const collectedToolResults: Array<{
           toolCallId: string
           toolName: string
@@ -298,36 +343,40 @@ app.post(
             for await (const chunk of stream) {
               usage.observe(chunk)
 
-              // Track text content (TanStack AI 'content' chunks contain full accumulated text)
-              if (chunk.type === 'content') {
-                fullResponse = chunk.content // Replace, not append - content is cumulative
+              if (chunk.type === EventType.TEXT_MESSAGE_CONTENT) {
+                if (chunk.messageId !== currentMessageId) {
+                  currentMessageId = chunk.messageId
+                  currentMessageText = ''
+                }
+                currentMessageText += chunk.delta
+                fullResponse = currentMessageText
               }
 
-              // Accumulate streamed tool-call fragments (id/name arrive on the
-              // first fragment; arguments concatenate across fragments per index).
-              if (chunk.type === 'tool_call') {
-                const entry = toolCallAccum.get(chunk.index) ?? {
-                  id: '',
-                  name: '',
+              // A tool call opens with its id and name; its arguments follow
+              // as fragments against the same id.
+              if (chunk.type === 'TOOL_CALL_START') {
+                toolCallAccum.set(chunk.toolCallId, {
+                  id: chunk.toolCallId,
+                  name: chunk.toolCallName,
                   args: '',
-                }
-                if (chunk.toolCall.id) entry.id = chunk.toolCall.id
-                if (chunk.toolCall.function.name) {
-                  entry.name = chunk.toolCall.function.name
-                }
-                entry.args += chunk.toolCall.function.arguments
-                toolCallAccum.set(chunk.index, entry)
-                if (entry.id && entry.name) {
-                  toolCallIdToName.set(entry.id, entry.name)
-                }
+                })
+              }
+              if (chunk.type === EventType.TOOL_CALL_ARGS) {
+                const entry = toolCallAccum.get(chunk.toolCallId)
+                if (entry) entry.args += chunk.delta
               }
 
-              // Track tool results (name looked up via the toolCallId map).
-              if (chunk.type === 'tool_result') {
+              // A result carries no tool name — resolve it from the call.
+              if (chunk.type === EventType.TOOL_CALL_RESULT) {
                 collectedToolResults.push({
                   toolCallId: chunk.toolCallId,
-                  toolName: toolCallIdToName.get(chunk.toolCallId) ?? '',
-                  content: chunk.content,
+                  toolName: toolCallAccum.get(chunk.toolCallId)?.name ?? '',
+                  // Our tools return JSON, which arrives as a string. A
+                  // multimodal result (content parts) is stored as its JSON.
+                  content:
+                    typeof chunk.content === 'string'
+                      ? chunk.content
+                      : JSON.stringify(chunk.content),
                 })
               }
 
@@ -390,6 +439,7 @@ app.post(
 
         // Return SSE stream response
         return toServerSentEventsResponse(transformedStream(), {
+          abortController,
           headers: {
             'X-Request-Id': requestId,
             'X-Session-Id': session.id,

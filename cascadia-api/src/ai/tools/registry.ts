@@ -63,7 +63,7 @@ import {
   updateItemHandler,
 } from './write-handlers'
 import type { z } from 'zod'
-import type { ServerTool } from '@tanstack/ai'
+import type { AnyServerTool } from '@tanstack/ai'
 import type { ToolContext } from './permission-wrapper'
 
 /**
@@ -89,7 +89,7 @@ export interface ToolRegistryEntry {
   /** Which assistant surfaces expose this tool. */
   surfaces: ReadonlyArray<ToolSurface>
   /** Bind into a TanStack AI server tool for the in-app chatbot. */
-  bind: (context: ToolContext) => ServerTool
+  bind: (context: ToolContext) => AnyServerTool
   /**
    * Invoke the handler directly (MCP path). `input` must already have been
    * validated with `inputSchema` — parse before calling. The handlers apply

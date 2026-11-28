@@ -15,35 +15,19 @@ import { dialogDescriptorOf } from '@cascadia/commons/ai/dialogs'
 import { isConfirmationResult } from './ConfirmationCard'
 import type { ConfirmationDetails } from './ConfirmationCard'
 import type { ChatDialogDescriptor } from '@cascadia/commons/ai/dialogs'
+import type { UIMessage } from '@tanstack/ai-react'
 
-// UI Message part types from TanStack AI
-export interface TextPart {
-  type: 'text'
-  content: string
-}
+/**
+ * A part of a chat message, as TanStack AI's `useChat` hands it over. Taken
+ * from the library's own type rather than restated: the union grows with the
+ * library (media, activity, structured output), and a hand-written copy here
+ * is what stops a message from type-checking the day it does.
+ */
+export type MessagePart = UIMessage['parts'][number]
 
-export interface ToolCallPart {
-  type: 'tool-call'
-  id: string
-  name: string
-  arguments: string
-  state?: string
-}
-
-export interface ToolResultPart {
-  type: 'tool-result'
-  toolCallId: string
-  content: string
-  state?: string
-}
-
-export interface ThinkingPart {
-  type: 'thinking'
-  content: string
-}
-
-export type MessagePart =
-  TextPart | ToolCallPart | ToolResultPart | ThinkingPart
+export type TextPart = Extract<MessagePart, { type: 'text' }>
+export type ToolCallPart = Extract<MessagePart, { type: 'tool-call' }>
+export type ToolResultPart = Extract<MessagePart, { type: 'tool-result' }>
 
 /** From `offer_navigation`. */
 export interface NavigationOffer {
@@ -128,6 +112,9 @@ export function extractMessageParts(
     if (part.type !== 'tool-result') continue
     const toolCall = toolCallMap.get(part.toolCallId)
     if (!toolCall) continue
+    // A server tool's result is its JSON; a multimodal result (content
+    // parts) is not one of ours and carries nothing to draw.
+    if (typeof part.content !== 'string') continue
     const result = parseJson(part.content)
 
     if (toolCall.name === 'offer_navigation') {

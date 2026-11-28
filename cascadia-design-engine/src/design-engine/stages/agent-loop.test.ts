@@ -17,8 +17,10 @@ import type * as AiUsage from '@/ai/usage'
 import type { StageEvent, UserMessage } from '../types'
 
 /** One entry per chat() call — the retry tests assert on request identity. */
-const chatCalls: Array<{ messages: Array<{ role: string; content: string }> }> =
-  []
+const chatCalls: Array<{
+  systemPrompts: Array<string>
+  messages: Array<{ role: string; content: string }>
+}> = []
 /** Chunk script per chat() call, by index; the last entry repeats. */
 let chunkScript: Array<Array<unknown>> = []
 /** Called with the AbortController of each attempt, before chunks flow. */
@@ -27,11 +29,15 @@ let onAttempt: ((controller: AbortController) => void) | null = null
 vi.mock('@tanstack/ai', async (importOriginal) => ({
   ...(await importOriginal<typeof TanStackAi>()),
   chat: (opts: {
+    systemPrompts: Array<string>
     messages: Array<{ role: string; content: string }>
     abortController: AbortController
   }) => {
     const index = chatCalls.length
-    chatCalls.push({ messages: opts.messages })
+    chatCalls.push({
+      systemPrompts: opts.systemPrompts,
+      messages: opts.messages,
+    })
     const controller = opts.abortController
     return (async function* () {
       await Promise.resolve()
@@ -116,14 +122,19 @@ async function drive(overrides: Record<string, unknown> = {}) {
   }
 }
 
-const contentChunk = (delta: string) => ({ type: 'content', delta })
+const contentChunk = (delta: string) => ({
+  type: 'TEXT_MESSAGE_CONTENT',
+  messageId: 'message-1',
+  delta,
+})
 const doneChunk = (promptTokens: number, completionTokens: number) => ({
-  type: 'done',
+  type: 'RUN_FINISHED',
   usage: { promptTokens, completionTokens },
 })
 const errorChunk = (message: string, code?: string) => ({
-  type: 'error',
-  error: { message, code },
+  type: 'RUN_ERROR',
+  message,
+  code,
 })
 
 beforeEach(() => {
@@ -140,6 +151,10 @@ describe('runAgentLoop', () => {
     expect(outcome).toEqual({ type: 'completed' })
     expect(events).toContainEqual({ type: 'llm_text', text: 'hello' })
     expect(chatCalls).toHaveLength(1)
+    // The stage's leading system entry is sent as the system prompt, not as
+    // a turn of the conversation.
+    expect(chatCalls[0]!.systemPrompts).toEqual(['system'])
+    expect(chatCalls[0]!.messages.map((m) => m.role)).toEqual(['user'])
   })
 
   describe('transient failures', () => {
@@ -156,7 +171,7 @@ describe('runAgentLoop', () => {
       expect(chatCalls).toHaveLength(MAX_TRANSIENT_RETRIES + 1)
       // Same request each time — a retry that rebuilt the prompt would be a
       // different question, and the model's partial work would be re-asked.
-      const asked = chatCalls.map((c) => c.messages[1]!.content)
+      const asked = chatCalls.map((c) => c.messages[0]!.content)
       expect(new Set(asked)).toEqual(new Set(['go']))
     })
 
@@ -200,7 +215,7 @@ describe('runAgentLoop', () => {
 
       expect(outcome).toEqual({ type: 'completed' })
       expect(chatCalls).toHaveLength(2)
-      expect(chatCalls[1]!.messages[1]!.content).toBe('steering:use aluminium')
+      expect(chatCalls[1]!.messages[0]!.content).toBe('steering:use aluminium')
       // Folded into the stage's artifacts before the restart, and announced.
       expect(applied).toEqual([[guidance]])
       expect(events).toContainEqual({

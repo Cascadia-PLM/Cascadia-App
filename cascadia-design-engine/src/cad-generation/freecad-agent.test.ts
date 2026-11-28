@@ -56,30 +56,33 @@ vi.mock('@tanstack/ai', async (importOriginal) => ({
         if ('tool' in turn) {
           index++
           yield {
-            type: 'tool_call',
-            toolCall: {
-              id: `call-${index}`,
-              type: 'function',
-              function: {
-                name: tool.name,
-                arguments: JSON.stringify(turn.tool),
-              },
-            },
-            index,
+            type: 'TOOL_CALL_START',
+            toolCallId: `call-${index}`,
+            toolCallName: tool.name,
           }
+          yield {
+            type: 'TOOL_CALL_ARGS',
+            toolCallId: `call-${index}`,
+            delta: JSON.stringify(turn.tool),
+          }
+          yield { type: 'TOOL_CALL_END', toolCallId: `call-${index}` }
           const output = await tool.execute(turn.tool)
           toolOutputs.push(output)
           yield {
-            type: 'tool_result',
+            type: 'TOOL_CALL_RESULT',
             toolCallId: `call-${index}`,
             content: JSON.stringify(output),
           }
         } else {
-          yield { type: 'content', delta: turn.text, content: turn.text }
+          yield {
+            type: 'TEXT_MESSAGE_CONTENT',
+            messageId: 'message-1',
+            delta: turn.text,
+          }
         }
       }
       yield {
-        type: 'done',
+        type: 'RUN_FINISHED',
         finishReason: 'stop',
         usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
       }

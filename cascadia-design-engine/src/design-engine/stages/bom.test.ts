@@ -13,6 +13,8 @@ import type {
 } from '../types'
 
 const chatCalls: Array<{
+  /** The stage's system prompt: sent in the provider's system slot. */
+  systemPrompts: Array<string>
   messages: Array<{ role: string; content: string }>
   tools: Array<unknown>
 }> = []
@@ -22,10 +24,15 @@ let chunks: Array<unknown> = []
 vi.mock('@tanstack/ai', async (importOriginal) => ({
   ...(await importOriginal<typeof TanStackAi>()),
   chat: (opts: {
+    systemPrompts: Array<string>
     messages: Array<{ role: string; content: string }>
     tools: Array<unknown>
   }) => {
-    chatCalls.push({ messages: opts.messages, tools: opts.tools })
+    chatCalls.push({
+      systemPrompts: opts.systemPrompts,
+      messages: opts.messages,
+      tools: opts.tools,
+    })
     return (async function* () {
       // Chunks arrive off the microtask queue, as they would from a real stream.
       await Promise.resolve()
@@ -156,7 +163,7 @@ function userMessage(): string {
 
 function systemMessage(): string {
   const call = chatCalls[chatCalls.length - 1]
-  return call?.messages.find((m) => m.role === 'system')?.content ?? ''
+  return call?.systemPrompts.join(' ') ?? ''
 }
 
 function lastToolCount(): number {
@@ -209,7 +216,7 @@ describe('runBomStage', () => {
   // A dropped socket ("terminated") is transient: retry rather than destroying
   // the run. A non-transient rejection (see the 400 test) must NOT retry.
   it('retries a transient provider error before giving up', async () => {
-    chunks = [{ type: 'error', error: { message: 'terminated' } }]
+    chunks = [{ type: 'RUN_ERROR', message: 'terminated' }]
 
     const events = await collect(null)
 
@@ -250,8 +257,9 @@ describe('runBomStage', () => {
   it('surfaces a provider error chunk instead of reporting an empty BOM', async () => {
     chunks = [
       {
-        type: 'error',
-        error: { message: 'input_schema: JSON schema is invalid', code: '400' },
+        type: 'RUN_ERROR',
+        message: 'input_schema: JSON schema is invalid',
+        code: '400',
       },
     ]
 
@@ -271,8 +279,9 @@ describe('runBomStage', () => {
   it('warns but keeps the run alive on a max_tokens cutoff', async () => {
     chunks = [
       {
-        type: 'error',
-        error: { message: 'response was cut off', code: 'max_tokens' },
+        type: 'RUN_ERROR',
+        message: 'response was cut off',
+        code: 'max_tokens',
       },
     ]
 

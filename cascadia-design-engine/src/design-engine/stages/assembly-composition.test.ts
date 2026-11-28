@@ -85,9 +85,13 @@ vi.mock('@/ai/adapters', async (importOriginal) => ({
 // Imported after the mocks so the factories above are the ones that bind.
 const { runAssemblyCompositionStage } = await import('./assembly-composition')
 
-const contentChunk = (content: string) => ({ type: 'content', content })
+const contentChunk = (content: string) => ({
+  type: 'TEXT_MESSAGE_CONTENT',
+  messageId: 'message-1',
+  delta: content,
+})
 const doneChunk = (promptTokens: number, completionTokens: number) => ({
-  type: 'done',
+  type: 'RUN_FINISHED',
   usage: {
     promptTokens,
     completionTokens,

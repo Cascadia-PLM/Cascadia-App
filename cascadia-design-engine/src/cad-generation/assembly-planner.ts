@@ -12,12 +12,13 @@
  * script for the record, so the model is never asked to write code.
  */
 
-import { chat, toolDefinition } from '@tanstack/ai'
+import { EventType, chat, toolDefinition } from '@tanstack/ai'
 import { z } from 'zod'
 import type { BomNodeDraft } from '@/design-engine/types'
 import type { AssemblyPlan, BoundingBox3D, Transform3D } from './types'
 import type { UsageAccumulator } from '@/ai/usage'
 import { getAdapter, loadProviderConfig } from '@/ai/adapters'
+import { maxOutputTokens } from '@/ai/chat-options'
 
 export interface AssemblyClarificationRequest {
   questionId: string
@@ -109,10 +110,7 @@ export class AssemblyPlanner {
       options?.priorClarifications,
     )
 
-    const messages: any = [
-      { role: 'system', content: ASSEMBLY_SYSTEM_PROMPT },
-      { role: 'user', content: prompt },
-    ]
+    const messages = [{ role: 'user' as const, content: prompt }]
 
     // Clarification escape hatch: the planner may ask the user one question
     // instead of guessing (e.g. ambiguous orientation with no mappings).
@@ -168,20 +166,30 @@ export class AssemblyPlanner {
 
     const stream = chat({
       adapter,
+      systemPrompts: [ASSEMBLY_SYSTEM_PROMPT],
       messages,
       ...(tools ? { tools } : {}),
-      maxTokens: 8192,
+      // One plan per assembly node, never a conversation to resume.
+      threadId: `assembly-plan-${assemblyNode.tempId}-${crypto.randomUUID()}`,
+      modelOptions: maxOutputTokens(adapter, 8192),
       abortController,
     })
 
+    // The plan is the newest message that said anything: a turn that asks a
+    // clarifying question first opens a second message for its answer.
     let fullResponse = ''
+    let currentMessageId: string | undefined
     for await (const chunk of stream) {
       // Before the breaks below: a clarification round and an abort both still
       // spent whatever the model had already billed for.
       options?.usage?.observe(chunk)
       if (clarificationRef.request) break
-      if (chunk.type === 'content' && chunk.content) {
-        fullResponse = chunk.content
+      if (chunk.type === EventType.TEXT_MESSAGE_CONTENT) {
+        if (chunk.messageId !== currentMessageId) {
+          currentMessageId = chunk.messageId
+          fullResponse = ''
+        }
+        fullResponse += chunk.delta
       }
     }
 

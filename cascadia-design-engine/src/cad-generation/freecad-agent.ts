@@ -51,6 +51,7 @@ import type {
 } from '@/jobs/definitions/freecad-script/types'
 import type { UsageAccumulator } from '@/ai/usage'
 import { getAdapter, loadProviderConfig } from '@/ai/adapters'
+import { maxOutputTokens } from '@/ai/chat-options'
 import {
   isTransientStreamError,
   streamChunkError,
@@ -330,7 +331,6 @@ export async function generatePartWithFreecad(
   })
 
   const messages = [
-    { role: 'system', content: FREECAD_SYSTEM_PROMPT },
     {
       role: 'user',
       content: buildFreecadTaskPrompt({
@@ -343,6 +343,7 @@ export async function generatePartWithFreecad(
 
   let finalText = ''
   let sawToolCall = false
+  const threadId = `freecad-part-${crypto.randomUUID()}`
 
   try {
     for (let retry = 0; ; retry++) {
@@ -358,11 +359,18 @@ export async function generatePartWithFreecad(
       try {
         const stream = chat({
           adapter,
+          systemPrompts: [FREECAD_SYSTEM_PROMPT],
           messages,
           tools: [runScriptTool],
-          maxTokens: MAX_TOKENS,
+          // One conversation per generation; a transient retry re-sends the
+          // same request, and sharing the id lets it reuse the prompt cache.
+          threadId,
+          modelOptions: maxOutputTokens(adapter, MAX_TOKENS),
           // One iteration per tool round plus the opening and closing turns.
           agentLoopStrategy: maxIterations(maxAttempts + 2),
+          // Each attempt is revised from the report of the one before it, so
+          // two scripts sent in one turn run in order, never side by side.
+          toolExecution: 'sequential',
           abortController,
         } as never) as AsyncIterable<Record<string, unknown>>
 
@@ -372,12 +380,7 @@ export async function generatePartWithFreecad(
             break
           }
 
-          options.usage?.observe(
-            chunk as {
-              type: string
-              usage?: { promptTokens: number; completionTokens: number }
-            },
-          )
+          options.usage?.observe(chunk as { type: string; usage?: unknown })
 
           // Adapter errors arrive as terminal error chunks, not throws.
           const chunkError = streamChunkError(chunk)
@@ -398,13 +401,13 @@ export async function generatePartWithFreecad(
           }
           if (chunkError) continue
 
-          if (chunk.type === 'tool_call') {
+          if (chunk.type === 'TOOL_CALL_START') {
             // Text before a tool call is the model thinking aloud; the
             // summary is whatever it says after the last one.
             sawToolCall = true
             finalText = ''
           } else if (
-            chunk.type === 'content' &&
+            chunk.type === 'TEXT_MESSAGE_CONTENT' &&
             typeof chunk.delta === 'string'
           ) {
             finalText += chunk.delta

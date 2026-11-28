@@ -19,7 +19,7 @@
  * (prompt -> JSON -> parse).
  */
 
-import { chat } from '@tanstack/ai'
+import { EventType, chat } from '@tanstack/ai'
 import { z } from 'zod'
 import {
   ENRICHMENT_IMAGE_MEDIA_TYPES,
@@ -37,6 +37,7 @@ import type { EnrichmentImage } from '@cascadia/commons/items/enrichment/limits'
 import type { KnownToolSubtype } from '@cascadia/commons/items/types/tool'
 import type { ProviderType } from '@/ai/adapters'
 import { getAdapter, isAIEnabled, loadProviderConfig } from '@/ai/adapters'
+import { maxOutputTokens } from '@/ai/chat-options'
 import { UsageAccumulator, recordLlmUsage } from '@/ai/usage'
 import { RateLimitedError, ValidationError } from '@/errors'
 
@@ -282,14 +283,16 @@ async function runExtraction(
       // user turn by both instead.
       systemPrompts: [buildSystemPrompt(input.itemType)],
       messages,
-      maxTokens: 1500,
+      // One request per enrichment, never a conversation to resume.
+      threadId: `enrich-item-${crypto.randomUUID()}`,
+      modelOptions: maxOutputTokens(adapter, 1500),
       abortController,
     })
     let fullResponse = ''
     for await (const chunk of stream) {
       usage.observe(chunk)
-      if (chunk.type === 'content' && chunk.content) {
-        fullResponse = chunk.content
+      if (chunk.type === EventType.TEXT_MESSAGE_CONTENT) {
+        fullResponse += chunk.delta
       }
     }
     return { response: fullResponse, failed: false }

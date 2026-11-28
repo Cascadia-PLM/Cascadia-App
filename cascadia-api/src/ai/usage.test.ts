@@ -68,22 +68,22 @@ describe('LLM usage capture', () => {
     await testDb.rollback()
   })
 
-  it('sums usage across the done chunks of one request into one row, with programId', async () => {
+  it('sums usage across the finished runs of one request into one row, with programId', async () => {
     // The stream shape the agent loop produces for a request with one tool
-    // call: content and tool chunks interleaved, one done chunk per model
+    // call: text and tool events interleaved, one RUN_FINISHED per model
     // turn, each carrying that turn's usage.
     const usage = new UsageAccumulator()
     const chunks = [
-      { type: 'content' },
-      { type: 'tool_call' },
+      { type: 'TEXT_MESSAGE_CONTENT' },
+      { type: 'TOOL_CALL_START' },
       {
-        type: 'done',
+        type: 'RUN_FINISHED',
         usage: { promptTokens: 120, completionTokens: 40, totalTokens: 160 },
       },
-      { type: 'tool_result' },
-      { type: 'content' },
+      { type: 'TOOL_CALL_RESULT' },
+      { type: 'TEXT_MESSAGE_CONTENT' },
       {
-        type: 'done',
+        type: 'RUN_FINISHED',
         usage: { promptTokens: 300, completionTokens: 75, totalTokens: 375 },
       },
     ]
@@ -114,8 +114,8 @@ describe('LLM usage capture', () => {
 
   it('records null, not zero, when no turn reported usage', async () => {
     const usage = new UsageAccumulator()
-    usage.observe({ type: 'content' })
-    usage.observe({ type: 'done' }) // provider omitted usage entirely
+    usage.observe({ type: 'TEXT_MESSAGE_CONTENT' })
+    usage.observe({ type: 'RUN_FINISHED' }) // provider omitted usage entirely
 
     await recordLlmUsage({
       userId: user.id,

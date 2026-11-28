@@ -7,19 +7,21 @@
  * Translates the raw stream chunks emitted by TanStack AI's `chat()` into
  * design-engine `StageEvent`s of type `tool_call` / `tool_result`.
  *
- * Why this exists: the SDK streams tool arguments incrementally as JSON string
- * fragments (multiple `tool_call` chunks share an `index`), and `tool_result`
- * chunks carry only a `toolCallId` — never the tool name. This helper
+ * Why this exists: the SDK streams a tool call as a start event (id and name),
+ * argument fragments against that id, and an end event — and the result that
+ * follows carries only the `toolCallId`, never the tool name. This helper
  * reassembles the arguments, maps `toolCallId → name`, and emits one
  * `tool_call` event (with parsed args) immediately before its matching
  * `tool_result` event. Those events feed `wrapWithHistoryCapture` in
  * `engine.ts`, which is what populates `llmHistory` for the resume-time
  * `summarizeToolCalls` prompt.
  *
- * SDK chunk shapes (see `@tanstack/ai` `types.ts`):
- *   tool_call   → { type, index, toolCall: { id, function: { name, arguments } } }
- *   tool_result → { type, toolCallId, content }   (content = JSON.stringify(result))
- *   done        → { type, finishReason }           ('tool_calls' ends a round)
+ * SDK event shapes (AG-UI, see `@tanstack/ai` `types.ts`):
+ *   TOOL_CALL_START  → { type, toolCallId, toolCallName }
+ *   TOOL_CALL_ARGS   → { type, toolCallId, delta }        (a JSON fragment)
+ *   TOOL_CALL_RESULT → { type, toolCallId, content }      (JSON.stringify(result))
+ *   RUN_FINISHED     → { type, metadata.tanstack.finishReason }
+ *                      ('tool_calls' ends a round; one per model turn)
  */
 
 import type { StageEvent } from '../types'
@@ -60,12 +62,25 @@ export interface ToolEventTracker {
   handle: (chunk: unknown) => Array<StageEvent>
 }
 
+/**
+ * Why a model turn ended. `chat()` reports it under `metadata.tanstack`; an
+ * adapter driven directly, and an event restored off the wire, carry it at
+ * the top level.
+ */
+export function finishReasonOf(chunk: Record<string, unknown>): unknown {
+  if (chunk.finishReason !== undefined) return chunk.finishReason
+  const metadata = chunk.metadata
+  const tanstack = isRecord(metadata) ? metadata.tanstack : undefined
+  return isRecord(tanstack) ? tanstack.finishReason : undefined
+}
+
 export function createToolEventTracker(): ToolEventTracker {
-  // Accumulate incremental tool_call fragments, keyed by the SDK's `index`.
-  const pending = new Map<number, PendingCall>()
+  // Accumulate argument fragments, keyed by the call id. A Map iterates in
+  // insertion order, which is the order the model made the calls in.
+  const pending = new Map<string, PendingCall>()
   // Resolve a tool_result's `toolCallId` back to its tool name.
   const idToName = new Map<string, string>()
-  // Guard against emitting the same tool_call twice (done-flush + result-flush).
+  // Guard against emitting the same tool_call twice (finish-flush + result-flush).
   const emitted = new Set<string>()
 
   function emitCall(entry: PendingCall): StageEvent | null {
@@ -83,13 +98,11 @@ export function createToolEventTracker(): ToolEventTracker {
   /** Emit tool_call events for every complete pending entry. */
   function flushAll(): Array<StageEvent> {
     const events: Array<StageEvent> = []
-    for (const index of Array.from(pending.keys())) {
-      const entry = pending.get(index)
-      if (!entry) continue
+    for (const [id, entry] of Array.from(pending)) {
       const ev = emitCall(entry)
       if (ev) {
         events.push(ev)
-        pending.delete(index)
+        pending.delete(id)
       }
     }
     return events
@@ -97,43 +110,41 @@ export function createToolEventTracker(): ToolEventTracker {
 
   /** Emit the tool_call for a specific id (so it precedes its result). */
   function flushForId(id: string): Array<StageEvent> {
-    for (const index of Array.from(pending.keys())) {
-      const entry = pending.get(index)
-      if (!entry || entry.id !== id) continue
-      const ev = emitCall(entry)
-      pending.delete(index)
-      return ev ? [ev] : []
-    }
-    return []
+    const entry = pending.get(id)
+    if (!entry) return []
+    pending.delete(id)
+    const ev = emitCall(entry)
+    return ev ? [ev] : []
   }
 
   return {
     handle(chunk: unknown): Array<StageEvent> {
       if (!isRecord(chunk) || typeof chunk.type !== 'string') return []
 
-      if (chunk.type === 'tool_call') {
-        const toolCall = chunk.toolCall
-        if (!isRecord(toolCall)) return []
-        const index = typeof chunk.index === 'number' ? chunk.index : 0
-        const entry = pending.get(index) ?? { id: '', name: '', args: '' }
-        if (typeof toolCall.id === 'string' && toolCall.id) {
-          entry.id = toolCall.id
-        }
-        const fn = toolCall.function
-        if (isRecord(fn)) {
-          if (typeof fn.name === 'string' && fn.name) entry.name = fn.name
-          if (typeof fn.arguments === 'string') entry.args += fn.arguments
-        }
-        pending.set(index, entry)
-        if (entry.id && entry.name) idToName.set(entry.id, entry.name)
+      if (chunk.type === 'TOOL_CALL_START') {
+        const id = typeof chunk.toolCallId === 'string' ? chunk.toolCallId : ''
+        const name =
+          typeof chunk.toolCallName === 'string' ? chunk.toolCallName : ''
+        if (!id) return []
+        pending.set(id, { id, name, args: '' })
+        if (name) idToName.set(id, name)
         return []
       }
 
-      if (chunk.type === 'done') {
-        return chunk.finishReason === 'tool_calls' ? flushAll() : []
+      if (chunk.type === 'TOOL_CALL_ARGS') {
+        const entry =
+          typeof chunk.toolCallId === 'string'
+            ? pending.get(chunk.toolCallId)
+            : undefined
+        if (entry && typeof chunk.delta === 'string') entry.args += chunk.delta
+        return []
       }
 
-      if (chunk.type === 'tool_result') {
+      if (chunk.type === 'RUN_FINISHED') {
+        return finishReasonOf(chunk) === 'tool_calls' ? flushAll() : []
+      }
+
+      if (chunk.type === 'TOOL_CALL_RESULT') {
         const toolCallId =
           typeof chunk.toolCallId === 'string' ? chunk.toolCallId : ''
         // Ensure the matching tool_call is emitted before its result.

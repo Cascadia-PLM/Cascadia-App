@@ -11,12 +11,14 @@
 
 import { createAnthropicChat } from '@tanstack/ai-anthropic'
 import { createOpenaiChat } from '@tanstack/ai-openai'
+import { openaiCompatibleText } from '@tanstack/ai-openai/compatible'
 import { and, eq, gte, isNull, sql } from 'drizzle-orm'
 
 import {
   DEFAULT_DEEPSEEK_BASE_URL,
   DEFAULT_MODEL,
 } from '@cascadia/commons/ai/model-catalog'
+import type { AnyTextAdapter } from '@tanstack/ai'
 import type { AIProviderConfig, ProviderType } from '@/db/schema/ai'
 import { aiSettings, aiUsageLogs } from '@/db/schema/ai'
 import { db } from '@/db'
@@ -29,7 +31,7 @@ export type { AIProviderConfig, ProviderType }
 /**
  * Google's OpenAI-compatible Gemini endpoint. Accepts a Google AI Studio key
  * as the bearer token and otherwise speaks the OpenAI chat-completions wire
- * format, so we can reuse `createOpenaiChat` instead of a separate SDK.
+ * format, so it goes through `openaiCompatibleText` instead of a separate SDK.
  */
 const GEMINI_OPENAI_BASE_URL =
   'https://generativelanguage.googleapis.com/v1beta/openai/'
@@ -58,9 +60,39 @@ function decryptApiKey(config: AIProviderConfig): AIProviderConfig {
 }
 
 /**
- * Get the appropriate TanStack AI adapter based on configuration
+ * An adapter for a provider that speaks OpenAI's *Chat Completions* wire
+ * format at its own base URL — DeepSeek, Gemini's compatibility endpoint,
+ * Ollama.
+ *
+ * `createOpenaiChat` is not that: it calls the Responses API
+ * (`{baseURL}/responses`), which only OpenAI itself and a few gateways
+ * implement. `name` is the provider id, which is what `maxOutputTokens`
+ * (`./chat-options`) and the usage metadata on every stream event read.
  */
-export function getAdapter(config: AIProviderConfig) {
+function compatibleAdapter(
+  name: ProviderType,
+  model: string,
+  apiKey: string,
+  baseURL: string,
+) {
+  return openaiCompatibleText(model, {
+    name,
+    apiKey,
+    baseURL,
+    api: 'chat-completions',
+  })
+}
+
+/**
+ * Get the appropriate TanStack AI adapter based on configuration.
+ *
+ * Returned as `AnyTextAdapter` on purpose. The model is a runtime string and
+ * the provider a runtime choice, so the per-model types each factory resolves
+ * (which message content a model reads, which `modelOptions` it takes) say
+ * nothing true here — and left as a union of three adapter classes they make
+ * `chat()` demand options that satisfy all three at once.
+ */
+export function getAdapter(config: AIProviderConfig): AnyTextAdapter {
   const model = config.model || DEFAULT_MODELS[config.provider]
 
   switch (config.provider) {
@@ -77,10 +109,12 @@ export function getAdapter(config: AIProviderConfig) {
       if (!config.apiKey) {
         throw new Error('DeepSeek API key is required')
       }
-      // DeepSeek speaks the OpenAI chat-completions wire format.
-      return createOpenaiChat(model as any, config.apiKey, {
-        baseURL: config.baseURL || DEFAULT_DEEPSEEK_BASE_URL,
-      })
+      return compatibleAdapter(
+        'deepseek',
+        model,
+        config.apiKey,
+        config.baseURL || DEFAULT_DEEPSEEK_BASE_URL,
+      )
     }
 
     case 'anthropic': {
@@ -94,9 +128,12 @@ export function getAdapter(config: AIProviderConfig) {
       if (!config.apiKey) {
         throw new Error('Gemini API key is required')
       }
-      return createOpenaiChat(model as any, config.apiKey, {
-        baseURL: GEMINI_OPENAI_BASE_URL,
-      })
+      return compatibleAdapter(
+        'gemini',
+        model,
+        config.apiKey,
+        GEMINI_OPENAI_BASE_URL,
+      )
     }
 
     case 'ollama': {
@@ -106,9 +143,12 @@ export function getAdapter(config: AIProviderConfig) {
       )
       const baseURL = rawBase.endsWith('/v1') ? rawBase : `${rawBase}/v1`
       // Ollama ignores the bearer token but the OpenAI SDK requires a non-empty string.
-      return createOpenaiChat(model as any, config.apiKey || 'ollama', {
+      return compatibleAdapter(
+        'ollama',
+        model,
+        config.apiKey || 'ollama',
         baseURL,
-      })
+      )
     }
 
     default:

@@ -4,7 +4,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { eq, isNull } from 'drizzle-orm'
-import { streamToText } from '@tanstack/ai'
+import { chat, streamToText } from '@tanstack/ai'
 import {
   DEFAULT_API_KEY_POLICY,
   validateApiKeyPolicy,
@@ -28,6 +28,7 @@ import {
   isEncryptionConfigured,
 } from '@/crypto/encryption'
 import { getAdapter } from '@/ai/adapters'
+import { maxOutputTokens } from '@/ai/chat-options'
 import { aiLogger } from '@/logging/logger'
 import { listProviderModels } from '@/ai/model-discovery'
 import {
@@ -321,18 +322,19 @@ app.post(
           // Get the adapter - this validates the config
           const adapter = getAdapter(config)
 
-          // Make a simple test request with minimal tokens using chatStream
-          const testMessage = { role: 'user' as const, content: 'Hi' }
-          const stream = adapter.chatStream({
-            model,
-            messages: [testMessage],
-            // `maxTokens` is TanStack AI's portable option; it maps to each
-            // provider's native field. `maxOutputTokens` is Gemini's native name
-            // and, passed via modelOptions, every other adapter ignored it - so
-            // this probe was requesting a full-length response.
-            maxTokens: 5,
-          })
-          const response = await streamToText(stream)
+          // One short turn through `chat()`, the same path every real request
+          // takes. `streamToText` throws the provider's error if the run ends
+          // in one, which is what lands in the catch below.
+          const { text: response } = await streamToText(
+            chat({
+              adapter,
+              messages: [{ role: 'user', content: 'Hi' }],
+              threadId: `connection-test-${crypto.randomUUID()}`,
+              // Capped, so the probe does not pay for a full-length answer.
+              // 16 is the smallest limit OpenAI's Responses API accepts.
+              modelOptions: maxOutputTokens(adapter, 16),
+            }),
+          )
 
           // If we got here, the connection works
           // The schema closed the provider union, so the last arm is total.

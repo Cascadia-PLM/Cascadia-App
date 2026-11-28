@@ -17,6 +17,7 @@ import { ConfirmationCard } from './ConfirmationCard'
 import { DIALOG_KIND_META } from './dialogs/dialog-kinds'
 import { extractMessageParts } from './message-parts'
 import type { MessagePart } from './message-parts'
+import type { UIMessage } from '@tanstack/ai-react'
 import type { ChatDialogDescriptor } from '@cascadia/commons/ai/dialogs'
 import { Button } from '@/components/ui/Button'
 import { toAppRelativeUrl } from '@/markdown/url-transform'
@@ -25,7 +26,7 @@ import { cn } from '@/utils'
 export type { MessagePart } from './message-parts'
 
 interface ChatMessageProps {
-  role: 'user' | 'assistant' | 'system'
+  role: UIMessage['role']
   parts: Array<MessagePart>
   isStreaming?: boolean
   onNavigate?: (url: string) => void
@@ -57,8 +58,10 @@ export function ChatMessage({
     dialogOffers,
   } = extractMessageParts(parts)
 
-  if (role === 'system') {
-    return null // Don't display system messages
+  // System prompts are not shown, and an `activity` message is frontend-only
+  // AG-UI state this panel has no renderer for.
+  if (role === 'system' || role === 'activity') {
+    return null
   }
 
   return (
@@ -229,7 +232,11 @@ export function ChatMessage({
                 )}
               >
                 <span className="font-mono">{tool.name}</span>
-                {tool.state && tool.state !== 'input-complete' && (
+                {/* Only while the call's arguments are still arriving: every
+                    later state (complete, error, the approval pair) is a
+                    call that has been made. */}
+                {(tool.state === 'awaiting-input' ||
+                  tool.state === 'input-streaming') && (
                   <span className="ml-2 text-yellow-500">Running...</span>
                 )}
               </div>

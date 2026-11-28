@@ -2348,6 +2348,7 @@
           "content": {
             "application/json": {
               "schema": {
+                "additionalProperties": {},
                 "properties": {
                   "data": {
                     "properties": {
@@ -2376,32 +2377,66 @@
                     },
                     "type": "object"
                   },
+                  "forwardedProps": {
+                    "additionalProperties": {},
+                    "properties": {
+                      "data": {
+                        "properties": {
+                          "designId": {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "mode": {
+                            "enum": [
+                              "chat",
+                              "search"
+                            ],
+                            "type": "string"
+                          },
+                          "programId": {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  },
                   "messages": {
                     "items": {
+                      "additionalProperties": {},
                       "properties": {
-                        "content": {
-                          "anyOf": [
-                            {
-                              "maxLength": 100000,
-                              "type": "string"
+                        "content": {},
+                        "parts": {
+                          "items": {
+                            "additionalProperties": {},
+                            "properties": {
+                              "type": {
+                                "type": "string"
+                              }
                             },
-                            {
-                              "type": "null"
-                            }
-                          ]
+                            "required": [
+                              "type"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
                         },
                         "role": {
-                          "enum": [
-                            "system",
-                            "user",
-                            "assistant"
-                          ],
+                          "maxLength": 32,
                           "type": "string"
                         }
                       },
                       "required": [
-                        "role",
-                        "content"
+                        "role"
                       ],
                       "type": "object"
                     },

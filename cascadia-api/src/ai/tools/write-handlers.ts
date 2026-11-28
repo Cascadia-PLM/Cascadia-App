@@ -26,6 +26,7 @@ import { catalogEntry } from '@cascadia/commons/items/relationships/catalog'
 import { parseOptionText } from '@cascadia/commons/types/variants'
 import { withWritePermissionAndAudit } from './permission-wrapper'
 import {
+  isAwaitingApproval,
   issueConfirmationToken,
   redeemConfirmationToken,
 } from './confirmation-store'
@@ -316,6 +317,40 @@ function errorResponse(error: string): WriteToolResponse {
 }
 
 /**
+ * True on a surface with a person in front of it. There the model's own
+ * repeat of the call is not enough: the user has to have approved the preview
+ * through the panel first (`POST /ai/confirmations/respond`).
+ */
+function needsHumanApproval(context: ToolContext): boolean {
+  return context.surface === 'chat' || context.surface === 'search'
+}
+
+/**
+ * The response for a call that repeats a preview the user has not answered
+ * yet, or `null` when the call should go on to `consumeConfirmation`.
+ *
+ * It has to be its own answer rather than a fresh preview. A model that
+ * re-calls eagerly would otherwise mint a second card for the same write on
+ * every attempt, and the token is left untouched — burning it here would kill
+ * the card the user is still reading.
+ */
+async function awaitingApproval(
+  input: { confirmationToken?: string },
+  context: ToolContext,
+): Promise<WriteToolResponse | null> {
+  if (!input.confirmationToken || !needsHumanApproval(context)) return null
+  const waiting = await isAwaitingApproval(
+    context.userId,
+    input.confirmationToken,
+  )
+  return waiting
+    ? errorResponse(
+        'Not executed: the user has not approved this yet. The chat panel is showing them a Confirm button for it. Stop here, do not call this tool again, and wait for their next message.',
+      )
+    : null
+}
+
+/**
  * Redeem the call's confirmation token, if it carries one. `false` means
  * "produce a preview": no token, an expired or already-used token, another
  * user's token, or a token minted for different parameters all land here —
@@ -333,13 +368,15 @@ async function consumeConfirmation(
     toolName,
     input,
     input.confirmationToken,
+    { requireApproved: needsHumanApproval(context) },
   )
 }
 
 /**
  * Attach a freshly minted token to a preview response. The token binds this
  * user, this tool, and exactly these parameters — the confirmed call must
- * repeat the previewed call.
+ * repeat the previewed call. Minted for the chat panel, it also waits on the
+ * user's own approval.
  */
 async function withConfirmationToken<T extends WriteToolResponse>(
   response: T,
@@ -351,6 +388,7 @@ async function withConfirmationToken<T extends WriteToolResponse>(
     context.userId,
     toolName,
     input as Record<string, unknown>,
+    { requiresApproval: needsHumanApproval(context) },
   )
   return { ...response, confirmationToken }
 }
@@ -462,6 +500,8 @@ async function createItemHandlerImpl(
     }
 
     // Step 3: Without a redeemed confirmation token, return the preview
+    const waiting = await awaitingApproval(input, context)
+    if (waiting) return waiting
     if (!(await consumeConfirmation('create_item', input, context))) {
       const designName = designId ? await getDesignName(designId) : undefined
       return withConfirmationToken(
@@ -619,6 +659,8 @@ async function updateItemHandlerImpl(
     }
 
     // Step 3: Without a redeemed confirmation token, return the preview
+    const waiting = await awaitingApproval(input, context)
+    if (waiting) return waiting
     if (!(await consumeConfirmation('update_item', input, context))) {
       const changes: Array<string> = []
       if (input.name) changes.push(`Name: "${input.name}"`)
@@ -792,6 +834,8 @@ async function createRelationshipHandlerImpl(
     }
 
     // Step 3: Without a redeemed confirmation token, return the preview
+    const waiting = await awaitingApproval(input, context)
+    if (waiting) return waiting
     if (!(await consumeConfirmation('create_relationship', input, context))) {
       const relationshipInfo = [
         `${sourceItem.itemNumber} → ${targetItem.itemNumber}`,
@@ -905,6 +949,8 @@ async function transitionItemStateHandlerImpl(
     const currentState = item.state
 
     // Step 2: Without a redeemed confirmation token, return the preview
+    const waiting = await awaitingApproval(input, context)
+    if (waiting) return waiting
     if (!(await consumeConfirmation('transition_item_state', input, context))) {
       return withConfirmationToken(
         confirmationRequired(
@@ -1034,6 +1080,8 @@ async function createChangeOrderHandlerImpl(
     }
 
     // Step 2: Without a redeemed confirmation token, return the preview
+    const waiting = await awaitingApproval(input, context)
+    if (waiting) return waiting
     if (!(await consumeConfirmation('create_change_order', input, context))) {
       const additionalInfo: Array<string> = [
         `Type: ${input.changeType}`,
@@ -1217,6 +1265,10 @@ async function createProgramHandlerImpl(
       ? input.code.toUpperCase()
       : await findAvailableProgramCode(input.name)
 
+    const waiting = await awaitingApproval(input, context)
+
+    if (waiting) return waiting
+
     if (!(await consumeConfirmation('create_program', input, context))) {
       return withConfirmationToken(
         confirmationRequired(
@@ -1346,6 +1398,10 @@ async function affirmLinkHandlerImpl(
       await ItemRelationshipService.suspectStatesFor([edge.id])
     ).get(edge.id)
     const claim = `${sourceItem.itemNumber} ${catalogEntry(edge.relationshipType)?.label.toLowerCase() ?? edge.relationshipType} ${targetItem.itemNumber}`
+
+    const waiting = await awaitingApproval(input, context)
+
+    if (waiting) return waiting
 
     if (!(await consumeConfirmation('affirm_link', input, context))) {
       const info = [claim]

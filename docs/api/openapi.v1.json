@@ -2515,6 +2515,88 @@
         ]
       }
     },
+    "/api/v1/ai/confirmations/respond": {
+      "post": {
+        "operationId": "postApiV1AiConfirmationsRespond",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "approved": {
+                    "type": "boolean"
+                  },
+                  "confirmationToken": {
+                    "maxLength": 200,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "confirmationToken",
+                  "approved"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "status": {
+                          "enum": [
+                            "approved",
+                            "cancelled"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        },
+        "summary": "Approve or cancel a write the assistant previewed",
+        "tags": [
+          "AI"
+        ]
+      }
+    },
     "/api/v1/ai/dialogs/{id}": {
       "get": {
         "operationId": "getApiV1AiDialogsById",

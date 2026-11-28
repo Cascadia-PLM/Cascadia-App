@@ -16,7 +16,8 @@ import remarkGfm from 'remark-gfm'
 import { ConfirmationCard } from './ConfirmationCard'
 import { DIALOG_KIND_META } from './dialogs/dialog-kinds'
 import { extractMessageParts } from './message-parts'
-import type { MessagePart } from './message-parts'
+import type { ConfirmationResponse } from './ConfirmationCard'
+import type { ConfirmationRequest, MessagePart } from './message-parts'
 import type { UIMessage } from '@tanstack/ai-react'
 import type { ChatDialogDescriptor } from '@cascadia/commons/ai/dialogs'
 import { Button } from '@/components/ui/Button'
@@ -30,10 +31,12 @@ interface ChatMessageProps {
   parts: Array<MessagePart>
   isStreaming?: boolean
   onNavigate?: (url: string) => void
-  onConfirm?: (toolCallId: string, toolName: string, toolArgs: string) => void
-  onCancel?: (toolCallId: string) => void
+  onConfirm?: (confirmation: ConfirmationRequest) => void
+  onCancel?: (confirmation: ConfirmationRequest) => void
+  /** True while a response is streaming: an answer sent now would collide with it. */
+  confirmationsDisabled?: boolean
   onOpenDialog?: (dialog: ChatDialogDescriptor) => void
-  respondedConfirmations?: Map<string, 'confirmed' | 'cancelled'>
+  respondedConfirmations?: Map<string, ConfirmationResponse>
 }
 
 export function ChatMessage({
@@ -44,6 +47,7 @@ export function ChatMessage({
   onConfirm,
   onCancel,
   onOpenDialog,
+  confirmationsDisabled,
   respondedConfirmations,
 }: ChatMessageProps) {
   const isUser = role === 'user'
@@ -253,10 +257,9 @@ export function ChatMessage({
                 key={conf.toolCallId}
                 message={conf.message}
                 details={conf.details}
-                onConfirm={() =>
-                  onConfirm?.(conf.toolCallId, conf.toolName, conf.toolArgs)
-                }
-                onCancel={() => onCancel?.(conf.toolCallId)}
+                onConfirm={() => onConfirm?.(conf)}
+                onCancel={() => onCancel?.(conf)}
+                disabled={confirmationsDisabled}
                 responded={!!response}
                 response={response}
               />

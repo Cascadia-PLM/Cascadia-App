@@ -2,7 +2,14 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { Hono } from 'hono'
-import { EventType, chat, toServerSentEventsResponse } from '@tanstack/ai'
+import {
+  EventType,
+  chat,
+  combineStrategies,
+  maxIterations,
+  toServerSentEventsResponse,
+  untilFinishReason,
+} from '@tanstack/ai'
 import { eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { tagged } from '../adapter'
@@ -20,10 +27,16 @@ import { sessionService } from '@/ai/SessionService'
 import { dialogService } from '@/ai/dialogs/DialogService'
 import { resolveChatScope } from '@/ai/chat-scope'
 import { chatPageSchema, resolveChatPage } from '@/ai/page-context'
-import { replayChatHistory } from '@/ai/history'
+import {
+  HISTORY_TRIMMED_NOTE,
+  fitHistory,
+  replayChatHistory,
+} from '@/ai/history'
+import { maxOutputTokens } from '@/ai/chat-options'
 import { AccessControlService } from '@/auth/AccessControlService'
 import { acquireStreamSlot, releaseStreamSlot } from '@/ai/stream-limits'
 import { createSearchTools, createServerTools } from '@/ai/tools'
+import { respondToConfirmation } from '@/ai/tools/confirmation-store'
 import {
   AlreadyExistsError,
   AppError,
@@ -82,6 +95,13 @@ const chatRequestSchema = z.looseObject({
   data: chatDataSchema.optional(),
 })
 
+/** The most one model turn of a chat may write. */
+const CHAT_MAX_OUTPUT_TOKENS = 4096
+
+/** Model turns one request may take: each is an answer or a round of tool calls. */
+const CHAT_MAX_MODEL_TURNS = 12
+const SEARCH_MAX_MODEL_TURNS = 5
+
 /** The longest single message the assistant will take. */
 const MAX_MESSAGE_LENGTH = 100_000
 
@@ -101,6 +121,12 @@ const createSessionSchema = z.object({
   programId: z.string().uuid().optional(),
   designId: z.string().uuid().optional(),
   page: chatPageSchema,
+})
+
+/** The user's answer to a write preview's Confirm/Cancel card. */
+const confirmationResponseSchema = z.object({
+  confirmationToken: z.string().min(1).max(200),
+  approved: z.boolean(),
 })
 
 /**
@@ -268,8 +294,14 @@ app.post(
         // turn. The system prompt travels separately, in `systemPrompts`.
         // Stored tool calls are replayed paired with their results, which is
         // the only form a provider accepts them in — see `replayChatHistory`.
+        //
+        // The history is cut to a budget first. Replayed whole, every turn
+        // re-sent the entire conversation and all its tool results, so a
+        // session cost more with each message and then failed at the
+        // provider's context limit. See `fitHistory`.
+        const fitted = fitHistory(replayChatHistory(history))
         const messages = [
-          ...replayChatHistory(history),
+          ...fitted.messages,
           { role: 'user' as const, content: message },
         ]
 
@@ -316,9 +348,11 @@ app.post(
             adapter,
             // The page rides as its own prompt, after the stable one, so
             // navigating does not invalidate the cached prefix.
-            systemPrompts: page
-              ? [systemPrompt, knowledgeService.buildPagePrompt(page)]
-              : [systemPrompt],
+            systemPrompts: [
+              systemPrompt,
+              ...(fitted.droppedTurns > 0 ? [HISTORY_TRIMMED_NOTE] : []),
+              ...(page ? [knowledgeService.buildPagePrompt(page)] : []),
+            ],
             messages,
             tools,
             // The session is the conversation: a stable thread id is also the
@@ -328,6 +362,21 @@ app.post(
             // tools mint confirmation previews against the same session, and
             // an order the user did not see is not one to act on.
             toolExecution: 'sequential',
+            // Both bounds were the library's defaults by omission, unlike
+            // every other chat() call in the tree. The output cap is what a
+            // runaway answer costs; the turn cap is what a model stuck
+            // calling tools costs. Search answers in a table and needs few
+            // steps; chat chains lookups (find, inspect, where-used, offer a
+            // link) and stopped short at the default of five.
+            modelOptions: maxOutputTokens(adapter, CHAT_MAX_OUTPUT_TOKENS),
+            agentLoopStrategy: combineStrategies([
+              maxIterations(
+                mode === 'search'
+                  ? SEARCH_MAX_MODEL_TURNS
+                  : CHAT_MAX_MODEL_TURNS,
+              ),
+              untilFinishReason(['length']),
+            ]),
             abortController,
           })
         } catch (error) {
@@ -602,6 +651,46 @@ app.get(
           throw new NotFoundError('Dialog', params.id)
         }
         return { dialog }
+      },
+    ),
+  ),
+)
+
+// POST /api/ai/confirmations/respond
+app.post(
+  '/confirmations/respond',
+  adapt(
+    apiHandler(
+      {
+        body: confirmationResponseSchema,
+        openapi: {
+          summary: 'Approve or cancel a write the assistant previewed',
+          responses: {
+            200: {
+              schema: z.object({ status: z.enum(['approved', 'cancelled']) }),
+            },
+          },
+        },
+      },
+      async ({ body, user }) => {
+        // The human half of a chat write. The assistant's preview carries a
+        // token it can read but cannot spend: on the chat surface a token
+        // redeems only after this route has recorded the user's approval, and
+        // this route is reached by the session cookie of the person clicking
+        // Confirm — never by a tool call. A POST with a JSON body on purpose:
+        // nothing the model can make the panel render (a link, an image) can
+        // issue one.
+        const answered = await respondToConfirmation(
+          user.id,
+          body.confirmationToken,
+          body.approved,
+        )
+        if (!answered) {
+          // Expired, already answered, unknown, or someone else's — one
+          // answer for all of them.
+          throw new NotFoundError('Confirmation')
+        }
+        return { status: body.approved ? 'approved' : 'cancelled' }
       },
     ),
   ),

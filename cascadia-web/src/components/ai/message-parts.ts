@@ -50,6 +50,11 @@ export interface ConfirmationRequest {
   toolArgs: string
   message: string
   details?: ConfirmationDetails
+  /**
+   * The preview's server-issued token. The panel sends it back with the
+   * user's answer; until it has, the server will not execute the write.
+   */
+  confirmationToken?: string
 }
 
 /** Any tool result carrying a dialog descriptor. */
@@ -156,6 +161,7 @@ export function extractMessageParts(
         toolArgs: toolCall.arguments,
         message: result.confirmationMessage || 'Please confirm this operation.',
         details: result.confirmationDetails,
+        confirmationToken: result.confirmationToken,
       })
     }
 

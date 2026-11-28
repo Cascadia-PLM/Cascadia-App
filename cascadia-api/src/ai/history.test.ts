@@ -2,7 +2,7 @@
 // Copyright (c) 2026 Cascadia PLM LLC
 
 import { describe, expect, it } from 'vitest'
-import { replayChatHistory } from './history'
+import { fitHistory, replayChatHistory } from './history'
 import type { StoredChatMessage } from './history'
 
 /**
@@ -127,5 +127,78 @@ describe('replayChatHistory', () => {
     expect(messages[1]?.toolCalls?.[0]?.function.arguments).toBe(
       '{"itemId":"x"}',
     )
+  })
+})
+
+describe('fitHistory', () => {
+  // A long conversation: every turn makes one call with a large result.
+  const longResult = JSON.stringify({ rows: 'x'.repeat(5_000) })
+  const conversation = (turns: number) =>
+    replayChatHistory(
+      Array.from({ length: turns }, (_, i) => [
+        user(`question ${i}`),
+        assistant(`answer ${i}`, [`c${i}`]),
+        tool(`c${i}`, longResult),
+      ]).flat(),
+    )
+
+  it('returns a short conversation untouched', () => {
+    const messages = conversation(2)
+    expect(fitHistory(messages, 100_000)).toEqual({
+      messages,
+      droppedTurns: 0,
+      shortenedResults: 0,
+    })
+  })
+
+  it('never separates a call from its result, whatever the budget', () => {
+    // The invariant a provider enforces. Swept across budgets so the cut
+    // lands at every position inside a turn at least once.
+    const messages = conversation(8)
+    for (let budget = 1; budget <= 6_000; budget += 137) {
+      const fitted = fitHistory(messages, budget)
+      assertPaired(fitted.messages)
+      expect(fitted.messages[0]?.role).toBe('user')
+    }
+  })
+
+  it('drops the oldest turns first and keeps the newest', () => {
+    const fitted = fitHistory(conversation(8), 1_000)
+
+    expect(fitted.droppedTurns).toBeGreaterThan(0)
+    expect(fitted.messages.at(-1)).toMatchObject({ content: 'answer 7' })
+    expect(fitted.messages[0]).toMatchObject({
+      content: `question ${fitted.droppedTurns}`,
+    })
+  })
+
+  it('keeps the newest turn even when it alone is over budget', () => {
+    const fitted = fitHistory(conversation(3), 1)
+
+    expect(fitted.droppedTurns).toBe(2)
+    expect(fitted.messages.map((m) => m.role)).toEqual([
+      'user',
+      'assistant',
+      'tool',
+      'assistant',
+    ])
+  })
+
+  it('shortens old tool results before dropping anything, and leaves recent ones whole', () => {
+    const fitted = fitHistory(conversation(4), 100_000)
+    const results = fitted.messages.filter((m) => m.role === 'tool')
+
+    expect(fitted.droppedTurns).toBe(0)
+    expect(fitted.shortenedResults).toBe(2)
+    expect(results.map((m) => m.content === longResult)).toEqual([
+      false,
+      false,
+      true,
+      true,
+    ])
+    // The assistant's own answers are never cut.
+    expect(
+      fitted.messages.filter((m) => m.content === 'answer 0'),
+    ).toHaveLength(1)
   })
 })
